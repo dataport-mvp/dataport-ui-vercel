@@ -1,26 +1,29 @@
 import { useEffect, useState } from "react";
 
 export default function ProgressBar({ currentStep, totalSteps }) {
-  const targetPercent = Math.round((currentStep / totalSteps) * 100);
-  const [animatedPercent, setAnimatedPercent] = useState(0);
+  const stepPercent = 100 / totalSteps; // 25 if 4 steps
+  const minPercent = (currentStep - 1) * stepPercent;
+  const maxPercent = currentStep * stepPercent;
+
+  const [animatedPercent, setAnimatedPercent] = useState(minPercent);
   const [direction, setDirection] = useState(1);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setAnimatedPercent(prev => {
         let next = prev + direction;
-        if (next >= targetPercent) {
-          setDirection(-1); // go down
-          next = targetPercent;
-        } else if (next <= 0) {
-          setDirection(1); // go up
-          next = 0;
+        if (next >= maxPercent) {
+          setDirection(-1);
+          next = maxPercent;
+        } else if (next <= minPercent) {
+          setDirection(1);
+          next = minPercent;
         }
         return next;
       });
-    }, 50); // speed of float
+    }, 50);
     return () => clearInterval(interval);
-  }, [targetPercent, direction]);
+  }, [minPercent, maxPercent, direction]);
 
   return (
     <div style={{ textAlign: "center", margin: "2rem 0" }}>
@@ -47,7 +50,7 @@ export default function ProgressBar({ currentStep, totalSteps }) {
           transform: "translate(-50%, -50%)",
           fontWeight: "bold"
         }}>
-          {animatedPercent}% Complete
+          {Math.round(animatedPercent)}% Complete
         </span>
       </div>
     </div>
