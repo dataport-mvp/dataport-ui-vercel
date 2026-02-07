@@ -11,7 +11,6 @@ export default function PersonalDetails() {
   const [pan, setPan] = useState("");
   const [mobile, setMobile] = useState("");
   const [empCode, setEmpCode] = useState("");
-  const [errors, setErrors] = useState({});
   const router = useRouter();
 
   // Validation rules
@@ -19,23 +18,17 @@ export default function PersonalDetails() {
   const validatePan = (value) => /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value);
   const validateMobile = (value) => /^\d{10}$/.test(value);
 
+  const allValid =
+    validateAadhar(aadhar) &&
+    validatePan(pan) &&
+    validateMobile(mobile) &&
+    firstName.trim() &&
+    lastName.trim() &&
+    fatherFirst.trim() &&
+    fatherLast.trim();
+
   const handleSave = () => {
-    const newErrors = {};
-
-    if (!validateAadhar(aadhar)) {
-      newErrors.aadhar = "Aadhaar must be 12 digits only.";
-    }
-    if (!validatePan(pan)) {
-      newErrors.pan = "PAN must be 5 letters, 4 digits, 1 letter.";
-    }
-    if (!validateMobile(mobile)) {
-      newErrors.mobile = "Mobile must be 10 digits only.";
-    }
-
-    setErrors(newErrors);
-
-    // Stop if errors exist
-    if (Object.keys(newErrors).length > 0) return;
+    if (!allValid) return; // block navigation if invalid
 
     // Generate unique employee code
     const uniqueCode = "EMP" + Date.now().toString().slice(-6);
@@ -66,10 +59,10 @@ export default function PersonalDetails() {
         value={aadhar}
         onChange={(e) => setAadhar(e.target.value)}
         maxLength={12}
-        style={{ borderColor: errors.aadhar ? "red" : "" }}
+        style={{ borderColor: aadhar && !validateAadhar(aadhar) ? "red" : "" }}
       />
       <input type="file" style={{ marginLeft: "1rem" }} /><br />
-      {errors.aadhar && <p style={{ color: "red" }}>{errors.aadhar}</p>}<br />
+      {aadhar && !validateAadhar(aadhar) && <p style={{ color: "red" }}>Aadhaar must be 12 digits only.</p>}<br />
 
       <label>PAN Card</label><br />
       <input
@@ -77,10 +70,10 @@ export default function PersonalDetails() {
         value={pan}
         onChange={(e) => setPan(e.target.value.toUpperCase())}
         maxLength={10}
-        style={{ borderColor: errors.pan ? "red" : "" }}
+        style={{ borderColor: pan && !validatePan(pan) ? "red" : "" }}
       />
       <input type="file" style={{ marginLeft: "1rem" }} /><br />
-      {errors.pan && <p style={{ color: "red" }}>{errors.pan}</p>}<br />
+      {pan && !validatePan(pan) && <p style={{ color: "red" }}>PAN must be 5 letters, 4 digits, 1 letter.</p>}<br />
 
       <label>Mobile No</label><br />
       <input
@@ -88,11 +81,21 @@ export default function PersonalDetails() {
         value={mobile}
         onChange={(e) => setMobile(e.target.value)}
         maxLength={10}
-        style={{ borderColor: errors.mobile ? "red" : "" }}
+        style={{ borderColor: mobile && !validateMobile(mobile) ? "red" : "" }}
       /><br />
-      {errors.mobile && <p style={{ color: "red" }}>{errors.mobile}</p>}<br />
+      {mobile && !validateMobile(mobile) && <p style={{ color: "red" }}>Mobile must be 10 digits only.</p>}<br />
 
-      <button onClick={handleSave} style={{ padding: "1rem 2rem", fontSize: "1.2rem" }}>
+      <button
+        onClick={handleSave}
+        disabled={!allValid}
+        style={{
+          padding: "1rem 2rem",
+          fontSize: "1.2rem",
+          background: allValid ? "#4CAF50" : "#ccc",
+          color: "#fff",
+          cursor: allValid ? "pointer" : "not-allowed"
+        }}
+      >
         Save & Next
       </button>
 
