@@ -10,11 +10,37 @@ export default function PersonalDetails() {
   const [aadhar, setAadhar] = useState("");
   const [pan, setPan] = useState("");
   const [mobile, setMobile] = useState("");
+  const [empCode, setEmpCode] = useState("");
   const router = useRouter();
 
+  // Validation rules
+  const validateAadhar = (value) => /^\d{12}$/.test(value);
+  const validatePan = (value) => /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value);
+  const validateMobile = (value) => /^\d{10}$/.test(value);
+
   const handleSave = () => {
-    // TODO: validation logic
-    router.push("/employee/education"); // go to next page
+    if (!validateAadhar(aadhar)) {
+      alert("Invalid Aadhaar: must be 12 digits only.");
+      return;
+    }
+    if (!validatePan(pan)) {
+      alert("Invalid PAN: must be 5 letters, 4 digits, 1 letter.");
+      return;
+    }
+    if (!validateMobile(mobile)) {
+      alert("Invalid Mobile: must be 10 digits.");
+      return;
+    }
+
+    // Generate unique employee code
+    const uniqueCode = "EMP" + Date.now().toString().slice(-5);
+    setEmpCode(uniqueCode);
+
+    // Show code for user before moving on
+    alert("Your Employee Code: " + uniqueCode);
+
+    // Redirect to next page
+    router.push("/employee/education");
   };
 
   return (
@@ -31,19 +57,39 @@ export default function PersonalDetails() {
       <input type="text" placeholder="Last Name" value={fatherLast} onChange={(e) => setFatherLast(e.target.value)} style={{ marginLeft: "1rem" }} /><br /><br />
 
       <label>Aadhar Card</label><br />
-      <input type="text" value={aadhar} onChange={(e) => setAadhar(e.target.value)} maxLength={12} />
+      <input
+        type="text"
+        value={aadhar}
+        onChange={(e) => setAadhar(e.target.value)}
+        maxLength={12}
+        style={{ borderColor: aadhar && !validateAadhar(aadhar) ? "red" : "" }}
+      />
       <input type="file" style={{ marginLeft: "1rem" }} /><br /><br />
 
       <label>PAN Card</label><br />
-      <input type="text" value={pan} onChange={(e) => setPan(e.target.value.toUpperCase())} maxLength={10} />
+      <input
+        type="text"
+        value={pan}
+        onChange={(e) => setPan(e.target.value.toUpperCase())}
+        maxLength={10}
+        style={{ borderColor: pan && !validatePan(pan) ? "red" : "" }}
+      />
       <input type="file" style={{ marginLeft: "1rem" }} /><br /><br />
 
       <label>Mobile No</label><br />
-      <input type="text" value={mobile} onChange={(e) => setMobile(e.target.value)} maxLength={10} /><br /><br />
+      <input
+        type="text"
+        value={mobile}
+        onChange={(e) => setMobile(e.target.value)}
+        maxLength={10}
+        style={{ borderColor: mobile && !validateMobile(mobile) ? "red" : "" }}
+      /><br /><br />
 
       <button onClick={handleSave} style={{ padding: "1rem 2rem", fontSize: "1.2rem" }}>
         Save & Next
       </button>
+
+      {empCode && <p>Your Employee Code: {empCode}</p>}
     </div>
   );
 }
