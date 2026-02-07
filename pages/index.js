@@ -6,15 +6,17 @@ export default function Home() {
       minHeight: "100vh",
       display: "flex",
       flexDirection: "column",
-      justifyContent: "space-between",
+      justifyContent: "center",
+      alignItems: "center",
       background: "linear-gradient(to right, #e0f7fa, #f1f8e9)"
     }}>
       {/* Main Content - Centered */}
       <main style={{
-        flex: 1,
         display: "flex",
         justifyContent: "center",
-        alignItems: "center"
+        alignItems: "center",
+        width: "100%",
+        maxWidth: "900px"
       }}>
         {/* Employee Dashboard */}
         <div style={{
@@ -45,6 +47,22 @@ export default function Home() {
           </Link>
         </div>
       </main>
+
+      {/* Datagate Info directly below dashboards */}
+      <section style={{
+        marginTop: "2rem",
+        textAlign: "center",
+        padding: "1.5rem",
+        background: "linear-gradient(to right, #e0f7fa, #f1f8e9)",
+        borderTop: "2px solid #ccc",
+        width: "100%"
+      }}>
+        <p>
+          <strong>Datagate</strong> is a secure employee–employer data platform,
+          simplifying onboarding, consent management, and record keeping.
+        </p>
+        <p>© 2026 Datagate. All Rights Reserved ®</p>
+      </section>
     </div>
   );
 }
