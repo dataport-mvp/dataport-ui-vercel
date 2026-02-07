@@ -38,13 +38,13 @@ export default function PersonalDetails() {
     if (Object.keys(newErrors).length > 0) return;
 
     // Generate unique employee code
-    const uniqueCode = "EMP" + Date.now().toString().slice(-5);
+    const uniqueCode = "EMP" + Date.now().toString().slice(-6);
     setEmpCode(uniqueCode);
 
-    // After showing code, move to next page
+    // Show code for 2 seconds before moving on
     setTimeout(() => {
       router.push("/employee/education");
-    }, 2000); // wait 2 seconds so user sees code
+    }, 2000);
   };
 
   return (
@@ -98,7 +98,7 @@ export default function PersonalDetails() {
 
       {empCode && (
         <p style={{ color: "green", fontWeight: "bold", marginTop: "1rem" }}>
-          Your Employee Code: {empCode}
+          ✅ Your Employee Code: {empCode}
         </p>
       )}
     </div>
