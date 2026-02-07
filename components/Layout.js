@@ -1,15 +1,26 @@
-import Link from 'next/link';
+import Link from "next/link";
 
 export default function Layout({ children }) {
   return (
     <div>
-      <nav style={{ padding: "1rem", background: "#eee" }}>
-        <Link href="/">Home</Link> |{" "}
-        <Link href="/users">Users</Link> |{" "}
-        <Link href="/consent">Consent</Link> |{" "}
-        <Link href="/delete">Delete</Link>
-      </nav>
+      {/* Header */}
+      <header style={{ textAlign: "center", padding: "1rem", background: "#f5f5f5" }}>
+        <nav>
+          <Link href="/">Home</Link>
+        </nav>
+      </header>
+
+      {/* Page Content */}
       <main>{children}</main>
+
+      {/* Footer */}
+      <footer style={{ textAlign: "center", padding: "2rem", background: "#f5f5f5" }}>
+        <p>
+          <strong>Datagate</strong> is a secure employee–employer data platform,
+          simplifying onboarding, consent management, and record keeping.
+        </p>
+        <p>© 2026 Datagate. All Rights Reserved ®</p>
+      </footer>
     </div>
   );
 }
