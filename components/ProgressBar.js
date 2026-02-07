@@ -1,21 +1,26 @@
 import { useEffect, useState } from "react";
 
 export default function ProgressBar({ currentStep, totalSteps }) {
-  const [animatedPercent, setAnimatedPercent] = useState(0);
   const targetPercent = Math.round((currentStep / totalSteps) * 100);
+  const [animatedPercent, setAnimatedPercent] = useState(0);
+  const [direction, setDirection] = useState(1);
 
   useEffect(() => {
-    let progress = 0;
     const interval = setInterval(() => {
-      progress += 1;
-      if (progress <= targetPercent) {
-        setAnimatedPercent(progress);
-      } else {
-        clearInterval(interval);
-      }
-    }, 30); // speed of animation
+      setAnimatedPercent(prev => {
+        let next = prev + direction;
+        if (next >= targetPercent) {
+          setDirection(-1); // go down
+          next = targetPercent;
+        } else if (next <= 0) {
+          setDirection(1); // go up
+          next = 0;
+        }
+        return next;
+      });
+    }, 50); // speed of float
     return () => clearInterval(interval);
-  }, [targetPercent]);
+  }, [targetPercent, direction]);
 
   return (
     <div style={{ textAlign: "center", margin: "2rem 0" }}>
@@ -33,7 +38,7 @@ export default function ProgressBar({ currentStep, totalSteps }) {
           width: `${animatedPercent}%`,
           height: "100%",
           background: "linear-gradient(90deg, #00ff00, #009900)",
-          animation: "pulse 1s infinite alternate"
+          transition: "width 0.1s ease"
         }}></div>
         <span style={{
           position: "absolute",
@@ -45,12 +50,6 @@ export default function ProgressBar({ currentStep, totalSteps }) {
           {animatedPercent}% Complete
         </span>
       </div>
-      <style jsx>{`
-        @keyframes pulse {
-          from { opacity: 0.7; }
-          to { opacity: 1; }
-        }
-      `}</style>
     </div>
   );
 }

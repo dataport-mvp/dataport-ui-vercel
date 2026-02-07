@@ -9,13 +9,6 @@ export default function Home() {
       justifyContent: "space-between",
       background: "linear-gradient(to right, #e0f7fa, #f1f8e9)"
     }}>
-      {/* Header */}
-      <header style={{ textAlign: "center", padding: "1rem" }}>
-        <nav>
-          <Link href="/">Home</Link>
-        </nav>
-      </header>
-
       {/* Main Content */}
       <main style={{ display: "flex", flex: 1 }}>
         {/* Employee Dashboard */}
