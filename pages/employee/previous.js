@@ -118,11 +118,12 @@ export default function PreviousCompany() {
 
   const emptyEmployment = {
     companyName: "",
+    officeAddress: "",
     employeeId: "",
     workEmail: "",
     designation: "",
+    department: "",
     duties: "",
-    officeAddress: "",
     employmentType: "",
     reasonForRelieving: "",
     reference: { role: "", name: "", email: "", mobile: "" },
