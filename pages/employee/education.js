@@ -1,41 +1,166 @@
-import { useRouter } from "next/router";
-import ProgressBar from "../../components/ProgressBar";
+{
+  "page": "education.js",
+  "follows": "Master Form & Layout Contract",
 
-export default function EducationDetails() {
-  const router = useRouter();
+  "sections": {
+    "Class X": {
+      "rows": [
+        {
+          "row": 1,
+          "fields": [
+            "School Name",
+            "Board Name",
+            "Hall Ticket / Roll Number"
+          ]
+        },
+        {
+          "row": 2,
+          "fields": [
+            "Class X Certificate (Upload)",
+            "Start Date",
+            "End Date",
+            "School Address"
+          ]
+        }
+      ],
+      "additional_fields": [
+        "Year of Passing (YYYY)",
+        {
+          "Result": {
+            "type": ["Percentage", "Grade"],
+            "value": true
+          }
+        },
+        "Medium of Instruction (optional)"
+      ]
+    },
 
-  return (
-    <div style={{ padding: "2rem", background: "#f0f4f8", minHeight: "100vh" }}>
-      <ProgressBar currentStep={2} totalSteps={4} />
-      <h1>Education Details</h1>
+    "Intermediate": {
+      "rows": [
+        {
+          "row": 1,
+          "fields": [
+            "College Name",
+            "Board Name",
+            "Hall Ticket / Roll Number"
+          ]
+        },
+        {
+          "row": 2,
+          "fields": [
+            "Intermediate Certificate (Upload)",
+            "Start Date",
+            "End Date",
+            "College Address",
+            "Mode of Education (Full-time / Part-time / Distance)"
+          ]
+        }
+      ],
+      "additional_fields": [
+        "Year of Passing (YYYY)",
+        {
+          "Result": {
+            "type": ["Percentage", "Grade"],
+            "value": true
+          }
+        },
+        "Medium of Instruction (optional)"
+      ]
+    },
 
-      <h2>Class X</h2>
-      <input type="text" placeholder="School Name" /><br />
-      <input type="text" placeholder="Board Name" /><br />
-      <input type="file" /><br /><br />
+    "UG": {
+      "rows": [
+        {
+          "row": 1,
+          "fields": [
+            "College Name",
+            "Course / Degree",
+            "Hall Ticket / Roll Number"
+          ]
+        },
+        {
+          "row": 2,
+          "fields": [
+            "Degree / Provisional Certificate (Upload)",
+            "Start Date",
+            "End Date",
+            "College Address",
+            "Mode of Education (Full-time / Part-time / Distance)"
+          ]
+        }
+      ],
+      "additional_fields": [
+        "University Name",
+        "Year of Passing (YYYY)",
+        {
+          "Result": {
+            "type": ["Percentage", "CGPA", "Grade"],
+            "value": true
+          }
+        },
+        {
+          "Backlogs": {
+            "hasBacklogs": "Yes / No",
+            "numberOfBacklogs": "optional_if_yes"
+          }
+        }
+      ]
+    },
 
-      <h2>Intermediate</h2>
-      <input type="text" placeholder="College Name" /><br />
-      <input type="text" placeholder="Board Name" /><br />
-      <input type="file" /><br /><br />
+    "PG": {
+      "optional": true,
+      "rows": [
+        {
+          "row": 1,
+          "fields": [
+            "College Name",
+            "Course / Degree",
+            "Hall Ticket / Roll Number"
+          ]
+        },
+        {
+          "row": 2,
+          "fields": [
+            "Degree / Provisional Certificate (Upload)",
+            "Start Date",
+            "End Date",
+            "College Address",
+            "Mode of Education (Full-time / Part-time / Distance)"
+          ]
+        }
+      ],
+      "additional_fields": [
+        "University Name",
+        "Year of Passing (YYYY)",
+        {
+          "Result": {
+            "type": ["Percentage", "CGPA", "Grade"],
+            "value": true
+          }
+        },
+        {
+          "Backlogs": {
+            "hasBacklogs": "Yes / No",
+            "numberOfBacklogs": "optional_if_yes"
+          }
+        }
+      ]
+    }
+  },
 
-      <h2>UG</h2>
-      <input type="text" placeholder="College Name" /><br />
-      <input type="text" placeholder="Board Name" /><br />
-      <input type="file" /><br /><br />
+  "validation_expectations": {
+    "hall_ticket": "alphanumeric_allowed",
+    "dates": "from <= to",
+    "year_of_passing": "must_match_end_date_year",
+    "uploads": "pdf / jpg / jpeg / png",
+    "mode_of_education": "mandatory_for_inter_ug_pg"
+  },
 
-      <h2>PG</h2>
-      <input type="text" placeholder="College Name" /><br />
-      <input type="text" placeholder="Board Name" /><br />
-      <input type="file" /><br /><br />
-
-      {/* Navigation */}
-      <button onClick={() => router.push("/employee/personal")} style={{ marginRight: "1rem" }}>
-        ⬅ Back
-      </button>
-      <button onClick={() => router.push("/employee/previous")}>
-        Next ➡
-      </button>
-    </div>
-  );
+  "ui_rules": {
+    "section_order_fixed": true,
+    "no_layout_variation": true,
+    "file_upload_position": "immediately_below_related_section",
+    "same_spacing_as_personal_page": true
+  }
 }
+
