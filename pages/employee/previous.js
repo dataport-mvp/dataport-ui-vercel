@@ -19,7 +19,6 @@ const styles = {
     boxShadow: "0 12px 30px rgba(0,0,0,0.08)"
   },
   title: { marginBottom: "2rem" },
-  sectionTitle: { marginBottom: "1rem", color: "#0f172a" },
   label: { fontSize: "0.85rem", color: "#475569" },
   input: {
     width: "100%",
@@ -50,7 +49,7 @@ const styles = {
     cursor: "pointer"
   },
   employerCard: {
-    marginBottom: "1rem",
+    marginBottom: "1.25rem",
     padding: "1rem",
     borderRadius: "10px",
     border: "1px solid #edf2f7"
@@ -59,7 +58,15 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center"
-  }
+  },
+  yesNo: (active) => ({
+    padding: "0.35rem 1rem",
+    borderRadius: "999px",
+    border: "1px solid #cbd5e1",
+    background: active ? "#2563eb" : "#f8fafc",
+    color: active ? "#fff" : "#000",
+    cursor: "pointer"
+  })
 };
 
 /* ---------- HELPERS ---------- */
@@ -82,12 +89,25 @@ const Input = ({ label, value, onChange, type = "text", maxLength }) => (
   </div>
 );
 
+const TextArea = ({ label, value, onChange }) => (
+  <div style={{ width: "100%", marginBottom: "0.75rem" }}>
+    <label style={styles.label}>{label}</label>
+    <textarea
+      value={value || ""}
+      onChange={(e) => onChange(e.target.value)}
+      style={{ ...styles.input, minHeight: "80px" }}
+    />
+  </div>
+);
+
 const Select = ({ label, value, onChange, options }) => (
   <div style={{ flex: 1, minWidth: "200px" }}>
     <label style={styles.label}>{label}</label>
     <select value={value} onChange={(e) => onChange(e.target.value)} style={styles.input}>
       <option value="">Select</option>
-      {options.map((o) => <option key={o}>{o}</option>)}
+      {options.map((o) => (
+        <option key={o}>{o}</option>
+      ))}
     </select>
   </div>
 );
@@ -102,29 +122,43 @@ export default function PreviousCompany() {
     officeAddress: "",
     employeeId: "",
     workEmail: "",
-    fromDate: "",
-    toDate: "",
     designation: "",
     department: "",
     duties: "",
     employmentType: "",
+    reasonForRelieving: "",
     contractVendor: {
       company: "",
       email: "",
       mobile: ""
+    },
+    documents: {
+      payslips: [],
+      offerLetter: null,
+      resignation: null,
+      experience: null
+    },
+    gap: {
+      hasGap: "",
+      from: "",
+      to: "",
+      reason: ""
     }
   };
 
   const [employments, setEmployments] = useState([emptyEmployment]);
 
-  const update = (i, field, value) => {
-    const copy = [...employments];
-    copy[i] = { ...copy[i], [field]: value };
+  const update = (i, path, value) => {
+    const copy = JSON.parse(JSON.stringify(employments));
+    const keys = path.split(".");
+    let obj = copy[i];
+    for (let k = 0; k < keys.length - 1; k++) obj = obj[keys[k]];
+    obj[keys[keys.length - 1]] = value;
     setEmployments(copy);
   };
 
   const addEmployer = () => {
-    setEmployments([...employments, { ...emptyEmployment }]);
+    setEmployments([...employments, JSON.parse(JSON.stringify(emptyEmployment))]);
   };
 
   const toggleExpanded = (i) => {
@@ -134,11 +168,7 @@ export default function PreviousCompany() {
   };
 
   const hasAnyData = (emp) =>
-    emp.companyName ||
-    emp.employeeId ||
-    emp.workEmail ||
-    emp.designation ||
-    emp.department;
+    emp.companyName || emp.employeeId || emp.workEmail || emp.designation || emp.department;
 
   return (
     <div style={styles.page}>
@@ -148,7 +178,6 @@ export default function PreviousCompany() {
         <h1 style={styles.title}>Employment History</h1>
 
         {employments.map((emp, index) => {
-          // 🔑 KEY FIX: hide empty collapsed employers
           if (!emp.expanded && !hasAnyData(emp)) return null;
 
           return (
@@ -162,6 +191,7 @@ export default function PreviousCompany() {
 
               {emp.expanded && (
                 <>
+                  {/* 1. DETAILS */}
                   <Row>
                     <Input label="Company Name" value={emp.companyName} onChange={(v) => update(index, "companyName", v)} />
                     <Input label="Office Address" value={emp.officeAddress} onChange={(v) => update(index, "officeAddress", v)} />
@@ -187,35 +217,56 @@ export default function PreviousCompany() {
                     />
                   </Row>
 
-                  {/* CONTRACT DETAILS */}
+                  {/* CONTRACT */}
                   {emp.employmentType === "Contract" && (
-                    <div style={{ marginTop: "1rem" }}>
+                    <>
                       <h4>Vendor / Third-Party Details</h4>
                       <Row>
-                        <Input label="Company Name" value={emp.contractVendor.company} onChange={(v) => {
-                          const copy = [...employments];
-                          copy[index].contractVendor.company = v;
-                          setEmployments(copy);
-                        }} />
-                        <Input label="Company Email" value={emp.contractVendor.email} onChange={(v) => {
-                          const copy = [...employments];
-                          copy[index].contractVendor.email = v;
-                          setEmployments(copy);
-                        }} />
+                        <Input label="Company Name" value={emp.contractVendor.company} onChange={(v) => update(index, "contractVendor.company", v)} />
+                        <Input label="Company Email" value={emp.contractVendor.email} onChange={(v) => update(index, "contractVendor.email", v)} />
                         <Input
                           label="Mobile (India)"
                           value={emp.contractVendor.mobile}
                           maxLength={10}
-                          onChange={(v) => {
-                            if (/^\d*$/.test(v)) {
-                              const copy = [...employments];
-                              copy[index].contractVendor.mobile = v;
-                              setEmployments(copy);
-                            }
-                          }}
+                          onChange={(v) => /^\d*$/.test(v) && update(index, "contractVendor.mobile", v)}
                         />
                       </Row>
-                    </div>
+                    </>
+                  )}
+
+                  {/* 2. REASON */}
+                  <TextArea
+                    label="Reason for Relieving / Leaving"
+                    value={emp.reasonForRelieving}
+                    onChange={(v) => update(index, "reasonForRelieving", v)}
+                  />
+
+                  {/* 3. ATTACHMENTS */}
+                  <h4>Attachments</h4>
+                  <Input type="file" label="Payslips (Multiple)" onChange={(e) => update(index, "documents.payslips", Array.from(e.target.files))} />
+                  <Input type="file" label="Offer Letter" onChange={(e) => update(index, "documents.offerLetter", e.target.files[0])} />
+                  <Input type="file" label="Resignation Acceptance" onChange={(e) => update(index, "documents.resignation", e.target.files[0])} />
+                  <Input type="file" label="Experience / Relieving Letter" onChange={(e) => update(index, "documents.experience", e.target.files[0])} />
+
+                  {/* 4. GAP */}
+                  {index !== employments.length - 1 && (
+                    <>
+                      <h4>Employment Gap</h4>
+                      <div style={{ display: "flex", gap: "1rem", marginBottom: "0.5rem" }}>
+                        <button style={styles.yesNo(emp.gap.hasGap === "Yes")} onClick={() => update(index, "gap.hasGap", "Yes")}>Yes</button>
+                        <button style={styles.yesNo(emp.gap.hasGap === "No")} onClick={() => update(index, "gap.hasGap", "No")}>No</button>
+                      </div>
+
+                      {emp.gap.hasGap === "Yes" && (
+                        <>
+                          <Row>
+                            <Input type="month" label="Gap From" value={emp.gap.from} onChange={(v) => update(index, "gap.from", v)} />
+                            <Input type="month" label="Gap To" value={emp.gap.to} onChange={(v) => update(index, "gap.to", v)} />
+                          </Row>
+                          <TextArea label="Reason for Gap" value={emp.gap.reason} onChange={(v) => update(index, "gap.reason", v)} />
+                        </>
+                      )}
+                    </>
                   )}
                 </>
               )}
@@ -223,9 +274,8 @@ export default function PreviousCompany() {
           );
         })}
 
-        <button style={styles.secondaryBtn} onClick={addEmployer}>
-          + Add Another Employer
-        </button>
+        {/* 5. ADD EMPLOYER */}
+        <button style={styles.secondaryBtn} onClick={addEmployer}>+ Add Another Employer</button>
 
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: "2rem" }}>
           <button style={styles.secondaryBtn} onClick={() => router.back()}>Previous</button>
