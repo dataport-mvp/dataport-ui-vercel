@@ -1,4 +1,6 @@
-You’re right, Manoj — the **Permanent Address section** wasn’t fully fleshed out in the earlier draft, and the **Save & Proceed button** wasn’t clearly placed at the bottom. Let me give you the **complete corrected file** so you can drop it in without syntax errors.
+Right — the errors you saw were because the file wasn’t actually JavaScript/JSX code at the top. It started with my explanatory text (“You’re right, Manoj…”) instead of valid imports. That’s why Turbopack flagged `Unexpected character '’'` on line 1.  
+
+To fix this permanently, you need a **clean file that contains only valid React/Next.js code**. Here’s the **full corrected `personal.js`** with all sections complete, including the Permanent Address and the Save & Proceed button at the bottom:
 
 ---
 
@@ -142,6 +144,4 @@ export default function PersonalDetails() {
         {/* Permanent Address */}
         <h2>Permanent Address</h2>
         <label>Residing From</label><br />
-        <input type="date" value={permFrom} onChange={(e) => setPermFrom(e.target.value)} /><br />
-        <label>Residing To</label><br />
-        <input type="date" value={permTo} onChange={(e)
+       
