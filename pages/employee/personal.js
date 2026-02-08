@@ -5,45 +5,44 @@ import ProgressBar from "../../components/ProgressBar";
 export default function PersonalDetails() {
   const router = useRouter();
 
-  // Photo
-  const [photo, setPhoto] = useState(null);
+  /* ---------------- Photo ---------------- */
   const [photoPreview, setPhotoPreview] = useState(null);
 
-  // Name
+  /* ---------------- Names ---------------- */
   const [firstName, setFirstName] = useState("");
   const [middleName, setMiddleName] = useState("");
   const [lastName, setLastName] = useState("");
 
-  // Father
   const [fatherFirst, setFatherFirst] = useState("");
   const [fatherMiddle, setFatherMiddle] = useState("");
   const [fatherLast, setFatherLast] = useState("");
 
-  // Personal
+  /* ---------------- Personal ---------------- */
   const [dob, setDob] = useState("");
-  const [nationality, setNationality] = useState("");
   const [gender, setGender] = useState("");
+  const [nationality, setNationality] = useState("");
   const [mobile, setMobile] = useState("");
+
   const [aadhar, setAadhar] = useState("");
   const [pan, setPan] = useState("");
   const [passport, setPassport] = useState("");
 
-  // Current Address
-  const [currentFrom, setCurrentFrom] = useState("");
-  const [currentTo, setCurrentTo] = useState("");
-  const [currentDoor, setCurrentDoor] = useState("");
-  const [currentVillage, setCurrentVillage] = useState("");
-  const [currentDistrict, setCurrentDistrict] = useState("");
-  const [currentPincode, setCurrentPincode] = useState("");
+  /* ---------------- Current Address ---------------- */
+  const [curFrom, setCurFrom] = useState("");
+  const [curTo, setCurTo] = useState("");
+  const [curDoor, setCurDoor] = useState("");
+  const [curVillage, setCurVillage] = useState("");
+  const [curDistrict, setCurDistrict] = useState("");
+  const [curPin, setCurPin] = useState("");
 
-  // Permanent Address
+  /* ---------------- Permanent Address ---------------- */
   const [permFrom, setPermFrom] = useState("");
   const [permDoor, setPermDoor] = useState("");
   const [permVillage, setPermVillage] = useState("");
   const [permDistrict, setPermDistrict] = useState("");
-  const [permPincode, setPermPincode] = useState("");
+  const [permPin, setPermPin] = useState("");
 
-  // Validators
+  /* ---------------- Validators ---------------- */
   const vMobile = (v) => /^\d{10}$/.test(v);
   const vAadhar = (v) => /^\d{12}$/.test(v);
   const vPan = (v) => /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(v);
@@ -55,27 +54,23 @@ export default function PersonalDetails() {
     fatherFirst &&
     fatherLast &&
     dob &&
-    nationality &&
     gender &&
+    nationality &&
     vMobile(mobile) &&
     vAadhar(aadhar) &&
     vPan(pan) &&
-    currentFrom &&
-    currentTo &&
-    currentDoor &&
-    currentVillage &&
-    currentDistrict &&
-    vPin(currentPincode) &&
+    passport &&
+    curFrom &&
+    curTo &&
+    curDoor &&
+    curVillage &&
+    curDistrict &&
+    vPin(curPin) &&
     permFrom &&
     permDoor &&
     permVillage &&
     permDistrict &&
-    vPin(permPincode);
-
-  const handlePhoto = (file) => {
-    setPhoto(file);
-    setPhotoPreview(URL.createObjectURL(file));
-  };
+    vPin(permPin);
 
   const handleSave = () => {
     if (!allValid) return;
@@ -88,6 +83,7 @@ export default function PersonalDetails() {
         <ProgressBar currentStep={1} totalSteps={4} />
         <h1 style={styles.title}>Personal Details</h1>
 
+        {/* PHOTO */}
         <Section title="Profile Photo">
           <div style={{ textAlign: "center" }}>
             {photoPreview ? (
@@ -98,11 +94,14 @@ export default function PersonalDetails() {
             <input
               type="file"
               accept="image/*"
-              onChange={(e) => handlePhoto(e.target.files[0])}
+              onChange={(e) =>
+                setPhotoPreview(URL.createObjectURL(e.target.files[0]))
+              }
             />
           </div>
         </Section>
 
+        {/* NAME */}
         <Section title="Name">
           <Row>
             <Input label="First Name" value={firstName} onChange={setFirstName} />
@@ -111,6 +110,7 @@ export default function PersonalDetails() {
           </Row>
         </Section>
 
+        {/* FATHER */}
         <Section title="Father Name">
           <Row>
             <Input label="First Name" value={fatherFirst} onChange={setFatherFirst} />
@@ -119,31 +119,70 @@ export default function PersonalDetails() {
           </Row>
         </Section>
 
-        <Section title="Personal Info">
+        {/* PERSONAL */}
+        <Section title="Personal Information">
           <Row>
             <Input type="date" label="Date of Birth" value={dob} onChange={setDob} />
-            <Input label="Nationality" value={nationality} onChange={setNationality} />
             <Select label="Gender" value={gender} onChange={setGender} />
+            <Input label="Nationality" value={nationality} onChange={setNationality} />
+          </Row>
+
+          <Row>
+            <Input
+              label="Mobile Number"
+              value={mobile}
+              onChange={(v) => setMobile(v.replace(/\D/g, ""))}
+            />
+            <Input
+              label="Aadhaar Number"
+              value={aadhar}
+              onChange={(v) => setAadhar(v.replace(/\D/g, ""))}
+            />
+            <Input
+              label="PAN Number"
+              value={pan}
+              onChange={(v) => setPan(v.toUpperCase())}
+            />
+          </Row>
+
+          <Row>
+            <Input label="Passport Number" value={passport} onChange={setPassport} />
+          </Row>
+
+          <Row>
+            <File label="Upload Aadhaar" />
+            <File label="Upload PAN" />
           </Row>
         </Section>
 
+        {/* CURRENT ADDRESS */}
         <Section title="Current Address">
           <Row>
-            <Input type="date" label="Residing From" value={currentFrom} onChange={setCurrentFrom} />
-            <Input type="date" label="Residing To" value={currentTo} onChange={setCurrentTo} />
+            <Input type="date" label="Residing From" value={curFrom} onChange={setCurFrom} />
+            <Input type="date" label="Residing To" value={curTo} onChange={setCurTo} />
           </Row>
-          <Input label="Door & Street" value={currentDoor} onChange={setCurrentDoor} />
-          <Input label="Village / Mandal" value={currentVillage} onChange={setCurrentVillage} />
-          <Input label="District / State" value={currentDistrict} onChange={setCurrentDistrict} />
-          <Input label="Pincode" value={currentPincode} onChange={(v)=>setCurrentPincode(v.replace(/\D/g,""))} />
+
+          <Input label="Door & Street" value={curDoor} onChange={setCurDoor} />
+          <Input label="Village / Mandal" value={curVillage} onChange={setCurVillage} />
+          <Input label="District / State" value={curDistrict} onChange={setCurDistrict} />
+          <Input
+            label="Pincode"
+            value={curPin}
+            onChange={(v) => setCurPin(v.replace(/\D/g, ""))}
+          />
         </Section>
 
+        {/* PERMANENT ADDRESS */}
         <Section title="Permanent Address">
           <Input type="date" label="Residing From" value={permFrom} onChange={setPermFrom} />
           <Input label="Door & Street" value={permDoor} onChange={setPermDoor} />
           <Input label="Village / Mandal" value={permVillage} onChange={setPermVillage} />
           <Input label="District / State" value={permDistrict} onChange={setPermDistrict} />
-          <Input label="Pincode" value={permPincode} onChange={(v)=>setPermPincode(v.replace(/\D/g,""))} />
+          <Input
+            label="Pincode"
+            value={permPin}
+            onChange={(v) => setPermPin(v.replace(/\D/g, ""))}
+          />
         </Section>
 
         <button
@@ -161,7 +200,7 @@ export default function PersonalDetails() {
   );
 }
 
-/* ----------------- Small UI helpers ----------------- */
+/* ---------------- UI Helpers ---------------- */
 
 const Section = ({ title, children }) => (
   <div style={{ marginBottom: "2rem" }}>
@@ -198,6 +237,13 @@ const Select = ({ label, value, onChange }) => (
   </div>
 );
 
+const File = ({ label }) => (
+  <div style={{ flex: 1 }}>
+    <label style={styles.label}>{label}</label>
+    <input type="file" accept=".pdf,.jpg,.png,.jpeg" />
+  </div>
+);
+
 const styles = {
   page: {
     background: "#f1f5f9",
@@ -206,12 +252,12 @@ const styles = {
     fontFamily: "Inter, system-ui, sans-serif"
   },
   card: {
-    maxWidth: "900px",
+    maxWidth: "960px",
     margin: "auto",
     background: "#fff",
     padding: "2rem",
-    borderRadius: "12px",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.08)"
+    borderRadius: "14px",
+    boxShadow: "0 12px 30px rgba(0,0,0,0.08)"
   },
   title: {
     marginBottom: "2rem"
@@ -226,12 +272,12 @@ const styles = {
   },
   input: {
     width: "100%",
-    padding: "0.6rem",
+    padding: "0.65rem",
     borderRadius: "8px",
     border: "1px solid #cbd5e1"
   },
   button: {
-    padding: "0.9rem 2rem",
+    padding: "0.9rem 2.5rem",
     borderRadius: "10px",
     border: "none",
     color: "#fff",
