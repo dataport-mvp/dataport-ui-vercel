@@ -43,10 +43,10 @@ export default function PersonalDetails() {
   const [permPin, setPermPin] = useState("");
 
   /* ---------------- Validators ---------------- */
-  const vMobile = (v) => /^\d{10}$/.test(v);
-  const vAadhar = (v) => /^\d{12}$/.test(v);
-  const vPan = (v) => /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(v);
-  const vPin = (v) => /^\d{6}$/.test(v);
+  const validMobile = /^\d{10}$/.test(mobile);
+  const validAadhar = /^\d{12}$/.test(aadhar);
+  const validPan = /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan);
+  const validPin = (v) => /^\d{6}$/.test(v);
 
   const allValid =
     firstName &&
@@ -56,21 +56,21 @@ export default function PersonalDetails() {
     dob &&
     gender &&
     nationality &&
-    vMobile(mobile) &&
-    vAadhar(aadhar) &&
-    vPan(pan) &&
+    validMobile &&
+    validAadhar &&
+    validPan &&
     passport &&
     curFrom &&
     curTo &&
     curDoor &&
     curVillage &&
     curDistrict &&
-    vPin(curPin) &&
+    validPin(curPin) &&
     permFrom &&
     permDoor &&
     permVillage &&
     permDistrict &&
-    vPin(permPin);
+    validPin(permPin);
 
   const handleSave = () => {
     if (!allValid) return;
@@ -119,7 +119,7 @@ export default function PersonalDetails() {
           </Row>
         </Section>
 
-        {/* PERSONAL */}
+        {/* PERSONAL INFO */}
         <Section title="Personal Information">
           <Row>
             <Input type="date" label="Date of Birth" value={dob} onChange={setDob} />
@@ -134,24 +134,61 @@ export default function PersonalDetails() {
               onChange={(v) => setMobile(v.replace(/\D/g, ""))}
             />
             <Input
-              label="Aadhaar Number"
-              value={aadhar}
-              onChange={(v) => setAadhar(v.replace(/\D/g, ""))}
-            />
-            <Input
-              label="PAN Number"
-              value={pan}
-              onChange={(v) => setPan(v.toUpperCase())}
+              label="Passport Number"
+              value={passport}
+              onChange={setPassport}
             />
           </Row>
+        </Section>
 
+        {/* AADHAAR + PAN */}
+        <Section title="Identity Documents">
           <Row>
-            <Input label="Passport Number" value={passport} onChange={setPassport} />
-          </Row>
+            {/* Aadhaar */}
+            <div style={{ flex: 1 }}>
+              <Input
+                label="Aadhaar Number"
+                value={aadhar}
+                onChange={(v) => {
+                  const digits = v.replace(/\D/g, "");
+                  if (digits.length <= 12) setAadhar(digits);
+                }}
+              />
+              {aadhar && aadhar.length !== 12 && (
+                <p style={styles.error}>Aadhaar must be exactly 12 digits</p>
+              )}
+              <File label="Upload Aadhaar" />
+            </div>
 
-          <Row>
-            <File label="Upload Aadhaar" />
-            <File label="Upload PAN" />
+            {/* PAN */}
+            <div style={{ flex: 1 }}>
+              <Input
+                label="PAN Number"
+                value={pan}
+                onChange={(v) => {
+                  let value = v.toUpperCase();
+
+                  if (value.length <= 5) {
+                    value = value.replace(/[^A-Z]/g, "");
+                  } else if (value.length <= 9) {
+                    value =
+                      value.slice(0, 5).replace(/[^A-Z]/g, "") +
+                      value.slice(5).replace(/[^0-9]/g, "");
+                  } else if (value.length <= 10) {
+                    value =
+                      value.slice(0, 5).replace(/[^A-Z]/g, "") +
+                      value.slice(5, 9).replace(/[^0-9]/g, "") +
+                      value.slice(9).replace(/[^A-Z]/g, "");
+                  }
+
+                  setPan(value);
+                }}
+              />
+              {pan && pan.length !== 10 && (
+                <p style={styles.error}>PAN format: AAAAA9999A</p>
+              )}
+              <File label="Upload PAN" />
+            </div>
           </Row>
         </Section>
 
@@ -200,7 +237,7 @@ export default function PersonalDetails() {
   );
 }
 
-/* ---------------- UI Helpers ---------------- */
+/* ---------------- UI HELPERS ---------------- */
 
 const Section = ({ title, children }) => (
   <div style={{ marginBottom: "2rem" }}>
@@ -238,11 +275,13 @@ const Select = ({ label, value, onChange }) => (
 );
 
 const File = ({ label }) => (
-  <div style={{ flex: 1 }}>
+  <div>
     <label style={styles.label}>{label}</label>
-    <input type="file" accept=".pdf,.jpg,.png,.jpeg" />
+    <input type="file" accept=".pdf,.jpg,.jpeg,.png" />
   </div>
 );
+
+/* ---------------- STYLES ---------------- */
 
 const styles = {
   page: {
@@ -252,7 +291,7 @@ const styles = {
     fontFamily: "Inter, system-ui, sans-serif"
   },
   card: {
-    maxWidth: "960px",
+    maxWidth: "980px",
     margin: "auto",
     background: "#fff",
     padding: "2rem",
@@ -300,5 +339,10 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     marginBottom: "0.5rem"
+  },
+  error: {
+    color: "#dc2626",
+    fontSize: "0.8rem",
+    marginTop: "0.25rem"
   }
 };
