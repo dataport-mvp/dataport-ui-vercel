@@ -21,6 +21,8 @@ export default function PersonalDetails() {
   const [dob, setDob] = useState("");
   const [gender, setGender] = useState("");
   const [nationality, setNationality] = useState("");
+
+  // INDIA ONLY
   const [mobile, setMobile] = useState("");
 
   const [aadhar, setAadhar] = useState("");
@@ -42,38 +44,8 @@ export default function PersonalDetails() {
   const [permDistrict, setPermDistrict] = useState("");
   const [permPin, setPermPin] = useState("");
 
-  /* ---------------- Validators ---------------- */
-  const validMobile = /^\d{10}$/.test(mobile);
-  const validAadhar = /^\d{12}$/.test(aadhar);
-  const validPan = /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan);
-  const validPin = (v) => /^\d{6}$/.test(v);
-
-  const allValid =
-    firstName &&
-    lastName &&
-    fatherFirst &&
-    fatherLast &&
-    dob &&
-    gender &&
-    nationality &&
-    validMobile &&
-    validAadhar &&
-    validPan &&
-    passport &&
-    curFrom &&
-    curTo &&
-    curDoor &&
-    curVillage &&
-    curDistrict &&
-    validPin(curPin) &&
-    permFrom &&
-    permDoor &&
-    permVillage &&
-    permDistrict &&
-    validPin(permPin);
-
+  /* ---------------- TEMP: allow navigation ---------------- */
   const handleSave = () => {
-    if (!allValid) return;
     router.push("/employee/education");
   };
 
@@ -128,11 +100,29 @@ export default function PersonalDetails() {
           </Row>
 
           <Row>
-            <Input
-              label="Mobile Number"
-              value={mobile}
-              onChange={(v) => setMobile(v.replace(/\D/g, ""))}
-            />
+            {/* INDIA MOBILE */}
+            <div style={{ flex: 1 }}>
+              <label style={styles.label}>Mobile Number (India)</label>
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <input
+                  value="+91"
+                  disabled
+                  style={{ ...styles.input, maxWidth: "80px", background: "#e5e7eb" }}
+                />
+                <input
+                  value={mobile}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, "");
+                    if (digits.length <= 10) setMobile(digits);
+                  }}
+                  style={styles.input}
+                />
+              </div>
+              {mobile && mobile.length !== 10 && (
+                <p style={styles.error}>Mobile number must be exactly 10 digits</p>
+              )}
+            </div>
+
             <Input
               label="Passport Number"
               value={passport}
@@ -224,11 +214,7 @@ export default function PersonalDetails() {
 
         <button
           onClick={handleSave}
-          disabled={!allValid}
-          style={{
-            ...styles.button,
-            background: allValid ? "#2563eb" : "#cbd5e1"
-          }}
+          style={{ ...styles.button, background: "#2563eb" }}
         >
           Save & Proceed →
         </button>
@@ -346,3 +332,4 @@ const styles = {
     marginTop: "0.25rem"
   }
 };
+
