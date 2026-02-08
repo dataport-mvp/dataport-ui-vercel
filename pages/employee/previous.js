@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import ProgressBar from "../../components/ProgressBar";
 
-/* ---------- STYLES (LOCKED) ---------- */
+/* ---------- STYLES ---------- */
 const styles = {
   page: {
     background: "#f1f5f9",
@@ -41,6 +41,14 @@ const styles = {
     border: "1px solid #cbd5e1",
     background: "#f8fafc",
     cursor: "pointer"
+  },
+  addBtn: {
+    marginBottom: "2rem",
+    padding: "0.6rem 1.2rem",
+    borderRadius: "8px",
+    border: "1px dashed #cbd5e1",
+    background: "#f8fafc",
+    cursor: "pointer"
   }
 };
 
@@ -58,25 +66,23 @@ const Row = ({ children }) => (
   </div>
 );
 
-const Input = ({ label, value, onChange, type = "text", disabled }) => (
+const Input = ({ label, value, onChange, type = "text" }) => (
   <div style={{ flex: 1, minWidth: "200px" }}>
     <label style={styles.label}>{label}</label>
     <input
       type={type}
       value={value || ""}
-      disabled={disabled}
       onChange={(e) => onChange(e.target.value)}
       style={styles.input}
     />
   </div>
 );
 
-const Select = ({ label, value, onChange, options, disabled }) => (
+const Select = ({ label, value, onChange, options }) => (
   <div style={{ flex: 1, minWidth: "200px" }}>
     <label style={styles.label}>{label}</label>
     <select
       value={value}
-      disabled={disabled}
       onChange={(e) => onChange(e.target.value)}
       style={styles.input}
     >
@@ -95,54 +101,49 @@ export default function PreviousCompany() {
   const emptyEmployment = {
     status: "",
     companyName: "",
-    location: "",
-    employeeId: "",
-    officialEmail: "",
     fromDate: "",
     toDate: "",
     designation: "",
     department: "",
     employmentType: "",
-    vendorName: "",
-    clientCompany: "",
-    vendorEmail: "",
-    supervisorName: "",
-    supervisorEmail: "",
-    supervisorTitle: "",
+    reasonForLeaving: "",
+    referenceName: "",
+    referenceEmail: "",
+    referenceType: "",
     payslips: [],
     offerLetter: null,
     resignationLetter: null,
     experienceLetter: null
   };
 
-  const [employments, setEmployments] = useState([emptyEmployment]);
-
-  const updateEmployment = (index, field, value) => {
-    const updated = [...employments];
-    updated[index][field] = value;
-    setEmployments(updated);
+  const emptyGap = {
+    fromDate: "",
+    toDate: "",
+    reason: ""
   };
 
-  const addEmployer = () => {
-    if (employments.length >= 5) return;
+  const [employments, setEmployments] = useState([emptyEmployment]);
+  const [hasGaps, setHasGaps] = useState("");
+  const [gaps, setGaps] = useState([]);
+
+  const updateEmployment = (i, field, value) => {
+    const copy = [...employments];
+    copy[i][field] = value;
+    setEmployments(copy);
+  };
+
+  const addEmployment = () => {
     setEmployments([...employments, { ...emptyEmployment, status: "Previous" }]);
   };
 
-  const handlePayslipUpload = (index, files) => {
-    const updated = [...employments];
-    updated[index].payslips = [
-      ...updated[index].payslips,
-      ...Array.from(files)
-    ];
-    setEmployments(updated);
+  const updateGap = (i, field, value) => {
+    const copy = [...gaps];
+    copy[i][field] = value;
+    setGaps(copy);
   };
 
-  const removePayslip = (empIndex, fileIndex) => {
-    const updated = [...employments];
-    updated[empIndex].payslips = updated[empIndex].payslips.filter(
-      (_, i) => i !== fileIndex
-    );
-    setEmployments(updated);
+  const addGap = () => {
+    setGaps([...gaps, emptyGap]);
   };
 
   const handleSave = () => {
@@ -154,7 +155,7 @@ export default function PreviousCompany() {
       <ProgressBar currentStep={3} totalSteps={4} />
 
       <div style={styles.card}>
-        <h1 style={styles.title}>Employment Details</h1>
+        <h1 style={styles.title}>Employment History</h1>
 
         {employments.map((emp, index) => (
           <Section key={index} title={`Employment ${index + 1}`}>
@@ -164,7 +165,6 @@ export default function PreviousCompany() {
                 value={emp.status}
                 onChange={(v) => updateEmployment(index, "status", v)}
                 options={index === 0 ? ["Current", "Previous"] : ["Previous"]}
-                disabled={index !== 0}
               />
               <Input
                 label="Company Name"
@@ -181,11 +181,7 @@ export default function PreviousCompany() {
                 onChange={(v) => updateEmployment(index, "fromDate", v)}
               />
               <Input
-                label={
-                  emp.status === "Current"
-                    ? "Expected End Date (optional)"
-                    : "End Date"
-                }
+                label={emp.status === "Current" ? "Expected End Date" : "End Date"}
                 type="month"
                 value={emp.toDate}
                 onChange={(v) => updateEmployment(index, "toDate", v)}
@@ -212,75 +208,46 @@ export default function PreviousCompany() {
               options={["Full-time", "Intern", "Contract"]}
             />
 
-            {emp.employmentType === "Contract" && (
-              <Section title="Contract Details">
-                <Row>
-                  <Input
-                    label="Vendor Company"
-                    value={emp.vendorName}
-                    onChange={(v) => updateEmployment(index, "vendorName", v)}
-                  />
-                  <Input
-                    label="Client Company"
-                    value={emp.clientCompany}
-                    onChange={(v) => updateEmployment(index, "clientCompany", v)}
-                  />
-                </Row>
-                <Input
-                  label="Vendor Contact Email"
-                  type="email"
-                  value={emp.vendorEmail}
-                  onChange={(v) => updateEmployment(index, "vendorEmail", v)}
-                />
-              </Section>
-            )}
+            <Input
+              label="Reason for Leaving / Relieving"
+              value={emp.reasonForLeaving}
+              onChange={(v) => updateEmployment(index, "reasonForLeaving", v)}
+            />
 
-            <Section title="Supervisor Details">
+            <Section title="Reference Details">
               <Row>
                 <Input
-                  label="Supervisor Name"
-                  value={emp.supervisorName}
-                  onChange={(v) => updateEmployment(index, "supervisorName", v)}
+                  label="Reference Name"
+                  value={emp.referenceName}
+                  onChange={(v) => updateEmployment(index, "referenceName", v)}
                 />
                 <Input
-                  label="Supervisor Email"
-                  type="email"
-                  value={emp.supervisorEmail}
-                  onChange={(v) => updateEmployment(index, "supervisorEmail", v)}
+                  label="Reference Email"
+                  value={emp.referenceEmail}
+                  onChange={(v) => updateEmployment(index, "referenceEmail", v)}
                 />
               </Row>
-              <Input
-                label="Supervisor Designation"
-                value={emp.supervisorTitle}
-                onChange={(v) => updateEmployment(index, "supervisorTitle", v)}
+              <Select
+                label="Reference Type"
+                value={emp.referenceType}
+                onChange={(v) => updateEmployment(index, "referenceType", v)}
+                options={["Manager", "Colleague", "HR", "Client"]}
               />
             </Section>
 
             <Section title="Documents">
+              <label style={styles.label}>Payslips</label>
               <input
                 type="file"
                 multiple
                 accept=".pdf,.jpg,.jpeg,.png"
                 onChange={(e) =>
-                  handlePayslipUpload(index, e.target.files)
+                  updateEmployment(index, "payslips", Array.from(e.target.files))
                 }
               />
 
-              {emp.payslips.map((file, i) => (
-                <div key={i}>
-                  {file.name}
-                  <button
-                    type="button"
-                    onClick={() => removePayslip(index, i)}
-                    style={{ marginLeft: "1rem", color: "red", background: "none", border: "none" }}
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-
               <Input
-                label="Offer Letter (optional)"
+                label="Offer Letter"
                 type="file"
                 onChange={(e) =>
                   updateEmployment(index, "offerLetter", e.target.files[0])
@@ -288,7 +255,7 @@ export default function PreviousCompany() {
               />
 
               <Input
-                label="Resignation Acceptance (optional)"
+                label="Resignation Acceptance"
                 type="file"
                 onChange={(e) =>
                   updateEmployment(index, "resignationLetter", e.target.files[0])
@@ -296,7 +263,7 @@ export default function PreviousCompany() {
               />
 
               <Input
-                label="Experience / Relieving Letter (optional)"
+                label="Experience / Relieving Letter"
                 type="file"
                 onChange={(e) =>
                   updateEmployment(index, "experienceLetter", e.target.files[0])
@@ -306,15 +273,50 @@ export default function PreviousCompany() {
           </Section>
         ))}
 
-        {employments.length < 5 && (
-          <button
-            type="button"
-            onClick={addEmployer}
-            style={{ marginBottom: "2rem" }}
-          >
-            + Add Another Employer
-          </button>
-        )}
+        <button style={styles.addBtn} onClick={addEmployment}>
+          + Add Another Employer
+        </button>
+
+        <Section title="Employment Gaps">
+          <Select
+            label="Did you have any employment gaps?"
+            value={hasGaps}
+            onChange={setHasGaps}
+            options={["Yes", "No"]}
+          />
+
+          {hasGaps === "Yes" && (
+            <>
+              {gaps.map((gap, index) => (
+                <Section key={index} title={`Gap ${index + 1}`}>
+                  <Row>
+                    <Input
+                      label="Gap From Date"
+                      type="month"
+                      value={gap.fromDate}
+                      onChange={(v) => updateGap(index, "fromDate", v)}
+                    />
+                    <Input
+                      label="Gap To Date"
+                      type="month"
+                      value={gap.toDate}
+                      onChange={(v) => updateGap(index, "toDate", v)}
+                    />
+                  </Row>
+                  <Input
+                    label="Reason for Gap"
+                    value={gap.reason}
+                    onChange={(v) => updateGap(index, "reason", v)}
+                  />
+                </Section>
+              ))}
+
+              <button style={styles.addBtn} onClick={addGap}>
+                + Add Gap
+              </button>
+            </>
+          )}
+        </Section>
 
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <button style={styles.secondaryBtn} onClick={() => router.back()}>
