@@ -1,10 +1,3 @@
-Alright Manoj, let’s redesign the **Personal Details page** exactly as you described — with a clean, eye‑catchy layout, proper grouping of fields, and a right‑side section for photo upload. I’ll also remove the employee code generation here (we’ll add it at the final page later).  
-
----
-
-## ��� `pages/employee/personal.js`
-
-```javascript
 import { useState } from "react";
 import { useRouter } from "next/router";
 import ProgressBar from "../../components/ProgressBar";
@@ -142,4 +135,3 @@ export default function PersonalDetails() {
         <input type="date" value={permTo} onChange={(e) => setPermTo(e.target.value)} /><br /><br />
 
         <input type="text" placeholder
-
