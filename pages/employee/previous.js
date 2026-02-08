@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import ProgressBar from "../../components/ProgressBar";
 
-/* ---------- BASE STYLES (LOCKED) ---------- */
+/* ---------- STYLES (LOCKED) ---------- */
 const styles = {
   page: {
     background: "#f1f5f9",
@@ -18,17 +18,9 @@ const styles = {
     borderRadius: "14px",
     boxShadow: "0 12px 30px rgba(0,0,0,0.08)"
   },
-  title: {
-    marginBottom: "2rem"
-  },
-  sectionTitle: {
-    marginBottom: "1rem",
-    color: "#0f172a"
-  },
-  label: {
-    fontSize: "0.85rem",
-    color: "#475569"
-  },
+  title: { marginBottom: "2rem" },
+  sectionTitle: { marginBottom: "1rem", color: "#0f172a" },
+  label: { fontSize: "0.85rem", color: "#475569" },
   input: {
     width: "100%",
     padding: "0.65rem",
@@ -52,7 +44,7 @@ const styles = {
   }
 };
 
-/* ---------- HELPERS (LOCKED) ---------- */
+/* ---------- HELPERS ---------- */
 const Section = ({ title, children }) => (
   <div style={{ marginBottom: "2rem" }}>
     <h2 style={styles.sectionTitle}>{title}</h2>
@@ -71,7 +63,7 @@ const Input = ({ label, value, onChange, type = "text", disabled }) => (
     <label style={styles.label}>{label}</label>
     <input
       type={type}
-      value={value}
+      value={value || ""}
       disabled={disabled}
       onChange={(e) => onChange(e.target.value)}
       style={styles.input}
@@ -79,11 +71,12 @@ const Input = ({ label, value, onChange, type = "text", disabled }) => (
   </div>
 );
 
-const Select = ({ label, value, onChange, options }) => (
+const Select = ({ label, value, onChange, options, disabled }) => (
   <div style={{ flex: 1, minWidth: "200px" }}>
     <label style={styles.label}>{label}</label>
     <select
       value={value}
+      disabled={disabled}
       onChange={(e) => onChange(e.target.value)}
       style={styles.input}
     >
@@ -99,34 +92,57 @@ const Select = ({ label, value, onChange, options }) => (
 export default function PreviousCompany() {
   const router = useRouter();
 
-  const [employmentStatus, setEmploymentStatus] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [location, setLocation] = useState("");
-  const [employeeId, setEmployeeId] = useState("");
-  const [officialEmail, setOfficialEmail] = useState("");
-
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
-  const [designation, setDesignation] = useState("");
-  const [department, setDepartment] = useState("");
-  const [employmentType, setEmploymentType] = useState("");
-
-  const [vendorName, setVendorName] = useState("");
-  const [clientCompany, setClientCompany] = useState("");
-  const [vendorEmail, setVendorEmail] = useState("");
-
-  const [supervisorName, setSupervisorName] = useState("");
-  const [supervisorEmail, setSupervisorEmail] = useState("");
-  const [supervisorTitle, setSupervisorTitle] = useState("");
-
-  const [payslips, setPayslips] = useState([]);
-
-  const handlePayslipUpload = (files) => {
-    setPayslips([...payslips, ...Array.from(files)]);
+  const emptyEmployment = {
+    status: "",
+    companyName: "",
+    location: "",
+    employeeId: "",
+    officialEmail: "",
+    fromDate: "",
+    toDate: "",
+    designation: "",
+    department: "",
+    employmentType: "",
+    vendorName: "",
+    clientCompany: "",
+    vendorEmail: "",
+    supervisorName: "",
+    supervisorEmail: "",
+    supervisorTitle: "",
+    payslips: [],
+    offerLetter: null,
+    resignationLetter: null,
+    experienceLetter: null
   };
 
-  const removePayslip = (index) => {
-    setPayslips(payslips.filter((_, i) => i !== index));
+  const [employments, setEmployments] = useState([emptyEmployment]);
+
+  const updateEmployment = (index, field, value) => {
+    const updated = [...employments];
+    updated[index][field] = value;
+    setEmployments(updated);
+  };
+
+  const addEmployer = () => {
+    if (employments.length >= 5) return;
+    setEmployments([...employments, { ...emptyEmployment, status: "Previous" }]);
+  };
+
+  const handlePayslipUpload = (index, files) => {
+    const updated = [...employments];
+    updated[index].payslips = [
+      ...updated[index].payslips,
+      ...Array.from(files)
+    ];
+    setEmployments(updated);
+  };
+
+  const removePayslip = (empIndex, fileIndex) => {
+    const updated = [...employments];
+    updated[empIndex].payslips = updated[empIndex].payslips.filter(
+      (_, i) => i !== fileIndex
+    );
+    setEmployments(updated);
   };
 
   const handleSave = () => {
@@ -140,114 +156,166 @@ export default function PreviousCompany() {
       <div style={styles.card}>
         <h1 style={styles.title}>Employment Details</h1>
 
-        {/* Employment Overview */}
-        <Section title="Employment Overview">
-          <Row>
-            <Select
-              label="Employment Status"
-              value={employmentStatus}
-              onChange={setEmploymentStatus}
-              options={["Current", "Previous"]}
-            />
-            <Input label="Company Name" value={companyName} onChange={setCompanyName} />
-          </Row>
-
-          <Row>
-            <Input label="Work Location (City, Country)" value={location} onChange={setLocation} />
-            <Input label="Employee ID / Code" value={employeeId} onChange={setEmployeeId} />
-          </Row>
-
-          <Input
-            label="Official Company Email"
-            value={officialEmail}
-            onChange={setOfficialEmail}
-            type="email"
-          />
-        </Section>
-
-        {/* Duration & Role */}
-        <Section title="Duration & Role">
-          <Row>
-            <Input label="From Date" type="month" value={fromDate} onChange={setFromDate} />
-            <Input
-              label="To Date"
-              type="month"
-              value={employmentStatus === "Current" ? "Present" : toDate}
-              onChange={setToDate}
-              disabled={employmentStatus === "Current"}
-            />
-          </Row>
-
-          <Row>
-            <Input label="Designation / Job Title" value={designation} onChange={setDesignation} />
-            <Input label="Department / Field" value={department} onChange={setDepartment} />
-          </Row>
-
-          <Select
-            label="Type of Employment"
-            value={employmentType}
-            onChange={setEmploymentType}
-            options={["Full-time", "Intern", "Contract"]}
-          />
-        </Section>
-
-        {/* Contract Details */}
-        {employmentType === "Contract" && (
-          <Section title="Contract / Vendor Details">
+        {employments.map((emp, index) => (
+          <Section key={index} title={`Employment ${index + 1}`}>
             <Row>
-              <Input label="Vendor Company Name" value={vendorName} onChange={setVendorName} />
-              <Input label="Client Company Name" value={clientCompany} onChange={setClientCompany} />
+              <Select
+                label="Employment Status"
+                value={emp.status}
+                onChange={(v) => updateEmployment(index, "status", v)}
+                options={index === 0 ? ["Current", "Previous"] : ["Previous"]}
+                disabled={index !== 0}
+              />
+              <Input
+                label="Company Name"
+                value={emp.companyName}
+                onChange={(v) => updateEmployment(index, "companyName", v)}
+              />
             </Row>
-            <Input
-              label="Vendor Contact Email"
-              value={vendorEmail}
-              onChange={setVendorEmail}
-              type="email"
+
+            <Row>
+              <Input
+                label="From Date"
+                type="month"
+                value={emp.fromDate}
+                onChange={(v) => updateEmployment(index, "fromDate", v)}
+              />
+              <Input
+                label={
+                  emp.status === "Current"
+                    ? "Expected End Date (optional)"
+                    : "End Date"
+                }
+                type="month"
+                value={emp.toDate}
+                onChange={(v) => updateEmployment(index, "toDate", v)}
+              />
+            </Row>
+
+            <Row>
+              <Input
+                label="Designation"
+                value={emp.designation}
+                onChange={(v) => updateEmployment(index, "designation", v)}
+              />
+              <Input
+                label="Department / Field"
+                value={emp.department}
+                onChange={(v) => updateEmployment(index, "department", v)}
+              />
+            </Row>
+
+            <Select
+              label="Type of Employment"
+              value={emp.employmentType}
+              onChange={(v) => updateEmployment(index, "employmentType", v)}
+              options={["Full-time", "Intern", "Contract"]}
             />
+
+            {emp.employmentType === "Contract" && (
+              <Section title="Contract Details">
+                <Row>
+                  <Input
+                    label="Vendor Company"
+                    value={emp.vendorName}
+                    onChange={(v) => updateEmployment(index, "vendorName", v)}
+                  />
+                  <Input
+                    label="Client Company"
+                    value={emp.clientCompany}
+                    onChange={(v) => updateEmployment(index, "clientCompany", v)}
+                  />
+                </Row>
+                <Input
+                  label="Vendor Contact Email"
+                  type="email"
+                  value={emp.vendorEmail}
+                  onChange={(v) => updateEmployment(index, "vendorEmail", v)}
+                />
+              </Section>
+            )}
+
+            <Section title="Supervisor Details">
+              <Row>
+                <Input
+                  label="Supervisor Name"
+                  value={emp.supervisorName}
+                  onChange={(v) => updateEmployment(index, "supervisorName", v)}
+                />
+                <Input
+                  label="Supervisor Email"
+                  type="email"
+                  value={emp.supervisorEmail}
+                  onChange={(v) => updateEmployment(index, "supervisorEmail", v)}
+                />
+              </Row>
+              <Input
+                label="Supervisor Designation"
+                value={emp.supervisorTitle}
+                onChange={(v) => updateEmployment(index, "supervisorTitle", v)}
+              />
+            </Section>
+
+            <Section title="Documents">
+              <input
+                type="file"
+                multiple
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) =>
+                  handlePayslipUpload(index, e.target.files)
+                }
+              />
+
+              {emp.payslips.map((file, i) => (
+                <div key={i}>
+                  {file.name}
+                  <button
+                    type="button"
+                    onClick={() => removePayslip(index, i)}
+                    style={{ marginLeft: "1rem", color: "red", background: "none", border: "none" }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+
+              <Input
+                label="Offer Letter (optional)"
+                type="file"
+                onChange={(e) =>
+                  updateEmployment(index, "offerLetter", e.target.files[0])
+                }
+              />
+
+              <Input
+                label="Resignation Acceptance (optional)"
+                type="file"
+                onChange={(e) =>
+                  updateEmployment(index, "resignationLetter", e.target.files[0])
+                }
+              />
+
+              <Input
+                label="Experience / Relieving Letter (optional)"
+                type="file"
+                onChange={(e) =>
+                  updateEmployment(index, "experienceLetter", e.target.files[0])
+                }
+              />
+            </Section>
           </Section>
+        ))}
+
+        {employments.length < 5 && (
+          <button
+            type="button"
+            onClick={addEmployer}
+            style={{ marginBottom: "2rem" }}
+          >
+            + Add Another Employer
+          </button>
         )}
 
-        {/* Supervisor */}
-        <Section title="Supervisor Details">
-          <Row>
-            <Input label="Supervisor Name" value={supervisorName} onChange={setSupervisorName} />
-            <Input
-              label="Supervisor Email"
-              value={supervisorEmail}
-              onChange={setSupervisorEmail}
-              type="email"
-            />
-          </Row>
-          <Input
-            label="Supervisor Designation"
-            value={supervisorTitle}
-            onChange={setSupervisorTitle}
-          />
-        </Section>
-
-        {/* Documents */}
-        <Section title="Payslips (Last 3 Months)">
-          <input
-            type="file"
-            accept=".pdf,.jpg,.jpeg,.png"
-            multiple
-            onChange={(e) => handlePayslipUpload(e.target.files)}
-          />
-
-          {payslips.map((file, index) => (
-            <div key={index} style={{ marginTop: "0.5rem" }}>
-              📄 {file.name}
-              <button
-                onClick={() => removePayslip(index)}
-                style={{ marginLeft: "1rem", color: "red", border: "none", background: "none", cursor: "pointer" }}
-              >
-                Remove
-              </button>
-            </div>
-          ))}
-        </Section>
-
-        {/* Navigation */}
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <button style={styles.secondaryBtn} onClick={() => router.back()}>
             Previous
