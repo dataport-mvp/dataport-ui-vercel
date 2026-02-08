@@ -236,7 +236,7 @@ export default function PreviousCompany() {
 
           {payslips.map((file, index) => (
             <div key={index} style={{ marginTop: "0.5rem" }}>
-              í³„ {file.name}
+              ðŸ“„ {file.name}
               <button
                 onClick={() => removePayslip(index)}
                 style={{ marginLeft: "1rem", color: "red", border: "none", background: "none", cursor: "pointer" }}
@@ -260,4 +260,3 @@ export default function PreviousCompany() {
     </div>
   );
 }
-
