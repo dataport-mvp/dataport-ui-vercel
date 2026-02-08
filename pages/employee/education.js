@@ -1,29 +1,41 @@
 import { useRouter } from "next/router";
 import ProgressBar from "../../components/ProgressBar";
 
-export default function Education() {
+export default function EducationDetails() {
   const router = useRouter();
-
-  const handleSave = () => {
-    router.push("/employee/previous");
-  };
 
   return (
     <div style={{ padding: "2rem", background: "#f0f4f8", minHeight: "100vh" }}>
       <ProgressBar currentStep={2} totalSteps={4} />
       <h1>Education Details</h1>
 
-      <label>Degree</label>
-      <input type="text" placeholder="Enter Degree" /><br /><br />
+      <h2>Class X</h2>
+      <input type="text" placeholder="School Name" /><br />
+      <input type="text" placeholder="Board Name" /><br />
+      <input type="file" /><br /><br />
 
-      <label>University</label>
-      <input type="text" placeholder="Enter University" /><br /><br />
+      <h2>Intermediate</h2>
+      <input type="text" placeholder="College Name" /><br />
+      <input type="text" placeholder="Board Name" /><br />
+      <input type="file" /><br /><br />
 
-      <div style={{ marginTop: "2rem" }}>
-        <button onClick={handleSave} style={{ padding: "1rem 2rem", fontSize: "1.2rem" }}>
-          Save & Next
-        </button>
-      </div>
+      <h2>UG</h2>
+      <input type="text" placeholder="College Name" /><br />
+      <input type="text" placeholder="Board Name" /><br />
+      <input type="file" /><br /><br />
+
+      <h2>PG</h2>
+      <input type="text" placeholder="College Name" /><br />
+      <input type="text" placeholder="Board Name" /><br />
+      <input type="file" /><br /><br />
+
+      {/* Navigation */}
+      <button onClick={() => router.push("/employee/personal")} style={{ marginRight: "1rem" }}>
+        ⬅ Back
+      </button>
+      <button onClick={() => router.push("/employee/previous")}>
+        Next ➡
+      </button>
     </div>
   );
 }
