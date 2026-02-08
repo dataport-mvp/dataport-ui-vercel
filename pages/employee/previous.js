@@ -19,14 +19,13 @@ const styles = {
     boxShadow: "0 12px 30px rgba(0,0,0,0.08)"
   },
   title: { marginBottom: "2rem" },
-  sectionTitle: { marginBottom: "1rem", color: "#0f172a", fontSize: "1.25rem" },
+  sectionTitle: { marginBottom: "1rem", color: "#0f172a" },
   label: { fontSize: "0.85rem", color: "#475569" },
   input: {
     width: "100%",
     padding: "0.65rem",
     borderRadius: "8px",
-    border: "1px solid #cbd5e1",
-    boxSizing: "border-box"
+    border: "1px solid #cbd5e1"
   },
   primaryBtn: {
     padding: "0.9rem 2.5rem",
@@ -48,27 +47,19 @@ const styles = {
     borderRadius: "6px",
     border: "1px solid #cbd5e1",
     background: "#f8fafc",
-    cursor: "pointer",
-    height: "36px",
-    alignSelf: "center"
-  },
-  yesNo: (active) => ({
-    padding: "0.4rem 1rem",
-    borderRadius: "999px",
-    border: "1px solid #cbd5e1",
-    background: active ? "#2563eb" : "#f8fafc",
-    color: active ? "#fff" : "#000",
     cursor: "pointer"
-  }),
+  },
   employerCard: {
-    marginBottom: "1.25rem",
+    marginBottom: "1rem",
     padding: "1rem",
     borderRadius: "10px",
-    border: "1px solid #edf2f7",
-    background: "#ffffff"
+    border: "1px solid #edf2f7"
   },
-  headerRow: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", marginBottom: "0.75rem" },
-  headerTitle: { margin: 0, fontSize: "1.1rem", color: "#0f172a" }
+  headerRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center"
+  }
 };
 
 /* ---------- HELPERS ---------- */
@@ -96,7 +87,7 @@ const Select = ({ label, value, onChange, options }) => (
     <label style={styles.label}>{label}</label>
     <select value={value} onChange={(e) => onChange(e.target.value)} style={styles.input}>
       <option value="">Select</option>
-      {options.map((o) => <option key={o} value={o}>{o}</option>)}
+      {options.map((o) => <option key={o}>{o}</option>)}
     </select>
   </div>
 );
@@ -117,38 +108,23 @@ export default function PreviousCompany() {
     department: "",
     duties: "",
     employmentType: "",
-    reference: {
-      role: "",
-      name: "",
+    contractVendor: {
+      company: "",
       email: "",
       mobile: ""
-    },
-    documents: {
-      payslips: [],
-      offerLetter: null,
-      resignation: null,
-      experience: null
     }
   };
 
   const [employments, setEmployments] = useState([emptyEmployment]);
 
-  const update = (i, path, value) => {
-    // path is simple like "companyName" or "reference.name" or "documents.payslips"
-    const copy = JSON.parse(JSON.stringify(employments)); // deep copy to avoid mutation
-    const keys = path.split(".");
-    let obj = copy[i];
-    for (let k = 0; k < keys.length - 1; k++) {
-      if (!obj[keys[k]]) obj[keys[k]] = {};
-      obj = obj[keys[k]];
-    }
-    obj[keys[keys.length - 1]] = value;
+  const update = (i, field, value) => {
+    const copy = [...employments];
+    copy[i] = { ...copy[i], [field]: value };
     setEmployments(copy);
   };
 
   const addEmployer = () => {
-    setEmployments([...employments, JSON.parse(JSON.stringify(emptyEmployment))]);
-    // scroll not handled here; keep it simple
+    setEmployments([...employments, { ...emptyEmployment }]);
   };
 
   const toggleExpanded = (i) => {
@@ -157,27 +133,12 @@ export default function PreviousCompany() {
     setEmployments(copy);
   };
 
-  const handleFileChange = (i, path, files) => {
-    // files: FileList
-    const arr = Array.from(files || []);
-    update(i, path, arr);
-  };
-
-  const handleSingleFileChange = (i, path, file) => {
-    update(i, path, file || null);
-  };
-
-  const [declarations, setDeclarations] = useState({
-    business: { value: "", note: "" },
-    dismissed: { value: "", note: "" },
-    criminal: { value: "", note: "", prosecution: "" },
-    civil: { value: "", note: "" }
-  });
-
-  const handleSave = () => {
-    // For now just navigate to next step; persist later
-    router.push("/employee/uan");
-  };
+  const hasAnyData = (emp) =>
+    emp.companyName ||
+    emp.employeeId ||
+    emp.workEmail ||
+    emp.designation ||
+    emp.department;
 
   return (
     <div style={styles.page}>
@@ -186,167 +147,89 @@ export default function PreviousCompany() {
       <div style={styles.card}>
         <h1 style={styles.title}>Employment History</h1>
 
-        {/* EMPLOYER CARDS */}
-        {employments.map((emp, index) => (
-          <div key={index} style={styles.employerCard}>
-            <div style={styles.headerRow}>
-              <h3 style={styles.headerTitle}>{index === 0 ? "Current Employer" : "Previous Employer"}</h3>
-              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                <button
-                  style={styles.toggleBtn}
-                  onClick={() => toggleExpanded(index)}
-                  aria-label={emp.expanded ? "Collapse employer" : "Expand employer"}
-                >
+        {employments.map((emp, index) => {
+          // 🔑 KEY FIX: hide empty collapsed employers
+          if (!emp.expanded && !hasAnyData(emp)) return null;
+
+          return (
+            <div key={index} style={styles.employerCard}>
+              <div style={styles.headerRow}>
+                <h3>{index === 0 ? "Current Employer" : "Previous Employer"}</h3>
+                <button style={styles.toggleBtn} onClick={() => toggleExpanded(index)}>
                   {emp.expanded ? "−" : "+"}
                 </button>
               </div>
-            </div>
 
-            {emp.expanded && (
-              <>
-                <Row>
-                  <Input label="Company Name" value={emp.companyName} onChange={(v) => update(index, "companyName", v)} />
-                  <Input label="Office Address" value={emp.officeAddress} onChange={(v) => update(index, "officeAddress", v)} />
-                </Row>
-
-                <Row>
-                  <Input label="Employee ID" value={emp.employeeId} onChange={(v) => update(index, "employeeId", v)} />
-                  <Input label="Official Work Email" value={emp.workEmail} onChange={(v) => update(index, "workEmail", v)} type="email" />
-                </Row>
-
-                <Row>
-                  <Input label="From Date" value={emp.fromDate} type="month" onChange={(v) => update(index, "fromDate", v)} />
-                  <Input label="To Date / Expected End Date" value={emp.toDate} type="month" onChange={(v) => update(index, "toDate", v)} />
-                </Row>
-
-                <Row>
-                  <Input label="Designation / Job Title" value={emp.designation} onChange={(v) => update(index, "designation", v)} />
-                  <Input label="Department / Functional Area" value={emp.department} onChange={(v) => update(index, "department", v)} />
-                </Row>
-
-                <Row>
-                  <Input label="Duties & Responsibilities" value={emp.duties} onChange={(v) => update(index, "duties", v)} />
-                  <Select
-                    label="Employment Type"
-                    value={emp.employmentType}
-                    onChange={(v) => update(index, "employmentType", v)}
-                    options={["Full-time", "Intern", "Contract"]}
-                  />
-                </Row>
-
-                {/* Reference */}
-                <div style={{ marginTop: "0.6rem", marginBottom: "0.6rem" }}>
-                  <h4 style={{ margin: 0, marginBottom: "0.5rem", color: "#0f172a" }}>Reference Details</h4>
+              {emp.expanded && (
+                <>
                   <Row>
+                    <Input label="Company Name" value={emp.companyName} onChange={(v) => update(index, "companyName", v)} />
+                    <Input label="Office Address" value={emp.officeAddress} onChange={(v) => update(index, "officeAddress", v)} />
+                  </Row>
+
+                  <Row>
+                    <Input label="Employee ID" value={emp.employeeId} onChange={(v) => update(index, "employeeId", v)} />
+                    <Input label="Official Work Email" value={emp.workEmail} onChange={(v) => update(index, "workEmail", v)} />
+                  </Row>
+
+                  <Row>
+                    <Input label="Designation" value={emp.designation} onChange={(v) => update(index, "designation", v)} />
+                    <Input label="Department" value={emp.department} onChange={(v) => update(index, "department", v)} />
+                  </Row>
+
+                  <Row>
+                    <Input label="Duties & Responsibilities" value={emp.duties} onChange={(v) => update(index, "duties", v)} />
                     <Select
-                      label="Reference Role"
-                      value={emp.reference.role}
-                      onChange={(v) => update(index, "reference.role", v)}
-                      options={["Manager", "Colleague", "HR", "Client"]}
-                    />
-                    <Input label="Reference Name" value={emp.reference.name} onChange={(v) => update(index, "reference.name", v)} />
-                  </Row>
-                  <Row>
-                    <Input label="Reference Email" value={emp.reference.email} onChange={(v) => update(index, "reference.email", v)} type="email" />
-                    <Input
-                      label="Reference Mobile (India)"
-                      value={emp.reference.mobile}
-                      maxLength={10}
-                      onChange={(v) => {
-                        if (/^\d*$/.test(v)) update(index, "reference.mobile", v);
-                      }}
+                      label="Employment Type"
+                      value={emp.employmentType}
+                      onChange={(v) => update(index, "employmentType", v)}
+                      options={["Full-time", "Intern", "Contract"]}
                     />
                   </Row>
-                </div>
 
-                {/* Attachments */}
-                <div style={{ marginTop: "0.6rem", marginBottom: "0.6rem" }}>
-                  <h4 style={{ margin: 0, marginBottom: "0.5rem", color: "#0f172a" }}>Attachments</h4>
-
-                  <div style={{ marginBottom: "0.6rem" }}>
-                    <label style={styles.label}>Payslips (multiple)</label>
-                    <input
-                      type="file"
-                      multiple
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={(e) => handleFileChange(index, "documents.payslips", e.target.files)}
-                    />
-                    {/* show uploaded payslips */}
-                    {emp.documents.payslips && emp.documents.payslips.length > 0 && (
-                      <div style={{ marginTop: "0.5rem" }}>
-                        {emp.documents.payslips.map((f, i) => (
-                          <div key={i} style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
-                            <span style={{ fontSize: "0.9rem" }}>{f.name || f}</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const copy = JSON.parse(JSON.stringify(employments));
-                                copy[index].documents.payslips = copy[index].documents.payslips.filter((_, idx) => idx !== i);
-                                setEmployments(copy);
-                              }}
-                              style={{ marginLeft: "0.5rem", background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div style={{ marginBottom: "0.6rem" }}>
-                    <label style={styles.label}>Offer Letter</label>
-                    <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => handleSingleFileChange(index, "documents.offerLetter", e.target.files[0])} />
-                    {emp.documents.offerLetter && <div style={{ marginTop: "0.5rem" }}>{emp.documents.offerLetter.name || "uploaded"}</div>}
-                  </div>
-
-                  <div style={{ marginBottom: "0.6rem" }}>
-                    <label style={styles.label}>Resignation Acceptance</label>
-                    <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => handleSingleFileChange(index, "documents.resignation", e.target.files[0])} />
-                    {emp.documents.resignation && <div style={{ marginTop: "0.5rem" }}>{emp.documents.resignation.name || "uploaded"}</div>}
-                  </div>
-
-                  <div style={{ marginBottom: "0.6rem" }}>
-                    <label style={styles.label}>Experience / Relieving Letter</label>
-                    <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => handleSingleFileChange(index, "documents.experience", e.target.files[0])} />
-                    {emp.documents.experience && <div style={{ marginTop: "0.5rem" }}>{emp.documents.experience.name || "uploaded"}</div>}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        ))}
-
-        <div style={{ margin: "1rem 0" }}>
-          <button style={styles.secondaryBtn} onClick={addEmployer}>+ Add Another Employer</button>
-        </div>
-
-        {/* DECLARATIONS */}
-        <div style={{ marginTop: "1.5rem" }}>
-          <h2 style={styles.sectionTitle}>Other Declarations</h2>
-
-          {[
-            ["business", "Are you currently engaged in any other business or employment?"],
-            ["dismissed", "Have you ever been dismissed from service of any employer?"],
-            ["criminal", "Have you ever been convicted in a court of law or criminal offence?"],
-            ["civil", "Have you ever had any civil judgments made against you?"]
-          ].map(([key, label]) => (
-            <div key={key} style={{ marginBottom: "1rem" }}>
-              <p style={{ margin: "0 0 0.5rem 0" }}>{label}</p>
-              <div style={{ display: "flex", gap: "1rem", marginBottom: "0.5rem" }}>
-                <button style={styles.yesNo(declarations[key].value === "Yes")} onClick={() => setDeclarations({ ...declarations, [key]: { ...declarations[key], value: "Yes" } })}>Yes</button>
-                <button style={styles.yesNo(declarations[key].value === "No")} onClick={() => setDeclarations({ ...declarations, [key]: { ...declarations[key], value: "No" } })}>No</button>
-              </div>
-              {declarations[key].value === "Yes" && (
-                <Input label="Details" value={declarations[key].note} onChange={(v) => setDeclarations({ ...declarations, [key]: { ...declarations[key], note: v } })} />
+                  {/* CONTRACT DETAILS */}
+                  {emp.employmentType === "Contract" && (
+                    <div style={{ marginTop: "1rem" }}>
+                      <h4>Vendor / Third-Party Details</h4>
+                      <Row>
+                        <Input label="Company Name" value={emp.contractVendor.company} onChange={(v) => {
+                          const copy = [...employments];
+                          copy[index].contractVendor.company = v;
+                          setEmployments(copy);
+                        }} />
+                        <Input label="Company Email" value={emp.contractVendor.email} onChange={(v) => {
+                          const copy = [...employments];
+                          copy[index].contractVendor.email = v;
+                          setEmployments(copy);
+                        }} />
+                        <Input
+                          label="Mobile (India)"
+                          value={emp.contractVendor.mobile}
+                          maxLength={10}
+                          onChange={(v) => {
+                            if (/^\d*$/.test(v)) {
+                              const copy = [...employments];
+                              copy[index].contractVendor.mobile = v;
+                              setEmployments(copy);
+                            }
+                          }}
+                        />
+                      </Row>
+                    </div>
+                  )}
+                </>
               )}
             </div>
-          ))}
-        </div>
+          );
+        })}
 
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: "1.5rem" }}>
+        <button style={styles.secondaryBtn} onClick={addEmployer}>
+          + Add Another Employer
+        </button>
+
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: "2rem" }}>
           <button style={styles.secondaryBtn} onClick={() => router.back()}>Previous</button>
-          <button style={styles.primaryBtn} onClick={handleSave}>Save & Proceed</button>
+          <button style={styles.primaryBtn} onClick={() => router.push("/employee/uan")}>Save & Proceed</button>
         </div>
       </div>
     </div>
