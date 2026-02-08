@@ -5,12 +5,16 @@ import ProgressBar from "../../components/ProgressBar";
 export default function PersonalDetails() {
   const router = useRouter();
 
+  // Photo
+  const [photo, setPhoto] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+
   // Name
   const [firstName, setFirstName] = useState("");
   const [middleName, setMiddleName] = useState("");
   const [lastName, setLastName] = useState("");
 
-  // Father Name
+  // Father
   const [fatherFirst, setFatherFirst] = useState("");
   const [fatherMiddle, setFatherMiddle] = useState("");
   const [fatherLast, setFatherLast] = useState("");
@@ -27,46 +31,51 @@ export default function PersonalDetails() {
   // Current Address
   const [currentFrom, setCurrentFrom] = useState("");
   const [currentTo, setCurrentTo] = useState("");
-  const [currentDoorStreet, setCurrentDoorStreet] = useState("");
-  const [currentVillageMandal, setCurrentVillageMandal] = useState("");
-  const [currentDistrictState, setCurrentDistrictState] = useState("");
+  const [currentDoor, setCurrentDoor] = useState("");
+  const [currentVillage, setCurrentVillage] = useState("");
+  const [currentDistrict, setCurrentDistrict] = useState("");
   const [currentPincode, setCurrentPincode] = useState("");
 
   // Permanent Address
   const [permFrom, setPermFrom] = useState("");
-  const [permTo, setPermTo] = useState("");
-  const [permDoorStreet, setPermDoorStreet] = useState("");
-  const [permVillageMandal, setPermVillageMandal] = useState("");
-  const [permDistrictState, setPermDistrictState] = useState("");
+  const [permDoor, setPermDoor] = useState("");
+  const [permVillage, setPermVillage] = useState("");
+  const [permDistrict, setPermDistrict] = useState("");
   const [permPincode, setPermPincode] = useState("");
 
   // Validators
-  const validateAadhar = (v) => /^\d{12}$/.test(v);
-  const validatePan = (v) => /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(v);
-  const validateMobile = (v) => /^\d{10}$/.test(v);
-  const validatePincode = (v) => /^\d{6}$/.test(v);
-  const validatePassport = (v) => /^[A-Z0-9]{6,9}$/.test(v);
+  const vMobile = (v) => /^\d{10}$/.test(v);
+  const vAadhar = (v) => /^\d{12}$/.test(v);
+  const vPan = (v) => /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(v);
+  const vPin = (v) => /^\d{6}$/.test(v);
 
   const allValid =
-    firstName.trim() &&
-    lastName.trim() &&
-    fatherFirst.trim() &&
-    fatherLast.trim() &&
+    firstName &&
+    lastName &&
+    fatherFirst &&
+    fatherLast &&
     dob &&
-    nationality.trim() &&
+    nationality &&
     gender &&
-    validateMobile(mobile) &&
-    validateAadhar(aadhar) &&
-    validatePan(pan) &&
-    validatePassport(passport) &&
-    currentDoorStreet.trim() &&
-    currentVillageMandal.trim() &&
-    currentDistrictState.trim() &&
-    validatePincode(currentPincode) &&
-    permDoorStreet.trim() &&
-    permVillageMandal.trim() &&
-    permDistrictState.trim() &&
-    validatePincode(permPincode);
+    vMobile(mobile) &&
+    vAadhar(aadhar) &&
+    vPan(pan) &&
+    currentFrom &&
+    currentTo &&
+    currentDoor &&
+    currentVillage &&
+    currentDistrict &&
+    vPin(currentPincode) &&
+    permFrom &&
+    permDoor &&
+    permVillage &&
+    permDistrict &&
+    vPin(permPincode);
+
+  const handlePhoto = (file) => {
+    setPhoto(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
 
   const handleSave = () => {
     if (!allValid) return;
@@ -74,106 +83,176 @@ export default function PersonalDetails() {
   };
 
   return (
-    <div style={{ display: "flex", padding: "2rem", background: "#f9fafc", minHeight: "100vh" }}>
-      {/* Left */}
-      <div style={{ flex: 2, marginRight: "2rem" }}>
+    <div style={styles.page}>
+      <div style={styles.card}>
         <ProgressBar currentStep={1} totalSteps={4} />
-        <h1>Personal Details</h1>
+        <h1 style={styles.title}>Personal Details</h1>
 
-        <h2>Name</h2>
-        <input placeholder="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-        <input placeholder="Middle Name" value={middleName} onChange={(e) => setMiddleName(e.target.value)} style={{ marginLeft: "1rem" }} />
-        <input placeholder="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} style={{ marginLeft: "1rem" }} />
-        <br /><br />
+        <Section title="Profile Photo">
+          <div style={{ textAlign: "center" }}>
+            {photoPreview ? (
+              <img src={photoPreview} style={styles.photo} />
+            ) : (
+              <div style={styles.photoPlaceholder}>Upload Photo</div>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => handlePhoto(e.target.files[0])}
+            />
+          </div>
+        </Section>
 
-        <h2>Father Name</h2>
-        <input placeholder="First Name" value={fatherFirst} onChange={(e) => setFatherFirst(e.target.value)} />
-        <input placeholder="Middle Name" value={fatherMiddle} onChange={(e) => setFatherMiddle(e.target.value)} style={{ marginLeft: "1rem" }} />
-        <input placeholder="Last Name" value={fatherLast} onChange={(e) => setFatherLast(e.target.value)} style={{ marginLeft: "1rem" }} />
-        <br /><br />
+        <Section title="Name">
+          <Row>
+            <Input label="First Name" value={firstName} onChange={setFirstName} />
+            <Input label="Middle Name" value={middleName} onChange={setMiddleName} />
+            <Input label="Last Name" value={lastName} onChange={setLastName} />
+          </Row>
+        </Section>
 
-        <label>Date of Birth</label><br />
-        <input type="date" value={dob} onChange={(e) => setDob(e.target.value)} /><br /><br />
+        <Section title="Father Name">
+          <Row>
+            <Input label="First Name" value={fatherFirst} onChange={setFatherFirst} />
+            <Input label="Middle Name" value={fatherMiddle} onChange={setFatherMiddle} />
+            <Input label="Last Name" value={fatherLast} onChange={setFatherLast} />
+          </Row>
+        </Section>
 
-        <label>Nationality</label><br />
-        <input value={nationality} onChange={(e) => setNationality(e.target.value)} /><br /><br />
+        <Section title="Personal Info">
+          <Row>
+            <Input type="date" label="Date of Birth" value={dob} onChange={setDob} />
+            <Input label="Nationality" value={nationality} onChange={setNationality} />
+            <Select label="Gender" value={gender} onChange={setGender} />
+          </Row>
+        </Section>
 
-        <label>Gender</label><br />
-        <select value={gender} onChange={(e) => setGender(e.target.value)}>
-          <option value="">Select</option>
-          <option>Male</option>
-          <option>Female</option>
-          <option>Other</option>
-        </select><br /><br />
+        <Section title="Current Address">
+          <Row>
+            <Input type="date" label="Residing From" value={currentFrom} onChange={setCurrentFrom} />
+            <Input type="date" label="Residing To" value={currentTo} onChange={setCurrentTo} />
+          </Row>
+          <Input label="Door & Street" value={currentDoor} onChange={setCurrentDoor} />
+          <Input label="Village / Mandal" value={currentVillage} onChange={setCurrentVillage} />
+          <Input label="District / State" value={currentDistrict} onChange={setCurrentDistrict} />
+          <Input label="Pincode" value={currentPincode} onChange={(v)=>setCurrentPincode(v.replace(/\D/g,""))} />
+        </Section>
 
-        <label>Mobile</label><br />
-        <input value={mobile} maxLength={10}
-          onChange={(e) => setMobile(e.target.value.replace(/\D/g, ""))}
-          style={{ borderColor: mobile && !validateMobile(mobile) ? "red" : "" }} />
-        <br /><br />
-
-        <label>Aadhaar</label><br />
-        <input value={aadhar} maxLength={12}
-          onChange={(e) => setAadhar(e.target.value.replace(/\D/g, ""))}
-          style={{ borderColor: aadhar && !validateAadhar(aadhar) ? "red" : "" }} />
-        <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ marginLeft: "1rem" }} />
-        <br /><br />
-
-        <label>PAN</label><br />
-        <input value={pan} maxLength={10}
-          onChange={(e) => setPan(e.target.value.toUpperCase())}
-          style={{ borderColor: pan && !validatePan(pan) ? "red" : "" }} />
-        <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ marginLeft: "1rem" }} />
-        <br /><br />
-
-        <label>Passport</label><br />
-        <input value={passport} onChange={(e) => setPassport(e.target.value.toUpperCase())} />
-        <br /><br />
-
-        <h2>Current Address</h2>
-        <input type="date" value={currentFrom} onChange={(e) => setCurrentFrom(e.target.value)} />
-        <input type="date" value={currentTo} onChange={(e) => setCurrentTo(e.target.value)} /><br /><br />
-
-        <input placeholder="Door & Street" value={currentDoorStreet} onChange={(e) => setCurrentDoorStreet(e.target.value)} /><br /><br />
-        <input placeholder="Village & Mandal" value={currentVillageMandal} onChange={(e) => setCurrentVillageMandal(e.target.value)} /><br /><br />
-        <input placeholder="District & State" value={currentDistrictState} onChange={(e) => setCurrentDistrictState(e.target.value)} /><br /><br />
-        <input placeholder="Pincode" maxLength={6}
-          value={currentPincode}
-          onChange={(e) => setCurrentPincode(e.target.value.replace(/\D/g, ""))} />
-        <br /><br />
-
-        <h2>Permanent Address</h2>
-        <input type="date" value={permFrom} onChange={(e) => setPermFrom(e.target.value)} />
-        <input type="date" value={permTo} onChange={(e) => setPermTo(e.target.value)} /><br /><br />
-
-        <input placeholder="Door & Street" value={permDoorStreet} onChange={(e) => setPermDoorStreet(e.target.value)} /><br /><br />
-        <input placeholder="Village & Mandal" value={permVillageMandal} onChange={(e) => setPermVillageMandal(e.target.value)} /><br /><br />
-        <input placeholder="District & State" value={permDistrictState} onChange={(e) => setPermDistrictState(e.target.value)} /><br /><br />
-        <input placeholder="Pincode" maxLength={6}
-          value={permPincode}
-          onChange={(e) => setPermPincode(e.target.value.replace(/\D/g, ""))} />
-        <br /><br />
+        <Section title="Permanent Address">
+          <Input type="date" label="Residing From" value={permFrom} onChange={setPermFrom} />
+          <Input label="Door & Street" value={permDoor} onChange={setPermDoor} />
+          <Input label="Village / Mandal" value={permVillage} onChange={setPermVillage} />
+          <Input label="District / State" value={permDistrict} onChange={setPermDistrict} />
+          <Input label="Pincode" value={permPincode} onChange={(v)=>setPermPincode(v.replace(/\D/g,""))} />
+        </Section>
 
         <button
           onClick={handleSave}
           disabled={!allValid}
           style={{
-            padding: "1rem 2rem",
-            fontSize: "1.1rem",
-            background: allValid ? "#4CAF50" : "#ccc",
-            color: "#fff",
-            cursor: allValid ? "pointer" : "not-allowed"
+            ...styles.button,
+            background: allValid ? "#2563eb" : "#cbd5e1"
           }}
         >
           Save & Proceed →
         </button>
       </div>
-
-      {/* Right */}
-      <div style={{ flex: 1, textAlign: "center" }}>
-        <h2>Upload Photo</h2>
-        <input type="file" accept="image/*" />
-      </div>
     </div>
   );
 }
+
+/* ----------------- Small UI helpers ----------------- */
+
+const Section = ({ title, children }) => (
+  <div style={{ marginBottom: "2rem" }}>
+    <h2 style={styles.sectionTitle}>{title}</h2>
+    {children}
+  </div>
+);
+
+const Row = ({ children }) => (
+  <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>{children}</div>
+);
+
+const Input = ({ label, value, onChange, type = "text" }) => (
+  <div style={{ flex: 1, minWidth: "200px" }}>
+    <label style={styles.label}>{label}</label>
+    <input
+      type={type}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      style={styles.input}
+    />
+  </div>
+);
+
+const Select = ({ label, value, onChange }) => (
+  <div style={{ flex: 1 }}>
+    <label style={styles.label}>{label}</label>
+    <select value={value} onChange={(e) => onChange(e.target.value)} style={styles.input}>
+      <option value="">Select</option>
+      <option>Male</option>
+      <option>Female</option>
+      <option>Other</option>
+    </select>
+  </div>
+);
+
+const styles = {
+  page: {
+    background: "#f1f5f9",
+    padding: "2rem",
+    minHeight: "100vh",
+    fontFamily: "Inter, system-ui, sans-serif"
+  },
+  card: {
+    maxWidth: "900px",
+    margin: "auto",
+    background: "#fff",
+    padding: "2rem",
+    borderRadius: "12px",
+    boxShadow: "0 10px 25px rgba(0,0,0,0.08)"
+  },
+  title: {
+    marginBottom: "2rem"
+  },
+  sectionTitle: {
+    marginBottom: "1rem",
+    color: "#0f172a"
+  },
+  label: {
+    fontSize: "0.85rem",
+    color: "#475569"
+  },
+  input: {
+    width: "100%",
+    padding: "0.6rem",
+    borderRadius: "8px",
+    border: "1px solid #cbd5e1"
+  },
+  button: {
+    padding: "0.9rem 2rem",
+    borderRadius: "10px",
+    border: "none",
+    color: "#fff",
+    fontSize: "1rem",
+    cursor: "pointer"
+  },
+  photo: {
+    width: "140px",
+    height: "140px",
+    borderRadius: "50%",
+    objectFit: "cover",
+    marginBottom: "0.5rem"
+  },
+  photoPlaceholder: {
+    width: "140px",
+    height: "140px",
+    borderRadius: "50%",
+    background: "#e5e7eb",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: "0.5rem"
+  }
+};
