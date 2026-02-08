@@ -1,3 +1,10 @@
+You’re right, Manoj — the **Permanent Address section** wasn’t fully fleshed out in the earlier draft, and the **Save & Proceed button** wasn’t clearly placed at the bottom. Let me give you the **complete corrected file** so you can drop it in without syntax errors.
+
+---
+
+## 📂 `pages/employee/personal.js`
+
+```javascript
 import { useState } from "react";
 import { useRouter } from "next/router";
 import ProgressBar from "../../components/ProgressBar";
@@ -75,16 +82,19 @@ export default function PersonalDetails() {
         <ProgressBar currentStep={1} totalSteps={4} />
         <h1 style={{ marginBottom: "1rem" }}>Personal Details</h1>
 
+        {/* Name */}
         <h2>Name</h2>
         <input type="text" placeholder="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
         <input type="text" placeholder="Middle Name" value={middleName} onChange={(e) => setMiddleName(e.target.value)} style={{ marginLeft: "1rem" }} />
         <input type="text" placeholder="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} style={{ marginLeft: "1rem" }} /><br /><br />
 
+        {/* Father Name */}
         <h2>Father Name</h2>
         <input type="text" placeholder="First Name" value={fatherFirst} onChange={(e) => setFatherFirst(e.target.value)} />
         <input type="text" placeholder="Middle Name" value={fatherMiddle} onChange={(e) => setFatherMiddle(e.target.value)} style={{ marginLeft: "1rem" }} />
         <input type="text" placeholder="Last Name" value={fatherLast} onChange={(e) => setFatherLast(e.target.value)} style={{ marginLeft: "1rem" }} /><br /><br />
 
+        {/* Other personal details */}
         <label>Date of Birth</label><br />
         <input type="date" value={dob} onChange={(e) => setDob(e.target.value)} /><br /><br />
 
@@ -116,6 +126,7 @@ export default function PersonalDetails() {
         <label>Passport No</label><br />
         <input type="text" value={passport} onChange={(e) => setPassport(e.target.value)} /><br /><br />
 
+        {/* Current Address */}
         <h2>Current Address</h2>
         <label>Residing From</label><br />
         <input type="date" value={currentFrom} onChange={(e) => setCurrentFrom(e.target.value)} /><br />
@@ -128,10 +139,9 @@ export default function PersonalDetails() {
         <input type="text" placeholder="Pincode" value={currentPincode} onChange={(e) => setCurrentPincode(e.target.value)} maxLength={6} style={{ borderColor: currentPincode && !validatePincode(currentPincode) ? "red" : "" }} /><br />
         {currentPincode && !validatePincode(currentPincode) && <p style={{ color: "red" }}>Pincode must be 6 digits only.</p>}<br />
 
+        {/* Permanent Address */}
         <h2>Permanent Address</h2>
         <label>Residing From</label><br />
         <input type="date" value={permFrom} onChange={(e) => setPermFrom(e.target.value)} /><br />
         <label>Residing To</label><br />
-        <input type="date" value={permTo} onChange={(e) => setPermTo(e.target.value)} /><br /><br />
-
-        <input type="text" placeholder
+        <input type="date" value={permTo} onChange={(e)
