@@ -1,12 +1,3 @@
-Right — the errors you saw were because the file wasn’t actually JavaScript/JSX code at the top. It started with my explanatory text (“You’re right, Manoj…”) instead of valid imports. That’s why Turbopack flagged `Unexpected character '’'` on line 1.  
-
-To fix this permanently, you need a **clean file that contains only valid React/Next.js code**. Here’s the **full corrected `personal.js`** with all sections complete, including the Permanent Address and the Save & Proceed button at the bottom:
-
----
-
-## 📂 `pages/employee/personal.js`
-
-```javascript
 import { useState } from "react";
 import { useRouter } from "next/router";
 import ProgressBar from "../../components/ProgressBar";
@@ -143,5 +134,4 @@ export default function PersonalDetails() {
 
         {/* Permanent Address */}
         <h2>Permanent Address</h2>
-        <label>Residing From</label><br />
-       
+        <label>Residing From</label
