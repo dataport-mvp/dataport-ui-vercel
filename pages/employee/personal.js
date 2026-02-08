@@ -1,26 +1,47 @@
+Alright Manoj, let’s redesign the **Personal Details page** exactly as you described — with a clean, eye‑catchy layout, proper grouping of fields, and a right‑side section for photo upload. I’ll also remove the employee code generation here (we’ll add it at the final page later).  
+
+---
+
+## ��� `pages/employee/personal.js`
+
+```javascript
 import { useState } from "react";
 import { useRouter } from "next/router";
 import ProgressBar from "../../components/ProgressBar";
 
 export default function PersonalDetails() {
+  const router = useRouter();
+
+  // State for fields
   const [firstName, setFirstName] = useState("");
+  const [middleName, setMiddleName] = useState("");
   const [lastName, setLastName] = useState("");
   const [fatherFirst, setFatherFirst] = useState("");
+  const [fatherMiddle, setFatherMiddle] = useState("");
   const [fatherLast, setFatherLast] = useState("");
+  const [dob, setDob] = useState("");
+  const [nationality, setNationality] = useState("");
+  const [gender, setGender] = useState("");
+  const [mobile, setMobile] = useState("");
   const [aadhar, setAadhar] = useState("");
   const [pan, setPan] = useState("");
-  const [mobile, setMobile] = useState("");
-  const [empCode, setEmpCode] = useState("");
+  const [passport, setPassport] = useState("");
 
-  // Address fields
-  const [doorStreet, setDoorStreet] = useState("");
-  const [village, setVillage] = useState("");
-  const [mandal, setMandal] = useState("");
-  const [district, setDistrict] = useState("");
-  const [state, setState] = useState("");
-  const [pincode, setPincode] = useState("");
+  // Current address
+  const [currentFrom, setCurrentFrom] = useState("");
+  const [currentTo, setCurrentTo] = useState("");
+  const [currentDoorStreet, setCurrentDoorStreet] = useState("");
+  const [currentVillageMandal, setCurrentVillageMandal] = useState("");
+  const [currentDistrictState, setCurrentDistrictState] = useState("");
+  const [currentPincode, setCurrentPincode] = useState("");
 
-  const router = useRouter();
+  // Permanent address
+  const [permFrom, setPermFrom] = useState("");
+  const [permTo, setPermTo] = useState("");
+  const [permDoorStreet, setPermDoorStreet] = useState("");
+  const [permVillageMandal, setPermVillageMandal] = useState("");
+  const [permDistrictState, setPermDistrictState] = useState("");
+  const [permPincode, setPermPincode] = useState("");
 
   // Validation rules
   const validateAadhar = (value) => /^\d{12}$/.test(value);
@@ -33,93 +54,92 @@ export default function PersonalDetails() {
     lastName.trim() &&
     fatherFirst.trim() &&
     fatherLast.trim() &&
+    dob &&
+    nationality.trim() &&
+    gender &&
+    validateMobile(mobile) &&
     validateAadhar(aadhar) &&
     validatePan(pan) &&
-    validateMobile(mobile) &&
-    doorStreet.trim() &&
-    village.trim() &&
-    mandal.trim() &&
-    district.trim() &&
-    state.trim() &&
-    validatePincode(pincode);
+    passport.trim() &&
+    currentDoorStreet.trim() &&
+    currentVillageMandal.trim() &&
+    currentDistrictState.trim() &&
+    validatePincode(currentPincode) &&
+    permDoorStreet.trim() &&
+    permVillageMandal.trim() &&
+    permDistrictState.trim() &&
+    validatePincode(permPincode);
 
   const handleSave = () => {
     if (!allValid) return;
-
-    const uniqueCode = "EMP" + Date.now().toString().slice(-6);
-    setEmpCode(uniqueCode);
-
-    setTimeout(() => {
-      router.push("/employee/education");
-    }, 2000);
+    router.push("/employee/education");
   };
 
   return (
-    <div style={{ padding: "2rem", background: "#f0f4f8", minHeight: "100vh" }}>
-      <ProgressBar currentStep={1} totalSteps={4} />
-      <h1>Personal Details</h1>
+    <div style={{ display: "flex", padding: "2rem", background: "#f9fafc", minHeight: "100vh" }}>
+      {/* Left Section */}
+      <div style={{ flex: 2, marginRight: "2rem" }}>
+        <ProgressBar currentStep={1} totalSteps={4} />
+        <h1 style={{ marginBottom: "1rem" }}>Personal Details</h1>
 
-      <label>Name</label><br />
-      <input type="text" placeholder="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-      <input type="text" placeholder="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} style={{ marginLeft: "1rem" }} /><br /><br />
+        <h2>Name</h2>
+        <input type="text" placeholder="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+        <input type="text" placeholder="Middle Name" value={middleName} onChange={(e) => setMiddleName(e.target.value)} style={{ marginLeft: "1rem" }} />
+        <input type="text" placeholder="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} style={{ marginLeft: "1rem" }} /><br /><br />
 
-      <label>Father Name</label><br />
-      <input type="text" placeholder="First Name" value={fatherFirst} onChange={(e) => setFatherFirst(e.target.value)} />
-      <input type="text" placeholder="Last Name" value={fatherLast} onChange={(e) => setFatherLast(e.target.value)} style={{ marginLeft: "1rem" }} /><br /><br />
+        <h2>Father Name</h2>
+        <input type="text" placeholder="First Name" value={fatherFirst} onChange={(e) => setFatherFirst(e.target.value)} />
+        <input type="text" placeholder="Middle Name" value={fatherMiddle} onChange={(e) => setFatherMiddle(e.target.value)} style={{ marginLeft: "1rem" }} />
+        <input type="text" placeholder="Last Name" value={fatherLast} onChange={(e) => setFatherLast(e.target.value)} style={{ marginLeft: "1rem" }} /><br /><br />
 
-      <label>Aadhar Card</label><br />
-      <input type="text" value={aadhar} onChange={(e) => setAadhar(e.target.value)} maxLength={12} style={{ borderColor: aadhar && !validateAadhar(aadhar) ? "red" : "" }} />
-      <input type="file" style={{ marginLeft: "1rem" }} /><br />
-      {aadhar && !validateAadhar(aadhar) && <p style={{ color: "red" }}>Aadhaar must be 12 digits only.</p>}<br />
+        <label>Date of Birth</label><br />
+        <input type="date" value={dob} onChange={(e) => setDob(e.target.value)} /><br /><br />
 
-      <label>PAN Card</label><br />
-      <input type="text" value={pan} onChange={(e) => setPan(e.target.value.toUpperCase())} maxLength={10} style={{ borderColor: pan && !validatePan(pan) ? "red" : "" }} />
-      <input type="file" style={{ marginLeft: "1rem" }} /><br />
-      {pan && !validatePan(pan) && <p style={{ color: "red" }}>PAN must be 5 letters, 4 digits, 1 letter.</p>}<br />
+        <label>Nationality</label><br />
+        <input type="text" value={nationality} onChange={(e) => setNationality(e.target.value)} /><br /><br />
 
-      <label>Mobile No</label><br />
-      <input type="text" value={mobile} onChange={(e) => setMobile(e.target.value)} maxLength={10} style={{ borderColor: mobile && !validateMobile(mobile) ? "red" : "" }} /><br />
-      {mobile && !validateMobile(mobile) && <p style={{ color: "red" }}>Mobile must be 10 digits only.</p>}<br />
+        <label>Gender</label><br />
+        <select value={gender} onChange={(e) => setGender(e.target.value)}>
+          <option value="">Select</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Other">Rather not to say</option>
+        </select><br /><br />
 
-      <h2>Address</h2>
-      <label>Door No & Street</label><br />
-      <input type="text" value={doorStreet} onChange={(e) => setDoorStreet(e.target.value)} /><br /><br />
+        <label>Mobile No</label><br />
+        <input type="text" value={mobile} onChange={(e) => setMobile(e.target.value)} maxLength={10} style={{ borderColor: mobile && !validateMobile(mobile) ? "red" : "" }} /><br />
+        {mobile && !validateMobile(mobile) && <p style={{ color: "red" }}>Mobile must be 10 digits only.</p>}<br />
 
-      <label>Village</label><br />
-      <input type="text" value={village} onChange={(e) => setVillage(e.target.value)} /><br /><br />
+        <label>Aadhar Card</label><br />
+        <input type="text" value={aadhar} onChange={(e) => setAadhar(e.target.value)} maxLength={12} style={{ borderColor: aadhar && !validateAadhar(aadhar) ? "red" : "" }} />
+        <input type="file" style={{ marginLeft: "1rem" }} /><br />
+        {aadhar && !validateAadhar(aadhar) && <p style={{ color: "red" }}>Aadhaar must be 12 digits only.</p>}<br />
 
-      <label>Mandal</label><br />
-      <input type="text" value={mandal} onChange={(e) => setMandal(e.target.value)} /><br /><br />
+        <label>PAN Card</label><br />
+        <input type="text" value={pan} onChange={(e) => setPan(e.target.value.toUpperCase())} maxLength={10} style={{ borderColor: pan && !validatePan(pan) ? "red" : "" }} />
+        <input type="file" style={{ marginLeft: "1rem" }} /><br />
+        {pan && !validatePan(pan) && <p style={{ color: "red" }}>PAN must be 5 letters, 4 digits, 1 letter.</p>}<br />
 
-      <label>District</label><br />
-      <input type="text" value={district} onChange={(e) => setDistrict(e.target.value)} /><br /><br />
+        <label>Passport No</label><br />
+        <input type="text" value={passport} onChange={(e) => setPassport(e.target.value)} /><br /><br />
 
-      <label>State</label><br />
-      <input type="text" value={state} onChange={(e) => setState(e.target.value)} /><br /><br />
+        <h2>Current Address</h2>
+        <label>Residing From</label><br />
+        <input type="date" value={currentFrom} onChange={(e) => setCurrentFrom(e.target.value)} /><br />
+        <label>Residing To</label><br />
+        <input type="date" value={currentTo} onChange={(e) => setCurrentTo(e.target.value)} /><br /><br />
 
-      <label>Pincode</label><br />
-      <input type="text" value={pincode} onChange={(e) => setPincode(e.target.value)} maxLength={6} style={{ borderColor: pincode && !validatePincode(pincode) ? "red" : "" }} /><br />
-      {pincode && !validatePincode(pincode) && <p style={{ color: "red" }}>Pincode must be 6 digits only.</p>}<br />
+        <input type="text" placeholder="Door No & Street" value={currentDoorStreet} onChange={(e) => setCurrentDoorStreet(e.target.value)} /><br /><br />
+        <input type="text" placeholder="Village & Mandal" value={currentVillageMandal} onChange={(e) => setCurrentVillageMandal(e.target.value)} /><br /><br />
+        <input type="text" placeholder="District & State" value={currentDistrictState} onChange={(e) => setCurrentDistrictState(e.target.value)} /><br /><br />
+        <input type="text" placeholder="Pincode" value={currentPincode} onChange={(e) => setCurrentPincode(e.target.value)} maxLength={6} style={{ borderColor: currentPincode && !validatePincode(currentPincode) ? "red" : "" }} /><br />
+        {currentPincode && !validatePincode(currentPincode) && <p style={{ color: "red" }}>Pincode must be 6 digits only.</p>}<br />
 
-      <button
-        onClick={handleSave}
-        disabled={!allValid}
-        style={{
-          padding: "1rem 2rem",
-          fontSize: "1.2rem",
-          background: allValid ? "#4CAF50" : "#ccc",
-          color: "#fff",
-          cursor: allValid ? "pointer" : "not-allowed"
-        }}
-      >
-        Save & Next
-      </button>
+        <h2>Permanent Address</h2>
+        <label>Residing From</label><br />
+        <input type="date" value={permFrom} onChange={(e) => setPermFrom(e.target.value)} /><br />
+        <label>Residing To</label><br />
+        <input type="date" value={permTo} onChange={(e) => setPermTo(e.target.value)} /><br /><br />
 
-      {empCode && (
-        <p style={{ color: "green", fontWeight: "bold", marginTop: "1rem" }}>
-          ✅ Your Employee Code: {empCode}
-        </p>
-      )}
-    </div>
-  );
-}
+        <input type="text" placeholder
+
