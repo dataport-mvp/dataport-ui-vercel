@@ -43,8 +43,9 @@ export default function EducationDetails() {
   const [ugResultType, setUgResultType] = useState("");
   const [ugResultValue, setUgResultValue] = useState("");
   const [ugBacklogs, setUgBacklogs] = useState("");
+  const [ugMedium, setUgMedium] = useState("");
 
-  /* ================= PG (OPTIONAL) ================= */
+  /* ================= PG ================= */
   const [pgCollege, setPgCollege] = useState("");
   const [pgUniversity, setPgUniversity] = useState("");
   const [pgCourse, setPgCourse] = useState("");
@@ -57,6 +58,7 @@ export default function EducationDetails() {
   const [pgResultType, setPgResultType] = useState("");
   const [pgResultValue, setPgResultValue] = useState("");
   const [pgBacklogs, setPgBacklogs] = useState("");
+  const [pgMedium, setPgMedium] = useState("");
 
   return (
     <div style={styles.page}>
@@ -90,11 +92,7 @@ export default function EducationDetails() {
             <Input label="Result Value" value={xResultValue} onChange={setXResultValue} />
           </Row>
 
-          <Input
-            label="Medium of Instruction (optional)"
-            value={xMedium}
-            onChange={setXMedium}
-          />
+          <Input label="Medium of Study" value={xMedium} onChange={setXMedium} />
 
           <File label="Upload Class X Certificate" />
         </Section>
@@ -134,11 +132,7 @@ export default function EducationDetails() {
             <Input label="Result Value" value={iResultValue} onChange={setIResultValue} />
           </Row>
 
-          <Input
-            label="Medium of Instruction (optional)"
-            value={iMedium}
-            onChange={setIMedium}
-          />
+          <Input label="Medium of Study" value={iMedium} onChange={setIMedium} />
 
           <File label="Upload Intermediate Certificate" />
         </Section>
@@ -179,6 +173,8 @@ export default function EducationDetails() {
             <Input label="Result Value" value={ugResultValue} onChange={setUgResultValue} />
           </Row>
 
+          <Input label="Medium of Study" value={ugMedium} onChange={setUgMedium} />
+
           <Select
             label="Any Active Backlogs?"
             value={ugBacklogs}
@@ -190,7 +186,7 @@ export default function EducationDetails() {
         </Section>
 
         {/* ===== PG ===== */}
-        <Section title="Postgraduate (PG) – Optional">
+        <Section title="Postgraduate (PG)">
           <Row>
             <Input label="College Name" value={pgCollege} onChange={setPgCollege} />
             <Input label="University Name" value={pgUniversity} onChange={setPgUniversity} />
@@ -225,6 +221,8 @@ export default function EducationDetails() {
             <Input label="Result Value" value={pgResultValue} onChange={setPgResultValue} />
           </Row>
 
+          <Input label="Medium of Study" value={pgMedium} onChange={setPgMedium} />
+
           <Select
             label="Any Active Backlogs?"
             value={pgBacklogs}
@@ -256,7 +254,7 @@ export default function EducationDetails() {
   );
 }
 
-/* ===== SAME HELPERS & STYLES AS personal.js ===== */
+/* ===== HELPERS & STYLES (UNCHANGED, SAME AS personal.js) ===== */
 
 const Section = ({ title, children }) => (
   <div style={{ marginBottom: "2rem" }}>
@@ -266,9 +264,7 @@ const Section = ({ title, children }) => (
 );
 
 const Row = ({ children }) => (
-  <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-    {children}
-  </div>
+  <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>{children}</div>
 );
 
 const Input = ({ label, value, onChange, type = "text" }) => (
@@ -286,11 +282,7 @@ const Input = ({ label, value, onChange, type = "text" }) => (
 const Select = ({ label, value, onChange, options }) => (
   <div style={{ flex: 1 }}>
     <label style={styles.label}>{label}</label>
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      style={styles.input}
-    >
+    <select value={value} onChange={(e) => onChange(e.target.value)} style={styles.input}>
       <option value="">Select</option>
       {options.map((o) => (
         <option key={o}>{o}</option>
