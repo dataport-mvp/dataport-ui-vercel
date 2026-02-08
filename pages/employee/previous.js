@@ -99,23 +99,34 @@ export default function PreviousCompany() {
   const router = useRouter();
 
   const emptyEmployment = {
-    status: "",
     companyName: "",
+    officeAddress: "",
+    employeeId: "",
+    workEmail: "",
     fromDate: "",
     toDate: "",
     designation: "",
     department: "",
     employmentType: "",
+    contract: {
+      vendorCompany: "",
+      clientCompany: "",
+      vendorEmail: ""
+    },
     reasonForLeaving: "",
-    referenceName: "",
-    referenceEmail: "",
-    referenceType: "",
-    payslips: [],
-    offerLetter: null,
-    resignationLetter: null,
-    experienceLetter: null,
-    hasGap: "",
-    gap: {
+    reference: {
+      name: "",
+      email: "",
+      role: ""
+    },
+    documents: {
+      payslips: [],
+      offerLetter: null,
+      resignationLetter: null,
+      experienceLetter: null
+    },
+    gapAfter: {
+      hasGap: "",
       fromDate: "",
       toDate: "",
       reason: ""
@@ -124,20 +135,19 @@ export default function PreviousCompany() {
 
   const [employments, setEmployments] = useState([emptyEmployment]);
 
-  const updateEmployment = (i, field, value) => {
+  const updateEmployment = (i, path, value) => {
     const copy = [...employments];
-    copy[i][field] = value;
-    setEmployments(copy);
-  };
-
-  const updateGap = (i, field, value) => {
-    const copy = [...employments];
-    copy[i].gap[field] = value;
+    let obj = copy[i];
+    const keys = path.split(".");
+    for (let k = 0; k < keys.length - 1; k++) {
+      obj = obj[keys[k]];
+    }
+    obj[keys[keys.length - 1]] = value;
     setEmployments(copy);
   };
 
   const addEmployment = () => {
-    setEmployments([...employments, { ...emptyEmployment, status: "Previous" }]);
+    setEmployments([...employments, emptyEmployment]);
   };
 
   const handleSave = () => {
@@ -153,18 +163,30 @@ export default function PreviousCompany() {
 
         {employments.map((emp, index) => (
           <div key={index}>
-            <Section title={`Employment ${index + 1}`}>
+            <Section title={index === 0 ? "Current Employer" : "Previous Employer"}>
               <Row>
-                <Select
-                  label="Employment Status"
-                  value={emp.status}
-                  onChange={(v) => updateEmployment(index, "status", v)}
-                  options={index === 0 ? ["Current", "Previous"] : ["Previous"]}
-                />
                 <Input
                   label="Company Name"
                   value={emp.companyName}
                   onChange={(v) => updateEmployment(index, "companyName", v)}
+                />
+                <Input
+                  label="Office Address"
+                  value={emp.officeAddress}
+                  onChange={(v) => updateEmployment(index, "officeAddress", v)}
+                />
+              </Row>
+
+              <Row>
+                <Input
+                  label="Employee ID"
+                  value={emp.employeeId}
+                  onChange={(v) => updateEmployment(index, "employeeId", v)}
+                />
+                <Input
+                  label="Work Email"
+                  value={emp.workEmail}
+                  onChange={(v) => updateEmployment(index, "workEmail", v)}
                 />
               </Row>
 
@@ -176,7 +198,7 @@ export default function PreviousCompany() {
                   onChange={(v) => updateEmployment(index, "fromDate", v)}
                 />
                 <Input
-                  label={emp.status === "Current" ? "Expected End Date" : "End Date"}
+                  label="To Date / Expected End Date"
                   type="month"
                   value={emp.toDate}
                   onChange={(v) => updateEmployment(index, "toDate", v)}
@@ -196,43 +218,163 @@ export default function PreviousCompany() {
                 />
               </Row>
 
+              <Select
+                label="Employment Type"
+                value={emp.employmentType}
+                onChange={(v) => updateEmployment(index, "employmentType", v)}
+                options={["Full-time", "Intern", "Contract"]}
+              />
+
+              {emp.employmentType === "Contract" && (
+                <Section title="Contract Details">
+                  <Row>
+                    <Input
+                      label="Vendor Company"
+                      value={emp.contract.vendorCompany}
+                      onChange={(v) =>
+                        updateEmployment(index, "contract.vendorCompany", v)
+                      }
+                    />
+                    <Input
+                      label="Client Company"
+                      value={emp.contract.clientCompany}
+                      onChange={(v) =>
+                        updateEmployment(index, "contract.clientCompany", v)
+                      }
+                    />
+                  </Row>
+                  <Input
+                    label="Vendor Contact Email"
+                    value={emp.contract.vendorEmail}
+                    onChange={(v) =>
+                      updateEmployment(index, "contract.vendorEmail", v)
+                    }
+                  />
+                </Section>
+              )}
+
               <Input
                 label="Reason for Leaving / Relieving"
                 value={emp.reasonForLeaving}
                 onChange={(v) => updateEmployment(index, "reasonForLeaving", v)}
               />
+
+              <Section title="Reference Details">
+                <Row>
+                  <Input
+                    label="Reference Name"
+                    value={emp.reference.name}
+                    onChange={(v) =>
+                      updateEmployment(index, "reference.name", v)
+                    }
+                  />
+                  <Input
+                    label="Reference Email"
+                    value={emp.reference.email}
+                    onChange={(v) =>
+                      updateEmployment(index, "reference.email", v)
+                    }
+                  />
+                </Row>
+                <Select
+                  label="Reference Role"
+                  value={emp.reference.role}
+                  onChange={(v) =>
+                    updateEmployment(index, "reference.role", v)
+                  }
+                  options={["Manager", "Colleague", "HR", "Client"]}
+                />
+              </Section>
+
+              <Section title="Documents">
+                <label style={styles.label}>Payslips</label>
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) =>
+                    updateEmployment(
+                      index,
+                      "documents.payslips",
+                      Array.from(e.target.files)
+                    )
+                  }
+                />
+
+                <Input
+                  label="Offer Letter"
+                  type="file"
+                  onChange={(e) =>
+                    updateEmployment(
+                      index,
+                      "documents.offerLetter",
+                      e.target.files[0]
+                    )
+                  }
+                />
+
+                <Input
+                  label="Resignation Acceptance"
+                  type="file"
+                  onChange={(e) =>
+                    updateEmployment(
+                      index,
+                      "documents.resignationLetter",
+                      e.target.files[0]
+                    )
+                  }
+                />
+
+                <Input
+                  label="Experience / Relieving Letter"
+                  type="file"
+                  onChange={(e) =>
+                    updateEmployment(
+                      index,
+                      "documents.experienceLetter",
+                      e.target.files[0]
+                    )
+                  }
+                />
+              </Section>
             </Section>
 
-            {/* GAP AFTER THIS EMPLOYMENT */}
             <Section title="Employment Gap">
               <Select
-                label="Was there any gap after this employment?"
-                value={emp.hasGap}
-                onChange={(v) => updateEmployment(index, "hasGap", v)}
+                label="Any employment gap?"
+                value={emp.gapAfter.hasGap}
+                onChange={(v) =>
+                  updateEmployment(index, "gapAfter.hasGap", v)
+                }
                 options={["Yes", "No"]}
               />
 
-              {emp.hasGap === "Yes" && (
+              {emp.gapAfter.hasGap === "Yes" && (
                 <>
                   <Row>
                     <Input
                       label="Gap From Date"
                       type="month"
-                      value={emp.gap.fromDate}
-                      onChange={(v) => updateGap(index, "fromDate", v)}
+                      value={emp.gapAfter.fromDate}
+                      onChange={(v) =>
+                        updateEmployment(index, "gapAfter.fromDate", v)
+                      }
                     />
                     <Input
                       label="Gap To Date"
                       type="month"
-                      value={emp.gap.toDate}
-                      onChange={(v) => updateGap(index, "toDate", v)}
+                      value={emp.gapAfter.toDate}
+                      onChange={(v) =>
+                        updateEmployment(index, "gapAfter.toDate", v)
+                      }
                     />
                   </Row>
-
                   <Input
                     label="Reason for Gap"
-                    value={emp.gap.reason}
-                    onChange={(v) => updateGap(index, "reason", v)}
+                    value={emp.gapAfter.reason}
+                    onChange={(v) =>
+                      updateEmployment(index, "gapAfter.reason", v)
+                    }
                   />
                 </>
               )}
