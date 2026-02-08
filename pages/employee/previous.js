@@ -140,13 +140,18 @@ export default function PreviousCompany() {
     },
     gap: {
       hasGap: "",
-      from: "",
-      to: "",
       reason: ""
     }
   };
 
   const [employments, setEmployments] = useState([emptyEmployment]);
+
+  const [ack, setAck] = useState({
+    business: { val: "", note: "" },
+    dismissed: { val: "", note: "" },
+    criminal: { val: "", note: "" },
+    civil: { val: "", note: "" }
+  });
 
   const update = (i, path, value) => {
     const copy = JSON.parse(JSON.stringify(employments));
@@ -161,15 +166,6 @@ export default function PreviousCompany() {
     setEmployments([...employments, JSON.parse(JSON.stringify(emptyEmployment))]);
   };
 
-  const toggleExpanded = (i) => {
-    const copy = [...employments];
-    copy[i].expanded = !copy[i].expanded;
-    setEmployments(copy);
-  };
-
-  const hasAnyData = (emp) =>
-    emp.companyName || emp.employeeId || emp.workEmail || emp.designation || emp.department;
-
   return (
     <div style={styles.page}>
       <ProgressBar currentStep={3} totalSteps={4} />
@@ -177,105 +173,87 @@ export default function PreviousCompany() {
       <div style={styles.card}>
         <h1 style={styles.title}>Employment History</h1>
 
-        {employments.map((emp, index) => {
-          if (!emp.expanded && !hasAnyData(emp)) return null;
-
-          return (
-            <div key={index} style={styles.employerCard}>
-              <div style={styles.headerRow}>
-                <h3>{index === 0 ? "Current Employer" : "Previous Employer"}</h3>
-                <button style={styles.toggleBtn} onClick={() => toggleExpanded(index)}>
-                  {emp.expanded ? "−" : "+"}
-                </button>
-              </div>
-
-              {emp.expanded && (
-                <>
-                  {/* 1. DETAILS */}
-                  <Row>
-                    <Input label="Company Name" value={emp.companyName} onChange={(v) => update(index, "companyName", v)} />
-                    <Input label="Office Address" value={emp.officeAddress} onChange={(v) => update(index, "officeAddress", v)} />
-                  </Row>
-
-                  <Row>
-                    <Input label="Employee ID" value={emp.employeeId} onChange={(v) => update(index, "employeeId", v)} />
-                    <Input label="Official Work Email" value={emp.workEmail} onChange={(v) => update(index, "workEmail", v)} />
-                  </Row>
-
-                  <Row>
-                    <Input label="Designation" value={emp.designation} onChange={(v) => update(index, "designation", v)} />
-                    <Input label="Department" value={emp.department} onChange={(v) => update(index, "department", v)} />
-                  </Row>
-
-                  <Row>
-                    <Input label="Duties & Responsibilities" value={emp.duties} onChange={(v) => update(index, "duties", v)} />
-                    <Select
-                      label="Employment Type"
-                      value={emp.employmentType}
-                      onChange={(v) => update(index, "employmentType", v)}
-                      options={["Full-time", "Intern", "Contract"]}
-                    />
-                  </Row>
-
-                  {/* CONTRACT */}
-                  {emp.employmentType === "Contract" && (
-                    <>
-                      <h4>Vendor / Third-Party Details</h4>
-                      <Row>
-                        <Input label="Company Name" value={emp.contractVendor.company} onChange={(v) => update(index, "contractVendor.company", v)} />
-                        <Input label="Company Email" value={emp.contractVendor.email} onChange={(v) => update(index, "contractVendor.email", v)} />
-                        <Input
-                          label="Mobile (India)"
-                          value={emp.contractVendor.mobile}
-                          maxLength={10}
-                          onChange={(v) => /^\d*$/.test(v) && update(index, "contractVendor.mobile", v)}
-                        />
-                      </Row>
-                    </>
-                  )}
-
-                  {/* 2. REASON */}
-                  <TextArea
-                    label="Reason for Relieving / Leaving"
-                    value={emp.reasonForRelieving}
-                    onChange={(v) => update(index, "reasonForRelieving", v)}
-                  />
-
-                  {/* 3. ATTACHMENTS */}
-                  <h4>Attachments</h4>
-                  <Input type="file" label="Payslips (Multiple)" onChange={(e) => update(index, "documents.payslips", Array.from(e.target.files))} />
-                  <Input type="file" label="Offer Letter" onChange={(e) => update(index, "documents.offerLetter", e.target.files[0])} />
-                  <Input type="file" label="Resignation Acceptance" onChange={(e) => update(index, "documents.resignation", e.target.files[0])} />
-                  <Input type="file" label="Experience / Relieving Letter" onChange={(e) => update(index, "documents.experience", e.target.files[0])} />
-
-                  {/* 4. GAP */}
-                  {index !== employments.length - 1 && (
-                    <>
-                      <h4>Employment Gap</h4>
-                      <div style={{ display: "flex", gap: "1rem", marginBottom: "0.5rem" }}>
-                        <button style={styles.yesNo(emp.gap.hasGap === "Yes")} onClick={() => update(index, "gap.hasGap", "Yes")}>Yes</button>
-                        <button style={styles.yesNo(emp.gap.hasGap === "No")} onClick={() => update(index, "gap.hasGap", "No")}>No</button>
-                      </div>
-
-                      {emp.gap.hasGap === "Yes" && (
-                        <>
-                          <Row>
-                            <Input type="month" label="Gap From" value={emp.gap.from} onChange={(v) => update(index, "gap.from", v)} />
-                            <Input type="month" label="Gap To" value={emp.gap.to} onChange={(v) => update(index, "gap.to", v)} />
-                          </Row>
-                          <TextArea label="Reason for Gap" value={emp.gap.reason} onChange={(v) => update(index, "gap.reason", v)} />
-                        </>
-                      )}
-                    </>
-                  )}
-                </>
-              )}
+        {employments.map((emp, index) => (
+          <div key={index} style={styles.employerCard}>
+            <div style={styles.headerRow}>
+              <h3>{index === 0 ? "Current Employer" : "Previous Employer"}</h3>
             </div>
-          );
-        })}
 
-        {/* 5. ADD EMPLOYER */}
+            <Row>
+              <Input label="Company Name" value={emp.companyName} onChange={(v) => update(index, "companyName", v)} />
+              <Input label="Office Address" value={emp.officeAddress} onChange={(v) => update(index, "officeAddress", v)} />
+            </Row>
+
+            <Row>
+              <Input label="Employee ID" value={emp.employeeId} onChange={(v) => update(index, "employeeId", v)} />
+              <Input label="Official Work Email" value={emp.workEmail} onChange={(v) => update(index, "workEmail", v)} />
+            </Row>
+
+            <Row>
+              <Input label="Designation" value={emp.designation} onChange={(v) => update(index, "designation", v)} />
+              <Input label="Department" value={emp.department} onChange={(v) => update(index, "department", v)} />
+            </Row>
+
+            <Row>
+              <Input label="Duties & Responsibilities" value={emp.duties} onChange={(v) => update(index, "duties", v)} />
+              <Select
+                label="Employment Type"
+                value={emp.employmentType}
+                onChange={(v) => update(index, "employmentType", v)}
+                options={["Full-time", "Intern", "Contract"]}
+              />
+            </Row>
+
+            <TextArea
+              label="Reason for Relieving / Leaving"
+              value={emp.reasonForRelieving}
+              onChange={(v) => update(index, "reasonForRelieving", v)}
+            />
+
+            <h4>Attachments</h4>
+            <Input type="file" label="Payslips (Multiple)" />
+            <Input type="file" label="Offer Letter" />
+            <Input type="file" label="Resignation Acceptance" />
+            <Input type="file" label="Experience / Relieving Letter" />
+
+            <h4>Employment Gap</h4>
+            <div style={{ display: "flex", gap: "1rem", marginBottom: "0.5rem" }}>
+              <button style={styles.yesNo(emp.gap.hasGap === "Yes")} onClick={() => update(index, "gap.hasGap", "Yes")}>Yes</button>
+              <button style={styles.yesNo(emp.gap.hasGap === "No")} onClick={() => update(index, "gap.hasGap", "No")}>No</button>
+            </div>
+
+            {emp.gap.hasGap === "Yes" && (
+              <TextArea
+                label="Reason for Employment Gap"
+                value={emp.gap.reason}
+                onChange={(v) => update(index, "gap.reason", v)}
+              />
+            )}
+          </div>
+        ))}
+
         <button style={styles.secondaryBtn} onClick={addEmployer}>+ Add Another Employer</button>
+
+        {/* ACKNOWLEDGEMENTS */}
+        <h2 style={{ marginTop: "2rem" }}>Other Declarations</h2>
+
+        {[
+          ["business", "Are you currently engaged in any other business or employment?"],
+          ["dismissed", "Have you ever been dismissed from any employer?"],
+          ["criminal", "Have you ever been convicted in a court of law?"],
+          ["civil", "Have you ever had any civil judgment against you?"]
+        ].map(([k, q]) => (
+          <div key={k} style={{ marginBottom: "1rem" }}>
+            <p>{q}</p>
+            <div style={{ display: "flex", gap: "1rem" }}>
+              <button style={styles.yesNo(ack[k].val === "Yes")} onClick={() => setAck({ ...ack, [k]: { ...ack[k], val: "Yes" } })}>Yes</button>
+              <button style={styles.yesNo(ack[k].val === "No")} onClick={() => setAck({ ...ack, [k]: { ...ack[k], val: "No" } })}>No</button>
+            </div>
+            {ack[k].val === "Yes" && (
+              <TextArea label="Details" value={ack[k].note} onChange={(v) => setAck({ ...ack, [k]: { ...ack[k], note: v } })} />
+            )}
+          </div>
+        ))}
 
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: "2rem" }}>
           <button style={styles.secondaryBtn} onClick={() => router.back()}>Previous</button>
