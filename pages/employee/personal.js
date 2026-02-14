@@ -22,7 +22,7 @@ export default function PersonalDetails() {
   const [gender, setGender] = useState("");
   const [nationality, setNationality] = useState("");
 
-  // INDIA ONLY MOBILE
+  // INDIA ONLY
   const [mobile, setMobile] = useState("");
 
   const [aadhar, setAadhar] = useState("");
@@ -44,7 +44,7 @@ export default function PersonalDetails() {
   const [permDistrict, setPermDistrict] = useState("");
   const [permPin, setPermPin] = useState("");
 
-  /* ---------------- Navigation (No Validation Blocking Now) ---------------- */
+  /* ---------------- TEMP: allow navigation ---------------- */
   const handleSave = () => {
     router.push("/employee/education");
   };
@@ -53,17 +53,7 @@ export default function PersonalDetails() {
     <div style={styles.page}>
       <div style={styles.card}>
         <ProgressBar currentStep={1} totalSteps={4} />
-
-        {/* HEADER WITH CONSENT BUTTON */}
-        <div style={styles.headerRow}>
-          <h1 style={styles.title}>Personal Details</h1>
-          <button
-            onClick={() => router.push("/consent")}
-            style={styles.consentButton}
-          >
-            🔒 Consent Center
-          </button>
-        </div>
+        <h1 style={styles.title}>Personal Details</h1>
 
         {/* PHOTO */}
         <Section title="Profile Photo">
@@ -294,23 +284,8 @@ const styles = {
     borderRadius: "14px",
     boxShadow: "0 12px 30px rgba(0,0,0,0.08)"
   },
-  headerRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "2rem"
-  },
-  consentButton: {
-    padding: "0.5rem 1rem",
-    background: "#111827",
-    color: "#fff",
-    border: "none",
-    borderRadius: "8px",
-    cursor: "pointer",
-    fontSize: "0.9rem"
-  },
   title: {
-    margin: 0
+    marginBottom: "2rem"
   },
   sectionTitle: {
     marginBottom: "1rem",
@@ -357,3 +332,4 @@ const styles = {
     marginTop: "0.25rem"
   }
 };
+
