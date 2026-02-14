@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import ProgressBar from "../../components/ProgressBar";
 
-/* ---------- STYLES (MATCH PREVIOUS PAGE) ---------- */
+/* ---------- STYLES (MATCH PREVIOUS PAGES) ---------- */
 const styles = {
   page: {
     background: "#f1f5f9",
@@ -19,12 +19,12 @@ const styles = {
     boxShadow: "0 12px 30px rgba(0,0,0,0.08)"
   },
   title: { marginBottom: "2rem" },
-  section: { marginBottom: "2rem" },
+  section: { marginBottom: "2.5rem" },
   row: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
     gap: "1.5rem",
-    marginBottom: "1rem"
+    marginBottom: "1.5rem"
   },
   label: { fontSize: "0.85rem", color: "#475569" },
   input: {
@@ -32,9 +32,6 @@ const styles = {
     padding: "0.65rem",
     borderRadius: "8px",
     border: "1px solid #cbd5e1"
-  },
-  file: {
-    marginTop: "0.5rem"
   },
   pillContainer: {
     display: "flex",
@@ -49,6 +46,17 @@ const styles = {
     background: active ? "#2563eb" : "#fff",
     color: active ? "#fff" : "#000"
   }),
+  uploadCard: {
+    border: "1px dashed #cbd5e1",
+    padding: "1.5rem",
+    borderRadius: "12px",
+    background: "#f8fafc"
+  },
+  helperText: {
+    fontSize: "0.75rem",
+    marginTop: "0.5rem",
+    color: "#64748b"
+  },
   addBtn: {
     marginTop: "1rem",
     cursor: "pointer",
@@ -57,7 +65,7 @@ const styles = {
   removeBtn: {
     cursor: "pointer",
     color: "#dc2626",
-    marginTop: "0.5rem"
+    marginTop: "0.75rem"
   },
   primaryBtn: {
     marginTop: "2rem",
@@ -80,7 +88,8 @@ export default function UANPage() {
       mobileLinked: "",
       isActive: "",
       aadhaarLinked: "",
-      panLinked: ""
+      panLinked: "",
+      serviceHistory: null
     },
     pfRecords: [
       {
@@ -88,13 +97,12 @@ export default function UANPage() {
         pfMemberId: "",
         dojEpfo: "",
         doeEpfo: "",
-        pfTransferred: "",
-        serviceHistory: null
+        pfTransferred: ""
       }
     ]
   });
 
-  /* ---------- HANDLERS ---------- */
+  /* ---------- UPDATE HANDLERS ---------- */
 
   const updateUan = (field, value) => {
     setForm((prev) => ({
@@ -122,8 +130,7 @@ export default function UANPage() {
           pfMemberId: "",
           dojEpfo: "",
           doeEpfo: "",
-          pfTransferred: "",
-          serviceHistory: null
+          pfTransferred: ""
         }
       ]
     });
@@ -139,19 +146,18 @@ export default function UANPage() {
     router.push("/consent");
   };
 
-  /* ---------- UI ---------- */
-
   return (
     <div style={styles.page}>
       <div style={styles.card}>
         <ProgressBar step={4} />
         <h1 style={styles.title}>UAN & PF Information</h1>
 
-        {/* UAN MASTER SECTION */}
+        {/* ---------- UAN MASTER SECTION ---------- */}
         <div style={styles.section}>
           <h3>UAN Details</h3>
 
           <div style={styles.row}>
+            {/* LEFT SIDE */}
             <div>
               <label style={styles.label}>UAN Number</label>
               <input
@@ -162,17 +168,38 @@ export default function UANPage() {
                   updateUan("uanNumber", e.target.value.replace(/\D/g, ""))
                 }
               />
+
+              <div style={{ marginTop: "1rem" }}>
+                <label style={styles.label}>Name as per UAN</label>
+                <input
+                  style={styles.input}
+                  value={form.uanMaster.nameAsPerUan}
+                  onChange={(e) =>
+                    updateUan("nameAsPerUan", e.target.value)
+                  }
+                />
+              </div>
             </div>
 
+            {/* RIGHT SIDE - SERVICE HISTORY */}
             <div>
-              <label style={styles.label}>Name as per UAN</label>
-              <input
-                style={styles.input}
-                value={form.uanMaster.nameAsPerUan}
-                onChange={(e) =>
-                  updateUan("nameAsPerUan", e.target.value)
-                }
-              />
+              <div style={styles.uploadCard}>
+                <label style={styles.label}>
+                  EPFO Service History Record
+                </label>
+
+                <input
+                  type="file"
+                  style={{ marginTop: "0.75rem" }}
+                  onChange={(e) =>
+                    updateUan("serviceHistory", e.target.files[0])
+                  }
+                />
+
+                <p style={styles.helperText}>
+                  Upload full service history screenshot from EPFO portal.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -195,9 +222,7 @@ export default function UANPage() {
                 {["Yes", "No"].map((val) => (
                   <div
                     key={val}
-                    style={styles.pill(
-                      form.uanMaster.isActive === val
-                    )}
+                    style={styles.pill(form.uanMaster.isActive === val)}
                     onClick={() => updateUan("isActive", val)}
                   >
                     {val}
@@ -208,7 +233,7 @@ export default function UANPage() {
           </div>
         </div>
 
-        {/* PF RECORDS SECTION */}
+        {/* ---------- PF RECORDS SECTION ---------- */}
         <div style={styles.section}>
           <h3>PF Details (Per Previous Employer)</h3>
 
@@ -270,9 +295,7 @@ export default function UANPage() {
                   {["Yes", "No"].map((val) => (
                     <div
                       key={val}
-                      style={styles.pill(
-                        record.pfTransferred === val
-                      )}
+                      style={styles.pill(record.pfTransferred === val)}
                       onClick={() =>
                         updatePf(index, "pfTransferred", val)
                       }
@@ -281,19 +304,6 @@ export default function UANPage() {
                     </div>
                   ))}
                 </div>
-              </div>
-
-              <div style={{ marginTop: "1rem" }}>
-                <label style={styles.label}>
-                  Service History Screenshot
-                </label>
-                <input
-                  type="file"
-                  style={styles.file}
-                  onChange={(e) =>
-                    updatePf(index, "serviceHistory", e.target.files[0])
-                  }
-                />
               </div>
 
               {index > 0 && (
