@@ -1,25 +1,28 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
 
-export default function EmployerLogin() {
+export default function EmployeeLogin() {
   const [isSignup, setIsSignup] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [contactPerson, setContactPerson] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [mobile, setMobile] = useState("");
   const router = useRouter();
 
-  const api = process.env.NEXT_PUBLIC_API_URL_PROD; // ✅ single line added
+  // ✅ Use your custom domain from .env.local
+  const api = process.env.NEXT_PUBLIC_API_URL_PROD;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
+      // ✅ Payload matches backend RegisterRequest / LoginRequest
       const payload = isSignup
-        ? { email, password, companyName, contactPerson }
+        ? { email, password, role: "employee", name: fullName, phone: mobile }
         : { email, password };
 
-      const endpoint = isSignup ? "/employer/signup" : "/employer/login";
+      // ✅ Endpoints match backend routes
+      const endpoint = isSignup ? "/auth/register" : "/auth/login";
 
       const res = await fetch(`${api}${endpoint}`, {
         method: "POST",
@@ -29,12 +32,12 @@ export default function EmployerLogin() {
 
       if (!res.ok) throw new Error(`API error: ${res.status}`);
       const data = await res.json();
-      console.log("Employer auth success:", data);
+      console.log("Auth success:", data);
 
       // Redirect after success
-      router.push("/employer/dashboard");
+      router.push("/employee/personal");
     } catch (err) {
-      console.error("Employer auth failed:", err);
+      console.error("Auth failed:", err);
       alert("Authentication failed. Please try again.");
     }
   };
@@ -50,7 +53,7 @@ export default function EmployerLogin() {
         background: "linear-gradient(to right, #f0f4f8, #d9e4ec)",
       }}
     >
-      <h1>{isSignup ? "Employer Sign Up" : "Employer Sign In"}</h1>
+      <h1>{isSignup ? "Sign Up" : "Sign In"}</h1>
       <form style={{ textAlign: "center" }} onSubmit={handleSubmit}>
         <input
           type="email"
@@ -70,17 +73,17 @@ export default function EmployerLogin() {
           <>
             <input
               type="text"
-              placeholder="Company Name"
+              placeholder="Full Name"
               required
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
             /><br /><br />
             <input
               type="text"
-              placeholder="Contact Person"
+              placeholder="Mobile Number"
               required
-              value={contactPerson}
-              onChange={(e) => setContactPerson(e.target.value)}
+              value={mobile}
+              onChange={(e) => setMobile(e.target.value)}
             /><br /><br />
           </>
         )}
@@ -89,7 +92,7 @@ export default function EmployerLogin() {
         </button>
       </form>
       <p style={{ marginTop: "1rem" }}>
-        {isSignup ? "Already registered?" : "New employer?"}{" "}
+        {isSignup ? "Already have an account?" : "First time user?"}{" "}
         <span
           style={{ color: "blue", cursor: "pointer" }}
           onClick={() => setIsSignup(!isSignup)}

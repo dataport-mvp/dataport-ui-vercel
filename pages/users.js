@@ -6,7 +6,7 @@ export default function Users() {
   // For internal testing, switch to staging:
   // const api = process.env.NEXT_PUBLIC_API_URL_STAGING;
 
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   async function createUser() {
@@ -14,7 +14,7 @@ export default function Users() {
       const res = await fetch(`${api}/users`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ email, password }), // ✅ use email instead of username
       });
 
       if (!res.ok) {
@@ -34,10 +34,10 @@ export default function Users() {
     <div style={{ padding: "2rem" }}>
       <h1>Create User</h1>
       <input
-        type="text"
-        placeholder="Username"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
+        type="email"
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
         style={{ marginBottom: "1rem", display: "block" }}
       />
       <input

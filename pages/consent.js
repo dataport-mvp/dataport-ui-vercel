@@ -15,7 +15,7 @@ export default function ConsentPage() {
   useEffect(() => {
     async function fetchConsents() {
       try {
-        const res = await fetch(`${api}/consents`, {
+        const res = await fetch(`${api}/consent`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
@@ -30,19 +30,25 @@ export default function ConsentPage() {
   }, [api]);
 
   // Update consent status (approve/decline)
-  const updateStatus = async (id, newStatus) => {
+  const updateStatus = async (consent_id, newStatus) => {
     try {
-      const res = await fetch(`${api}/consents/${id}`, {
-        method: "PUT",
+      const payload = {
+        consent_id,
+        status: newStatus.toUpperCase(), // backend expects APPROVED / DECLINED
+        responded_at: Date.now()
+      };
+
+      const res = await fetch(`${api}/consent/respond`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error(`API error: ${res.status}`);
       const updatedConsent = await res.json();
 
       // Update local state
       const updated = consents.map((c) =>
-        c.id === id ? updatedConsent : c
+        c.consent_id === consent_id ? updatedConsent : c
       );
       setConsents(updated);
     } catch (err) {
@@ -50,7 +56,7 @@ export default function ConsentPage() {
     }
   };
 
-  const filtered = consents.filter((c) => c.status === activeTab);
+  const filtered = consents.filter((c) => c.status.toLowerCase() === activeTab);
 
   return (
     <div style={styles.page}>
@@ -74,25 +80,22 @@ export default function ConsentPage() {
           <p style={{ marginTop: "2rem" }}>No records found.</p>
         ) : (
           filtered.map((consent) => (
-            <div key={consent.id} style={styles.cardItem}>
-              <h3>{consent.company}</h3>
-              <p><strong>Requested On:</strong> {consent.requestedOn}</p>
-              <p><strong>Data Requested:</strong></p>
-              <ul>
-                {consent.fields.map((f, i) => <li key={i}>{f}</li>)}
-              </ul>
+            <div key={consent.consent_id} style={styles.cardItem}>
+              <h3>{consent.requestor_id}</h3>
+              <p><strong>Requested On:</strong> {consent.requested_at}</p>
+              <p><strong>Consent ID:</strong> {consent.consent_id}</p>
 
-              {consent.status === "pending" && (
+              {consent.status.toLowerCase() === "pending" && (
                 <div style={styles.actions}>
                   <button
                     style={styles.approveBtn}
-                    onClick={() => updateStatus(consent.id, "approved")}
+                    onClick={() => updateStatus(consent.consent_id, "approved")}
                   >
                     Approve
                   </button>
                   <button
                     style={styles.declineBtn}
-                    onClick={() => updateStatus(consent.id, "declined")}
+                    onClick={() => updateStatus(consent.consent_id, "declined")}
                   >
                     Decline
                   </button>

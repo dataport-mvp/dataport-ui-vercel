@@ -9,17 +9,19 @@ export default function EmployeeLogin() {
   const [mobile, setMobile] = useState("");
   const router = useRouter();
 
-  const api = process.env.NEXT_PUBLIC_API_URL_PROD; // ✅ single line added
+  const api = process.env.NEXT_PUBLIC_API_URL_PROD; // ✅ points to prod domain
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
+      // ✅ payload matches backend RegisterRequest / LoginRequest
       const payload = isSignup
-        ? { email, password, fullName, mobile }
+        ? { email, password, role: "employee", name: fullName, phone: mobile }
         : { email, password };
 
-      const endpoint = isSignup ? "/employee/signup" : "/employee/login";
+      // ✅ endpoints match backend routes
+      const endpoint = isSignup ? "/auth/register" : "/auth/login";
 
       const res = await fetch(`${api}${endpoint}`, {
         method: "POST",

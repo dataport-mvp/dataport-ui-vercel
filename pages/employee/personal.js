@@ -4,7 +4,6 @@ import ProgressBar from "../../components/ProgressBar";
 
 export default function PersonalDetails() {
   const router = useRouter();
-  // Base API URL (choose prod or staging in .env.local)
   const api = process.env.NEXT_PUBLIC_API_URL_PROD;
 
   /* ---------------- Photo ---------------- */
@@ -24,9 +23,7 @@ export default function PersonalDetails() {
   const [gender, setGender] = useState("");
   const [nationality, setNationality] = useState("");
 
-  // INDIA ONLY
-  const [mobile, setMobile] = useState("");
-
+  const [mobile, setMobile] = useState(""); // India only
   const [aadhar, setAadhar] = useState("");
   const [pan, setPan] = useState("");
   const [passport, setPassport] = useState("");
@@ -46,9 +43,33 @@ export default function PersonalDetails() {
   const [permDistrict, setPermDistrict] = useState("");
   const [permPin, setPermPin] = useState("");
 
-  /* ---------------- TEMP: allow navigation ---------------- */
-  const handleSave = () => {
-    router.push("/employee/education");
+  /* ---------------- Save ---------------- */
+  const handleSave = async () => {
+    try {
+      const payload = {
+        photo: photoPreview,
+        name: { firstName, middleName, lastName },
+        fatherName: { fatherFirst, fatherMiddle, fatherLast },
+        personal: { dob, gender, nationality, mobile, passport },
+        identity: { aadhar, pan },
+        currentAddress: { curFrom, curTo, curDoor, curVillage, curDistrict, curPin },
+        permanentAddress: { permFrom, permDoor, permVillage, permDistrict, permPin }
+      };
+
+      const res = await fetch(`${api}/employee/personal`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      await res.json();
+
+      router.push("/employee/education");
+    } catch (err) {
+      console.error("Error saving personal details:", err);
+      alert("Failed to save personal details");
+    }
   };
 
   return (
@@ -68,9 +89,7 @@ export default function PersonalDetails() {
             <input
               type="file"
               accept="image/*"
-              onChange={(e) =>
-                setPhotoPreview(URL.createObjectURL(e.target.files[0]))
-              }
+              onChange={(e) => setPhotoPreview(URL.createObjectURL(e.target.files[0]))}
             />
           </div>
         </Section>
@@ -125,11 +144,7 @@ export default function PersonalDetails() {
               )}
             </div>
 
-            <Input
-              label="Passport Number"
-              value={passport}
-              onChange={setPassport}
-            />
+            <Input label="Passport Number" value={passport} onChange={setPassport} />
           </Row>
         </Section>
 
@@ -159,7 +174,6 @@ export default function PersonalDetails() {
                 value={pan}
                 onChange={(v) => {
                   let value = v.toUpperCase();
-
                   if (value.length <= 5) {
                     value = value.replace(/[^A-Z]/g, "");
                   } else if (value.length <= 9) {
@@ -172,7 +186,6 @@ export default function PersonalDetails() {
                       value.slice(5, 9).replace(/[^0-9]/g, "") +
                       value.slice(9).replace(/[^A-Z]/g, "");
                   }
-
                   setPan(value);
                 }}
               />
@@ -190,15 +203,10 @@ export default function PersonalDetails() {
             <Input type="date" label="Residing From" value={curFrom} onChange={setCurFrom} />
             <Input type="date" label="Residing To" value={curTo} onChange={setCurTo} />
           </Row>
-
           <Input label="Door & Street" value={curDoor} onChange={setCurDoor} />
           <Input label="Village / Mandal" value={curVillage} onChange={setCurVillage} />
           <Input label="District / State" value={curDistrict} onChange={setCurDistrict} />
-          <Input
-            label="Pincode"
-            value={curPin}
-            onChange={(v) => setCurPin(v.replace(/\D/g, ""))}
-          />
+          <Input label="Pincode" value={curPin} onChange={(v) => setCurPin(v.replace(/\D/g, ""))} />
         </Section>
 
         {/* PERMANENT ADDRESS */}
@@ -206,7 +214,7 @@ export default function PersonalDetails() {
           <Input type="date" label="Residing From" value={permFrom} onChange={setPermFrom} />
           <Input label="Door & Street" value={permDoor} onChange={setPermDoor} />
           <Input label="Village / Mandal" value={permVillage} onChange={setPermVillage} />
-          <Input label="District / State" value={permDistrict} onChange={setPermDistrict} />
+          <Input label="District / / State" value={permDistrict} onChange={setPermDistrict} />
           <Input
             label="Pincode"
             value={permPin}

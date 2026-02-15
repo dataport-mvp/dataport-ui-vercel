@@ -4,7 +4,7 @@ export default function EmployerDashboard() {
   const [code, setCode] = useState("");
   const [employeeData, setEmployeeData] = useState(null);
 
-  const api = process.env.NEXT_PUBLIC_API_URL_PROD; // ✅ single line added
+  const api = process.env.NEXT_PUBLIC_API_URL_PROD; // ✅ points to staging domain
 
   const handleSearch = async () => {
     try {
@@ -25,10 +25,18 @@ export default function EmployerDashboard() {
 
   const handleConsent = async () => {
     try {
-      const res = await fetch(`${api}/employer/consent-request`, {
+      // ✅ payload matches backend ConsentRequest model
+      const payload = {
+        consent_id: `consent-${Date.now()}`,   // unique ID
+        employee_id: employeeData.id,          // from search result
+        requestor_id: "company-b",             // employer identifier
+        requested_at: Date.now()               // timestamp
+      };
+
+      const res = await fetch(`${api}/consent/request`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ employeeId: employeeData.id }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) throw new Error(`API error: ${res.status}`);

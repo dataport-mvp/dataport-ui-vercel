@@ -144,7 +144,7 @@ export default function UANPage() {
 
   const handleSubmit = async () => {
     try {
-      const res = await fetch(`${api}/employee/uan-details`, {
+      const res = await fetch(`${api}/employee/uan`, {   // ✅ corrected endpoint
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form)
@@ -296,55 +296,4 @@ export default function UANPage() {
                 <div>
                   <label style={styles.label}>Date of Exit (EPFO)</label>
                   <input
-                    type="date"
-                    style={styles.input}
-                    value={record.doeEpfo}
-                    onChange={(e) =>
-                      updatePf(index, "doeEpfo", e.target.value)
-                    }
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label style={styles.label}>Was PF Transferred?</label>
-                <div style={styles.pillContainer}>
-                  {["Yes", "No"].map((val) => (
-                    <div
-                      key={val}
-                      style={styles.pill(
-                        record.pfTransferred === val
-                      )}
-                      onClick={() =>
-                        updatePf(index, "pfTransferred", val)
-                      }
-                    >
-                      {val}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {index > 0 && (
-                <div
-                  style={styles.removeBtn}
-                  onClick={() => removePfRecord(index)}
-                >
-                  - Remove This Company
-                </div>
-              )}
-            </div>
-          ))}
-
-          <div style={styles.addBtn} onClick={addPfRecord}>
-            + Add Another Company
-          </div>
-        </div>
-
-        <button style={styles.primaryBtn} onClick={handleSubmit}>
-          Save & Proceed
-        </button>
-      </div>
-    </div>
-  );
-}
+                    type="date
