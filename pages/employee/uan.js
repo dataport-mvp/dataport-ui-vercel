@@ -181,4 +181,5 @@ export default function UANPage() {
               )}
             </div>
           ))}
-          <div style={
+          <div style={styles.addBtn} onClick={addPfRecord}>
+            +
