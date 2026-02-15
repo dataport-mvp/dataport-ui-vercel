@@ -33,11 +33,7 @@ const styles = {
     borderRadius: "8px",
     border: "1px solid #cbd5e1"
   },
-  pillContainer: {
-    display: "flex",
-    gap: "1rem",
-    marginTop: "0.5rem"
-  },
+  pillContainer: { display: "flex", gap: "1rem", marginTop: "0.5rem" },
   pill: (active) => ({
     padding: "0.5rem 1rem",
     borderRadius: "20px",
@@ -52,21 +48,9 @@ const styles = {
     borderRadius: "12px",
     background: "#f8fafc"
   },
-  helperText: {
-    fontSize: "0.75rem",
-    marginTop: "0.5rem",
-    color: "#64748b"
-  },
-  addBtn: {
-    marginTop: "1rem",
-    cursor: "pointer",
-    color: "#2563eb"
-  },
-  removeBtn: {
-    cursor: "pointer",
-    color: "#dc2626",
-    marginTop: "0.75rem"
-  },
+  helperText: { fontSize: "0.75rem", marginTop: "0.5rem", color: "#64748b" },
+  addBtn: { marginTop: "1rem", cursor: "pointer", color: "#2563eb" },
+  removeBtn: { cursor: "pointer", color: "#dc2626", marginTop: "0.75rem" },
   primaryBtn: {
     marginTop: "2rem",
     padding: "0.9rem 2.5rem",
@@ -80,6 +64,7 @@ const styles = {
 
 export default function UANPage() {
   const router = useRouter();
+  const api = process.env.NEXT_PUBLIC_API_URL_PROD;
 
   const [form, setForm] = useState({
     uanMaster: {
@@ -103,14 +88,10 @@ export default function UANPage() {
   });
 
   /* ---------- UPDATE HANDLERS ---------- */
-
   const updateUan = (field, value) => {
     setForm((prev) => ({
       ...prev,
-      uanMaster: {
-        ...prev.uanMaster,
-        [field]: value
-      }
+      uanMaster: { ...prev.uanMaster, [field]: value }
     }));
   };
 
@@ -142,8 +123,26 @@ export default function UANPage() {
     setForm({ ...form, pfRecords: updated });
   };
 
-  const handleSubmit = () => {
-    router.push("/consent");
+  /* ---------- SUBMIT TO API ---------- */
+  const handleSubmit = async () => {
+    try {
+      const payload = { ...form };
+
+      const res = await fetch(`${api}/employee/uan-details`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      const data = await res.json();
+      console.log("Saved UAN details:", data);
+
+      router.push("/consent");
+    } catch (err) {
+      console.error("Error saving UAN details:", err);
+      alert("Failed to save UAN details");
+    }
   };
 
   return (
@@ -157,7 +156,6 @@ export default function UANPage() {
           <h3>UAN Details</h3>
 
           <div style={styles.row}>
-            {/* LEFT SIDE */}
             <div>
               <label style={styles.label}>UAN Number</label>
               <input
@@ -174,28 +172,19 @@ export default function UANPage() {
                 <input
                   style={styles.input}
                   value={form.uanMaster.nameAsPerUan}
-                  onChange={(e) =>
-                    updateUan("nameAsPerUan", e.target.value)
-                  }
+                  onChange={(e) => updateUan("nameAsPerUan", e.target.value)}
                 />
               </div>
             </div>
 
-            {/* RIGHT SIDE - SERVICE HISTORY */}
             <div>
               <div style={styles.uploadCard}>
-                <label style={styles.label}>
-                  EPFO Service History Record
-                </label>
-
+                <label style={styles.label}>EPFO Service History Record</label>
                 <input
                   type="file"
                   style={{ marginTop: "0.75rem" }}
-                  onChange={(e) =>
-                    updateUan("serviceHistory", e.target.files[0])
-                  }
+                  onChange={(e) => updateUan("serviceHistory", e.target.files[0])}
                 />
-
                 <p style={styles.helperText}>
                   Upload full service history screenshot from EPFO portal.
                 </p>
@@ -270,9 +259,7 @@ export default function UANPage() {
                     type="date"
                     style={styles.input}
                     value={record.dojEpfo}
-                    onChange={(e) =>
-                      updatePf(index, "dojEpfo", e.target.value)
-                    }
+                    onChange={(e) => updatePf(index, "dojEpfo", e.target.value)}
                   />
                 </div>
 
@@ -281,51 +268,4 @@ export default function UANPage() {
                   <input
                     type="date"
                     style={styles.input}
-                    value={record.doeEpfo}
-                    onChange={(e) =>
-                      updatePf(index, "doeEpfo", e.target.value)
-                    }
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label style={styles.label}>Was PF Transferred?</label>
-                <div style={styles.pillContainer}>
-                  {["Yes", "No"].map((val) => (
-                    <div
-                      key={val}
-                      style={styles.pill(record.pfTransferred === val)}
-                      onClick={() =>
-                        updatePf(index, "pfTransferred", val)
-                      }
-                    >
-                      {val}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {index > 0 && (
-                <div
-                  style={styles.removeBtn}
-                  onClick={() => removePfRecord(index)}
-                >
-                  - Remove This Company
-                </div>
-              )}
-            </div>
-          ))}
-
-          <div style={styles.addBtn} onClick={addPfRecord}>
-            + Add Another Company
-          </div>
-        </div>
-
-        <button style={styles.primaryBtn} onClick={handleSubmit}>
-          Save & Proceed
-        </button>
-      </div>
-    </div>
-  );
-}
+                   

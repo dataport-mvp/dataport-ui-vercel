@@ -3,32 +3,85 @@ import { useRouter } from "next/router";
 
 export default function EmployeeLogin() {
   const [isSignup, setIsSignup] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [mobile, setMobile] = useState("");
   const router = useRouter();
 
-  const handleSubmit = (e) => {
+  const api = process.env.NEXT_PUBLIC_API_URL_PROD; // ✅ single line added
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: add real auth logic here (API call to backend)
-    // For now, just redirect after "success"
-    router.push("/employee/personal");
+
+    try {
+      const payload = isSignup
+        ? { email, password, fullName, mobile }
+        : { email, password };
+
+      const endpoint = isSignup ? "/employee/signup" : "/employee/login";
+
+      const res = await fetch(`${api}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      const data = await res.json();
+      console.log("Auth success:", data);
+
+      // Redirect after success
+      router.push("/employee/personal");
+    } catch (err) {
+      console.error("Auth failed:", err);
+      alert("Authentication failed. Please try again.");
+    }
   };
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      display: "flex",
-      flexDirection: "column",
-      justifyContent: "center",
-      alignItems: "center",
-      background: "linear-gradient(to right, #f0f4f8, #d9e4ec)"
-    }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        background: "linear-gradient(to right, #f0f4f8, #d9e4ec)",
+      }}
+    >
       <h1>{isSignup ? "Sign Up" : "Sign In"}</h1>
       <form style={{ textAlign: "center" }} onSubmit={handleSubmit}>
-        <input type="email" placeholder="Email" required /><br /><br />
-        <input type="password" placeholder="Password" required /><br /><br />
+        <input
+          type="email"
+          placeholder="Email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        /><br /><br />
+        <input
+          type="password"
+          placeholder="Password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        /><br /><br />
         {isSignup && (
           <>
-            <input type="text" placeholder="Full Name" required /><br /><br />
-            <input type="text" placeholder="Mobile Number" required /><br /><br />
+            <input
+              type="text"
+              placeholder="Full Name"
+              required
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+            /><br /><br />
+            <input
+              type="text"
+              placeholder="Mobile Number"
+              required
+              value={mobile}
+              onChange={(e) => setMobile(e.target.value)}
+            /><br /><br />
           </>
         )}
         <button type="submit" style={{ padding: "0.5rem 1.5rem" }}>

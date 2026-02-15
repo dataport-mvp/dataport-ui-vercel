@@ -115,6 +115,7 @@ const Select = ({ label, value, onChange, options }) => (
 /* ---------- PAGE ---------- */
 export default function PreviousCompany() {
   const router = useRouter();
+  const api = process.env.NEXT_PUBLIC_API_URL_PROD;
 
   const emptyEmployment = {
     companyName: "",

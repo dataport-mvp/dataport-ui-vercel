@@ -4,6 +4,7 @@ import ProgressBar from "../../components/ProgressBar";
 
 export default function EducationDetails() {
   const router = useRouter();
+  const api = process.env.NEXT_PUBLIC_API_URL_PROD;
 
   /* ================= CLASS X ================= */
   const [xSchool, setXSchool] = useState("");

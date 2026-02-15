@@ -4,6 +4,8 @@ import ProgressBar from "../../components/ProgressBar";
 
 export default function PersonalDetails() {
   const router = useRouter();
+  // Base API URL (choose prod or staging in .env.local)
+  const api = process.env.NEXT_PUBLIC_API_URL_PROD;
 
   /* ---------------- Photo ---------------- */
   const [photoPreview, setPhotoPreview] = useState(null);

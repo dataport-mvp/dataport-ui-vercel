@@ -4,19 +4,41 @@ export default function EmployerDashboard() {
   const [code, setCode] = useState("");
   const [employeeData, setEmployeeData] = useState(null);
 
-  const handleSearch = () => {
-    // For now, just mock data
-    setEmployeeData({
-      id: "EMP123",
-      personal: { name: "John Doe", mobile: "9876543210" },
-      education: { degree: "B.Tech" },
-      previous: { company: "ABC Corp" },
-      uan: { uan: "1234567890" }
-    });
+  const api = process.env.NEXT_PUBLIC_API_URL_PROD; // ✅ single line added
+
+  const handleSearch = async () => {
+    try {
+      const res = await fetch(`${api}/employer/search`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      const data = await res.json();
+      setEmployeeData(data);
+    } catch (err) {
+      console.error("Error fetching employee data:", err);
+      alert("Failed to fetch employee data");
+    }
   };
 
-  const handleConsent = () => {
-    alert("Consent requested. Employee will be notified.");
+  const handleConsent = async () => {
+    try {
+      const res = await fetch(`${api}/employer/consent-request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employeeId: employeeData.id }),
+      });
+
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      const data = await res.json();
+      alert("Consent requested successfully!");
+      console.log("Consent response:", data);
+    } catch (err) {
+      console.error("Error requesting consent:", err);
+      alert("Failed to request consent");
+    }
   };
 
   return (
