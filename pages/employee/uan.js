@@ -103,8 +103,6 @@ export default function UANPage() {
     ]
   });
 
-  /* ---------- HANDLERS ---------- */
-
   const updateUan = (field, value) => {
     setForm((prev) => ({
       ...prev,
@@ -144,7 +142,7 @@ export default function UANPage() {
 
   const handleSubmit = async () => {
     try {
-      const res = await fetch(`${api}/employee/uan`, {   // ✅ corrected endpoint
+      const res = await fetch(`${api}/employee/uan`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form)
@@ -166,12 +164,11 @@ export default function UANPage() {
         <ProgressBar step={4} />
         <h1 style={styles.title}>UAN & PF Information</h1>
 
-        {/* UAN MASTER SECTION */}
+        {/* UAN SECTION */}
         <div style={styles.section}>
           <h3>UAN Details</h3>
 
           <div style={styles.row}>
-            {/* LEFT */}
             <div>
               <label style={styles.label}>UAN Number</label>
               <input
@@ -195,7 +192,6 @@ export default function UANPage() {
               </div>
             </div>
 
-            {/* RIGHT - SERVICE HISTORY */}
             <div>
               <div style={styles.uploadCard}>
                 <label style={styles.label}>
@@ -250,7 +246,7 @@ export default function UANPage() {
           </div>
         </div>
 
-        {/* PF RECORDS */}
+        {/* PF SECTION */}
         <div style={styles.section}>
           <h3>PF Details (Per Previous Employer)</h3>
 
@@ -296,4 +292,55 @@ export default function UANPage() {
                 <div>
                   <label style={styles.label}>Date of Exit (EPFO)</label>
                   <input
-                    type="date
+                    type="date"
+                    style={styles.input}
+                    value={record.doeEpfo}
+                    onChange={(e) =>
+                      updatePf(index, "doeEpfo", e.target.value)
+                    }
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={styles.label}>Was PF Transferred?</label>
+                <div style={styles.pillContainer}>
+                  {["Yes", "No"].map((val) => (
+                    <div
+                      key={val}
+                      style={styles.pill(
+                        record.pfTransferred === val
+                      )}
+                      onClick={() =>
+                        updatePf(index, "pfTransferred", val)
+                      }
+                    >
+                      {val}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {index > 0 && (
+                <div
+                  style={styles.removeBtn}
+                  onClick={() => removePfRecord(index)}
+                >
+                  - Remove This Company
+                </div>
+              )}
+            </div>
+          ))}
+
+          <div style={styles.addBtn} onClick={addPfRecord}>
+            + Add Another Company
+          </div>
+        </div>
+
+        <button style={styles.primaryBtn} onClick={handleSubmit}>
+          Save & Proceed
+        </button>
+      </div>
+    </div>
+  );
+}
