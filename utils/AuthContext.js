@@ -10,10 +10,9 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Load user from localStorage on mount
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
+    const storedToken = localStorage.getItem('datagate_token');
+    const storedUser = localStorage.getItem('datagate_user');
     
     if (storedToken && storedUser) {
       setToken(storedToken);
@@ -39,9 +38,8 @@ export function AuthProvider({ children }) {
 
       const data = await res.json();
       
-      // Store token and user info
-      localStorage.setItem('token', data.access_token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('datagate_token', data.access_token);
+      localStorage.setItem('datagate_user', JSON.stringify(data.user));
       
       setToken(data.access_token);
       setUser(data.user);
@@ -68,9 +66,7 @@ export function AuthProvider({ children }) {
         throw new Error(error.detail || 'Signup failed');
       }
 
-      const data = await res.json();
-      
-      // After signup, automatically login
+      await res.json();
       return await login(email, password);
     } catch (error) {
       console.error('Signup error:', error);
@@ -79,8 +75,13 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.removeItem('datagate_token');
+    localStorage.removeItem('datagate_user');
+    localStorage.removeItem('datagate_employee_id');
+    localStorage.removeItem('datagate_personal');
+    localStorage.removeItem('datagate_education');
+    localStorage.removeItem('datagate_employment');
+    localStorage.removeItem('datagate_uan');
     setToken(null);
     setUser(null);
     router.push('/');
@@ -108,7 +109,6 @@ export function AuthProvider({ children }) {
     try {
       const res = await fetch(`${api}${endpoint}`, options);
       
-      // Handle 401 - redirect to login
       if (res.status === 401) {
         logout();
         throw new Error('Session expired. Please login again.');
