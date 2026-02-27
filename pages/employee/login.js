@@ -22,7 +22,6 @@ export default function EmployeeLogin() {
 
     try {
       if (isSignup) {
-        // Validate signup fields
         if (!fullName.trim()) {
           throw new Error("Full name is required");
         }
@@ -31,16 +30,13 @@ export default function EmployeeLogin() {
         }
         
         await signup(email, password, fullName, mobile, "employee");
-        alert("Signup successful! Redirecting...");
       } else {
         await login(email, password);
       }
       
-      // Redirect to personal details page
       router.push("/employee/personal");
       
     } catch (err) {
-      console.error("Auth error:", err);
       setError(err.message || "Authentication failed");
     } finally {
       setLoading(false);
@@ -54,11 +50,7 @@ export default function EmployeeLogin() {
           {isSignup ? "Create Employee Account" : "Employee Login"}
         </h1>
 
-        {error && (
-          <div style={styles.error}>
-            ⚠️ {error}
-          </div>
-        )}
+        {error && <div style={styles.error}>⚠️ {error}</div>}
 
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.inputGroup}>
@@ -104,7 +96,7 @@ export default function EmployeeLogin() {
               </div>
 
               <div style={styles.inputGroup}>
-                <label style={styles.label}>Mobile Number (India)</label>
+                <label style={styles.label}>Mobile Number</label>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <input
                     value="+91"
