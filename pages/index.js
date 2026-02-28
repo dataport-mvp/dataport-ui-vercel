@@ -1,11 +1,6 @@
 import Link from "next/link";
 
 export default function Home() {
-  // Use prod API by default
-  const api = process.env.NEXT_PUBLIC_API_URL_PROD;
-  // For internal testing, switch to staging:
-  // const api = process.env.NEXT_PUBLIC_API_URL_STAGING;
-
   return (
     <div
       style={{
@@ -77,9 +72,7 @@ export default function Home() {
           simplifying onboarding, consent management, and record keeping.
         </p>
         <p>© 2026 Datagate. All Rights Reserved ®</p>
-        <p style={{ marginTop: "1rem", fontSize: "0.9rem", color: "#555" }}>
-          Current API Base: <code>{api}</code>
-        </p>
+        {/* API Base URL line has been removed */}
       </section>
     </div>
   );
