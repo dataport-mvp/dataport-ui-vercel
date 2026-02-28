@@ -3,17 +3,19 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "../../utils/AuthContext";
 
+const API = process.env.NEXT_PUBLIC_API_URL_PROD;
+
 export default function EmployeeLogin() {
   const [isSignup, setIsSignup] = useState(false);
-  const [email, setEmail] = useState("");
+  const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [mobile, setMobile] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  
+  const [name, setName]         = useState("");
+  const [phone, setPhone]       = useState("");
+  const [error, setError]       = useState("");
+  const [loading, setLoading]   = useState(false);
+
   const router = useRouter();
-  const { login, signup } = useAuth();
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,131 +23,140 @@ export default function EmployeeLogin() {
     setLoading(true);
 
     try {
-      if (isSignup) {
-        if (!fullName.trim()) {
-          throw new Error("Full name is required");
-        }
-        if (!mobile.match(/^\d{10}$/)) {
-          throw new Error("Mobile number must be 10 digits");
-        }
-        
-        await signup(email, password, fullName, mobile, "employee");
-      } else {
-        await login(email, password);
+      const endpoint = isSignup ? "/auth/register" : "/auth/login";
+
+      const body = isSignup
+        ? { email, password, name, phone, role: "employee" }
+        : { email, password };
+
+      const res = await fetch(`${API}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || "Something went wrong");
       }
-      
+
+      // Store token + user info in context & localStorage
+      const userData = {
+        email: data.email || email,
+        name:  data.name  || name,
+        phone: data.phone || phone,
+        role:  data.role  || "employee",
+      };
+      login(data.access_token, userData);
+
       router.push("/employee/personal");
-      
     } catch (err) {
-      setError(err.message || "Authentication failed");
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h1 style={styles.title}>
-          {isSignup ? "Create Employee Account" : "Employee Login"}
+    <div style={{
+      minHeight: "100vh",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      alignItems: "center",
+      background: "linear-gradient(to right, #f0f4f8, #d9e4ec)"
+    }}>
+      <div style={{
+        background: "#fff",
+        padding: "2.5rem",
+        borderRadius: "14px",
+        boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
+        width: "100%",
+        maxWidth: "420px"
+      }}>
+        <h1 style={{ marginBottom: "1.5rem", textAlign: "center" }}>
+          {isSignup ? "Create Account" : "Employee Sign In"}
         </h1>
 
-        {error && <div style={styles.error}>⚠️ {error}</div>}
+        <form onSubmit={handleSubmit}>
+          <label style={ls.label}>Email</label>
+          <input
+            style={ls.input}
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            placeholder="you@example.com"
+          />
 
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Email</label>
-            <input
-              type="email"
-              placeholder="you@example.com"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={styles.input}
-              disabled={loading}
-            />
-          </div>
-
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Password</label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={styles.input}
-              disabled={loading}
-              minLength={6}
-            />
-          </div>
+          <label style={ls.label}>Password</label>
+          <input
+            style={ls.input}
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            placeholder="••••••••"
+          />
 
           {isSignup && (
             <>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Full Name</label>
-                <input
-                  type="text"
-                  placeholder="John Doe"
-                  required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  style={styles.input}
-                  disabled={loading}
-                />
-              </div>
+              <label style={ls.label}>Full Name</label>
+              <input
+                style={ls.input}
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                placeholder="Your full name"
+              />
 
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Mobile Number</label>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <input
-                    value="+91"
-                    disabled
-                    style={{ ...styles.input, maxWidth: '60px', background: '#e5e7eb' }}
-                  />
-                  <input
-                    type="tel"
-                    placeholder="9876543210"
-                    required
-                    value={mobile}
-                    onChange={(e) => {
-                      const digits = e.target.value.replace(/\D/g, '');
-                      if (digits.length <= 10) setMobile(digits);
-                    }}
-                    style={styles.input}
-                    disabled={loading}
-                  />
-                </div>
-                {mobile && mobile.length !== 10 && (
-                  <p style={styles.hint}>Must be exactly 10 digits</p>
-                )}
-              </div>
+              <label style={ls.label}>Mobile Number</label>
+              <input
+                style={ls.input}
+                type="tel"
+                value={phone}
+                maxLength={10}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                required
+                placeholder="10-digit mobile"
+              />
             </>
           )}
 
-          <button 
-            type="submit" 
-            style={{
-              ...styles.button,
-              opacity: loading ? 0.6 : 1,
-              cursor: loading ? 'not-allowed' : 'pointer'
-            }}
+          {error && (
+            <p style={{ color: "#dc2626", fontSize: "0.85rem", marginBottom: "1rem" }}>
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
             disabled={loading}
+            style={{
+              width: "100%",
+              padding: "0.85rem",
+              background: loading ? "#93c5fd" : "#2563eb",
+              color: "#fff",
+              border: "none",
+              borderRadius: "8px",
+              fontSize: "1rem",
+              cursor: loading ? "not-allowed" : "pointer",
+              marginTop: "0.5rem"
+            }}
           >
-            {loading ? 'Please wait...' : (isSignup ? 'Create Account' : 'Sign In')}
+            {loading ? "Please wait..." : isSignup ? "Sign Up" : "Sign In"}
           </button>
         </form>
 
-        <p style={styles.toggleText}>
-          {isSignup ? "Already have an account?" : "First time here?"}{" "}
+        <p style={{ marginTop: "1.25rem", textAlign: "center", fontSize: "0.9rem" }}>
+          {isSignup ? "Already have an account?" : "First time user?"}{" "}
           <span
-            style={styles.toggleLink}
-            onClick={() => {
-              setIsSignup(!isSignup);
-              setError("");
-            }}
+            style={{ color: "#2563eb", cursor: "pointer", fontWeight: "600" }}
+            onClick={() => { setIsSignup(!isSignup); setError(""); }}
           >
-            {isSignup ? "Sign In" : "Create Account"}
+            {isSignup ? "Sign In" : "Sign Up"}
           </span>
         </p>
       </div>
@@ -153,81 +164,7 @@ export default function EmployeeLogin() {
   );
 }
 
-const styles = {
-  container: {
-    minHeight: '100vh',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    padding: '2rem'
-  },
-  card: {
-    background: '#fff',
-    borderRadius: '16px',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-    padding: '3rem',
-    maxWidth: '450px',
-    width: '100%'
-  },
-  title: {
-    marginBottom: '2rem',
-    textAlign: 'center',
-    color: '#1f2937'
-  },
-  error: {
-    background: '#fee2e2',
-    color: '#dc2626',
-    padding: '0.75rem',
-    borderRadius: '8px',
-    marginBottom: '1.5rem',
-    fontSize: '0.9rem'
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '1.25rem'
-  },
-  inputGroup: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.5rem'
-  },
-  label: {
-    fontSize: '0.875rem',
-    fontWeight: '500',
-    color: '#374151'
-  },
-  input: {
-    padding: '0.75rem',
-    borderRadius: '8px',
-    border: '1px solid #d1d5db',
-    fontSize: '1rem',
-    width: '100%'
-  },
-  hint: {
-    fontSize: '0.75rem',
-    color: '#dc2626',
-    marginTop: '0.25rem'
-  },
-  button: {
-    padding: '0.875rem',
-    borderRadius: '8px',
-    border: 'none',
-    background: '#667eea',
-    color: '#fff',
-    fontSize: '1rem',
-    fontWeight: '600',
-    marginTop: '0.5rem'
-  },
-  toggleText: {
-    textAlign: 'center',
-    marginTop: '1.5rem',
-    color: '#6b7280'
-  },
-  toggleLink: {
-    color: '#667eea',
-    cursor: 'pointer',
-    fontWeight: '600'
-  }
+const ls = {
+  label: { fontSize: "0.85rem", color: "#475569", display: "block", marginBottom: "4px", marginTop: "1rem" },
+  input: { width: "100%", padding: "0.65rem", borderRadius: "8px", border: "1px solid #cbd5e1", boxSizing: "border-box" }
 };
