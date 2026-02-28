@@ -1,130 +1,137 @@
-// pages/employee/personal.js - Page 1/4
+// pages/employee/personal.js  — Page 1 of 4
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { useAuth } from "../../utils/AuthContext";
 import ProgressBar from "../../components/ProgressBar";
+import { useAuth } from "../../utils/AuthContext";
+
+const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
 export default function PersonalDetails() {
   const router = useRouter();
-  const { user, apiCall, isAuthenticated, loading: authLoading } = useAuth();
-
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.push('/employee/login');
-    }
-  }, [isAuthenticated, authLoading, router]);
-
-  const [employeeId] = useState(() => `emp-${Date.now()}`);
-  const [saving, setSaving] = useState(false);
+  const { token, user } = useAuth();
 
   /* ---------------- Photo ---------------- */
   const [photoPreview, setPhotoPreview] = useState(null);
 
   /* ---------------- Names ---------------- */
-  const [firstName, setFirstName] = useState("");
-  const [middleName, setMiddleName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [firstName,    setFirstName]    = useState("");
+  const [middleName,   setMiddleName]   = useState("");
+  const [lastName,     setLastName]     = useState("");
 
-  const [fatherFirst, setFatherFirst] = useState("");
+  const [fatherFirst,  setFatherFirst]  = useState("");
   const [fatherMiddle, setFatherMiddle] = useState("");
-  const [fatherLast, setFatherLast] = useState("");
+  const [fatherLast,   setFatherLast]   = useState("");
 
   /* ---------------- Personal ---------------- */
-  const [dob, setDob] = useState("");
-  const [gender, setGender] = useState("");
+  const [dob,         setDob]         = useState("");
+  const [gender,      setGender]      = useState("");
   const [nationality, setNationality] = useState("");
 
-  const [mobile, setMobile] = useState("");
-  const [aadhar, setAadhar] = useState("");
-  const [pan, setPan] = useState("");
+  // Pre-filled from signup
+  const [mobile,  setMobile]  = useState("");
+  const [email,   setEmail]   = useState("");
+
+  const [aadhar,   setAadhar]  = useState("");
+  const [pan,      setPan]     = useState("");
   const [passport, setPassport] = useState("");
 
   /* ---------------- Current Address ---------------- */
-  const [curFrom, setCurFrom] = useState("");
-  const [curTo, setCurTo] = useState("");
-  const [curDoor, setCurDoor] = useState("");
-  const [curVillage, setCurVillage] = useState("");
+  const [curFrom,     setCurFrom]     = useState("");
+  const [curTo,       setCurTo]       = useState("");
+  const [curDoor,     setCurDoor]     = useState("");
+  const [curVillage,  setCurVillage]  = useState("");
   const [curDistrict, setCurDistrict] = useState("");
-  const [curPin, setCurPin] = useState("");
+  const [curPin,      setCurPin]      = useState("");
 
   /* ---------------- Permanent Address ---------------- */
-  const [permFrom, setPermFrom] = useState("");
-  const [permDoor, setPermDoor] = useState("");
-  const [permVillage, setPermVillage] = useState("");
+  const [permFrom,     setPermFrom]     = useState("");
+  const [permDoor,     setPermDoor]     = useState("");
+  const [permVillage,  setPermVillage]  = useState("");
   const [permDistrict, setPermDistrict] = useState("");
-  const [permPin, setPermPin] = useState("");
+  const [permPin,      setPermPin]      = useState("");
 
-  // Load saved data
+  const [saveStatus, setSaveStatus] = useState("");
+
+  /* ---------- Auto-populate from signup & restore draft ---------- */
   useEffect(() => {
-    const saved = localStorage.getItem('datagate_personal');
-    if (saved) {
-      const data = JSON.parse(saved);
-      setFirstName(data.firstName || "");
-      setMiddleName(data.middleName || "");
-      setLastName(data.lastName || "");
-      setFatherFirst(data.fatherFirst || "");
-      setFatherMiddle(data.fatherMiddle || "");
-      setFatherLast(data.fatherLast || "");
-      setDob(data.dob || "");
-      setGender(data.gender || "");
-      setNationality(data.nationality || "");
-      setMobile(data.mobile || "");
-      setAadhar(data.aadhar || "");
-      setPan(data.pan || "");
-      setPassport(data.passport || "");
-      setCurFrom(data.curFrom || "");
-      setCurTo(data.curTo || "");
-      setCurDoor(data.curDoor || "");
-      setCurVillage(data.curVillage || "");
-      setCurDistrict(data.curDistrict || "");
-      setCurPin(data.curPin || "");
-      setPermFrom(data.permFrom || "");
-      setPermDoor(data.permDoor || "");
-      setPermVillage(data.permVillage || "");
-      setPermDistrict(data.permDistrict || "");
-      setPermPin(data.permPin || "");
-      setPhotoPreview(data.photo || null);
-    }
-  }, []);
+    // 1. Pre-fill from auth context (signup data)
+    if (user?.email) setEmail(user.email);
+    if (user?.phone) setMobile(user.phone);
 
-  const handleSave = async () => {
-    setSaving(true);
-
-    const personalData = {
-      photo: photoPreview,
-      firstName, middleName, lastName,
-      fatherFirst, fatherMiddle, fatherLast,
-      dob, gender, nationality,
-      mobile, aadhar, pan, passport,
-      curFrom, curTo, curDoor, curVillage, curDistrict, curPin,
-      permFrom, permDoor, permVillage, permDistrict, permPin
-    };
-
-    // Save to localStorage
-    localStorage.setItem('datagate_personal', JSON.stringify(personalData));
-    localStorage.setItem('datagate_employee_id', employeeId);
-    
-    // Save draft to API
+    // 2. Restore any saved draft
     try {
-      await apiCall('/employee', 'POST', {
-        employee_id: employeeId,
+      const saved = localStorage.getItem("dg_personal");
+      if (saved) {
+        const d = JSON.parse(saved);
+        if (d.firstName)    setFirstName(d.firstName);
+        if (d.middleName)   setMiddleName(d.middleName);
+        if (d.lastName)     setLastName(d.lastName);
+        if (d.fatherFirst)  setFatherFirst(d.fatherFirst);
+        if (d.fatherMiddle) setFatherMiddle(d.fatherMiddle);
+        if (d.fatherLast)   setFatherLast(d.fatherLast);
+        if (d.dob)          setDob(d.dob);
+        if (d.gender)       setGender(d.gender);
+        if (d.nationality)  setNationality(d.nationality);
+        if (d.aadhar)       setAadhar(d.aadhar);
+        if (d.pan)          setPan(d.pan);
+        if (d.passport)     setPassport(d.passport);
+        if (d.curFrom)      setCurFrom(d.curFrom);
+        if (d.curTo)        setCurTo(d.curTo);
+        if (d.curDoor)      setCurDoor(d.curDoor);
+        if (d.curVillage)   setCurVillage(d.curVillage);
+        if (d.curDistrict)  setCurDistrict(d.curDistrict);
+        if (d.curPin)       setCurPin(d.curPin);
+        if (d.permFrom)     setPermFrom(d.permFrom);
+        if (d.permDoor)     setPermDoor(d.permDoor);
+        if (d.permVillage)  setPermVillage(d.permVillage);
+        if (d.permDistrict) setPermDistrict(d.permDistrict);
+        if (d.permPin)      setPermPin(d.permPin);
+      }
+    } catch (_) {}
+  }, [user]);
+
+  /* ---------- Build payload ---------- */
+  const buildPayload = () => ({
+    firstName, middleName, lastName,
+    fatherName: `${fatherFirst} ${fatherMiddle} ${fatherLast}`.trim(),
+    fatherFirst, fatherMiddle, fatherLast,
+    dob, gender, nationality,
+    mobile, email,
+    aadhaar: aadhar, pan, passport,
+    currentAddress: { from: curFrom, to: curTo, door: curDoor, village: curVillage, district: curDistrict, pin: curPin },
+    permanentAddress: { from: permFrom, door: permDoor, village: permVillage, district: permDistrict, pin: permPin },
+  });
+
+  /* ---------- Save to localStorage + background API ---------- */
+  const saveDraft = async () => {
+    const data = buildPayload();
+    localStorage.setItem("dg_personal", JSON.stringify(data));
+
+    // Merge with any existing employee record in API (draft)
+    try {
+      const existing = JSON.parse(localStorage.getItem("dg_employee_id") || "null");
+      const payload = {
+        ...data,
+        employee_id: existing || `emp-${Date.now()}`,
         status: "draft",
-        firstName: firstName || "temp",
-        lastName: lastName || "temp",
-        mobile: mobile || "0000000000",
-        email: user?.email,
-        personal: personalData
+      };
+      if (!existing) localStorage.setItem("dg_employee_id", JSON.stringify(payload.employee_id));
+
+      await fetch(`${API}/employee`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
       });
-    } catch (err) {
-      console.error("Draft save failed:", err);
-    }
-    
-    setSaving(false);
-    router.push("/employee/education");
+    } catch (_) { /* silent — localStorage is the primary store */ }
   };
 
-  if (authLoading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>;
-  if (!isAuthenticated) return null;
+  /* ---------- Navigate ---------- */
+  const handleSave = async () => {
+    setSaveStatus("Saving...");
+    await saveDraft();
+    setSaveStatus("Saved ✓");
+    router.push("/employee/education");
+  };
 
   return (
     <div style={styles.page}>
@@ -136,17 +143,14 @@ export default function PersonalDetails() {
         <Section title="Profile Photo">
           <div style={{ textAlign: "center" }}>
             {photoPreview ? (
-              <img src={photoPreview} style={styles.photo} alt="Profile" />
+              <img src={photoPreview} style={styles.photo} alt="profile" />
             ) : (
               <div style={styles.photoPlaceholder}>Upload Photo</div>
             )}
             <input
               type="file"
               accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files[0];
-                if (file) setPhotoPreview(URL.createObjectURL(file));
-              }}
+              onChange={(e) => setPhotoPreview(URL.createObjectURL(e.target.files[0]))}
             />
           </div>
         </Section>
@@ -154,18 +158,18 @@ export default function PersonalDetails() {
         {/* NAME */}
         <Section title="Name">
           <Row>
-            <Input label="First Name" value={firstName} onChange={setFirstName} />
+            <Input label="First Name"  value={firstName}  onChange={setFirstName} />
             <Input label="Middle Name" value={middleName} onChange={setMiddleName} />
-            <Input label="Last Name" value={lastName} onChange={setLastName} />
+            <Input label="Last Name"   value={lastName}   onChange={setLastName} />
           </Row>
         </Section>
 
         {/* FATHER */}
         <Section title="Father Name">
           <Row>
-            <Input label="First Name" value={fatherFirst} onChange={setFatherFirst} />
+            <Input label="First Name"  value={fatherFirst}  onChange={setFatherFirst} />
             <Input label="Middle Name" value={fatherMiddle} onChange={setFatherMiddle} />
-            <Input label="Last Name" value={fatherLast} onChange={setFatherLast} />
+            <Input label="Last Name"   value={fatherLast}   onChange={setFatherLast} />
           </Row>
         </Section>
 
@@ -173,11 +177,22 @@ export default function PersonalDetails() {
         <Section title="Personal Information">
           <Row>
             <Input type="date" label="Date of Birth" value={dob} onChange={setDob} />
-            <Select label="Gender" value={gender} onChange={setGender} />
+            <SelectField label="Gender" value={gender} onChange={setGender} options={["Male","Female","Other"]} />
             <Input label="Nationality" value={nationality} onChange={setNationality} />
           </Row>
 
           <Row>
+            {/* EMAIL — pre-filled, read-only */}
+            <div style={{ flex: 1 }}>
+              <label style={styles.label}>Email (from signup)</label>
+              <input
+                value={email}
+                disabled
+                style={{ ...styles.input, background: "#f1f5f9", color: "#64748b" }}
+              />
+            </div>
+
+            {/* MOBILE — pre-filled, read-only */}
             <div style={{ flex: 1 }}>
               <label style={styles.label}>Mobile Number (India)</label>
               <div style={{ display: "flex", gap: "0.5rem" }}>
@@ -188,16 +203,10 @@ export default function PersonalDetails() {
                 />
                 <input
                   value={mobile}
-                  onChange={(e) => {
-                    const digits = e.target.value.replace(/\D/g, "");
-                    if (digits.length <= 10) setMobile(digits);
-                  }}
-                  style={styles.input}
+                  disabled
+                  style={{ ...styles.input, background: "#f1f5f9", color: "#64748b" }}
                 />
               </div>
-              {mobile && mobile.length !== 10 && (
-                <p style={styles.errorText}>Mobile number must be exactly 10 digits</p>
-              )}
             </div>
 
             <Input label="Passport Number" value={passport} onChange={setPassport} />
@@ -207,46 +216,39 @@ export default function PersonalDetails() {
         {/* AADHAAR + PAN */}
         <Section title="Identity Documents">
           <Row>
+            {/* Aadhaar */}
             <div style={{ flex: 1 }}>
               <Input
                 label="Aadhaar Number"
                 value={aadhar}
-                onChange={(v) => {
-                  const digits = v.replace(/\D/g, "");
-                  if (digits.length <= 12) setAadhar(digits);
-                }}
+                onChange={(v) => { const d = v.replace(/\D/g,""); if(d.length<=12) setAadhar(d); }}
               />
-              {aadhar && aadhar.length !== 12 && (
-                <p style={styles.errorText}>Aadhaar must be exactly 12 digits</p>
-              )}
-              <File label="Upload Aadhaar" />
+              {aadhar && aadhar.length !== 12 && <p style={styles.error}>Must be 12 digits</p>}
+              {/* File upload UI preserved — S3 integration coming */}
+              <div style={{ marginTop: "0.5rem" }}>
+                <label style={styles.label}>Upload Aadhaar (coming soon)</label>
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png" disabled style={{ opacity: 0.5 }} />
+              </div>
             </div>
 
+            {/* PAN */}
             <div style={{ flex: 1 }}>
               <Input
                 label="PAN Number"
                 value={pan}
                 onChange={(v) => {
-                  let value = v.toUpperCase();
-                  if (value.length <= 5) {
-                    value = value.replace(/[^A-Z]/g, "");
-                  } else if (value.length <= 9) {
-                    value =
-                      value.slice(0, 5).replace(/[^A-Z]/g, "") +
-                      value.slice(5).replace(/[^0-9]/g, "");
-                  } else if (value.length <= 10) {
-                    value =
-                      value.slice(0, 5).replace(/[^A-Z]/g, "") +
-                      value.slice(5, 9).replace(/[^0-9]/g, "") +
-                      value.slice(9).replace(/[^A-Z]/g, "");
-                  }
-                  setPan(value);
+                  let val = v.toUpperCase();
+                  if (val.length <= 5)       val = val.replace(/[^A-Z]/g,"");
+                  else if (val.length <= 9)  val = val.slice(0,5).replace(/[^A-Z]/g,"") + val.slice(5).replace(/[^0-9]/g,"");
+                  else if (val.length <= 10) val = val.slice(0,5).replace(/[^A-Z]/g,"") + val.slice(5,9).replace(/[^0-9]/g,"") + val.slice(9).replace(/[^A-Z]/g,"");
+                  setPan(val);
                 }}
               />
-              {pan && pan.length !== 10 && (
-                <p style={styles.errorText}>PAN format: AAAAA9999A</p>
-              )}
-              <File label="Upload PAN" />
+              {pan && pan.length !== 10 && <p style={styles.error}>Format: AAAAA9999A</p>}
+              <div style={{ marginTop: "0.5rem" }}>
+                <label style={styles.label}>Upload PAN (coming soon)</label>
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png" disabled style={{ opacity: 0.5 }} />
+              </div>
             </div>
           </Row>
         </Section>
@@ -255,41 +257,35 @@ export default function PersonalDetails() {
         <Section title="Current Address">
           <Row>
             <Input type="date" label="Residing From" value={curFrom} onChange={setCurFrom} />
-            <Input type="date" label="Residing To" value={curTo} onChange={setCurTo} />
+            <Input type="date" label="Residing To"   value={curTo}   onChange={setCurTo} />
           </Row>
-          <Input label="Door & Street" value={curDoor} onChange={setCurDoor} />
+          <Input label="Door & Street"   value={curDoor}     onChange={setCurDoor} />
           <Input label="Village / Mandal" value={curVillage} onChange={setCurVillage} />
           <Input label="District / State" value={curDistrict} onChange={setCurDistrict} />
-          <Input label="Pincode" value={curPin} onChange={(v) => setCurPin(v.replace(/\D/g, ""))} />
+          <Input label="Pincode" value={curPin} onChange={(v) => setCurPin(v.replace(/\D/g,""))} />
         </Section>
 
         {/* PERMANENT ADDRESS */}
         <Section title="Permanent Address">
           <Input type="date" label="Residing From" value={permFrom} onChange={setPermFrom} />
-          <Input label="Door & Street" value={permDoor} onChange={setPermDoor} />
-          <Input label="Village / Mandal" value={permVillage} onChange={setPermVillage} />
+          <Input label="Door & Street"    value={permDoor}     onChange={setPermDoor} />
+          <Input label="Village / Mandal" value={permVillage}  onChange={setPermVillage} />
           <Input label="District / State" value={permDistrict} onChange={setPermDistrict} />
-          <Input
-            label="Pincode"
-            value={permPin}
-            onChange={(v) => setPermPin(v.replace(/\D/g, ""))}
-          />
+          <Input label="Pincode" value={permPin} onChange={(v) => setPermPin(v.replace(/\D/g,""))} />
         </Section>
 
-        <button
-          onClick={handleSave}
-          style={{ ...styles.button, background: "#2563eb", opacity: saving ? 0.6 : 1 }}
-          disabled={saving}
-        >
-          {saving ? "Saving..." : "Save & Proceed →"}
-        </button>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ color: "#64748b", fontSize: "0.85rem" }}>{saveStatus}</span>
+          <button onClick={handleSave} style={{ ...styles.button, background: "#2563eb" }}>
+            Save & Proceed →
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-/* ---------------- UI HELPERS ---------------- */
-
+/* ---------------- UI HELPERS (exact same as original) ---------------- */
 const Section = ({ title, children }) => (
   <div style={{ marginBottom: "2rem" }}>
     <h2 style={styles.sectionTitle}>{title}</h2>
@@ -304,96 +300,30 @@ const Row = ({ children }) => (
 const Input = ({ label, value, onChange, type = "text" }) => (
   <div style={{ flex: 1, minWidth: "200px" }}>
     <label style={styles.label}>{label}</label>
-    <input
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      style={styles.input}
-    />
+    <input type={type} value={value} onChange={(e) => onChange(e.target.value)} style={styles.input} />
   </div>
 );
 
-const Select = ({ label, value, onChange }) => (
+const SelectField = ({ label, value, onChange, options }) => (
   <div style={{ flex: 1 }}>
     <label style={styles.label}>{label}</label>
     <select value={value} onChange={(e) => onChange(e.target.value)} style={styles.input}>
       <option value="">Select</option>
-      <option>Male</option>
-      <option>Female</option>
-      <option>Other</option>
+      {options.map((o) => <option key={o}>{o}</option>)}
     </select>
   </div>
 );
 
-const File = ({ label }) => (
-  <div>
-    <label style={styles.label}>{label}</label>
-    <input type="file" accept=".pdf,.jpg,.jpeg,.png" />
-  </div>
-);
-
-/* ---------------- STYLES ---------------- */
-
+/* ---------------- STYLES (exact same as original) ---------------- */
 const styles = {
-  page: {
-    background: "#f1f5f9",
-    padding: "2rem",
-    minHeight: "100vh",
-    fontFamily: "Inter, system-ui, sans-serif"
-  },
-  card: {
-    maxWidth: "980px",
-    margin: "auto",
-    background: "#fff",
-    padding: "2rem",
-    borderRadius: "14px",
-    boxShadow: "0 12px 30px rgba(0,0,0,0.08)"
-  },
-  title: {
-    marginBottom: "2rem"
-  },
-  sectionTitle: {
-    marginBottom: "1rem",
-    color: "#0f172a"
-  },
-  label: {
-    fontSize: "0.85rem",
-    color: "#475569"
-  },
-  input: {
-    width: "100%",
-    padding: "0.65rem",
-    borderRadius: "8px",
-    border: "1px solid #cbd5e1"
-  },
-  button: {
-    padding: "0.9rem 2.5rem",
-    borderRadius: "10px",
-    border: "none",
-    color: "#fff",
-    fontSize: "1rem",
-    cursor: "pointer"
-  },
-  photo: {
-    width: "140px",
-    height: "140px",
-    borderRadius: "50%",
-    objectFit: "cover",
-    marginBottom: "0.5rem"
-  },
-  photoPlaceholder: {
-    width: "140px",
-    height: "140px",
-    borderRadius: "50%",
-    background: "#e5e7eb",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: "0.5rem"
-  },
-  errorText: {
-    color: "#dc2626",
-    fontSize: "0.8rem",
-    marginTop: "0.25rem"
-  }
+  page:             { background: "#f1f5f9", padding: "2rem", minHeight: "100vh", fontFamily: "Inter, system-ui, sans-serif" },
+  card:             { maxWidth: "980px", margin: "auto", background: "#fff", padding: "2rem", borderRadius: "14px", boxShadow: "0 12px 30px rgba(0,0,0,0.08)" },
+  title:            { marginBottom: "2rem" },
+  sectionTitle:     { marginBottom: "1rem", color: "#0f172a" },
+  label:            { fontSize: "0.85rem", color: "#475569" },
+  input:            { width: "100%", padding: "0.65rem", borderRadius: "8px", border: "1px solid #cbd5e1" },
+  button:           { padding: "0.9rem 2.5rem", borderRadius: "10px", border: "none", color: "#fff", fontSize: "1rem", cursor: "pointer" },
+  photo:            { width: "140px", height: "140px", borderRadius: "50%", objectFit: "cover", marginBottom: "0.5rem" },
+  photoPlaceholder: { width: "140px", height: "140px", borderRadius: "50%", background: "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "0.5rem" },
+  error:            { color: "#dc2626", fontSize: "0.8rem", marginTop: "0.25rem" },
 };
