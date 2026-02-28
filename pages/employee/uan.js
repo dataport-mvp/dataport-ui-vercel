@@ -188,7 +188,7 @@ export default function UANPage() {
   return (
     <div style={styles.page}>
       <div style={styles.card}>
-        <ProgressBar step={4} />
+        <ProgressBar currentStep={4} totalSteps={4} />
         <h1 style={styles.title}>UAN & PF Information</h1>
 
         {/* ---------- UAN MASTER ---------- */}
