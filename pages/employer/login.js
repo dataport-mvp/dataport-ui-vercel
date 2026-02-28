@@ -1,105 +1,119 @@
+// pages/employer/login.js
 import { useState } from "react";
 import { useRouter } from "next/router";
+import { useAuth } from "../../utils/AuthContext";
 
-export default function EmployeeLogin() {
-  const [isSignup, setIsSignup] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [mobile, setMobile] = useState("");
-  const router = useRouter();
+const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
-  // ✅ Use your custom domain from .env.local
-  const api = process.env.NEXT_PUBLIC_API_URL_PROD;
+export default function EmployerLogin() {
+  const [isSignup, setIsSignup]   = useState(false);
+  const [email, setEmail]         = useState("");
+  const [password, setPassword]   = useState("");
+  const [fullName, setFullName]   = useState("");
+  const [mobile, setMobile]       = useState("");
+  const [error, setError]         = useState("");
+  const [loading, setLoading]     = useState(false);
+
+  const router   = useRouter();
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
 
     try {
-      // ✅ Payload matches backend RegisterRequest / LoginRequest
-      const payload = isSignup
-        ? { email, password, role: "employee", name: fullName, phone: mobile }
+      const endpoint = isSignup ? "/auth/register" : "/auth/login";
+      const payload  = isSignup
+        ? { email, password, role: "employer", name: fullName, phone: mobile }
         : { email, password };
 
-      // ✅ Endpoints match backend routes
-      const endpoint = isSignup ? "/auth/register" : "/auth/login";
-
-      const res = await fetch(`${api}${endpoint}`, {
-        method: "POST",
+      const res = await fetch(`${API}${endpoint}`, {
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body:    JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error(`API error: ${res.status}`);
       const data = await res.json();
-      console.log("Auth success:", data);
+      if (!res.ok) throw new Error(data.detail || `Error ${res.status}`);
 
-      // Redirect after success
-      router.push("/employee/personal");
+      login(data.access_token, {
+        email: data.email || email,
+        name:  data.name  || fullName,
+        phone: data.phone || mobile,
+        role:  data.role  || "employer",
+      });
+
+      router.push("/employer/dashboard");
     } catch (err) {
-      console.error("Auth failed:", err);
-      alert("Authentication failed. Please try again.");
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        background: "linear-gradient(to right, #f0f4f8, #d9e4ec)",
-      }}
-    >
-      <h1>{isSignup ? "Sign Up" : "Sign In"}</h1>
-      <form style={{ textAlign: "center" }} onSubmit={handleSubmit}>
-        <input
-          type="email"
-          placeholder="Email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        /><br /><br />
-        <input
-          type="password"
-          placeholder="Password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        /><br /><br />
-        {isSignup && (
-          <>
-            <input
-              type="text"
-              placeholder="Full Name"
-              required
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-            /><br /><br />
-            <input
-              type="text"
-              placeholder="Mobile Number"
-              required
-              value={mobile}
-              onChange={(e) => setMobile(e.target.value)}
-            /><br /><br />
-          </>
-        )}
-        <button type="submit" style={{ padding: "0.5rem 1.5rem" }}>
-          {isSignup ? "Sign Up" : "Sign In"}
-        </button>
-      </form>
-      <p style={{ marginTop: "1rem" }}>
-        {isSignup ? "Already have an account?" : "First time user?"}{" "}
-        <span
-          style={{ color: "blue", cursor: "pointer" }}
-          onClick={() => setIsSignup(!isSignup)}
-        >
-          {isSignup ? "Sign In" : "Sign Up"}
-        </span>
-      </p>
+    <div style={s.page}>
+      <div style={s.card}>
+        <h1 style={s.heading}>{isSignup ? "Employer Sign Up" : "Employer Sign In"}</h1>
+
+        <form onSubmit={handleSubmit}>
+          <Field label="Email">
+            <input style={s.input} type="email" value={email}
+              onChange={(e) => setEmail(e.target.value)} required placeholder="you@company.com" />
+          </Field>
+
+          <Field label="Password">
+            <input style={s.input} type="password" value={password}
+              onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" />
+          </Field>
+
+          {isSignup && (
+            <>
+              <Field label="Company / Full Name">
+                <input style={s.input} type="text" value={fullName}
+                  onChange={(e) => setFullName(e.target.value)} required placeholder="Acme Corp" />
+              </Field>
+              <Field label="Mobile Number">
+                <input style={s.input} type="tel" value={mobile} maxLength={10}
+                  onChange={(e) => setMobile(e.target.value.replace(/\D/g, ""))}
+                  required placeholder="10-digit mobile" />
+              </Field>
+            </>
+          )}
+
+          {error && <p style={s.error}>{error}</p>}
+
+          <button type="submit" disabled={loading} style={{ ...s.btn, opacity: loading ? 0.7 : 1 }}>
+            {loading ? "Please wait..." : isSignup ? "Create Account" : "Sign In"}
+          </button>
+        </form>
+
+        <p style={s.toggle}>
+          {isSignup ? "Already have an account?" : "New employer?"}{" "}
+          <span style={s.link} onClick={() => { setIsSignup(!isSignup); setError(""); }}>
+            {isSignup ? "Sign In" : "Sign Up"}
+          </span>
+        </p>
+      </div>
     </div>
   );
 }
+
+const Field = ({ label, children }) => (
+  <div style={{ marginBottom: "1rem" }}>
+    <label style={{ fontSize: "0.85rem", color: "#475569", display: "block", marginBottom: "4px" }}>{label}</label>
+    {children}
+  </div>
+);
+
+const s = {
+  page:    { minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", background: "linear-gradient(to right, #f0f4f8, #d9e4ec)", fontFamily: "Inter, system-ui, sans-serif" },
+  card:    { background: "#fff", padding: "2.5rem", borderRadius: "14px", boxShadow: "0 12px 30px rgba(0,0,0,0.08)", width: "100%", maxWidth: "420px" },
+  heading: { marginBottom: "1.5rem", textAlign: "center" },
+  input:   { width: "100%", padding: "0.65rem", borderRadius: "8px", border: "1px solid #cbd5e1", boxSizing: "border-box" },
+  btn:     { width: "100%", padding: "0.85rem", background: "#2563eb", color: "#fff", border: "none", borderRadius: "8px", fontSize: "1rem", cursor: "pointer", marginTop: "0.5rem" },
+  error:   { color: "#dc2626", fontSize: "0.85rem", marginBottom: "0.75rem" },
+  toggle:  { marginTop: "1.25rem", textAlign: "center", fontSize: "0.9rem" },
+  link:    { color: "#2563eb", cursor: "pointer", fontWeight: "600" },
+};
