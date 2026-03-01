@@ -148,6 +148,20 @@ export default function EmployerDashboard() {
 
   return (
     <div style={styles.page}>
+
+      {showSignoutConfirm && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "#fff", borderRadius: "14px", padding: "2rem", maxWidth: "400px", width: "90%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+            <div style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>🚪</div>
+            <h3 style={{ margin: "0 0 0.5rem", color: "#0f172a" }}>Sign Out?</h3>
+            <p style={{ color: "#475569", marginBottom: "1.5rem", fontSize: "0.9rem" }}>You will be returned to the employer login page.</p>
+            <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
+              <button onClick={() => setShowSignoutConfirm(false)} style={{ padding: "0.6rem 1.5rem", borderRadius: "8px", border: "1px solid #cbd5e1", background: "#f8fafc", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
+              <button onClick={() => { logout(); router.push("/employer/login"); }} style={{ padding: "0.6rem 1.5rem", borderRadius: "8px", border: "none", background: "#0f172a", color: "#fff", cursor: "pointer", fontWeight: 600 }}>Yes, Sign Out</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div style={styles.card}>
 
         {/* Header */}
@@ -156,7 +170,7 @@ export default function EmployerDashboard() {
             <h1 style={styles.title}>Employer Dashboard</h1>
             {user && <p style={styles.subtitle}>Logged in as <strong>{user.email}</strong></p>}
           </div>
-          <button style={styles.logoutBtn} onClick={() => { logout(); router.push("/employer/login"); }}>
+          <button style={styles.logoutBtn} onClick={() => setShowSignoutConfirm(true)}>
             Sign Out
           </button>
         </div>
