@@ -50,6 +50,19 @@ export default function EmployeeLogin() {
       };
       login(data.access_token, userData);
 
+      // After login, fetch existing employee_id so pages can restore data
+      try {
+        const empRes = await fetch(`${API}/employee/draft`, {
+          headers: { Authorization: `Bearer ${data.access_token}` },
+        });
+        if (empRes.ok) {
+          const emp = await empRes.json();
+          if (emp?.employee_id) {
+            localStorage.setItem("dg_employee_id", JSON.stringify(emp.employee_id));
+          }
+        }
+      } catch (_) {}
+
       router.push("/employee/personal");
     } catch (err) {
       setError(err.message);
