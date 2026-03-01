@@ -135,20 +135,27 @@ export default function PersonalDetails() {
     const data = buildPayload();
     localStorage.setItem("dg_personal", JSON.stringify(data));
 
-    // Merge with any existing employee record in API (draft)
     try {
-      const existing = JSON.parse(localStorage.getItem("dg_employee_id") || "null");
-      const payload = {
-        ...data,
-        employee_id: existing || `emp-${Date.now()}`,
-        status: "draft",
-      };
-      if (!existing) localStorage.setItem("dg_employee_id", JSON.stringify(payload.employee_id));
+      // Always resolve employee_id from API first — prevents orphan records on double-save
+      let empId = JSON.parse(localStorage.getItem("dg_employee_id") || "null");
+      if (!empId) {
+        // Check if a record already exists server-side for this user
+        const draftRes = await fetch(`${API}/employee/draft`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (draftRes.ok) {
+          const draft = await draftRes.json();
+          empId = draft.employee_id;
+        }
+        // Only generate a new ID if truly no record exists anywhere
+        if (!empId) empId = `emp-${Date.now()}`;
+        localStorage.setItem("dg_employee_id", JSON.stringify(empId));
+      }
 
       await fetch(`${API}/employee`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...data, employee_id: empId, status: "draft" }),
       });
     } catch (_) { /* silent — localStorage is the primary store */ }
   };
