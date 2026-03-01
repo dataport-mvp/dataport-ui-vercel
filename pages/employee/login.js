@@ -13,6 +13,7 @@ export default function EmployeeLogin() {
   const [phone, setPhone]       = useState("");
   const [error, setError]       = useState("");
   const [loading, setLoading]   = useState(false);
+  const [showPwd, setShowPwd]   = useState(false);
 
   const router = useRouter();
   const { login } = useAuth();
@@ -52,24 +53,8 @@ export default function EmployeeLogin() {
       // login() will auto-clear previous user's form cache if different email
       login(data.access_token, userData);
 
-      if (isSignup) {
-        // New user — start with clean slate, no pre-filled data
-        router.push("/employee/personal");
-      } else {
-        // Returning user — fetch their existing profile so pages can restore
-        try {
-          const empRes = await fetch(`${API}/employee/draft`, {
-            headers: { Authorization: `Bearer ${data.access_token}` },
-          });
-          if (empRes.ok) {
-            const emp = await empRes.json();
-            if (emp?.employee_id) {
-              localStorage.setItem("dg_employee_id", JSON.stringify(emp.employee_id));
-            }
-          }
-        } catch (_) {}
-        router.push("/employee/personal");
-      }
+      // Navigate immediately — each page handles its own data restore from API
+      router.push("/employee/personal");
     } catch (err) {
       setError(err.message);
     } finally {
