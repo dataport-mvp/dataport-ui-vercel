@@ -39,7 +39,7 @@ const emptyPfRecord = () => ({
 
 export default function UANPage() {
   const router = useRouter();
-  const { token } = useAuth();
+  const { token, logout } = useAuth();
 
   const [form, setForm] = useState({
     uanMaster: {
@@ -189,7 +189,23 @@ export default function UANPage() {
     <div style={styles.page}>
       <div style={styles.card}>
         <ProgressBar currentStep={4} totalSteps={4} />
-        <h1 style={styles.title}>UAN & PF Information</h1>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+          <h1 style={{ ...styles.title, margin: 0 }}>UAN & PF Information</h1>
+          <div style={{ display: "flex", gap: "0.75rem" }}>
+            <button
+              onClick={() => router.push("/consent")}
+              style={{ background: "#fff", border: "1px solid #2563eb", color: "#2563eb", borderRadius: "8px", padding: "0.45rem 1rem", cursor: "pointer", fontWeight: 600, fontSize: "0.85rem" }}
+            >
+              🔒 Consent Center
+            </button>
+            <button
+              onClick={() => { logout(); router.push("/employee/login"); }}
+              style={{ background: "#0f172a", border: "none", color: "#fff", borderRadius: "8px", padding: "0.45rem 1rem", cursor: "pointer", fontWeight: 600, fontSize: "0.85rem" }}
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
 
         {/* ---------- UAN MASTER ---------- */}
         <div style={styles.section}>
