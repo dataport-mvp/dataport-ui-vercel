@@ -48,22 +48,28 @@ export default function EmployeeLogin() {
         phone: data.phone || phone,
         role:  data.role  || "employee",
       };
+
+      // login() will auto-clear previous user's form cache if different email
       login(data.access_token, userData);
 
-      // After login, fetch existing employee_id so pages can restore data
-      try {
-        const empRes = await fetch(`${API}/employee/draft`, {
-          headers: { Authorization: `Bearer ${data.access_token}` },
-        });
-        if (empRes.ok) {
-          const emp = await empRes.json();
-          if (emp?.employee_id) {
-            localStorage.setItem("dg_employee_id", JSON.stringify(emp.employee_id));
+      if (isSignup) {
+        // New user — start with clean slate, no pre-filled data
+        router.push("/employee/personal");
+      } else {
+        // Returning user — fetch their existing profile so pages can restore
+        try {
+          const empRes = await fetch(`${API}/employee/draft`, {
+            headers: { Authorization: `Bearer ${data.access_token}` },
+          });
+          if (empRes.ok) {
+            const emp = await empRes.json();
+            if (emp?.employee_id) {
+              localStorage.setItem("dg_employee_id", JSON.stringify(emp.employee_id));
+            }
           }
-        }
-      } catch (_) {}
-
-      router.push("/employee/personal");
+        } catch (_) {}
+        router.push("/employee/personal");
+      }
     } catch (err) {
       setError(err.message);
     } finally {
