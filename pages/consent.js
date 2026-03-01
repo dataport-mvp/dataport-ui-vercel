@@ -1,7 +1,7 @@
 // pages/consent.js
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../utils/AuthContext";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
