@@ -92,16 +92,58 @@ export default function PreviousCompany() {
     business: emptyAck(), dismissed: emptyAck(), criminal: emptyAck(), civil: emptyAck()
   });
   const [saveStatus, setSaveStatus] = useState("");
+  const [showSignoutConfirm, setShowSignoutConfirm] = useState(false);
 
   /* ---------- Restore draft ---------- */
   useEffect(() => {
+    // 1. Try localStorage first (fast path)
     try {
       const savedEmp = localStorage.getItem("dg_employments");
       const savedAck = localStorage.getItem("dg_ack");
-      if (savedEmp) setEmployments(JSON.parse(savedEmp));
-      if (savedAck) setAck(JSON.parse(savedAck));
+      if (savedEmp) { setEmployments(JSON.parse(savedEmp)); if (savedAck) setAck(JSON.parse(savedAck)); return; }
     } catch (_) {}
-  }, []);
+
+    // 2. Fallback: fetch from API (re-login case)
+    // First resolve employee_id via /employee/draft, then fetch history
+    if (!token) return;
+    const resolveEmpId = () => {
+      const cached = JSON.parse(localStorage.getItem("dg_employee_id") || "null");
+      if (cached) return Promise.resolve(cached);
+      return fetch(`${API}/employee/draft`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d?.employee_id) { localStorage.setItem("dg_employee_id", JSON.stringify(d.employee_id)); return d.employee_id; } return null; });
+    };
+    resolveEmpId().then(empId => {
+      if (!empId) return;
+      fetch(`${API}/employee/employment-history/${empId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (!d) return;
+        if (d.employments?.length) {
+          // Convert API rows back to UI format
+          const items = d.employments.map(e => ({
+            companyName: e.companyName || "", officeAddress: e.officeAddress || "",
+            employeeId: e.employeeId || "", workEmail: e.workEmail || "",
+            designation: e.designation || "", department: e.department || "",
+            duties: e.duties || "", employmentType: e.employmentType || "",
+            reasonForRelieving: e.reasonForRelieving || "",
+            reference: e.reference || { name: "", role: "", email: "", mobile: "" },
+            contractVendor: e.contractVendor || { company: "", email: "", mobile: "" },
+            gap: e.gap || { hasGap: "No", reason: "" },
+          }));
+          setEmployments(items);
+          localStorage.setItem("dg_employments", JSON.stringify(items));
+        }
+        if (d.acknowledgements) {
+          setAck(d.acknowledgements);
+          localStorage.setItem("dg_ack", JSON.stringify(d.acknowledgements));
+        }
+      })
+      .catch(() => {});
+    }).catch(() => {});
+  }, [token]);
 
   /* ---------- Update helper ---------- */
   const update = (i, path, value) => {
@@ -141,6 +183,21 @@ export default function PreviousCompany() {
 
   return (
     <div style={styles.page}>
+      {/* Signout confirmation */}
+      {showSignoutConfirm && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "#fff", borderRadius: "14px", padding: "2rem", maxWidth: "400px", width: "90%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+            <div style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>🚪</div>
+            <h3 style={{ margin: "0 0 0.5rem", color: "#0f172a" }}>Sign Out?</h3>
+            <p style={{ color: "#475569", marginBottom: "1.5rem", fontSize: "0.9rem" }}>Your progress is saved. You can continue from where you left off after logging back in.</p>
+            <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
+              <button onClick={() => setShowSignoutConfirm(false)} style={{ padding: "0.6rem 1.5rem", borderRadius: "8px", border: "1px solid #cbd5e1", background: "#f8fafc", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
+              <button onClick={() => { logout(); router.push("/employee/login"); }} style={{ padding: "0.6rem 1.5rem", borderRadius: "8px", border: "none", background: "#0f172a", color: "#fff", cursor: "pointer", fontWeight: 600 }}>Yes, Sign Out</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ProgressBar currentStep={3} totalSteps={4} />
 
       <div style={styles.card}>
@@ -154,7 +211,7 @@ export default function PreviousCompany() {
               🔒 Consent Center
             </button>
             <button
-              onClick={() => { logout(); router.push("/employee/login"); }}
+              onClick={() => setShowSignoutConfirm(true)}
               style={{ background: "#0f172a", border: "none", color: "#fff", borderRadius: "8px", padding: "0.45rem 1rem", cursor: "pointer", fontWeight: 600, fontSize: "0.85rem" }}
             >
               Sign Out
