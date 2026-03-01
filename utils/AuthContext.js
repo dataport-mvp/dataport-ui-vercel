@@ -22,7 +22,7 @@ export function AuthProvider({ children }) {
   const clearFormCache = () => {
     // Remove all form draft keys — prevents data leaking between users
     ["dg_personal", "dg_education", "dg_employments", "dg_ack",
-     "dg_uan", "dg_employee_id"].forEach(k => localStorage.removeItem(k));
+     "dg_uan", "dg_uan_acks", "dg_employee_id"].forEach(k => localStorage.removeItem(k));
   };
 
   const login = (token, userData) => {
