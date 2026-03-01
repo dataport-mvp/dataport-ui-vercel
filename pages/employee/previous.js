@@ -85,7 +85,7 @@ const emptyAck = () => ({ val: "", note: "" });
 /* ---------- PAGE ---------- */
 export default function PreviousCompany() {
   const router = useRouter();
-  const { token } = useAuth();
+  const { token, logout } = useAuth();
 
   const [employments, setEmployments] = useState([emptyEmployment()]);
   const [ack, setAck] = useState({
@@ -144,7 +144,23 @@ export default function PreviousCompany() {
       <ProgressBar currentStep={3} totalSteps={4} />
 
       <div style={styles.card}>
-        <h1 style={styles.title}>Employment History</h1>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+          <h1 style={{ ...styles.title, margin: 0 }}>Employment History</h1>
+          <div style={{ display: "flex", gap: "0.75rem" }}>
+            <button
+              onClick={() => router.push("/consent")}
+              style={{ background: "#fff", border: "1px solid #2563eb", color: "#2563eb", borderRadius: "8px", padding: "0.45rem 1rem", cursor: "pointer", fontWeight: 600, fontSize: "0.85rem" }}
+            >
+              🔒 Consent Center
+            </button>
+            <button
+              onClick={() => { logout(); router.push("/employee/login"); }}
+              style={{ background: "#0f172a", border: "none", color: "#fff", borderRadius: "8px", padding: "0.45rem 1rem", cursor: "pointer", fontWeight: 600, fontSize: "0.85rem" }}
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
 
         {employments.map((emp, index) => (
           <div key={index} style={styles.employerCard}>
@@ -267,7 +283,7 @@ export default function PreviousCompany() {
         ))}
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "2rem" }}>
-          <button style={styles.secondaryBtn} onClick={() => router.back()}>Previous</button>
+          <button style={styles.secondaryBtn} onClick={() => router.push("/employee/education")}>← Previous</button>
           <span style={{ color: "#64748b", fontSize: "0.85rem" }}>{saveStatus}</span>
           <button style={styles.primaryBtn} onClick={handleNext}>Save & Proceed</button>
         </div>
