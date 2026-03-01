@@ -8,7 +8,7 @@ const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
 export default function PersonalDetails() {
   const router = useRouter();
-  const { token, user } = useAuth();
+  const { token, user, logout } = useAuth();
 
   /* ---------------- Photo ---------------- */
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -164,16 +164,28 @@ export default function PersonalDetails() {
         <ProgressBar currentStep={1} totalSteps={4} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
           <h1 style={{ ...styles.title, margin: 0 }}>Personal Details</h1>
-          <button
-            onClick={() => router.push("/consent")}
-            style={{
-              background: "#fff", border: "1px solid #2563eb", color: "#2563eb",
-              borderRadius: "8px", padding: "0.45rem 1rem", cursor: "pointer",
-              fontWeight: 600, fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem"
-            }}
-          >
-            🔒 Consent Center
-          </button>
+          <div style={{ display: "flex", gap: "0.75rem" }}>
+            <button
+              onClick={() => router.push("/consent")}
+              style={{
+                background: "#fff", border: "1px solid #2563eb", color: "#2563eb",
+                borderRadius: "8px", padding: "0.45rem 1rem", cursor: "pointer",
+                fontWeight: 600, fontSize: "0.85rem"
+              }}
+            >
+              🔒 Consent Center
+            </button>
+            <button
+              onClick={() => { logout(); router.push("/employee/login"); }}
+              style={{
+                background: "#0f172a", border: "none", color: "#fff",
+                borderRadius: "8px", padding: "0.45rem 1rem", cursor: "pointer",
+                fontWeight: 600, fontSize: "0.85rem"
+              }}
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
 
         {/* PHOTO */}
