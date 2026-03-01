@@ -66,62 +66,103 @@ export default function EducationDetails() {
   const [pgMedium, setPgMedium]             = useState("");
 
   const [saveStatus, setSaveStatus] = useState("");
+  const [showSignoutConfirm, setShowSignoutConfirm] = useState(false);
 
   /* ---------- Restore draft ---------- */
   useEffect(() => {
+    const applyFlat = (flat) => {
+      if (flat.xSchool)       setXSchool(flat.xSchool);
+      if (flat.xBoard)        setXBoard(flat.xBoard);
+      if (flat.xHall)         setXHall(flat.xHall);
+      if (flat.xFrom)         setXFrom(flat.xFrom);
+      if (flat.xTo)           setXTo(flat.xTo);
+      if (flat.xAddress)      setXAddress(flat.xAddress);
+      if (flat.xYear)         setXYear(flat.xYear);
+      if (flat.xResultType)   setXResultType(flat.xResultType);
+      if (flat.xResultValue)  setXResultValue(flat.xResultValue);
+      if (flat.xMedium)       setXMedium(flat.xMedium);
+      if (flat.iCollege)      setICollege(flat.iCollege);
+      if (flat.iBoard)        setIBoard(flat.iBoard);
+      if (flat.iHall)         setIHall(flat.iHall);
+      if (flat.iFrom)         setIFrom(flat.iFrom);
+      if (flat.iTo)           setITo(flat.iTo);
+      if (flat.iAddress)      setIAddress(flat.iAddress);
+      if (flat.iMode)         setIMode(flat.iMode);
+      if (flat.iYear)         setIYear(flat.iYear);
+      if (flat.iResultType)   setIResultType(flat.iResultType);
+      if (flat.iResultValue)  setIResultValue(flat.iResultValue);
+      if (flat.iMedium)       setIMedium(flat.iMedium);
+      if (flat.ugCollege)     setUgCollege(flat.ugCollege);
+      if (flat.ugUniversity)  setUgUniversity(flat.ugUniversity);
+      if (flat.ugCourse)      setUgCourse(flat.ugCourse);
+      if (flat.ugHall)        setUgHall(flat.ugHall);
+      if (flat.ugFrom)        setUgFrom(flat.ugFrom);
+      if (flat.ugTo)          setUgTo(flat.ugTo);
+      if (flat.ugAddress)     setUgAddress(flat.ugAddress);
+      if (flat.ugMode)        setUgMode(flat.ugMode);
+      if (flat.ugYear)        setUgYear(flat.ugYear);
+      if (flat.ugResultType)  setUgResultType(flat.ugResultType);
+      if (flat.ugResultValue) setUgResultValue(flat.ugResultValue);
+      if (flat.ugBacklogs)    setUgBacklogs(flat.ugBacklogs);
+      if (flat.ugMedium)      setUgMedium(flat.ugMedium);
+      if (flat.pgCollege)     setPgCollege(flat.pgCollege);
+      if (flat.pgUniversity)  setPgUniversity(flat.pgUniversity);
+      if (flat.pgCourse)      setPgCourse(flat.pgCourse);
+      if (flat.pgHall)        setPgHall(flat.pgHall);
+      if (flat.pgFrom)        setPgFrom(flat.pgFrom);
+      if (flat.pgTo)          setPgTo(flat.pgTo);
+      if (flat.pgAddress)     setPgAddress(flat.pgAddress);
+      if (flat.pgMode)        setPgMode(flat.pgMode);
+      if (flat.pgYear)        setPgYear(flat.pgYear);
+      if (flat.pgResultType)  setPgResultType(flat.pgResultType);
+      if (flat.pgResultValue) setPgResultValue(flat.pgResultValue);
+      if (flat.pgBacklogs)    setPgBacklogs(flat.pgBacklogs);
+      if (flat.pgMedium)      setPgMedium(flat.pgMedium);
+    };
+
+    const applyNested = (edu) => {
+      // Convert nested API format back to flat state
+      if (!edu) return;
+      const x = edu.classX || {};
+      const i = edu.intermediate || {};
+      const ug = edu.undergraduate || {};
+      const pg = edu.postgraduate || {};
+      applyFlat({
+        xSchool: x.school, xBoard: x.board, xHall: x.hallTicket,
+        xFrom: x.from, xTo: x.to, xAddress: x.address,
+        xYear: x.yearOfPassing, xResultType: x.resultType, xResultValue: x.resultValue, xMedium: x.medium,
+        iCollege: i.college, iBoard: i.board, iHall: i.hallTicket,
+        iFrom: i.from, iTo: i.to, iAddress: i.address, iMode: i.mode,
+        iYear: i.yearOfPassing, iResultType: i.resultType, iResultValue: i.resultValue, iMedium: i.medium,
+        ugCollege: ug.college, ugUniversity: ug.university, ugCourse: ug.course, ugHall: ug.hallTicket,
+        ugFrom: ug.from, ugTo: ug.to, ugAddress: ug.address, ugMode: ug.mode,
+        ugYear: ug.yearOfPassing, ugResultType: ug.resultType, ugResultValue: ug.resultValue,
+        ugBacklogs: ug.backlogs, ugMedium: ug.medium,
+        pgCollege: pg.college, pgUniversity: pg.university, pgCourse: pg.course, pgHall: pg.hallTicket,
+        pgFrom: pg.from, pgTo: pg.to, pgAddress: pg.address, pgMode: pg.mode,
+        pgYear: pg.yearOfPassing, pgResultType: pg.resultType, pgResultValue: pg.resultValue,
+        pgBacklogs: pg.backlogs, pgMedium: pg.medium,
+      });
+    };
+
+    // 1. Try localStorage first (fast path - mid session)
     try {
       const saved = localStorage.getItem("dg_education");
-      if (!saved) return;
-      const d = JSON.parse(saved);
-      if (d.xSchool)       setXSchool(d.xSchool);
-      if (d.xBoard)        setXBoard(d.xBoard);
-      if (d.xHall)         setXHall(d.xHall);
-      if (d.xFrom)         setXFrom(d.xFrom);
-      if (d.xTo)           setXTo(d.xTo);
-      if (d.xAddress)      setXAddress(d.xAddress);
-      if (d.xYear)         setXYear(d.xYear);
-      if (d.xResultType)   setXResultType(d.xResultType);
-      if (d.xResultValue)  setXResultValue(d.xResultValue);
-      if (d.xMedium)       setXMedium(d.xMedium);
-      if (d.iCollege)      setICollege(d.iCollege);
-      if (d.iBoard)        setIBoard(d.iBoard);
-      if (d.iHall)         setIHall(d.iHall);
-      if (d.iFrom)         setIFrom(d.iFrom);
-      if (d.iTo)           setITo(d.iTo);
-      if (d.iAddress)      setIAddress(d.iAddress);
-      if (d.iMode)         setIMode(d.iMode);
-      if (d.iYear)         setIYear(d.iYear);
-      if (d.iResultType)   setIResultType(d.iResultType);
-      if (d.iResultValue)  setIResultValue(d.iResultValue);
-      if (d.iMedium)       setIMedium(d.iMedium);
-      if (d.ugCollege)     setUgCollege(d.ugCollege);
-      if (d.ugUniversity)  setUgUniversity(d.ugUniversity);
-      if (d.ugCourse)      setUgCourse(d.ugCourse);
-      if (d.ugHall)        setUgHall(d.ugHall);
-      if (d.ugFrom)        setUgFrom(d.ugFrom);
-      if (d.ugTo)          setUgTo(d.ugTo);
-      if (d.ugAddress)     setUgAddress(d.ugAddress);
-      if (d.ugMode)        setUgMode(d.ugMode);
-      if (d.ugYear)        setUgYear(d.ugYear);
-      if (d.ugResultType)  setUgResultType(d.ugResultType);
-      if (d.ugResultValue) setUgResultValue(d.ugResultValue);
-      if (d.ugBacklogs)    setUgBacklogs(d.ugBacklogs);
-      if (d.ugMedium)      setUgMedium(d.ugMedium);
-      if (d.pgCollege)     setPgCollege(d.pgCollege);
-      if (d.pgUniversity)  setPgUniversity(d.pgUniversity);
-      if (d.pgCourse)      setPgCourse(d.pgCourse);
-      if (d.pgHall)        setPgHall(d.pgHall);
-      if (d.pgFrom)        setPgFrom(d.pgFrom);
-      if (d.pgTo)          setPgTo(d.pgTo);
-      if (d.pgAddress)     setPgAddress(d.pgAddress);
-      if (d.pgMode)        setPgMode(d.pgMode);
-      if (d.pgYear)        setPgYear(d.pgYear);
-      if (d.pgResultType)  setPgResultType(d.pgResultType);
-      if (d.pgResultValue) setPgResultValue(d.pgResultValue);
-      if (d.pgBacklogs)    setPgBacklogs(d.pgBacklogs);
-      if (d.pgMedium)      setPgMedium(d.pgMedium);
+      if (saved) { applyFlat(JSON.parse(saved)); return; }
     } catch (_) {}
-  }, []);
+
+    // 2. Fallback: fetch from API (re-login case)
+    // Use /employee/draft — finds by token/email, no employee_id race condition
+    if (!token) return;
+    fetch(`${API}/employee/draft`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (!d) return;
+        if (d.employee_id) localStorage.setItem("dg_employee_id", JSON.stringify(d.employee_id));
+        if (d.education) applyNested(d.education);
+      })
+      .catch(() => {});
+  }, [token]);
 
   /* ---------- Build payload ---------- */
   const buildPayload = () => ({
@@ -142,17 +183,22 @@ export default function EducationDetails() {
     };
     localStorage.setItem("dg_education", JSON.stringify(flat));
 
-    // Background API save (merged with personal)
+    // Save education to API — fetch existing record first so we never overwrite other fields
     try {
-      const personal = JSON.parse(localStorage.getItem("dg_personal") || "{}");
-      const empId    = JSON.parse(localStorage.getItem("dg_employee_id") || "null") || `emp-${Date.now()}`;
-      localStorage.setItem("dg_employee_id", JSON.stringify(empId));
-
-      await fetch(`${API}/employee`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ ...personal, education: data, employee_id: empId, status: "draft" }),
+      const draftRes = await fetch(`${API}/employee/draft`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
+      if (draftRes.ok) {
+        const existing = await draftRes.json();
+        // Cache employee_id
+        if (existing.employee_id) localStorage.setItem("dg_employee_id", JSON.stringify(existing.employee_id));
+        // Merge: keep ALL existing fields, only update education
+        await fetch(`${API}/employee`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ ...existing, education: data, status: existing.status || "draft" }),
+        });
+      }
     } catch (_) {}
   };
 
@@ -165,6 +211,21 @@ export default function EducationDetails() {
 
   return (
     <div style={styles.page}>
+      {/* Signout confirmation */}
+      {showSignoutConfirm && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "#fff", borderRadius: "14px", padding: "2rem", maxWidth: "400px", width: "90%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+            <div style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>🚪</div>
+            <h3 style={{ margin: "0 0 0.5rem", color: "#0f172a" }}>Sign Out?</h3>
+            <p style={{ color: "#475569", marginBottom: "1.5rem", fontSize: "0.9rem" }}>Your progress is saved. You can continue from where you left off after logging back in.</p>
+            <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
+              <button onClick={() => setShowSignoutConfirm(false)} style={{ padding: "0.6rem 1.5rem", borderRadius: "8px", border: "1px solid #cbd5e1", background: "#f8fafc", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
+              <button onClick={() => { logout(); router.push("/employee/login"); }} style={{ padding: "0.6rem 1.5rem", borderRadius: "8px", border: "none", background: "#0f172a", color: "#fff", cursor: "pointer", fontWeight: 600 }}>Yes, Sign Out</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={styles.card}>
         <ProgressBar currentStep={2} totalSteps={4} />
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
@@ -177,7 +238,7 @@ export default function EducationDetails() {
               🔒 Consent Center
             </button>
             <button
-              onClick={() => { logout(); router.push("/employee/login"); }}
+              onClick={() => setShowSignoutConfirm(true)}
               style={{ background: "#0f172a", border: "none", color: "#fff", borderRadius: "8px", padding: "0.45rem 1rem", cursor: "pointer", fontWeight: 600, fontSize: "0.85rem" }}
             >
               Sign Out
