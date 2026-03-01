@@ -23,12 +23,11 @@ export default function EmployerDashboard() {
   const [activeTab, setActiveTab] = useState("Personal");
 
   const [myConsents, setMyConsents] = useState([]);
-
-  // ✅ FIX 1: Missing state (this caused build failure)
   const [showSignoutConfirm, setShowSignoutConfirm] = useState(false);
 
-  // ─────────────────────────────────────────
-
+  // ────────────────────────────────
+  // Load previous consent requests
+  // ────────────────────────────────
   useEffect(() => {
     if (!token) return;
     fetchMyConsents();
@@ -43,8 +42,9 @@ export default function EmployerDashboard() {
     } catch (_) {}
   };
 
-  // ─── Consent Polling ─────────────────────
-
+  // ────────────────────────────────
+  // Poll consent status
+  // ────────────────────────────────
   useEffect(() => {
     if (!consentId || !polling || !token) return;
 
@@ -53,20 +53,21 @@ export default function EmployerDashboard() {
         const res = await fetch(`${API}/consent/${consentId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+
         if (!res.ok) return;
 
         const data = await res.json();
         setConsentStatus(data.status);
 
         if (data.status === "APPROVED") {
-          setPolling(false);
           clearInterval(interval);
+          setPolling(false);
           await fetchEmployeeData(data.employee_id);
         }
 
         if (data.status === "DECLINED") {
-          setPolling(false);
           clearInterval(interval);
+          setPolling(false);
         }
       } catch (_) {}
     }, 4000);
@@ -74,8 +75,9 @@ export default function EmployerDashboard() {
     return () => clearInterval(interval);
   }, [consentId, polling, token]);
 
-  // ─── Search / Request Consent ────────────
-
+  // ────────────────────────────────
+  // Request consent
+  // ────────────────────────────────
   const handleSearch = async () => {
     if (!emailInput.trim()) return;
 
@@ -112,8 +114,6 @@ export default function EmployerDashboard() {
     }
   };
 
-  // ─── Fetch Employee Data ─────────────────
-
   const fetchEmployeeData = async (empId) => {
     try {
       const res = await fetch(`${API}/employee/${empId}`, {
@@ -126,8 +126,6 @@ export default function EmployerDashboard() {
       setSearchError(err.message);
     }
   };
-
-  // ─── Reopen Consent ──────────────────────
 
   const reopenConsent = async (consent) => {
     setEmailInput(consent.employee_email || "");
@@ -145,27 +143,18 @@ export default function EmployerDashboard() {
     }
   };
 
-  // ─────────────────────────────────────────
-
+  // ────────────────────────────────
+  // UI
+  // ────────────────────────────────
   return (
     <div style={styles.page}>
-
-      {/* Signout Modal */}
       {showSignoutConfirm && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalBox}>
-            <div style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>🚪</div>
-            <h3 style={{ margin: "0 0 0.5rem", color: "#0f172a" }}>
-              Sign Out?
-            </h3>
-            <p style={{ color: "#475569", marginBottom: "1.5rem" }}>
-              You will be returned to the employer login page.
-            </p>
+            <h3>Sign Out?</h3>
+            <p>You will be returned to login page.</p>
             <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
-              <button
-                onClick={() => setShowSignoutConfirm(false)}
-                style={styles.cancelBtn}
-              >
+              <button onClick={() => setShowSignoutConfirm(false)} style={styles.cancelBtn}>
                 Cancel
               </button>
               <button
@@ -183,8 +172,6 @@ export default function EmployerDashboard() {
       )}
 
       <div style={styles.card}>
-
-        {/* Header */}
         <div style={styles.headerRow}>
           <div>
             <h1 style={styles.title}>Employer Dashboard</h1>
@@ -194,17 +181,80 @@ export default function EmployerDashboard() {
               </p>
             )}
           </div>
-          <button
-            style={styles.logoutBtn}
-            onClick={() => setShowSignoutConfirm(true)}
-          >
+          <button style={styles.logoutBtn} onClick={() => setShowSignoutConfirm(true)}>
             Sign Out
           </button>
         </div>
-
-        {/* Rest of your UI unchanged */}
-
       </div>
     </div>
   );
 }
+
+// ────────────────────────────────
+// Styles (DO NOT REMOVE)
+// ────────────────────────────────
+
+const styles = {
+  page: {
+    background: "#f1f5f9",
+    padding: "2rem",
+    minHeight: "100vh",
+    fontFamily: "Inter, system-ui, sans-serif",
+  },
+  card: {
+    maxWidth: "980px",
+    margin: "auto",
+    background: "#fff",
+    padding: "2rem",
+    borderRadius: "14px",
+    boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
+  },
+  headerRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    marginBottom: "2rem",
+  },
+  title: { margin: 0 },
+  subtitle: {
+    margin: "0.25rem 0 0",
+    color: "#64748b",
+    fontSize: "0.9rem",
+  },
+  logoutBtn: {
+    padding: "0.5rem 1.25rem",
+    background: "#0f172a",
+    color: "#fff",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+  },
+  modalOverlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.45)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalBox: {
+    background: "#fff",
+    padding: "2rem",
+    borderRadius: "12px",
+    textAlign: "center",
+  },
+  cancelBtn: {
+    padding: "0.6rem 1.5rem",
+    borderRadius: "8px",
+    border: "1px solid #cbd5e1",
+    background: "#f8fafc",
+    cursor: "pointer",
+  },
+  confirmBtn: {
+    padding: "0.6rem 1.5rem",
+    borderRadius: "8px",
+    border: "none",
+    background: "#0f172a",
+    color: "#fff",
+    cursor: "pointer",
+  },
+};
