@@ -221,7 +221,14 @@ export default function EmployerDashboard() {
               <h2 style={{ margin: 0 }}>
                 {employeeData.firstName} {employeeData.lastName}
               </h2>
-              {statusBadge("APPROVED")}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.25rem" }}>
+                {statusBadge("APPROVED")}
+                {employeeData._snapshot_at && (
+                  <span style={{ fontSize: "0.75rem", color: "#64748b" }}>
+                    📸 Data snapshot: {new Date(employeeData._snapshot_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Tab nav */}
