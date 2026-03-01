@@ -54,41 +54,66 @@ export default function PersonalDetails() {
 
   /* ---------- Auto-populate from signup & restore draft ---------- */
   useEffect(() => {
-    // 1. Pre-fill from auth context (signup data)
-    if (user?.email) setEmail(user.email);
-    if (user?.phone) setMobile(user.phone);
+    if (!user) return;
 
-    // 2. Restore any saved draft
+    // 1. Pre-fill from auth context
+    if (user.email) setEmail(user.email);
+    if (user.phone) setMobile(user.phone);
+
+    const applyData = (d) => {
+      if (d.firstName)    setFirstName(d.firstName);
+      if (d.middleName)   setMiddleName(d.middleName);
+      if (d.lastName)     setLastName(d.lastName);
+      if (d.fatherFirst)  setFatherFirst(d.fatherFirst);
+      if (d.fatherMiddle) setFatherMiddle(d.fatherMiddle);
+      if (d.fatherLast)   setFatherLast(d.fatherLast);
+      if (d.dob)          setDob(d.dob);
+      if (d.gender)       setGender(d.gender);
+      if (d.nationality)  setNationality(d.nationality);
+      if (d.aadhaar || d.aadhar) setAadhar(d.aadhaar || d.aadhar);
+      if (d.pan)          setPan(d.pan);
+      if (d.passport)     setPassport(d.passport);
+      if (d.mobile)       setMobile(d.mobile);
+      if (d.currentAddress) {
+        const a = d.currentAddress;
+        if (a.from)     setCurFrom(a.from);
+        if (a.to)       setCurTo(a.to);
+        if (a.door)     setCurDoor(a.door);
+        if (a.village)  setCurVillage(a.village);
+        if (a.district) setCurDistrict(a.district);
+        if (a.pin)      setCurPin(a.pin);
+      }
+      if (d.permanentAddress) {
+        const a = d.permanentAddress;
+        if (a.from)     setPermFrom(a.from);
+        if (a.door)     setPermDoor(a.door);
+        if (a.village)  setPermVillage(a.village);
+        if (a.district) setPermDistrict(a.district);
+        if (a.pin)      setPermPin(a.pin);
+      }
+    };
+
+    // 2. Try localStorage first (fast, works mid-session)
     try {
       const saved = localStorage.getItem("dg_personal");
-      if (saved) {
-        const d = JSON.parse(saved);
-        if (d.firstName)    setFirstName(d.firstName);
-        if (d.middleName)   setMiddleName(d.middleName);
-        if (d.lastName)     setLastName(d.lastName);
-        if (d.fatherFirst)  setFatherFirst(d.fatherFirst);
-        if (d.fatherMiddle) setFatherMiddle(d.fatherMiddle);
-        if (d.fatherLast)   setFatherLast(d.fatherLast);
-        if (d.dob)          setDob(d.dob);
-        if (d.gender)       setGender(d.gender);
-        if (d.nationality)  setNationality(d.nationality);
-        if (d.aadhar)       setAadhar(d.aadhar);
-        if (d.pan)          setPan(d.pan);
-        if (d.passport)     setPassport(d.passport);
-        if (d.curFrom)      setCurFrom(d.curFrom);
-        if (d.curTo)        setCurTo(d.curTo);
-        if (d.curDoor)      setCurDoor(d.curDoor);
-        if (d.curVillage)   setCurVillage(d.curVillage);
-        if (d.curDistrict)  setCurDistrict(d.curDistrict);
-        if (d.curPin)       setCurPin(d.curPin);
-        if (d.permFrom)     setPermFrom(d.permFrom);
-        if (d.permDoor)     setPermDoor(d.permDoor);
-        if (d.permVillage)  setPermVillage(d.permVillage);
-        if (d.permDistrict) setPermDistrict(d.permDistrict);
-        if (d.permPin)      setPermPin(d.permPin);
-      }
+      if (saved) { applyData(JSON.parse(saved)); return; }
     } catch (_) {}
-  }, [user]);
+
+    // 3. Fallback: fetch from API (re-login — localStorage was cleared)
+    const empId = JSON.parse(localStorage.getItem("dg_employee_id") || "null");
+    if (!empId || !token) return;
+    fetch(`${API}/employee/${empId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (!d) return;
+        localStorage.setItem("dg_employee_id", JSON.stringify(d.employee_id));
+        localStorage.setItem("dg_personal", JSON.stringify(d));
+        applyData(d);
+      })
+      .catch(() => {});
+  }, [user, token]);
 
   /* ---------- Build payload ---------- */
   const buildPayload = () => ({
@@ -137,7 +162,19 @@ export default function PersonalDetails() {
     <div style={styles.page}>
       <div style={styles.card}>
         <ProgressBar currentStep={1} totalSteps={4} />
-        <h1 style={styles.title}>Personal Details</h1>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+          <h1 style={{ ...styles.title, margin: 0 }}>Personal Details</h1>
+          <button
+            onClick={() => router.push("/consent")}
+            style={{
+              background: "#fff", border: "1px solid #2563eb", color: "#2563eb",
+              borderRadius: "8px", padding: "0.45rem 1rem", cursor: "pointer",
+              fontWeight: 600, fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem"
+            }}
+          >
+            🔒 Consent Center
+          </button>
+        </div>
 
         {/* PHOTO */}
         <Section title="Profile Photo">
