@@ -51,6 +51,7 @@ export default function PersonalDetails() {
   const [permPin,      setPermPin]      = useState("");
 
   const [saveStatus, setSaveStatus] = useState("");
+  const [showSignoutConfirm, setShowSignoutConfirm] = useState(false);
 
   /* ---------- Auto-populate from signup & restore draft ---------- */
   useEffect(() => {
@@ -99,15 +100,17 @@ export default function PersonalDetails() {
       if (saved) { applyData(JSON.parse(saved)); return; }
     } catch (_) {}
 
-    // 3. Fallback: fetch from API (re-login — localStorage was cleared)
-    const empId = JSON.parse(localStorage.getItem("dg_employee_id") || "null");
-    if (!empId || !token) return;
-    fetch(`${API}/employee/${empId}`, {
+    // 3. Fallback: fetch from API (re-login — localStorage cleared)
+    // Use /employee/draft which finds by logged-in user's email server-side,
+    // so we don't need dg_employee_id to be ready yet (avoids race condition)
+    if (!token) return;
+    fetch(`${API}/employee/draft`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.ok ? r.json() : null)
       .then(d => {
         if (!d) return;
+        // Cache employee_id so other pages can use it
         localStorage.setItem("dg_employee_id", JSON.stringify(d.employee_id));
         localStorage.setItem("dg_personal", JSON.stringify(d));
         applyData(d);
@@ -160,6 +163,21 @@ export default function PersonalDetails() {
 
   return (
     <div style={styles.page}>
+      {/* Signout confirmation */}
+      {showSignoutConfirm && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "#fff", borderRadius: "14px", padding: "2rem", maxWidth: "400px", width: "90%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+            <div style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>🚪</div>
+            <h3 style={{ margin: "0 0 0.5rem", color: "#0f172a" }}>Sign Out?</h3>
+            <p style={{ color: "#475569", marginBottom: "1.5rem", fontSize: "0.9rem" }}>Your progress is saved. You can continue from where you left off after logging back in.</p>
+            <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
+              <button onClick={() => setShowSignoutConfirm(false)} style={{ padding: "0.6rem 1.5rem", borderRadius: "8px", border: "1px solid #cbd5e1", background: "#f8fafc", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
+              <button onClick={() => { logout(); router.push("/employee/login"); }} style={{ padding: "0.6rem 1.5rem", borderRadius: "8px", border: "none", background: "#0f172a", color: "#fff", cursor: "pointer", fontWeight: 600 }}>Yes, Sign Out</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={styles.card}>
         <ProgressBar currentStep={1} totalSteps={4} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
@@ -176,7 +194,7 @@ export default function PersonalDetails() {
               🔒 Consent Center
             </button>
             <button
-              onClick={() => { logout(); router.push("/employee/login"); }}
+              onClick={() => setShowSignoutConfirm(true)}
               style={{
                 background: "#0f172a", border: "none", color: "#fff",
                 borderRadius: "8px", padding: "0.45rem 1rem", cursor: "pointer",
