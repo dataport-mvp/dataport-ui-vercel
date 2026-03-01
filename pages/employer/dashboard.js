@@ -318,22 +318,39 @@ function PersonalTab({ data }) {
   );
 }
 
+const EDU_LABELS = {
+  school: "School", college: "College", university: "University", course: "Course",
+  board: "Board", hallTicket: "Hall Ticket No.", from: "From", to: "To",
+  address: "Address", mode: "Mode", yearOfPassing: "Year of Passing",
+  resultType: "Result Type", resultValue: "Result / %", medium: "Medium",
+  backlogs: "Backlogs",
+};
+
 function EducationTab({ data }) {
   if (!data) return <Empty msg="No education data available." />;
   const sections = [
-    { title: "Class X",          d: data.classX },
-    { title: "Intermediate",     d: data.intermediate },
-    { title: "Undergraduate",    d: data.undergraduate },
-    { title: "Postgraduate",     d: data.postgraduate },
+    { title: "Class X",       d: data.classX },
+    { title: "Intermediate",  d: data.intermediate },
+    { title: "Undergraduate", d: data.undergraduate },
+    { title: "Postgraduate",  d: data.postgraduate },
   ];
+  const hasAny = sections.some(s => s.d && Object.values(s.d).some(v => v));
+  if (!hasAny) return <Empty msg="No education data available." />;
   return (
     <div>
-      {sections.map(({ title, d }) => d ? (
-        <div key={title} style={{ marginBottom: "1.5rem" }}>
-          <h4 style={{ color: "#2563eb", marginBottom: "0.5rem" }}>{title}</h4>
-          <DataGrid rows={Object.entries(d).map(([k, v]) => [k, String(v || "—")])} />
-        </div>
-      ) : null)}
+      {sections.map(({ title, d }) => {
+        if (!d) return null;
+        const rows = Object.entries(d)
+          .filter(([, v]) => v)
+          .map(([k, v]) => [EDU_LABELS[k] || k, String(v)]);
+        if (!rows.length) return null;
+        return (
+          <div key={title} style={{ marginBottom: "1.5rem" }}>
+            <h4 style={{ color: "#2563eb", marginBottom: "0.5rem" }}>{title}</h4>
+            <DataGrid rows={rows} />
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -360,7 +377,7 @@ function EmploymentTab({ empId, token }) {
       {history.employments.map((emp, i) => (
         <div key={i} style={{ marginBottom: "2rem", padding: "1.25rem", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
           <h4 style={{ color: "#2563eb", marginBottom: "0.75rem" }}>
-            {i === 0 ? "Current" : `Previous ${i}`}: {emp.companyName}
+            `Previous ${i + 1}: ${emp.companyName}`
           </h4>
           <DataGrid rows={[
             ["Employee ID",       emp.employeeId        || "—"],
