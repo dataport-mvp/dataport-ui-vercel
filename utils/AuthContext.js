@@ -19,7 +19,21 @@ export function AuthProvider({ children }) {
     setReady(true);
   }, []);
 
+  const clearFormCache = () => {
+    // Remove all form draft keys — prevents data leaking between users
+    ["dg_personal", "dg_education", "dg_employments", "dg_ack",
+     "dg_uan", "dg_employee_id"].forEach(k => localStorage.removeItem(k));
+  };
+
   const login = (token, userData) => {
+    // Before logging in new user, check if a different user was logged in
+    // If so, clear their cached form data
+    try {
+      const prevUser = JSON.parse(localStorage.getItem("dg_user") || "null");
+      if (prevUser && prevUser.email !== userData.email) {
+        clearFormCache();
+      }
+    } catch (_) {}
     setToken(token);
     setUser(userData);
     localStorage.setItem("dg_token", token);
@@ -31,6 +45,7 @@ export function AuthProvider({ children }) {
     setUser(null);
     localStorage.removeItem("dg_token");
     localStorage.removeItem("dg_user");
+    clearFormCache();
   };
 
   return (
