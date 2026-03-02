@@ -42,7 +42,6 @@ export default function EmployeeLogin() {
         throw new Error(data.detail || "Something went wrong");
       }
 
-      // Store token + user info in context & localStorage
       const userData = {
         email: data.email || email,
         name:  data.name  || name,
@@ -50,10 +49,7 @@ export default function EmployeeLogin() {
         role:  data.role  || "employee",
       };
 
-      // login() will auto-clear previous user's form cache if different email
       login(data.access_token, userData);
-
-      // Navigate immediately — each page handles its own data restore from API
       router.push("/employee/personal");
     } catch (err) {
       setError(err.message);
@@ -127,6 +123,18 @@ export default function EmployeeLogin() {
               )}
             </button>
           </div>
+
+          {/* ── Forgot password — only shown on sign-in, not sign-up ── */}
+          {!isSignup && (
+            <div style={{ textAlign: "right", marginTop: "0.4rem", marginBottom: "0.25rem" }}>
+              <span
+                onClick={() => router.push("/forgot-password")}
+                style={{ fontSize: "0.82rem", color: "#2563eb", cursor: "pointer" }}
+              >
+                Forgot password?
+              </span>
+            </div>
+          )}
 
           {isSignup && (
             <>
