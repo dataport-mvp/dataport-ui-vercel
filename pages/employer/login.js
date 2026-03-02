@@ -84,6 +84,17 @@ export default function EmployerLogin() {
                 )}
               </button>
             </div>
+            {/* ── Forgot password — only shown on sign-in, not sign-up ── */}
+            {!isSignup && (
+              <div style={{ textAlign: "right", marginTop: "0.4rem" }}>
+                <span
+                  onClick={() => router.push("/forgot-password")}
+                  style={{ fontSize: "0.82rem", color: "#2563eb", cursor: "pointer" }}
+                >
+                  Forgot password?
+                </span>
+              </div>
+            )}
           </Field>
 
           {isSignup && (
