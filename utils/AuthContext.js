@@ -4,39 +4,45 @@ import { createContext, useContext, useState, useEffect } from "react";
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [token, setToken]   = useState(null);
-  const [user, setUser]     = useState(null);   // { email, name, phone, role }
-  const [ready, setReady]   = useState(false);
+  const [token, setToken] = useState(null);
+  const [user, setUser]   = useState(null);
+  const [ready, setReady] = useState(false);
 
   // Rehydrate from localStorage on first load
   useEffect(() => {
     try {
       const t = localStorage.getItem("dg_token");
       const u = localStorage.getItem("dg_user");
-      if (t) setToken(t);
-      if (u) setUser(JSON.parse(u));
+      // Guard: reject the string "undefined" that was stored by the broken API
+      if (t && t !== "undefined" && t !== "null") setToken(t);
+      if (u && u !== "undefined" && u !== "null") setUser(JSON.parse(u));
     } catch (_) {}
     setReady(true);
   }, []);
 
   const clearFormCache = () => {
-    // Remove all form draft keys — prevents data leaking between users
     ["dg_personal", "dg_education", "dg_employments", "dg_ack",
      "dg_uan", "dg_uan_acks", "dg_employee_id"].forEach(k => localStorage.removeItem(k));
   };
 
-  const login = (token, userData) => {
-    // Before logging in new user, check if a different user was logged in
-    // If so, clear their cached form data
+  const login = (newToken, userData) => {
+    // Guard: if API returned undefined/null token, do not store it
+    // This prevents the "Bearer undefined" bug where bad token persists across sessions
+    if (!newToken || newToken === "undefined" || newToken === "null") {
+      console.error("[Auth] login() called with invalid token — ignoring");
+      return;
+    }
+
     try {
       const prevUser = JSON.parse(localStorage.getItem("dg_user") || "null");
       if (prevUser && prevUser.email !== userData.email) {
         clearFormCache();
       }
     } catch (_) {}
-    setToken(token);
+
+    setToken(newToken);
     setUser(userData);
-    localStorage.setItem("dg_token", token);
+    localStorage.setItem("dg_token", newToken);
     localStorage.setItem("dg_user", JSON.stringify(userData));
   };
 
