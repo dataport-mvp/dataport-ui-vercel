@@ -1,8 +1,8 @@
+// pages/_app.js
 import { useRouter } from "next/router";
 import { AuthProvider } from "../utils/AuthContext";
 import "../styles/globals.css";
 
-// Pages where the top "Home" nav should NOT appear
 const NO_NAV_ROUTES = [
   "/employee/personal",
   "/employee/education",
