@@ -1,4 +1,4 @@
-// pages/employee/previous.js  — Page 3 of 4
+// pages/employee/previous.js — Page 3 of 4
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import ProgressBar from "../../components/ProgressBar";
@@ -6,345 +6,186 @@ import { useAuth } from "../../utils/AuthContext";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
-/* ---------- STYLES ---------- */
-const styles = {
-  page:         { background: "#f1f5f9", padding: "2rem", minHeight: "100vh", fontFamily: "Inter, system-ui, sans-serif" },
-  card:         { maxWidth: "980px", margin: "auto", background: "#fff", padding: "2rem", borderRadius: "14px", boxShadow: "0 12px 30px rgba(0,0,0,0.08)" },
-  title:        { marginBottom: "2rem" },
-  label:        { fontSize: "0.85rem", color: "#475569" },
-  input:        { width: "100%", padding: "0.65rem", borderRadius: "8px", border: "1px solid #cbd5e1" },
-  primaryBtn:   { padding: "0.9rem 2.5rem", borderRadius: "10px", border: "none", background: "#2563eb", color: "#fff", cursor: "pointer" },
-  secondaryBtn: { padding: "0.9rem 2.5rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#f8fafc", cursor: "pointer" },
-  toggleBtn:    { padding: "0.4rem 0.8rem", borderRadius: "6px", border: "1px solid #cbd5e1", background: "#f8fafc", cursor: "pointer" },
-  employerCard: { marginBottom: "1.25rem", padding: "1rem", borderRadius: "10px", border: "1px solid #edf2f7" },
-  headerRow:    { display: "flex", justifyContent: "space-between", alignItems: "center" },
-  yesNo: (active) => ({
-    padding: "0.35rem 1rem",
-    borderRadius: "999px",
-    border: "1px solid #cbd5e1",
-    background: active ? "#2563eb" : "#f8fafc",
-    color: active ? "#fff" : "#000",
-    cursor: "pointer"
-  })
+const EMPTY_JOB = {
+  company_name: "",
+  designation: "",
+  start_date: "",
+  end_date: "",
+  is_current: false,
+  location: "",
+  employment_type: "",
+  reason_for_leaving: "",
 };
 
-/* ---------- HELPERS ---------- */
-const Row = ({ children }) => (
-  <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "0.75rem" }}>
-    {children}
-  </div>
-);
+const EMP_TYPES = ["Full-time", "Part-time", "Contract", "Internship", "Freelance"];
 
-const Input = ({ label, value, onChange, type = "text", maxLength }) => (
-  <div style={{ flex: 1, minWidth: "200px" }}>
-    <label style={styles.label}>{label}</label>
-    <input
-      type={type}
-      value={value || ""}
-      maxLength={maxLength}
-      onChange={(e) => onChange(e.target.value)}
-      style={styles.input}
-    />
-  </div>
-);
-
-const TextArea = ({ label, value, onChange }) => (
-  <div style={{ width: "100%", marginBottom: "0.75rem" }}>
-    <label style={styles.label}>{label}</label>
-    <textarea
-      value={value || ""}
-      onChange={(e) => onChange(e.target.value)}
-      style={{ ...styles.input, minHeight: "80px" }}
-    />
-  </div>
-);
-
-const Select = ({ label, value, onChange, options }) => (
-  <div style={{ flex: 1, minWidth: "200px" }}>
-    <label style={styles.label}>{label}</label>
-    <select value={value} onChange={(e) => onChange(e.target.value)} style={styles.input}>
-      <option value="">Select</option>
-      {options.map((o) => <option key={o} value={o}>{o}</option>)}
-    </select>
-  </div>
-);
-
-/* ---------- Empty shapes ---------- */
-const emptyEmployment = () => ({
-  companyName: "", officeAddress: "", employeeId: "", workEmail: "",
-  designation: "", department: "", duties: "", employmentType: "",
-  reasonForRelieving: "",
-  reference:      { role: "", name: "", email: "", mobile: "" },
-  contractVendor: { company: "", email: "", mobile: "" },
-  documents:      { payslips: [], offerLetter: null, resignation: null, experience: null },
-  gap:            { hasGap: "", reason: "" }
-});
-
-const emptyAck = () => ({ val: "", note: "" });
-
-/* ---------- PAGE ---------- */
-export default function PreviousCompany() {
+export default function PreviousPage() {
+  const { user, apiFetch, ready } = useAuth();
   const router = useRouter();
-  const { token, logout } = useAuth();
+  const [jobs, setJobs] = useState([{ ...EMPTY_JOB }]);
+  const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
+  const [error, setError] = useState("");
 
-  const [employments, setEmployments] = useState([emptyEmployment()]);
-  const [ack, setAck] = useState({
-    business: emptyAck(), dismissed: emptyAck(), criminal: emptyAck(), civil: emptyAck()
-  });
-  const [saveStatus, setSaveStatus] = useState("");
-  const [showSignoutConfirm, setShowSignoutConfirm] = useState(false);
-
-  /* ---------- Restore draft ---------- */
+  // Auth guard
   useEffect(() => {
-    // 1. Try localStorage first (fast path)
-    try {
-      const savedEmp = localStorage.getItem("dg_employments");
-      const savedAck = localStorage.getItem("dg_ack");
-      if (savedEmp) { setEmployments(JSON.parse(savedEmp)); if (savedAck) setAck(JSON.parse(savedAck)); return; }
-    } catch (_) {}
+    if (!ready) return;
+    if (!user) { router.replace("/employee/login"); return; }
+  }, [ready, user, router]);
 
-    // 2. Fallback: fetch from API (re-login case)
-    // First resolve employee_id via /employee/draft, then fetch history
-    if (!token) return;
-    const resolveEmpId = () => {
-      const cached = JSON.parse(localStorage.getItem("dg_employee_id") || "null");
-      if (cached) return Promise.resolve(cached);
-      return fetch(`${API}/employee/draft`, { headers: { Authorization: `Bearer ${token}` } })
-        .then(r => r.ok ? r.json() : null)
-        .then(d => { if (d?.employee_id) { localStorage.setItem("dg_employee_id", JSON.stringify(d.employee_id)); return d.employee_id; } return null; });
+  // Load existing employment history
+  useEffect(() => {
+    if (!ready || !user) return;
+    const load = async () => {
+      try {
+        const employeeId = localStorage.getItem("dg_employee_id");
+        if (!employeeId) { setFetching(false); return; }
+        const res = await apiFetch(`${API}/employee/employment-history/${employeeId}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) setJobs(data);
+        }
+      } catch (_) {}
+      setFetching(false);
     };
-    resolveEmpId().then(empId => {
-      if (!empId) return;
-      fetch(`${API}/employee/employment-history/${empId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        if (!d) return;
-        if (d.employments?.length) {
-          // Convert API rows back to UI format
-          const items = d.employments.map(e => ({
-            companyName: e.companyName || "", officeAddress: e.officeAddress || "",
-            employeeId: e.employeeId || "", workEmail: e.workEmail || "",
-            designation: e.designation || "", department: e.department || "",
-            duties: e.duties || "", employmentType: e.employmentType || "",
-            reasonForRelieving: e.reasonForRelieving || "",
-            reference: e.reference || { name: "", role: "", email: "", mobile: "" },
-            contractVendor: e.contractVendor || { company: "", email: "", mobile: "" },
-            gap: e.gap || { hasGap: "No", reason: "" },
-          }));
-          setEmployments(items);
-          localStorage.setItem("dg_employments", JSON.stringify(items));
-        }
-        if (d.acknowledgements) {
-          setAck(d.acknowledgements);
-          localStorage.setItem("dg_ack", JSON.stringify(d.acknowledgements));
-        }
-      })
-      .catch(() => {});
-    }).catch(() => {});
-  }, [token]);
+    load();
+  }, [ready, user, apiFetch]);
 
-  /* ---------- Update helper ---------- */
-  const update = (i, path, value) => {
-    const copy = JSON.parse(JSON.stringify(employments));
-    const keys = path.split(".");
-    let obj = copy[i];
-    for (let k = 0; k < keys.length - 1; k++) obj = obj[keys[k]];
-    obj[keys[keys.length - 1]] = value;
-    setEmployments(copy);
-  };
-
-  const addEmployer = () => setEmployments([...employments, emptyEmployment()]);
-  const removeEmployer = (i) => setEmployments(employments.filter((_, idx) => idx !== i));
-
-  /* ---------- Save ---------- */
-  const saveDraft = async () => {
-    // 1. localStorage (primary — instant, never fails)
-    localStorage.setItem("dg_employments", JSON.stringify(employments));
-    localStorage.setItem("dg_ack",         JSON.stringify(ack));
-
-    // 2. Background API save — silent on error
-    try {
-      await fetch(`${API}/employee/employment-history`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ employments, acknowledgements: ack }),
-      });
-    } catch (_) {}
-  };
+  const set = (i, k, v) => setJobs(prev => prev.map((j, idx) => idx === i ? { ...j, [k]: v } : j));
+  const addJob = () => setJobs(prev => [...prev, { ...EMPTY_JOB }]);
+  const removeJob = i => setJobs(prev => prev.filter((_, idx) => idx !== i));
 
   const handleNext = async () => {
-    setSaveStatus("Saving...");
-    await saveDraft();
-    setSaveStatus("Saved ✓");
-    router.push("/employee/uan");
+    setError("");
+    const valid = jobs.every(j => j.company_name && j.designation && j.start_date);
+    if (!valid) { setError("Please fill Company, Designation, and Start Date for each entry"); return; }
+
+    setLoading(true);
+    try {
+      const employeeId = localStorage.getItem("dg_employee_id");
+      const res = await apiFetch(`${API}/employee/employment-history`, {
+        method: "POST",
+        body: JSON.stringify({ employee_id: employeeId, employment_history: jobs }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.detail || "Save failed"); return; }
+      router.push("/employee/uan");
+    } catch {
+      setError("Network error — please try again");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (!ready || !user) return null;
+  if (fetching) return <div style={styles.loading}>Loading…</div>;
 
   return (
     <div style={styles.page}>
-      {/* Signout confirmation */}
-      {showSignoutConfirm && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ background: "#fff", borderRadius: "14px", padding: "2rem", maxWidth: "400px", width: "90%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
-            <div style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>🚪</div>
-            <h3 style={{ margin: "0 0 0.5rem", color: "#0f172a" }}>Sign Out?</h3>
-            <p style={{ color: "#475569", marginBottom: "1.5rem", fontSize: "0.9rem" }}>Your progress is saved. You can continue from where you left off after logging back in.</p>
-            <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
-              <button onClick={() => setShowSignoutConfirm(false)} style={{ padding: "0.6rem 1.5rem", borderRadius: "8px", border: "1px solid #cbd5e1", background: "#f8fafc", cursor: "pointer", fontWeight: 600 }}>Cancel</button>
-              <button onClick={() => { logout(); router.push("/employee/login"); }} style={{ padding: "0.6rem 1.5rem", borderRadius: "8px", border: "none", background: "#0f172a", color: "#fff", cursor: "pointer", fontWeight: 600 }}>Yes, Sign Out</button>
-            </div>
-          </div>
+      <div style={styles.container}>
+        <div style={styles.header}>
+          <div style={styles.logo}>Datagate</div>
         </div>
-      )}
+        <ProgressBar currentStep={3} totalSteps={4} />
 
-      <ProgressBar currentStep={3} totalSteps={4} />
+        <div style={styles.card}>
+          <h2 style={styles.title}>Employment History</h2>
+          <p style={styles.sub}>Add your previous and current employers</p>
 
-      <div style={styles.card}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-          <h1 style={{ ...styles.title, margin: 0 }}>Employment History</h1>
-          <div style={{ display: "flex", gap: "0.75rem" }}>
-            <button
-              onClick={() => router.push("/consent")}
-              style={{ background: "#fff", border: "1px solid #2563eb", color: "#2563eb", borderRadius: "8px", padding: "0.45rem 1rem", cursor: "pointer", fontWeight: 600, fontSize: "0.85rem" }}
-            >
-              🔒 Consent Center
-            </button>
-            <button
-              onClick={() => setShowSignoutConfirm(true)}
-              style={{ background: "#0f172a", border: "none", color: "#fff", borderRadius: "8px", padding: "0.45rem 1rem", cursor: "pointer", fontWeight: 600, fontSize: "0.85rem" }}
-            >
-              Sign Out
-            </button>
-          </div>
-        </div>
+          {jobs.map((job, i) => (
+            <div key={i} style={styles.entryBlock}>
+              <div style={styles.entryHeader}>
+                <span style={styles.entryLabel}>Job {i + 1}</span>
+                {jobs.length > 1 && (
+                  <button style={styles.removeBtn} onClick={() => removeJob(i)}>Remove</button>
+                )}
+              </div>
 
-        {employments.map((emp, index) => (
-          <div key={index} style={styles.employerCard}>
-            <div style={styles.headerRow}>
-              <h3>{index === 0 ? "Current Employer" : `Previous Employer ${index}`}</h3>
-              {index !== 0 && (
-                <button style={styles.toggleBtn} onClick={() => removeEmployer(index)}>−</button>
+              <div style={styles.grid2}>
+                <Field label="Company Name *" value={job.company_name} onChange={v => set(i, "company_name", v)} />
+                <Field label="Designation *" value={job.designation} onChange={v => set(i, "designation", v)} />
+              </div>
+              <div style={styles.grid2}>
+                <Field label="Employment Type" as="select" value={job.employment_type}
+                  onChange={v => set(i, "employment_type", v)} options={["", ...EMP_TYPES]} />
+                <Field label="Location" value={job.location} onChange={v => set(i, "location", v)} />
+              </div>
+              <div style={styles.grid2}>
+                <Field label="Start Date *" type="date" value={job.start_date} onChange={v => set(i, "start_date", v)} />
+                {!job.is_current && (
+                  <Field label="End Date" type="date" value={job.end_date} onChange={v => set(i, "end_date", v)} />
+                )}
+              </div>
+
+              <label style={styles.checkLabel}>
+                <input type="checkbox" checked={job.is_current}
+                  onChange={e => set(i, "is_current", e.target.checked)} />
+                <span>Currently working here</span>
+              </label>
+
+              {!job.is_current && (
+                <Field label="Reason for Leaving" as="textarea" value={job.reason_for_leaving}
+                  onChange={v => set(i, "reason_for_leaving", v)} rows={2} />
               )}
             </div>
+          ))}
 
-            <Row>
-              <Input label="Company Name"        value={emp.companyName}   onChange={(v) => update(index, "companyName", v)} />
-              <Input label="Office Address"      value={emp.officeAddress} onChange={(v) => update(index, "officeAddress", v)} />
-            </Row>
-            <Row>
-              <Input label="Employee ID"         value={emp.employeeId}    onChange={(v) => update(index, "employeeId", v)} />
-              <Input label="Official Work Email" value={emp.workEmail}     onChange={(v) => update(index, "workEmail", v)} />
-            </Row>
-            <Row>
-              <Input label="Designation" value={emp.designation} onChange={(v) => update(index, "designation", v)} />
-              <Input label="Department"  value={emp.department}  onChange={(v) => update(index, "department", v)} />
-            </Row>
-            <Row>
-              <Input label="Duties & Responsibilities" value={emp.duties} onChange={(v) => update(index, "duties", v)} />
-              <Select
-                label="Employment Type"
-                value={emp.employmentType}
-                onChange={(v) => update(index, "employmentType", v)}
-                options={["Full-time", "Intern", "Contract"]}
-              />
-            </Row>
+          <button style={styles.addBtn} onClick={addJob}>+ Add another job</button>
 
-            {emp.employmentType === "Contract" && (
-              <>
-                <h4>Vendor / Third-Party Details</h4>
-                <Row>
-                  <Input label="Vendor Company Name" value={emp.contractVendor.company} onChange={(v) => update(index, "contractVendor.company", v)} />
-                  <Input label="Vendor Email"        value={emp.contractVendor.email}   onChange={(v) => update(index, "contractVendor.email", v)} />
-                  <Input
-                    label="Vendor Mobile (India)"
-                    value={emp.contractVendor.mobile}
-                    maxLength={10}
-                    onChange={(v) => /^\d*$/.test(v) && update(index, "contractVendor.mobile", v)}
-                  />
-                </Row>
-              </>
-            )}
+          {error && <p style={styles.error}>{error}</p>}
 
-            <TextArea
-              label="Reason for Relieving / Leaving"
-              value={emp.reasonForRelieving}
-              onChange={(v) => update(index, "reasonForRelieving", v)}
-            />
-
-            <h4>Reference Details</h4>
-            <Row>
-              <Select
-                label="Reference Role"
-                value={emp.reference.role}
-                onChange={(v) => update(index, "reference.role", v)}
-                options={["Manager", "Colleague", "HR", "Client"]}
-              />
-              <Input label="Reference Name" value={emp.reference.name} onChange={(v) => update(index, "reference.name", v)} />
-            </Row>
-            <Row>
-              <Input label="Reference Official Email" value={emp.reference.email}  onChange={(v) => update(index, "reference.email", v)} />
-              <Input
-                label="Reference Mobile (India)"
-                maxLength={10}
-                value={emp.reference.mobile}
-                onChange={(v) => /^\d*$/.test(v) && update(index, "reference.mobile", v)}
-              />
-            </Row>
-
-            <h4>
-              Attachments{" "}
-              <span style={{ fontWeight: 400, fontSize: "0.8rem", color: "#94a3b8" }}>
-                (S3 upload — next commit)
-              </span>
-            </h4>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-              {["Payslips (Last 3 Months)", "Offer Letter", "Resignation Acceptance", "Experience / Relieving Letter"].map((lbl) => (
-                <div key={lbl}>
-                  <label style={styles.label}>{lbl}</label>
-                  <input type="file" disabled style={{ opacity: 0.5 }} />
-                </div>
-              ))}
-            </div>
-
-            <h4>Employment Gap</h4>
-            <div style={{ display: "flex", gap: "1rem" }}>
-              <button style={styles.yesNo(emp.gap.hasGap === "Yes")} onClick={() => update(index, "gap.hasGap", "Yes")}>Yes</button>
-              <button style={styles.yesNo(emp.gap.hasGap === "No")}  onClick={() => update(index, "gap.hasGap", "No")}>No</button>
-            </div>
-            {emp.gap.hasGap === "Yes" && (
-              <TextArea label="Reason for Employment Gap" value={emp.gap.reason} onChange={(v) => update(index, "gap.reason", v)} />
-            )}
+          <div style={styles.actions}>
+            <button style={styles.btnSecondary} onClick={() => router.push("/employee/education")}>← Back</button>
+            <button style={styles.btnPrimary} onClick={handleNext} disabled={loading}>
+              {loading ? "Saving…" : "Next: UAN & PF →"}
+            </button>
           </div>
-        ))}
-
-        <button style={styles.secondaryBtn} onClick={addEmployer}>+ Add Another Employer</button>
-
-        <h2 style={{ marginTop: "2rem" }}>Other Declarations</h2>
-        {[
-          ["business",  "Are you currently engaged in any other business or employment?"],
-          ["dismissed", "Have you ever been dismissed from any employer?"],
-          ["criminal",  "Have you ever been convicted in a court of law?"],
-          ["civil",     "Have you ever had any civil judgment against you?"]
-        ].map(([k, q]) => (
-          <div key={k} style={{ marginBottom: "1rem" }}>
-            <p>{q}</p>
-            <div style={{ display: "flex", gap: "1rem" }}>
-              <button style={styles.yesNo(ack[k].val === "Yes")} onClick={() => setAck({ ...ack, [k]: { ...ack[k], val: "Yes" } })}>Yes</button>
-              <button style={styles.yesNo(ack[k].val === "No")}  onClick={() => setAck({ ...ack, [k]: { ...ack[k], val: "No"  } })}>No</button>
-            </div>
-            {ack[k].val === "Yes" && (
-              <TextArea label="Details" value={ack[k].note} onChange={(v) => setAck({ ...ack, [k]: { ...ack[k], note: v } })} />
-            )}
-          </div>
-        ))}
-
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "2rem" }}>
-          <button style={styles.secondaryBtn} onClick={() => router.push("/employee/education")}>← Previous</button>
-          <span style={{ color: "#64748b", fontSize: "0.85rem" }}>{saveStatus}</span>
-          <button style={styles.primaryBtn} onClick={handleNext}>Save & Proceed</button>
         </div>
       </div>
     </div>
   );
 }
+
+function Field({ label, value, onChange, type = "text", as, options, placeholder, rows }) {
+  const inputStyle = {
+    width: "100%", padding: "0.7rem 0.9rem", border: "1.5px solid #e2e8f0",
+    borderRadius: 8, fontSize: 14, outline: "none", fontFamily: "inherit", boxSizing: "border-box",
+    resize: as === "textarea" ? "vertical" : undefined,
+  };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <label style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>{label}</label>
+      {as === "select" ? (
+        <select style={inputStyle} value={value} onChange={e => onChange(e.target.value)}>
+          {options.map(o => <option key={o} value={o}>{o || "Select…"}</option>)}
+        </select>
+      ) : as === "textarea" ? (
+        <textarea style={inputStyle} value={value} onChange={e => onChange(e.target.value)} rows={rows || 3} placeholder={placeholder} />
+      ) : (
+        <input style={inputStyle} type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} />
+      )}
+    </div>
+  );
+}
+
+const styles = {
+  page: { minHeight: "100vh", background: "#f8fafc", fontFamily: "'Inter', sans-serif" },
+  container: { maxWidth: 640, margin: "0 auto", padding: "1.5rem 1rem" },
+  header: { display: "flex", alignItems: "center", marginBottom: 8 },
+  logo: { fontSize: 20, fontWeight: 800, color: "#2563eb" },
+  loading: { display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", fontSize: 15, color: "#64748b" },
+  card: { background: "#fff", borderRadius: 16, padding: "2rem", boxShadow: "0 2px 16px rgba(0,0,0,0.07)", display: "flex", flexDirection: "column", gap: "1rem" },
+  title: { fontSize: 22, fontWeight: 700, color: "#0f172a", margin: 0 },
+  sub: { fontSize: 14, color: "#64748b", margin: 0 },
+  grid2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" },
+  entryBlock: { border: "1.5px solid #e2e8f0", borderRadius: 12, padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem" },
+  entryHeader: { display: "flex", alignItems: "center", justifyContent: "space-between" },
+  entryLabel: { fontWeight: 700, fontSize: 14, color: "#1e293b" },
+  removeBtn: { background: "none", border: "none", color: "#ef4444", fontSize: 13, cursor: "pointer", fontWeight: 600 },
+  addBtn: { background: "none", border: "1.5px dashed #cbd5e1", color: "#2563eb", padding: "0.65rem", borderRadius: 8, fontSize: 14, cursor: "pointer", fontWeight: 600 },
+  checkLabel: { display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: "#374151", cursor: "pointer" },
+  error: { color: "#ef4444", fontSize: 13, margin: 0 },
+  actions: { display: "flex", justifyContent: "space-between", marginTop: 8 },
+  btnPrimary: { padding: "0.8rem 2rem", background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: "pointer" },
+  btnSecondary: { padding: "0.8rem 1.5rem", background: "#f1f5f9", color: "#374151", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: "pointer" },
+};
