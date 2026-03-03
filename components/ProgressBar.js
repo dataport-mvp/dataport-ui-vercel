@@ -1,58 +1,60 @@
-import { useEffect, useState } from "react";
-
+// components/ProgressBar.js — replaced with real step indicator
 export default function ProgressBar({ currentStep, totalSteps }) {
-  const stepPercent = 100 / totalSteps; // 25 if 4 steps
-  const minPercent = (currentStep - 1) * stepPercent;
-  const maxPercent = currentStep * stepPercent;
-
-  const [animatedPercent, setAnimatedPercent] = useState(minPercent);
-  const [direction, setDirection] = useState(1);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setAnimatedPercent(prev => {
-        let next = prev + direction;
-        if (next >= maxPercent) {
-          setDirection(-1);
-          next = maxPercent;
-        } else if (next <= minPercent) {
-          setDirection(1);
-          next = minPercent;
-        }
-        return next;
-      });
-    }, 50);
-    return () => clearInterval(interval);
-  }, [minPercent, maxPercent, direction]);
+  const steps = Array.from({ length: totalSteps }, (_, i) => i + 1);
+  const labels = ["Personal", "Education", "Employment", "UAN & PF"];
 
   return (
-    <div style={{ textAlign: "center", margin: "2rem 0" }}>
-      <div style={{
-        width: "300px",
-        height: "60px",
-        border: "3px solid #333",
-        borderRadius: "8px",
-        margin: "0 auto",
-        position: "relative",
-        background: "#eee",
-        overflow: "hidden"
-      }}>
-        <div style={{
-          width: `${animatedPercent}%`,
-          height: "100%",
-          background: "linear-gradient(90deg, #00ff00, #009900)",
-          transition: "width 0.1s ease"
-        }}></div>
-        <span style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          fontWeight: "bold"
-        }}>
-          {Math.round(animatedPercent)}% Complete
-        </span>
-      </div>
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "1.5rem 2rem",
+      gap: 0,
+    }}>
+      {steps.map((step, i) => {
+        const done = step < currentStep;
+        const active = step === currentStep;
+        return (
+          <div key={step} style={{ display: "flex", alignItems: "center" }}>
+            {/* Connector line before */}
+            {i > 0 && (
+              <div style={{
+                width: 48,
+                height: 2,
+                background: done || active ? "#2563eb" : "#e2e8f0",
+                transition: "background 0.3s",
+              }} />
+            )}
+            {/* Circle + label */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+              <div style={{
+                width: 36,
+                height: 36,
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 700,
+                fontSize: 14,
+                border: `2px solid ${done || active ? "#2563eb" : "#cbd5e1"}`,
+                background: done ? "#2563eb" : active ? "#eff6ff" : "#fff",
+                color: done ? "#fff" : active ? "#2563eb" : "#94a3b8",
+                transition: "all 0.3s",
+              }}>
+                {done ? "✓" : step}
+              </div>
+              <span style={{
+                fontSize: 11,
+                fontWeight: active ? 600 : 400,
+                color: active ? "#2563eb" : done ? "#475569" : "#94a3b8",
+                whiteSpace: "nowrap",
+              }}>
+                {labels[i] || `Step ${step}`}
+              </span>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
