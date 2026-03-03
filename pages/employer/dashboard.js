@@ -1,5 +1,5 @@
 // pages/employer/dashboard.js
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "../../utils/AuthContext";
 
@@ -7,674 +7,347 @@ const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 const DATA_TABS = ["Personal", "Education", "Employment", "UAN & PF"];
 
 export default function EmployerDashboard() {
+  const { user, apiFetch, logout, ready } = useAuth();
   const router = useRouter();
-  const { token, user, logout } = useAuth();
 
-  // ── Consent list state ───────────────────────────────────────────────────────
-  const [allConsents,        setAllConsents]        = useState([]);
-  const [consentTab,         setConsentTab]         = useState("SENT");     // SENT | APPROVED | DECLINED
-  const [searchQuery,        setSearchQuery]        = useState("");
-  const [loadingConsents,    setLoadingConsents]    = useState(true);
-
-  // ── New request state ────────────────────────────────────────────────────────
-  const [emailInput,         setEmailInput]         = useState("");
-  const [searching,          setSearching]          = useState(false);
-  const [requestError,       setRequestError]       = useState("");
-  const [requestSuccess,     setRequestSuccess]     = useState("");
-
-  // ── Polling for pending consent ──────────────────────────────────────────────
-  const [pollingConsentId,   setPollingConsentId]   = useState(null);
-  const [polling,            setPolling]            = useState(false);
-
-  // ── Employee profile view ────────────────────────────────────────────────────
-  const [viewingConsent,     setViewingConsent]     = useState(null); // the consent object
-  const [employeeData,       setEmployeeData]       = useState(null);
-  const [employeeId,         setEmployeeId]         = useState(null);
-  const [dataTab,            setDataTab]            = useState("Personal");
-  const [loadingProfile,     setLoadingProfile]     = useState(false);
-  const [profileError,       setProfileError]       = useState("");
-
-  // ── UI ───────────────────────────────────────────────────────────────────────
-  const [showSignoutConfirm, setShowSignoutConfirm] = useState(false);
-  const [toast,              setToast]              = useState(null);
-
-  // ── Load all consents ────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!token) return;
-    fetchConsents();
-  }, [token]);
-
-  const fetchConsents = async () => {
-    try {
-      const res = await fetch(`${API}/consent/my`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.status === 401) { handleSessionExpired(); return; }
-      if (res.ok) setAllConsents(await res.json());
-    } catch (_) {}
-    finally { setLoadingConsents(false); }
-  };
-
-  const showToast = (msg, type = "info") => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 4000);
-  };
-
-  const handleSessionExpired = () => {
-    logout();
-    router.push("/employer/login?expired=1");
-  };
-
-  // ── Poll for pending consent becoming APPROVED/DECLINED ──────────────────────
-  useEffect(() => {
-    if (!pollingConsentId || !polling || !token) return;
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`${API}/consent/${pollingConsentId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.status === 401) { clearInterval(interval); handleSessionExpired(); return; }
-        if (!res.ok) return;
-        const data = await res.json();
-
-        if (data.status === "APPROVED") {
-          clearInterval(interval);
-          setPolling(false);
-          setPollingConsentId(null);
-          fetchConsents();
-          showToast("✅ Employee approved your request! Click 'View Data' to see their profile.", "success");
-        }
-        if (data.status === "DECLINED") {
-          clearInterval(interval);
-          setPolling(false);
-          setPollingConsentId(null);
-          fetchConsents();
-          showToast("❌ The employee has declined your data access request.", "declined");
-        }
-      } catch (_) {}
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [pollingConsentId, polling, token]);
-
-  // ── Send consent request ─────────────────────────────────────────────────────
-  const handleRequest = async () => {
-    if (!emailInput.trim()) return;
-    setRequestError("");
-    setRequestSuccess("");
-    setSearching(true);
-    try {
-      const res = await fetch(`${API}/consent/request`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ employee_email: emailInput.trim().toLowerCase() }),
-      });
-      if (res.status === 401) { handleSessionExpired(); return; }
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || `Error ${res.status}`);
-
-      setPollingConsentId(data.consent_id);
-      setPolling(true);
-      setRequestSuccess(`Request sent to ${emailInput.trim().toLowerCase()}. Waiting for their response…`);
-      setEmailInput("");
-      setConsentTab("SENT");
-      fetchConsents();
-    } catch (err) {
-      setRequestError(err.message);
-    } finally {
-      setSearching(false);
-    }
-  };
-
-  // ── Open employee profile (APPROVED consent) ─────────────────────────────────
-  const openProfile = async (consent) => {
-    setViewingConsent(consent);
-    setEmployeeData(null);
-    setProfileError("");
-    setDataTab("Personal");
-    setLoadingProfile(true);
-    try {
-      const res = await fetch(`${API}/employee/${consent.employee_id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.status === 401) { handleSessionExpired(); return; }
-      if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
-        throw new Error(e.detail || `Error ${res.status}`);
-      }
-      const data = await res.json();
-      setEmployeeData(data);
-      setEmployeeId(consent.employee_id);
-    } catch (err) {
-      setProfileError(err.message);
-    } finally {
-      setLoadingProfile(false);
-    }
-  };
-
-  const closeProfile = () => {
-    setViewingConsent(null);
-    setEmployeeData(null);
-    setProfileError("");
-  };
-
-  // ── Filtered consent lists ────────────────────────────────────────────────────
-  const q = searchQuery.trim().toLowerCase();
-  const filterConsents = (status) => {
-    const statusMatch = status === "SENT"
-      ? allConsents.filter(c => c.status === "PENDING")
-      : allConsents.filter(c => c.status === status);
-    if (!q) return statusMatch;
-    return statusMatch.filter(c =>
-      (c.employee_email || "").toLowerCase().includes(q)
-    );
-  };
-
-  const sentList     = filterConsents("SENT");
-  const approvedList = filterConsents("APPROVED");
-  const declinedList = filterConsents("DECLINED");
-
-  const countOf = (s) => ({
-    SENT:     allConsents.filter(c => c.status === "PENDING").length,
-    APPROVED: allConsents.filter(c => c.status === "APPROVED").length,
-    DECLINED: allConsents.filter(c => c.status === "DECLINED").length,
-  })[s];
-
-  const currentList = { SENT: sentList, APPROVED: approvedList, DECLINED: declinedList }[consentTab];
-
-  const fmt = (ts) => ts ? new Date(ts).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—";
-
-  // ── If viewing a profile, render the full profile view ───────────────────────
-  if (viewingConsent) {
-    return (
-      <div style={st.page}>
-        <div style={st.card}>
-          {/* Profile header */}
-          <div style={st.headerRow}>
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-              <button style={st.backBtn} onClick={closeProfile}>← Back to Dashboard</button>
-              <div>
-                <h2 style={{ margin: 0 }}>
-                  {employeeData
-                    ? [employeeData.firstName, employeeData.middleName, employeeData.lastName].filter(Boolean).join(" ")
-                    : viewingConsent.employee_email}
-                </h2>
-                <p style={{ margin: "0.2rem 0 0", fontSize: "0.85rem", color: "#64748b" }}>
-                  {viewingConsent.employee_email}
-                </p>
-              </div>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.3rem" }}>
-              <StatusBadge status="APPROVED" />
-              {employeeData?._snapshot_at && (
-                <span style={{ fontSize: "0.75rem", color: "#64748b" }}>
-                  📸 Snapshot: {fmt(employeeData._snapshot_at)}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {loadingProfile && <p style={{ padding: "2rem", color: "#94a3b8", textAlign: "center" }}>Loading profile…</p>}
-          {profileError  && <p style={{ padding: "1.5rem", color: "#dc2626" }}>⚠️ {profileError}</p>}
-
-          {employeeData && (
-            <>
-              <div style={st.tabNav}>
-                {DATA_TABS.map(t => (
-                  <button key={t} style={{ ...st.tab, ...(dataTab === t ? st.tabActive : {}) }} onClick={() => setDataTab(t)}>
-                    {t}
-                  </button>
-                ))}
-              </div>
-              <div style={{ padding: "1.5rem 2rem" }}>
-                {dataTab === "Personal"   && <PersonalTab   data={employeeData} />}
-                {dataTab === "Education"  && <EducationTab  data={employeeData.education} />}
-                {dataTab === "Employment" && <EmploymentTab empId={employeeId} token={token} onExpired={handleSessionExpired} />}
-                {dataTab === "UAN & PF"   && <UANTab        data={employeeData} />}
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // ── Main dashboard ────────────────────────────────────────────────────────────
-  return (
-    <div style={st.page}>
-
-      {/* Toast */}
-      {toast && (
-        <div style={{
-          position: "fixed", top: "1.5rem", left: "50%", transform: "translateX(-50%)",
-          background: toast.type === "success" ? "#f0fdf4" : toast.type === "declined" ? "#fef2f2" : "#f8fafc",
-          border: `1px solid ${toast.type === "success" ? "#bbf7d0" : toast.type === "declined" ? "#fecaca" : "#e2e8f0"}`,
-          color: toast.type === "success" ? "#16a34a" : toast.type === "declined" ? "#dc2626" : "#0f172a",
-          padding: "0.85rem 1.75rem", borderRadius: "10px", fontWeight: 600, fontSize: "0.9rem",
-          zIndex: 1000, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", maxWidth: "92vw", textAlign: "center",
-        }}>{toast.msg}</div>
-      )}
-
-      {/* Signout modal */}
-      {showSignoutConfirm && (
-        <div style={st.modalOverlay}>
-          <div style={st.modalBox}>
-            <div style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>🚪</div>
-            <h3 style={{ margin: "0 0 0.5rem", color: "#0f172a" }}>Sign Out?</h3>
-            <p style={{ color: "#475569", marginBottom: "1.5rem", fontSize: "0.9rem" }}>
-              You will be returned to the employer login page.
-            </p>
-            <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
-              <button onClick={() => setShowSignoutConfirm(false)} style={st.cancelBtn}>Cancel</button>
-              <button onClick={() => { logout(); router.push("/employer/login"); }} style={st.confirmBtn}>Yes, Sign Out</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div style={st.card}>
-
-        {/* Header */}
-        <div style={st.headerRow}>
-          <div>
-            <h1 style={{ margin: 0 }}>Employer Dashboard</h1>
-            {user && <p style={{ margin: "0.25rem 0 0", color: "#64748b", fontSize: "0.9rem" }}>Logged in as <strong>{user.email}</strong></p>}
-          </div>
-          <button style={st.logoutBtn} onClick={() => setShowSignoutConfirm(true)}>Sign Out</button>
-        </div>
-
-        {/* ── Request new access ──────────────────────────────────────────────── */}
-        <div style={st.requestBox}>
-          <h3 style={{ margin: "0 0 0.5rem", color: "#0f172a" }}>Request Employee Data</h3>
-          <p style={{ fontSize: "0.85rem", color: "#64748b", margin: "0 0 1rem" }}>
-            Enter the employee's email. They'll receive a consent request to approve or decline.
-          </p>
-          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-            <input
-              style={st.emailInput}
-              type="email"
-              placeholder="employee@example.com"
-              value={emailInput}
-              onChange={e => setEmailInput(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && handleRequest()}
-            />
-            <button
-              style={{ ...st.requestBtn, opacity: searching ? 0.7 : 1 }}
-              onClick={handleRequest}
-              disabled={searching}
-            >
-              {searching ? "Sending…" : "Send Request"}
-            </button>
-          </div>
-          {requestError   && <p style={{ color: "#dc2626", fontSize: "0.85rem", marginTop: "0.75rem" }}>⚠️ {requestError}</p>}
-          {requestSuccess && <p style={{ color: "#16a34a", fontSize: "0.85rem", marginTop: "0.75rem" }}>✅ {requestSuccess}</p>}
-        </div>
-
-        {/* ── Consent tabs with search ─────────────────────────────────────────── */}
-        <div style={{ padding: "0 2rem 2rem" }}>
-
-          {/* Search bar */}
-          <div style={{ marginBottom: "1rem", position: "relative" }}>
-            <span style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", fontSize: "1rem" }}>🔍</span>
-            <input
-              style={{ width: "100%", padding: "0.6rem 1rem 0.6rem 2.25rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.9rem", boxSizing: "border-box", outline: "none" }}
-              placeholder="Search by employee email…"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                style={{ position: "absolute", right: "0.75rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: "1rem" }}
-              >✕</button>
-            )}
-          </div>
-
-          {/* Tab bar */}
-          <div style={{ display: "flex", borderBottom: "2px solid #f1f5f9", marginBottom: "1.25rem" }}>
-            {[
-              { key: "SENT",     label: "Sent",     color: "#ca8a04", bg: "#fef9c3" },
-              { key: "APPROVED", label: "Accepted", color: "#16a34a", bg: "#dcfce7" },
-              { key: "DECLINED", label: "Declined", color: "#dc2626", bg: "#fee2e2" },
-            ].map(({ key, label, color, bg }) => {
-              const count = countOf(key);
-              return (
-                <button
-                  key={key}
-                  onClick={() => setConsentTab(key)}
-                  style={{
-                    padding: "0.65rem 1.25rem", border: "none", cursor: "pointer", fontWeight: consentTab === key ? 700 : 400,
-                    color: consentTab === key ? color : "#64748b",
-                    borderBottom: consentTab === key ? `2px solid ${color}` : "2px solid transparent",
-                    background: "none", fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "0.4rem",
-                  }}
-                >
-                  {label}
-                  {count > 0 && (
-                    <span style={{ background: consentTab === key ? color : "#e2e8f0", color: consentTab === key ? "#fff" : "#64748b", borderRadius: "10px", padding: "0.1rem 0.5rem", fontSize: "0.72rem", fontWeight: 700 }}>
-                      {count}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Consent rows */}
-          {loadingConsents ? (
-            <p style={{ color: "#94a3b8", textAlign: "center", padding: "2rem" }}>Loading…</p>
-          ) : currentList.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "2.5rem", color: "#94a3b8" }}>
-              <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>
-                {consentTab === "SENT" ? "📤" : consentTab === "APPROVED" ? "✅" : "🚫"}
-              </div>
-              <p style={{ margin: 0 }}>
-                {searchQuery
-                  ? `No ${consentTab.toLowerCase()} requests matching "${searchQuery}"`
-                  : `No ${consentTab.toLowerCase()} requests yet`}
-              </p>
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-              {[...currentList].sort((a, b) => b.requested_at - a.requested_at).map(c => (
-                <div key={c.consent_id} style={st.consentRow}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: 0, fontWeight: 700, fontSize: "0.95rem", color: "#0f172a" }}>
-                      {c.employee_email}
-                    </p>
-                    <p style={{ margin: "0.2rem 0 0", fontSize: "0.8rem", color: "#94a3b8" }}>
-                      Requested: {fmt(c.requested_at)}
-                      {c.responded_at && ` · Responded: ${fmt(c.responded_at)}`}
-                    </p>
-                    {/* Declined — show professional message */}
-                    {c.status === "DECLINED" && (
-                      <p style={{ margin: "0.4rem 0 0", fontSize: "0.82rem", color: "#dc2626", fontWeight: 500 }}>
-                        This employee has declined your data access request.
-                      </p>
-                    )}
-                    {/* Pending — show waiting message + polling indicator */}
-                    {c.status === "PENDING" && pollingConsentId === c.consent_id && (
-                      <p style={{ margin: "0.4rem 0 0", fontSize: "0.82rem", color: "#ca8a04" }}>
-                        🔄 Waiting for employee response…
-                      </p>
-                    )}
-                  </div>
-                  <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexShrink: 0 }}>
-                    <StatusBadge status={c.status} />
-                    {c.status === "APPROVED" && (
-                      <button style={st.viewBtn} onClick={() => openProfile(c)}>
-                        View Profile
-                      </button>
-                    )}
-                    {c.status === "PENDING" && pollingConsentId !== c.consent_id && (
-                      <button
-                        style={{ ...st.viewBtn, background: "#f8fafc", color: "#64748b", border: "1px solid #e2e8f0" }}
-                        onClick={() => { setPollingConsentId(c.consent_id); setPolling(true); }}
-                      >
-                        Watch
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-      </div>
-    </div>
-  );
-}
-
-// ─── Status badge ─────────────────────────────────────────────────────────────
-function StatusBadge({ status }) {
-  const map = {
-    PENDING:  { bg: "#fef9c3", color: "#ca8a04", label: "⏳ Pending"  },
-    APPROVED: { bg: "#dcfce7", color: "#16a34a", label: "✅ Approved" },
-    DECLINED: { bg: "#fee2e2", color: "#dc2626", label: "❌ Declined" },
-  };
-  const s = map[status] || map.PENDING;
-  return (
-    <span style={{ background: s.bg, color: s.color, padding: "0.25rem 0.75rem", borderRadius: "999px", fontSize: "0.8rem", fontWeight: 700, whiteSpace: "nowrap" }}>
-      {s.label}
-    </span>
-  );
-}
-
-// ─── PersonalTab ──────────────────────────────────────────────────────────────
-function PersonalTab({ data }) {
-  const fullName   = [data.firstName, data.middleName, data.lastName].filter(Boolean).join(" ");
-  const fatherName = data.fatherName
-    || [data.fatherFirst, data.fatherMiddle, data.fatherLast].filter(Boolean).join(" ") || "—";
-  const addr = data.currentAddress   || {};
-  const perm = data.permanentAddress || {};
-  return (
-    <div>
-      <DataGrid rows={[
-        ["Full Name",     fullName          || "—"],
-        ["Father Name",   fatherName],
-        ["Email",         data.email        || "—"],
-        ["Mobile",        data.mobile       || "—"],
-        ["Date of Birth", data.dob          || "—"],
-        ["Gender",        data.gender       || "—"],
-        ["Nationality",   data.nationality  || "—"],
-        ["Aadhaar",       data.aadhaar ? `•••• •••• ${String(data.aadhaar).slice(-4)}` : "—"],
-        ["PAN",           data.pan          || "—"],
-        ["Passport",      data.passport     || "—"],
-      ]} />
-      <h4 style={{ marginTop: "1.5rem", marginBottom: "0.5rem" }}>Current Address</h4>
-      <DataGrid rows={[
-        ["Door & Street",  addr.door     || "—"],
-        ["Village/Mandal", addr.village  || "—"],
-        ["District/State", addr.district || "—"],
-        ["Pincode",        addr.pin      || "—"],
-        ["From",           addr.from     || "—"],
-        ["To",             addr.to       || "—"],
-      ]} />
-      <h4 style={{ marginTop: "1.5rem", marginBottom: "0.5rem" }}>Permanent Address</h4>
-      <DataGrid rows={[
-        ["Door & Street",  perm.door     || "—"],
-        ["Village/Mandal", perm.village  || "—"],
-        ["District/State", perm.district || "—"],
-        ["Pincode",        perm.pin      || "—"],
-      ]} />
-    </div>
-  );
-}
-
-// ─── EducationTab ─────────────────────────────────────────────────────────────
-const EDU_LABELS = {
-  school: "School", college: "College", university: "University", course: "Course",
-  board: "Board", hallTicket: "Hall Ticket No.", from: "From", to: "To",
-  address: "Address", mode: "Mode", yearOfPassing: "Year of Passing",
-  resultType: "Result Type", resultValue: "Result / %", medium: "Medium", backlogs: "Backlogs",
-};
-
-function EducationTab({ data }) {
-  if (!data) return <Empty msg="No education data available." />;
-  const sections = [
-    { title: "Class X",       d: data.classX        },
-    { title: "Intermediate",  d: data.intermediate  },
-    { title: "Undergraduate", d: data.undergraduate },
-    { title: "Postgraduate",  d: data.postgraduate  },
-  ];
-  const hasAny = sections.some(s => s.d && Object.values(s.d).some(v => v));
-  if (!hasAny) return <Empty msg="No education data available." />;
-  return (
-    <div>
-      {sections.map(({ title, d }) => {
-        if (!d) return null;
-        const rows = Object.entries(d).filter(([, v]) => v).map(([k, v]) => [EDU_LABELS[k] || k, String(v)]);
-        if (!rows.length) return null;
-        return (
-          <div key={title} style={{ marginBottom: "1.75rem" }}>
-            <h4 style={{ color: "#2563eb", marginBottom: "0.5rem" }}>{title}</h4>
-            <DataGrid rows={rows} />
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// ─── EmploymentTab ────────────────────────────────────────────────────────────
-function EmploymentTab({ empId, token, onExpired }) {
-  const [history, setHistory] = useState(null);
+  const [consents, setConsents] = useState([]);
+  const [selected, setSelected] = useState(null); // active consent
+  const [profileData, setProfileData] = useState(null);
+  const [activeTab, setActiveTab] = useState("Personal");
+  const [requestEmail, setRequestEmail] = useState("");
+  const [requestMsg, setRequestMsg] = useState("");
+  const [requesting, setRequesting] = useState(false);
+  const [requestError, setRequestError] = useState("");
+  const [requestSuccess, setRequestSuccess] = useState("");
   const [loading, setLoading] = useState(true);
 
+  // Auth guard
   useEffect(() => {
-    if (!empId || !token) return;
-    fetch(`${API}/employee/employment-history/${empId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(r => {
-        if (r.status === 401) { onExpired && onExpired(); return null; }
-        return r.ok ? r.json() : null;
-      })
-      .then(d => { setHistory(d); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [empId, token]);
+    if (!ready) return;
+    if (!user) { router.replace("/employer/login"); return; }
+    if (user.role !== "employer") { router.replace("/employee/login"); return; }
+  }, [ready, user, router]);
 
-  if (loading) return <p style={{ color: "#94a3b8" }}>Loading employment history…</p>;
-  if (!history || !history.employments?.length) return <Empty msg="No employment history available." />;
+  const loadConsents = useCallback(async () => {
+    try {
+      const res = await apiFetch(`${API}/consent/my`);
+      if (res.ok) {
+        const data = await res.json();
+        setConsents(Array.isArray(data) ? data : []);
+      }
+    } catch (_) {}
+    setLoading(false);
+  }, [apiFetch]);
+
+  useEffect(() => {
+    if (ready && user) loadConsents();
+  }, [ready, user, loadConsents]);
+
+  const selectConsent = useCallback(async (consent) => {
+    setSelected(consent);
+    setProfileData(null);
+    setActiveTab("Personal");
+    if (consent.status !== "approved") return;
+    try {
+      // Profile snapshot is embedded in consent details
+      const res = await apiFetch(`${API}/consent/${consent.consent_id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setProfileData(data);
+      }
+    } catch (_) {}
+  }, [apiFetch]);
+
+  const sendRequest = async () => {
+    setRequestError("");
+    setRequestSuccess("");
+    if (!requestEmail) { setRequestError("Email is required"); return; }
+    setRequesting(true);
+    try {
+      const res = await apiFetch(`${API}/consent/request`, {
+        method: "POST",
+        body: JSON.stringify({ employee_email: requestEmail, message: requestMsg }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setRequestError(data.detail || "Request failed"); return; }
+      setRequestSuccess("Request sent successfully!");
+      setRequestEmail("");
+      setRequestMsg("");
+      loadConsents();
+    } catch {
+      setRequestError("Network error — please try again");
+    } finally {
+      setRequesting(false);
+    }
+  };
+
+  if (!ready || !user) return null;
+
+  const approved = consents.filter(c => c.status === "approved");
+  const pending = consents.filter(c => c.status === "pending");
+  const declined = consents.filter(c => c.status === "declined");
 
   return (
-    <div>
-      {history.snapshot_at && (
-        <p style={{ fontSize: "0.78rem", color: "#94a3b8", marginBottom: "1rem" }}>
-          📸 Snapshot taken: {new Date(history.snapshot_at).toLocaleString()}
-        </p>
-      )}
-      {history.employments.map((emp, i) => (
-        <div key={i} style={{ marginBottom: "2rem", padding: "1.25rem", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-          <h4 style={{ color: "#2563eb", marginBottom: "0.75rem" }}>
-            {`Previous ${i + 1}: ${emp.companyName || "Unknown"}`}
-          </h4>
-          <DataGrid rows={[
-            ["Employee ID",        emp.employeeId         || "—"],
-            ["Work Email",         emp.workEmail          || "—"],
-            ["Designation",        emp.designation        || "—"],
-            ["Department",         emp.department         || "—"],
-            ["Employment Type",    emp.employmentType     || "—"],
-            ["Reason for Leaving", emp.reasonForRelieving || "—"],
-            ["Office Address",     emp.officeAddress      || "—"],
-            ["Duties",             emp.duties             || "—"],
-          ]} />
-          {emp.reference?.name && (
+    <div style={styles.page}>
+      {/* Sidebar */}
+      <aside style={styles.sidebar}>
+        <div style={styles.sidebarTop}>
+          <div style={styles.logo}>Datagate</div>
+          <div style={styles.employerName}>{user.name}</div>
+          <div style={styles.employerRole}>Employer</div>
+        </div>
+
+        {/* Request new */}
+        <div style={styles.requestBox}>
+          <div style={styles.requestTitle}>Request Employee Data</div>
+          <input
+            style={styles.sideInput}
+            type="email"
+            placeholder="Employee email"
+            value={requestEmail}
+            onChange={e => setRequestEmail(e.target.value)}
+          />
+          <textarea
+            style={{ ...styles.sideInput, resize: "vertical", minHeight: 56 }}
+            placeholder="Message (optional)"
+            value={requestMsg}
+            onChange={e => setRequestMsg(e.target.value)}
+          />
+          {requestError && <p style={styles.reqError}>{requestError}</p>}
+          {requestSuccess && <p style={styles.reqSuccess}>{requestSuccess}</p>}
+          <button style={styles.reqBtn} onClick={sendRequest} disabled={requesting}>
+            {requesting ? "Sending…" : "Send Request"}
+          </button>
+        </div>
+
+        {/* Consent list */}
+        <div style={styles.consentList}>
+          {loading ? (
+            <div style={styles.sideEmpty}>Loading…</div>
+          ) : consents.length === 0 ? (
+            <div style={styles.sideEmpty}>No requests yet</div>
+          ) : (
             <>
-              <h5 style={{ marginTop: "1rem", marginBottom: "0.4rem" }}>Reference</h5>
-              <DataGrid rows={[
-                ["Name",   emp.reference.name   || "—"],
-                ["Role",   emp.reference.role   || "—"],
-                ["Email",  emp.reference.email  || "—"],
-                ["Mobile", emp.reference.mobile || "—"],
-              ]} />
+              {approved.length > 0 && <SideSection label="Approved" items={approved} selected={selected} onSelect={selectConsent} color="#16a34a" />}
+              {pending.length > 0 && <SideSection label="Pending" items={pending} selected={selected} onSelect={selectConsent} color="#f59e0b" />}
+              {declined.length > 0 && <SideSection label="Declined" items={declined} selected={selected} onSelect={selectConsent} color="#ef4444" />}
             </>
           )}
-          <div style={{ marginTop: "0.75rem" }}>
-            <DataGrid rows={[["Employment Gap", emp.gap?.hasGap === "Yes" ? `Yes — ${emp.gap.reason || ""}` : "No"]]} />
+        </div>
+
+        <button style={styles.logoutBtn} onClick={logout}>Sign out</button>
+      </aside>
+
+      {/* Main content */}
+      <main style={styles.main}>
+        {!selected ? (
+          <div style={styles.emptyMain}>
+            <div style={styles.emptyIcon}>👥</div>
+            <p style={styles.emptyText}>Select an employee from the sidebar</p>
+            <p style={styles.emptySub}>Approved requests will show full employee data here</p>
           </div>
+        ) : (
+          <div style={styles.profilePanel}>
+            <div style={styles.profileHeader}>
+              <div>
+                <h2 style={styles.profileName}>{selected.employee_email}</h2>
+                <span style={{ ...styles.statusBadge, background: selected.status === "approved" ? "#16a34a" : selected.status === "pending" ? "#f59e0b" : "#ef4444" }}>
+                  {selected.status}
+                </span>
+              </div>
+            </div>
+
+            {selected.status !== "approved" ? (
+              <div style={styles.pendingMsg}>
+                {selected.status === "pending"
+                  ? "Waiting for employee to respond to your request."
+                  : "Employee declined this request."}
+              </div>
+            ) : !profileData ? (
+              <div style={styles.pendingMsg}>Loading profile…</div>
+            ) : (
+              <>
+                <div style={styles.tabs}>
+                  {DATA_TABS.map(tab => (
+                    <button
+                      key={tab}
+                      style={{ ...styles.tab, ...(activeTab === tab ? styles.tabActive : {}) }}
+                      onClick={() => setActiveTab(tab)}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+
+                <div style={styles.tabContent}>
+                  {activeTab === "Personal" && <PersonalTab data={profileData?.profile_snapshot} />}
+                  {activeTab === "Education" && <EducationTab data={profileData?.profile_snapshot?.education} />}
+                  {activeTab === "Employment" && <EmploymentTab data={profileData?.employment_snapshot} />}
+                  {activeTab === "UAN & PF" && <UanTab data={profileData?.profile_snapshot} />}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+// ── Sidebar sub-components ────────────────────────────────────────────────────
+
+function SideSection({ label, items, selected, onSelect, color }) {
+  return (
+    <div style={{ marginBottom: "1rem" }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 1, padding: "0 0.75rem", marginBottom: 4 }}>{label}</div>
+      {items.map(c => (
+        <div
+          key={c.consent_id}
+          style={{
+            ...styles.sideItem,
+            ...(selected?.consent_id === c.consent_id ? styles.sideItemActive : {}),
+          }}
+          onClick={() => onSelect(c)}
+        >
+          <div style={styles.sideItemDot(color)} />
+          <span style={styles.sideItemEmail}>{c.employee_email}</span>
         </div>
       ))}
-      {history.acknowledgements && Object.values(history.acknowledgements).some(v => v?.val) && (
-        <div style={{ padding: "1rem", background: "#f0fdf4", borderRadius: "10px", border: "1px solid #bbf7d0" }}>
-          <h4 style={{ marginBottom: "0.75rem", color: "#065f46" }}>Employment Declarations</h4>
-          <DataGrid rows={[
-            ["Running Other Business", history.acknowledgements.business?.val  || "—"],
-            ["Ever Dismissed",         history.acknowledgements.dismissed?.val || "—"],
-            ["Criminal Record",        history.acknowledgements.criminal?.val  || "—"],
-            ["Civil Dispute",          history.acknowledgements.civil?.val     || "—"],
+    </div>
+  );
+}
+
+// ── Data tab components ───────────────────────────────────────────────────────
+
+function PersonalTab({ data }) {
+  if (!data) return <Empty />;
+  const fields = [
+    ["First Name", data.firstName],
+    ["Last Name", data.lastName],
+    ["Date of Birth", data.dob],
+    ["Gender", data.gender],
+    ["Phone", data.phone],
+    ["Aadhaar", data.aadhaar],
+    ["PAN", data.pan],
+    ["Address", data.address],
+  ];
+  return <FieldGrid fields={fields} />;
+}
+
+function EducationTab({ data }) {
+  if (!data || !Array.isArray(data) || data.length === 0) return <Empty label="No education records" />;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+      {data.map((edu, i) => (
+        <div key={i} style={styles.dataCard}>
+          <div style={styles.dataCardTitle}>{edu.level} — {edu.institution}</div>
+          <FieldGrid fields={[
+            ["Board / University", edu.board_or_university],
+            ["Field of Study", edu.field_of_study],
+            ["Year of Passing", edu.year_of_passing],
+            ["Percentage / CGPA", edu.percentage_or_cgpa],
           ]} />
         </div>
-      )}
+      ))}
     </div>
   );
 }
 
-// ─── UANTab ───────────────────────────────────────────────────────────────────
-const ACK_LABELS = {
-  truthful:      "All information provided is true and accurate",
-  consent_aware: "Understands data shared only after explicit consent",
-  docs_genuine:  "All documents and certificates are genuine",
-  no_suppress:   "Has not withheld any material information",
-  liability:     "Accepts legal liability for false information",
-};
-
-function UANTab({ data }) {
+function EmploymentTab({ data }) {
+  if (!data || !Array.isArray(data) || data.length === 0) return <Empty label="No employment records" />;
   return (
-    <div>
-      <DataGrid rows={[
-        ["UAN Number",      data.uanNumber    || "—"],
-        ["Name as per UAN", data.nameAsPerUan || "—"],
-        ["Linked Mobile",   data.mobileLinked || "—"],
-        ["UAN Active",      data.isActive     || "—"],
-      ]} />
-      {data.pfRecords?.length > 0 && (
-        <>
-          <h4 style={{ marginTop: "1.5rem", marginBottom: "0.75rem" }}>PF Records</h4>
-          {data.pfRecords.map((pf, i) => (
-            <div key={i} style={{ marginBottom: "1rem", padding: "1rem", background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
-              <DataGrid rows={[
-                ["Company",                pf.companyName   || "—"],
-                ["PF Member ID",           pf.pfMemberId    || "—"],
-                ["Date of Joining (EPFO)", pf.dojEpfo       || "—"],
-                ["Date of Exit (EPFO)",    pf.doeEpfo       || "—"],
-                ["PF Transferred",         pf.pfTransferred || "—"],
-              ]} />
-            </div>
-          ))}
-        </>
-      )}
-      {data.acknowledgements_profile && Object.values(data.acknowledgements_profile).some(v => v === "Yes") && (
-        <div style={{ marginTop: "1.5rem", padding: "1rem", background: "#f0fdf4", borderRadius: "10px", border: "1px solid #bbf7d0" }}>
-          <h4 style={{ marginBottom: "0.75rem", color: "#065f46" }}>Profile Declarations</h4>
-          {Object.entries(data.acknowledgements_profile).map(([key, val]) => (
-            <div key={key} style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", marginBottom: "0.5rem" }}>
-              <span style={{ color: val === "Yes" ? "#16a34a" : "#94a3b8", fontWeight: 700, minWidth: "16px" }}>
-                {val === "Yes" ? "✓" : "○"}
-              </span>
-              <span style={{ fontSize: "0.85rem", color: "#334155" }}>{ACK_LABELS[key] || key}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Shared ───────────────────────────────────────────────────────────────────
-function DataGrid({ rows }) {
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem 1.5rem" }}>
-      {rows.map(([label, value]) => (
-        <div key={label} style={{ padding: "0.5rem 0", borderBottom: "1px solid #f1f5f9" }}>
-          <p style={{ margin: 0, fontSize: "0.75rem", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</p>
-          <p style={{ margin: "0.15rem 0 0", fontSize: "0.95rem", color: "#0f172a", wordBreak: "break-all" }}>{value}</p>
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+      {data.map((job, i) => (
+        <div key={i} style={styles.dataCard}>
+          <div style={styles.dataCardTitle}>{job.designation} @ {job.company_name}</div>
+          <FieldGrid fields={[
+            ["Employment Type", job.employment_type],
+            ["Location", job.location],
+            ["Start Date", job.start_date],
+            ["End Date", job.is_current ? "Present" : job.end_date],
+            ["Reason for Leaving", job.reason_for_leaving],
+          ]} />
         </div>
       ))}
     </div>
   );
 }
-function Empty({ msg }) {
-  return <p style={{ color: "#94a3b8", marginTop: "1rem", fontStyle: "italic" }}>{msg}</p>;
+
+function UanTab({ data }) {
+  if (!data) return <Empty />;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+      <FieldGrid fields={[["UAN Number", data.uanNumber]]} />
+      {Array.isArray(data.pfRecords) && data.pfRecords.map((pf, i) => (
+        <div key={i} style={styles.dataCard}>
+          <div style={styles.dataCardTitle}>PF Record {i + 1}</div>
+          <FieldGrid fields={[
+            ["Employer", pf.employer_name],
+            ["PF Account", pf.pf_account_number],
+            ["EPF Member ID", pf.epf_member_id],
+            ["Period", pf.period],
+          ]} />
+        </div>
+      ))}
+    </div>
+  );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-const st = {
-  page:        { background: "#f1f5f9", padding: "2rem", minHeight: "100vh", fontFamily: "Inter, system-ui, sans-serif" },
-  card:        { maxWidth: "1020px", margin: "auto", background: "#fff", borderRadius: "14px", boxShadow: "0 12px 30px rgba(0,0,0,0.08)" },
-  headerRow:   { display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "1.75rem 2rem", borderBottom: "1px solid #f1f5f9" },
-  logoutBtn:   { padding: "0.5rem 1.25rem", background: "#0f172a", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: 600 },
-  backBtn:     { padding: "0.4rem 1rem", background: "none", border: "1px solid #cbd5e1", borderRadius: "8px", cursor: "pointer", color: "#475569", fontSize: "0.9rem" },
-  requestBox:  { background: "#f8fafc", borderBottom: "1px solid #e2e8f0", padding: "1.5rem 2rem" },
-  emailInput:  { flex: 1, minWidth: "260px", padding: "0.65rem 1rem", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.95rem" },
-  requestBtn:  { padding: "0.65rem 1.5rem", background: "#2563eb", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" },
-  consentRow:  { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0", gap: "1rem" },
-  viewBtn:     { padding: "0.45rem 1rem", background: "#2563eb", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600, whiteSpace: "nowrap" },
-  tabNav:      { display: "flex", gap: "0.5rem", padding: "0 2rem", borderBottom: "2px solid #f1f5f9", flexWrap: "wrap" },
-  tab:         { padding: "0.65rem 1.2rem", border: "none", background: "none", cursor: "pointer", fontWeight: 500, color: "#475569", fontSize: "0.9rem" },
-  tabActive:   { color: "#2563eb", borderBottom: "2px solid #2563eb", fontWeight: 700 },
-  modalOverlay:{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center" },
-  modalBox:    { background: "#fff", borderRadius: "14px", padding: "2rem", maxWidth: "400px", width: "90%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" },
-  cancelBtn:   { padding: "0.6rem 1.5rem", borderRadius: "8px", border: "1px solid #cbd5e1", background: "#f8fafc", cursor: "pointer", fontWeight: 600 },
-  confirmBtn:  { padding: "0.6rem 1.5rem", borderRadius: "8px", border: "none", background: "#0f172a", color: "#fff", cursor: "pointer", fontWeight: 600 },
+function FieldGrid({ fields }) {
+  return (
+    <div style={styles.fieldGrid}>
+      {fields.filter(([, v]) => v).map(([label, value]) => (
+        <div key={label} style={styles.fieldItem}>
+          <div style={styles.fieldLabel}>{label}</div>
+          <div style={styles.fieldValue}>{value}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Empty({ label = "No data available" }) {
+  return <div style={styles.pendingMsg}>{label}</div>;
+}
+
+const styles = {
+  page: { display: "flex", minHeight: "100vh", fontFamily: "'Inter', sans-serif", background: "#f8fafc" },
+  sidebar: { width: 280, minWidth: 280, background: "#fff", borderRight: "1.5px solid #e2e8f0", display: "flex", flexDirection: "column", height: "100vh", position: "sticky", top: 0, overflow: "hidden" },
+  sidebarTop: { padding: "1.25rem 1rem 0.75rem", borderBottom: "1.5px solid #f1f5f9" },
+  logo: { fontSize: 18, fontWeight: 800, color: "#2563eb", marginBottom: 4 },
+  employerName: { fontSize: 14, fontWeight: 600, color: "#0f172a" },
+  employerRole: { fontSize: 12, color: "#94a3b8" },
+  requestBox: { padding: "1rem", borderBottom: "1.5px solid #f1f5f9", display: "flex", flexDirection: "column", gap: "0.5rem" },
+  requestTitle: { fontSize: 12, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: 0.5 },
+  sideInput: { width: "100%", padding: "0.6rem 0.75rem", border: "1.5px solid #e2e8f0", borderRadius: 7, fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" },
+  reqError: { fontSize: 12, color: "#ef4444", margin: 0 },
+  reqSuccess: { fontSize: 12, color: "#16a34a", margin: 0 },
+  reqBtn: { padding: "0.6rem", background: "#2563eb", color: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" },
+  consentList: { flex: 1, overflowY: "auto", padding: "0.75rem 0" },
+  sideEmpty: { fontSize: 13, color: "#94a3b8", padding: "0.75rem 1rem" },
+  sideItem: { display: "flex", alignItems: "center", gap: 8, padding: "0.6rem 0.75rem", cursor: "pointer", borderRadius: 7, margin: "0 0.25rem 2px", transition: "background 0.15s" },
+  sideItemActive: { background: "#eff6ff" },
+  sideItemDot: (color) => ({ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }),
+  sideItemEmail: { fontSize: 13, color: "#374151", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  logoutBtn: { margin: "0.75rem", padding: "0.6rem", background: "none", border: "1.5px solid #e2e8f0", borderRadius: 7, fontSize: 13, color: "#64748b", cursor: "pointer" },
+  main: { flex: 1, padding: "2rem", overflowY: "auto" },
+  emptyMain: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", minHeight: 400, gap: 8, textAlign: "center" },
+  emptyIcon: { fontSize: 40 },
+  emptyText: { fontSize: 16, fontWeight: 600, color: "#374151", margin: 0 },
+  emptySub: { fontSize: 14, color: "#94a3b8", margin: 0 },
+  profilePanel: { background: "#fff", borderRadius: 16, boxShadow: "0 2px 16px rgba(0,0,0,0.07)", padding: "1.75rem", display: "flex", flexDirection: "column", gap: "1.25rem" },
+  profileHeader: { display: "flex", alignItems: "flex-start", justifyContent: "space-between" },
+  profileName: { fontSize: 18, fontWeight: 700, color: "#0f172a", margin: "0 0 6px" },
+  statusBadge: { padding: "0.2rem 0.7rem", borderRadius: 999, fontSize: 12, fontWeight: 600, color: "#fff" },
+  pendingMsg: { fontSize: 14, color: "#64748b", padding: "1rem", background: "#f8fafc", borderRadius: 8 },
+  tabs: { display: "flex", gap: 4, borderBottom: "1.5px solid #e2e8f0", paddingBottom: 0 },
+  tab: { padding: "0.6rem 1.1rem", background: "none", border: "none", borderBottom: "2.5px solid transparent", fontSize: 14, fontWeight: 500, color: "#64748b", cursor: "pointer", marginBottom: -1.5 },
+  tabActive: { borderBottomColor: "#2563eb", color: "#2563eb", fontWeight: 700 },
+  tabContent: { paddingTop: 8 },
+  dataCard: { border: "1.5px solid #e2e8f0", borderRadius: 10, padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" },
+  dataCardTitle: { fontSize: 15, fontWeight: 700, color: "#1e293b" },
+  fieldGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" },
+  fieldItem: { display: "flex", flexDirection: "column", gap: 2 },
+  fieldLabel: { fontSize: 11, fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.5 },
+  fieldValue: { fontSize: 14, color: "#0f172a", fontWeight: 500 },
 };
