@@ -145,6 +145,8 @@ export default function EmployerDashboard() {
     request_message: c?.request_message || c?.message   || c?.comment   || c?.note || "",
     employee_email:  c?.employee_email  || c?.employeeEmail || c?.email || c?.target_employee_email || c?.user_email || "",
     employee_name:   c?.employee_name   || c?.employeeName  || c?.name  || c?.user_name || "",
+    // API stores employer's name as requestor_name
+    employer_name:   c?.requestor_name  || c?.employer_name || c?.employerName || "",
   });
 
   const getConsentId = (c) => c?.consent_id || c?.id || c?.consentId || c?._id;
@@ -216,8 +218,6 @@ export default function EmployerDashboard() {
         method: "POST",
         body: JSON.stringify({
           employee_email: requestEmail.trim().toLowerCase(),
-          // NOTE: 'message' field — make sure ConsentRequestBody in main.py accepts this
-          // Add: message: Optional[str] = None  to ConsentRequestBody pydantic model
           message: requestMsg.trim() || undefined,
         }),
       });
