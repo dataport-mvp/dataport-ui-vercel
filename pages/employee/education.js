@@ -7,6 +7,27 @@ import { parseError } from "../../utils/apiError";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
+const hasMeaningfulEducation = (d = {}) => {
+  const values = [
+    d.xSchool, d.xBoard, d.xHall, d.xFrom, d.xTo, d.xAddress, d.xYear, d.xResultType, d.xResultValue, d.xMedium,
+    d.iCollege, d.iBoard, d.iHall, d.iFrom, d.iTo, d.iAddress, d.iMode, d.iYear, d.iResultType, d.iResultValue, d.iMedium,
+    d.ugCollege, d.ugUniversity, d.ugCourse, d.ugHall, d.ugFrom, d.ugTo, d.ugAddress, d.ugMode, d.ugYear, d.ugResultType, d.ugResultValue, d.ugBacklogs, d.ugMedium,
+    d.pgCollege, d.pgUniversity, d.pgCourse, d.pgHall, d.pgFrom, d.pgTo, d.pgAddress, d.pgMode, d.pgYear, d.pgResultType, d.pgResultValue, d.pgBacklogs, d.pgMedium,
+  ];
+  return values.some(v => String(v || "").trim().length > 0);
+};
+
+
+const safeParseLocalJson = (key, fallback) => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw);
+  } catch (_) {
+    return fallback;
+  }
+};
+
 function SignoutModal({ onConfirm, onCancel }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
@@ -87,11 +108,7 @@ export default function EducationDetails() {
   }, [ready, user, router]);
 
   useEffect(() => {
-    // Restore from localStorage immediately on mount — no auth needed for local data
-    try {
-      const saved = localStorage.getItem("dg_education");
-      if (!saved) return;
-      const d = JSON.parse(saved);
+    const applyEducation = (d = {}) => {
       if (d.xSchool)       setXSchool(d.xSchool);
       if (d.xBoard)        setXBoard(d.xBoard);
       if (d.xHall)         setXHall(d.xHall);
@@ -139,8 +156,81 @@ export default function EducationDetails() {
       if (d.pgResultValue) setPgResultValue(d.pgResultValue);
       if (d.pgBacklogs)    setPgBacklogs(d.pgBacklogs);
       if (d.pgMedium)      setPgMedium(d.pgMedium);
+    };
+
+    try {
+      const saved = localStorage.getItem("dg_education");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (hasMeaningfulEducation(parsed)) {
+          applyEducation(parsed);
+          return;
+        }
+      }
     } catch (_) {}
-  }, []); // run once on mount
+
+    const fetchDraft = async () => {
+      if (!ready || !user) return;
+      try {
+        const res = await apiFetch(`${API}/employee/draft`);
+        if (!res.ok) return;
+        const d = await res.json();
+        const ed = d?.education;
+        if (!ed) return;
+        applyEducation({
+          xSchool: ed?.classX?.school,
+          xBoard: ed?.classX?.board,
+          xHall: ed?.classX?.hallTicket,
+          xFrom: ed?.classX?.from,
+          xTo: ed?.classX?.to,
+          xAddress: ed?.classX?.address,
+          xYear: ed?.classX?.yearOfPassing,
+          xResultType: ed?.classX?.resultType,
+          xResultValue: ed?.classX?.resultValue,
+          xMedium: ed?.classX?.medium,
+          iCollege: ed?.intermediate?.college,
+          iBoard: ed?.intermediate?.board,
+          iHall: ed?.intermediate?.hallTicket,
+          iFrom: ed?.intermediate?.from,
+          iTo: ed?.intermediate?.to,
+          iAddress: ed?.intermediate?.address,
+          iMode: ed?.intermediate?.mode,
+          iYear: ed?.intermediate?.yearOfPassing,
+          iResultType: ed?.intermediate?.resultType,
+          iResultValue: ed?.intermediate?.resultValue,
+          iMedium: ed?.intermediate?.medium,
+          ugCollege: ed?.undergraduate?.college,
+          ugUniversity: ed?.undergraduate?.university,
+          ugCourse: ed?.undergraduate?.course,
+          ugHall: ed?.undergraduate?.hallTicket,
+          ugFrom: ed?.undergraduate?.from,
+          ugTo: ed?.undergraduate?.to,
+          ugAddress: ed?.undergraduate?.address,
+          ugMode: ed?.undergraduate?.mode,
+          ugYear: ed?.undergraduate?.yearOfPassing,
+          ugResultType: ed?.undergraduate?.resultType,
+          ugResultValue: ed?.undergraduate?.resultValue,
+          ugBacklogs: ed?.undergraduate?.backlogs,
+          ugMedium: ed?.undergraduate?.medium,
+          pgCollege: ed?.postgraduate?.college,
+          pgUniversity: ed?.postgraduate?.university,
+          pgCourse: ed?.postgraduate?.course,
+          pgHall: ed?.postgraduate?.hallTicket,
+          pgFrom: ed?.postgraduate?.from,
+          pgTo: ed?.postgraduate?.to,
+          pgAddress: ed?.postgraduate?.address,
+          pgMode: ed?.postgraduate?.mode,
+          pgYear: ed?.postgraduate?.yearOfPassing,
+          pgResultType: ed?.postgraduate?.resultType,
+          pgResultValue: ed?.postgraduate?.resultValue,
+          pgBacklogs: ed?.postgraduate?.backlogs,
+          pgMedium: ed?.postgraduate?.medium,
+        });
+      } catch (_) {}
+    };
+
+    fetchDraft();
+  }, [ready, user, apiFetch]);
 
   const buildPayload = () => ({
     classX:        { school: xSchool, board: xBoard, hallTicket: xHall, from: xFrom, to: xTo, address: xAddress, yearOfPassing: xYear, resultType: xResultType, resultValue: xResultValue, medium: xMedium },
@@ -152,31 +242,105 @@ export default function EducationDetails() {
   // Auto-save to localStorage on every field change
   useEffect(() => {
     try {
-      localStorage.setItem("dg_education", JSON.stringify({
+      const draft = {
         xSchool, xBoard, xHall, xFrom, xTo, xAddress, xYear, xResultType, xResultValue, xMedium,
         iCollege, iBoard, iHall, iFrom, iTo, iAddress, iMode, iYear, iResultType, iResultValue, iMedium,
         ugCollege, ugUniversity, ugCourse, ugHall, ugFrom, ugTo, ugAddress, ugMode, ugYear, ugResultType, ugResultValue, ugBacklogs, ugMedium,
         pgCollege, pgUniversity, pgCourse, pgHall, pgFrom, pgTo, pgAddress, pgMode, pgYear, pgResultType, pgResultValue, pgBacklogs, pgMedium,
-      }));
+      };
+      if (!hasMeaningfulEducation(draft)) return;
+      localStorage.setItem("dg_education", JSON.stringify(draft));
     } catch (_) {}
   }, [xSchool, xBoard, xHall, xFrom, xTo, xAddress, xYear, xResultType, xResultValue, xMedium,
       iCollege, iBoard, iHall, iFrom, iTo, iAddress, iMode, iYear, iResultType, iResultValue, iMedium,
       ugCollege, ugUniversity, ugCourse, ugHall, ugFrom, ugTo, ugAddress, ugMode, ugYear, ugResultType, ugResultValue, ugBacklogs, ugMedium,
       pgCollege, pgUniversity, pgCourse, pgHall, pgFrom, pgTo, pgAddress, pgMode, pgYear, pgResultType, pgResultValue, pgBacklogs, pgMedium]);
 
-  const saveDraft = () => {
-    // Save to localStorage only — no API call on this page
+  const loadServerDraft = async () => {
+    try {
+      const res = await apiFetch(`${API}/employee/draft`);
+      if (!res.ok) return {};
+      const d = await res.json();
+      return d || {};
+    } catch (_) {
+      return {};
+    }
+  };
+
+  const saveDraft = async () => {
     localStorage.setItem("dg_education", JSON.stringify({
       xSchool, xBoard, xHall, xFrom, xTo, xAddress, xYear, xResultType, xResultValue, xMedium,
       iCollege, iBoard, iHall, iFrom, iTo, iAddress, iMode, iYear, iResultType, iResultValue, iMedium,
       ugCollege, ugUniversity, ugCourse, ugHall, ugFrom, ugTo, ugAddress, ugMode, ugYear, ugResultType, ugResultValue, ugBacklogs, ugMedium,
       pgCollege, pgUniversity, pgCourse, pgHall, pgFrom, pgTo, pgAddress, pgMode, pgYear, pgResultType, pgResultValue, pgBacklogs, pgMedium,
     }));
+
+    const personal = safeParseLocalJson("dg_personal", {});
+    const serverDraft = await loadServerDraft();
+    const educationPayload = buildPayload();
+
+    const empId = localStorage.getItem("dg_employee_id") || serverDraft?.employee_id || `emp-${Date.now()}`;
+    if (!localStorage.getItem("dg_employee_id")) localStorage.setItem("dg_employee_id", empId);
+
+    const payload = {
+      employee_id: empId,
+      status: serverDraft?.status === "submitted" ? "submitted" : "draft",
+      firstName: personal.firstName || serverDraft.firstName || "",
+      lastName: personal.lastName || serverDraft.lastName || "",
+      middleName: personal.middleName || serverDraft.middleName || "",
+      fatherName: personal.fatherName || serverDraft.fatherName || `${personal.fatherFirst || serverDraft.fatherFirst || ""} ${personal.fatherMiddle || serverDraft.fatherMiddle || ""} ${personal.fatherLast || serverDraft.fatherLast || ""}`.trim(),
+      fatherFirst: personal.fatherFirst || serverDraft.fatherFirst || "",
+      fatherMiddle: personal.fatherMiddle || serverDraft.fatherMiddle || "",
+      fatherLast: personal.fatherLast || serverDraft.fatherLast || "",
+      dob: personal.dob || serverDraft.dob || "",
+      gender: personal.gender || serverDraft.gender || "",
+      nationality: personal.nationality || serverDraft.nationality || "",
+      mobile: personal.mobile || serverDraft.mobile || user?.phone || "",
+      email: personal.email || serverDraft.email || user?.email || "",
+      passport: personal.passport || serverDraft.passport || "",
+      aadhaar: personal.aadhar || serverDraft.aadhaar || serverDraft.aadhar || "",
+      pan: personal.pan || serverDraft.pan || "",
+      currentAddress: {
+        from: personal.curFrom || serverDraft?.currentAddress?.from,
+        to: personal.curTo || serverDraft?.currentAddress?.to,
+        door: personal.curDoor || serverDraft?.currentAddress?.door,
+        village: personal.curVillage || serverDraft?.currentAddress?.village,
+        district: personal.curDistrict || serverDraft?.currentAddress?.district,
+        pin: personal.curPin || serverDraft?.currentAddress?.pin,
+      },
+      permanentAddress: {
+        from: personal.permFrom || serverDraft?.permanentAddress?.from,
+        door: personal.permDoor || serverDraft?.permanentAddress?.door,
+        village: personal.permVillage || serverDraft?.permanentAddress?.village,
+        district: personal.permDistrict || serverDraft?.permanentAddress?.district,
+        pin: personal.permPin || serverDraft?.permanentAddress?.pin,
+      },
+      education: educationPayload,
+    };
+
+    const res = await apiFetch(`${API}/employee`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(parseError(errData));
+    }
+
+    const rd = await res.json().catch(() => ({}));
+    if (rd.employee_id) localStorage.setItem("dg_employee_id", rd.employee_id);
   };
 
-  const handleSave = () => {
-    saveDraft(); // ensure latest state written
-    router.push("/employee/previous");
+  const handleSave = async () => {
+    setSaveStatus("Saving...");
+    try {
+      await saveDraft();
+      setSaveStatus("Saved ✓");
+      router.push("/employee/previous");
+    } catch (err) {
+      setSaveStatus(`Error: ${err.message || "Could not save draft"}`);
+    }
   };
 
   if (!ready || !user) return null;

@@ -25,32 +25,59 @@ function SignoutModal({ onConfirm, onCancel }) {
 }
 
 /* ── Consent tab ──────────────────────────────────────────────────────── */
-function ConsentTab({ apiFetch }) {
+function ConsentTab({ apiFetch, canRespond, profileStatus }) {
   const [consents, setConsents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(null);
 
+  const normalizeStatus = (status) => {
+    const s = String(status || "pending").toLowerCase();
+    if (["approved", "approve", "accepted", "granted", "allow"].includes(s)) return "approved";
+    if (["declined", "decline", "rejected", "denied", "reject"].includes(s)) return "declined";
+    return "pending";
+  };
+
+  const normalizeConsent = (c) => ({
+    ...c,
+    consent_id: c?.consent_id || c?.id || c?.consentId || c?._id,
+    status: normalizeStatus(c?.status),
+    employer_name: c?.employer_name || c?.employerName || c?.company_name || c?.companyName || "",
+    employer_email: c?.employer_email || c?.employerEmail || c?.email || "",
+    request_message: c?.message || c?.comment || c?.request_message || c?.note || "",
+  });
+
   const load = useCallback(async () => {
     try {
       const res = await apiFetch(`${API}/consent/my`);
-      if (res.ok) setConsents(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        setConsents(Array.isArray(data) ? data.map(normalizeConsent) : []);
+      }
     } catch (_) {}
     setLoading(false);
   }, [apiFetch]);
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    const id = setInterval(load, 15000);
+    return () => clearInterval(id);
+  }, [load]);
+
   const respond = async (consentId, decision) => {
+    if (!canRespond) return;
     setActing(consentId);
     try {
       const res = await apiFetch(`${API}/consent/respond`, {
         method: "POST",
-        body: JSON.stringify({ consent_id: consentId, decision }),
+        body: JSON.stringify({ consent_id: consentId, status: decision === "approve" ? "APPROVED" : "DECLINED", responded_at: Date.now() }),
       });
       if (res.ok) await load();
     } catch (_) {}
     setActing(null);
   };
+
+  const getConsentId = (c) => c.consent_id || c.id || c.consentId || c._id;
 
   const statusColor = { pending: "#f59e0b", approved: "#16a34a", declined: "#ef4444" };
 
@@ -72,7 +99,8 @@ function ConsentTab({ apiFetch }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
           <div style={{ fontWeight: 600, color: "#0f172a", fontSize: "0.95rem" }}>{c.employer_name || c.employer_email}</div>
-          {c.message && <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: 2, fontStyle: "italic" }}>"{c.message}"</div>}
+          {(c.message || c.comment || c.request_message) && <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: 2, fontStyle: "italic" }}>"{c.request_message || c.message || c.comment || c.request_message}"</div>}
+          {(c.approved_at || c.responded_at || c.updated_at) && <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: 4 }}>Responded: {new Date(c.approved_at || c.responded_at || c.updated_at).toLocaleString("en-IN")}</div>}
         </div>
         <span style={{ padding: "0.2rem 0.7rem", borderRadius: 999, fontSize: "0.75rem", fontWeight: 700, color: "#fff", background: statusColor[c.status] || "#94a3b8", whiteSpace: "nowrap" }}>
           {c.status.charAt(0).toUpperCase() + c.status.slice(1)}
@@ -80,13 +108,13 @@ function ConsentTab({ apiFetch }) {
       </div>
       {c.status === "pending" && (
         <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem" }}>
-          <button disabled={acting === c.consent_id} onClick={() => respond(c.consent_id, "approved")}
+          <button disabled={!canRespond || acting === getConsentId(c)} onClick={() => respond(getConsentId(c), "approve")}
             style={{ flex: 1, padding: "0.5rem", background: "#16a34a", color: "#fff", border: "none", borderRadius: 7, fontWeight: 600, cursor: "pointer" }}>
-            {acting === c.consent_id ? "…" : "Approve"}
+            {acting === getConsentId(c) ? "…" : "Approve"}
           </button>
-          <button disabled={acting === c.consent_id} onClick={() => respond(c.consent_id, "declined")}
+          <button disabled={!canRespond || acting === getConsentId(c)} onClick={() => respond(getConsentId(c), "decline")}
             style={{ flex: 1, padding: "0.5rem", background: "#fff", color: "#ef4444", border: "1px solid #ef4444", borderRadius: 7, fontWeight: 600, cursor: "pointer" }}>
-            {acting === c.consent_id ? "…" : "Decline"}
+            {acting === getConsentId(c) ? "…" : "Decline"}
           </button>
         </div>
       )}
@@ -95,9 +123,14 @@ function ConsentTab({ apiFetch }) {
 
   return (
     <div>
-      {pending.length > 0 && <><div style={sectionLabelStyle}>Pending ({pending.length})</div>{pending.map(c => <ConsentCard key={c.consent_id} c={c} />)}</>}
-      {approved.length > 0 && <><div style={sectionLabelStyle}>Approved</div>{approved.map(c => <ConsentCard key={c.consent_id} c={c} />)}</>}
-      {declined.length > 0 && <><div style={sectionLabelStyle}>Declined</div>{declined.map(c => <ConsentCard key={c.consent_id} c={c} />)}</>}
+      {!canRespond && (
+        <div style={{ marginBottom: "0.75rem", padding: "0.75rem", borderRadius: 8, background: "#fff7ed", color: "#9a3412", fontSize: "0.82rem", border: "1px solid #fed7aa" }}>
+          Complete and submit all 4 profile pages to approve/decline consent requests. Current profile status: <strong>{profileStatus || "draft"}</strong>.
+        </div>
+      )}
+      {pending.length > 0 && <><div style={sectionLabelStyle}>Pending ({pending.length})</div>{pending.map(c => <ConsentCard key={getConsentId(c)} c={c} />)}</>}
+      {approved.length > 0 && <><div style={sectionLabelStyle}>Approved</div>{approved.map(c => <ConsentCard key={getConsentId(c)} c={c} />)}</>}
+      {declined.length > 0 && <><div style={sectionLabelStyle}>Declined</div>{declined.map(c => <ConsentCard key={getConsentId(c)} c={c} />)}</>}
     </div>
   );
 }
@@ -111,6 +144,7 @@ export default function PersonalDetails() {
 
   const [activeTab, setActiveTab] = useState("profile"); // "profile" | "consents"
   const [showSignout, setShowSignout] = useState(false);
+  const [profileStatus, setProfileStatus] = useState("draft");
 
   const [photoPreview, setPhotoPreview] = useState(null);
   const [firstName,    setFirstName]    = useState("");
@@ -182,6 +216,7 @@ export default function PersonalDetails() {
       if (perm.district) setPermDistrict(perm.district);
       if (perm.pin)      setPermPin(perm.pin);
       if (d.employee_id) localStorage.setItem("dg_employee_id", d.employee_id);
+      if (d.status) setProfileStatus(String(d.status).toLowerCase());
     };
 
     try {
@@ -213,6 +248,7 @@ export default function PersonalDetails() {
         if (d.permVillage)  setPermVillage(d.permVillage);
         if (d.permDistrict) setPermDistrict(d.permDistrict);
         if (d.permPin)      setPermPin(d.permPin);
+        setProfileStatus("draft");
         return;
       }
     } catch (_) {}
@@ -273,7 +309,7 @@ export default function PersonalDetails() {
         if (!localStorage.getItem("dg_employee_id")) localStorage.setItem("dg_employee_id", empId);
         const res = await apiFetch(`${API}/employee`, {
           method: "POST",
-          body: JSON.stringify({ ...data, employee_id: empId, status: "draft" }),
+          body: JSON.stringify({ ...data, employee_id: empId, status: profileStatus === "submitted" ? "submitted" : "draft" }),
         });
         if (res.ok) {
           const rd = await res.json();
@@ -314,7 +350,7 @@ export default function PersonalDetails() {
         </div>
 
         {activeTab === "consents" ? (
-          <ConsentTab apiFetch={apiFetch} />
+          <ConsentTab apiFetch={apiFetch} canRespond={profileStatus === "submitted"} profileStatus={profileStatus} />
         ) : (
           <>
             <ProgressBar currentStep={1} totalSteps={4} />
