@@ -150,11 +150,8 @@ export default function EducationDetails() {
     try {
       const saved = localStorage.getItem("dg_education");
       if (saved) {
-        const parsed = JSON.parse(saved);
-        if (hasMeaningfulEducation(parsed)) {
-          applyEducation(parsed);
-          return;
-        }
+        applyEducation(JSON.parse(saved));
+        return;
       }
     } catch (_) {}
 

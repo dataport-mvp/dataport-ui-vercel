@@ -84,7 +84,7 @@ export default function UANPage() {
       const saved = localStorage.getItem("dg_uan");
       if (saved) {
         const parsed = JSON.parse(saved);
-        if ((parsed.uanMaster || parsed.pfRecords) && hasMeaningfulUan(parsed)) {
+        if (parsed.uanMaster || parsed.pfRecords) {
           setForm(parsed);
           return;
         }
@@ -151,76 +151,6 @@ export default function UANPage() {
     }
   };
 
-  const saveDraftServer = async () => {
-    const personalLocal    = safeParseLocalJson("dg_personal", {});
-    const educationLocal   = safeParseLocalJson("dg_education", {});
-
-    const serverDraft = await loadServerDraft();
-    const personal = { ...serverDraft, ...personalLocal };
-    const education = Object.keys(educationLocal || {}).length ? educationLocal : (serverDraft.education || {});
-    const empId = localStorage.getItem("dg_employee_id") || serverDraft?.employee_id || `emp-${Date.now()}`;
-    if (!localStorage.getItem("dg_employee_id")) localStorage.setItem("dg_employee_id", empId);
-
-    const educationPayload = education?.classX ? education : {
-      classX:        { school: education.xSchool, board: education.xBoard, hallTicket: education.xHall, from: education.xFrom, to: education.xTo, address: education.xAddress, yearOfPassing: education.xYear, resultType: education.xResultType, resultValue: education.xResultValue, medium: education.xMedium },
-      intermediate:  { college: education.iCollege, board: education.iBoard, hallTicket: education.iHall, from: education.iFrom, to: education.iTo, address: education.iAddress, mode: education.iMode, yearOfPassing: education.iYear, resultType: education.iResultType, resultValue: education.iResultValue, medium: education.iMedium },
-      undergraduate: { college: education.ugCollege, university: education.ugUniversity, course: education.ugCourse, hallTicket: education.ugHall, from: education.ugFrom, to: education.ugTo, address: education.ugAddress, mode: education.ugMode, yearOfPassing: education.ugYear, resultType: education.ugResultType, resultValue: education.ugResultValue, backlogs: education.ugBacklogs, medium: education.ugMedium },
-      postgraduate:  { college: education.pgCollege, university: education.pgUniversity, course: education.pgCourse, hallTicket: education.pgHall, from: education.pgFrom, to: education.pgTo, address: education.pgAddress, mode: education.pgMode, yearOfPassing: education.pgYear, resultType: education.pgResultType, resultValue: education.pgResultValue, backlogs: education.pgBacklogs, medium: education.pgMedium },
-    };
-
-    const payload = {
-      employee_id:      empId,
-      status:           "draft",
-      firstName:        personal.firstName    || "",
-      lastName:         personal.lastName     || "",
-      middleName:       personal.middleName   || "",
-      fatherName:       personal.fatherName   || `${personal.fatherFirst||""} ${personal.fatherMiddle||""} ${personal.fatherLast||""}`.trim(),
-      fatherFirst:      personal.fatherFirst  || "",
-      fatherMiddle:     personal.fatherMiddle || "",
-      fatherLast:       personal.fatherLast   || "",
-      dob:              personal.dob          || "",
-      gender:           personal.gender       || "",
-      nationality:      personal.nationality  || "",
-      mobile:           personal.mobile       || user?.phone || "",
-      email:            personal.email        || user?.email || "",
-      passport:         personal.passport     || "",
-      aadhaar:          personal.aadhar || personal.aadhaar || "",
-      pan:              personal.pan          || "",
-      currentAddress:   {
-        from: personal.curFrom || personal?.currentAddress?.from || "",
-        to: personal.curTo || personal?.currentAddress?.to || "",
-        door: personal.curDoor || personal?.currentAddress?.door || "",
-        village: personal.curVillage || personal?.currentAddress?.village || "",
-        district: personal.curDistrict || personal?.currentAddress?.district || "",
-        pin: personal.curPin || personal?.currentAddress?.pin || "",
-      },
-      permanentAddress: {
-        from: personal.permFrom || personal?.permanentAddress?.from || "",
-        door: personal.permDoor || personal?.permanentAddress?.door || "",
-        village: personal.permVillage || personal?.permanentAddress?.village || "",
-        district: personal.permDistrict || personal?.permanentAddress?.district || "",
-        pin: personal.permPin || personal?.permanentAddress?.pin || "",
-      },
-      education:        educationPayload,
-      uanNumber:        form.uanMaster.uanNumber    || "",
-      nameAsPerUan:     form.uanMaster.nameAsPerUan || "",
-      mobileLinked:     form.uanMaster.mobileLinked || "",
-      isActive:         form.uanMaster.isActive     || "",
-      pfRecords:        form.pfRecords,
-    };
-
-    const res = await apiFetch(`${API}/employee`, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(parseError(errData));
-    }
-    const rd = await res.json().catch(() => ({}));
-    if (rd.employee_id) localStorage.setItem("dg_employee_id", rd.employee_id);
-  };
-
   /* ── FINAL SUBMIT ── */
   const handleSubmit = async () => {
     if (!allAcksChecked) {
@@ -231,10 +161,10 @@ export default function UANPage() {
     setLoading(true);
 
     try {
-      const personalLocal    = safeParseLocalJson("dg_personal", {});
-      const educationLocal   = safeParseLocalJson("dg_education", {});
-      const employmentsLocal = safeParseLocalJson("dg_employments", []);
-      const ackLocal         = safeParseLocalJson("dg_ack", {});
+      const personalLocal    = JSON.parse(localStorage.getItem("dg_personal")    || "{}");
+      const educationLocal   = JSON.parse(localStorage.getItem("dg_education")   || "{}");
+      const employmentsLocal = JSON.parse(localStorage.getItem("dg_employments") || "[]");
+      const ackLocal         = JSON.parse(localStorage.getItem("dg_ack")         || "{}");
 
       const serverDraft = await loadServerDraft();
       const inferredEmpId = localStorage.getItem("dg_employee_id") || serverDraft?.employee_id;
