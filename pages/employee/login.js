@@ -53,7 +53,7 @@ export default function EmployeeLogin() {
         return;
       }
       const { access_token, refresh_token, role, name: userName, email: userEmail } = data;
-      login(access_token, refresh_token, { role, name: userName || name || email, email: userEmail || email });
+      login(access_token, refresh_token, { role, name: userName || name || email, email: userEmail || email, phone });
       router.push("/employee/personal");
     } catch {
       setError("Network error — please try again");
