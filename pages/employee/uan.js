@@ -90,7 +90,10 @@ export default function UanDetails() {
 
   // Merge UAN fields into the full draft and POST
   const saveUanDraft = async (finalStatus = "draft") => {
-    const d = serverDraft || {};
+    if (!serverDraft || !serverDraft.employee_id) {
+      throw new Error("Profile not loaded — please go back to page 1 first");
+    }
+    const d = serverDraft;
     const res = await apiFetch(`${API}/employee`, {
       method: "POST",
       body:   JSON.stringify({
