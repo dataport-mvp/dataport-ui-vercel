@@ -89,10 +89,16 @@ function ConsentTab({ apiFetch, canRespond, profileStatus }) {
   const ConsentCard = ({ c }) => (
     <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, padding: "1rem", marginBottom: "0.75rem" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontWeight: 600, color: "#0f172a", fontSize: "0.95rem" }}>{c.employer_name || c.employer_email}</div>
-          {c.request_message && <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: 2, fontStyle: "italic" }}>"{c.request_message}"</div>}
-          {(c.approved_at || c.responded_at || c.updated_at) && <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: 4 }}>Responded: {new Date(c.approved_at || c.responded_at || c.updated_at).toLocaleString("en-IN")}</div>}
+          {/* Employer message — shown clearly so employee can understand why they're being requested */}
+          {c.request_message && (
+            <div style={{ marginTop: "0.5rem", padding: "0.6rem 0.75rem", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 7 }}>
+              <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#1d4ed8", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>Message from employer</div>
+              <div style={{ fontSize: "0.85rem", color: "#1e40af", lineHeight: 1.5 }}>{c.request_message}</div>
+            </div>
+          )}
+          {(c.approved_at || c.responded_at || c.updated_at) && <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: 6 }}>Responded: {new Date(c.approved_at || c.responded_at || c.updated_at).toLocaleString("en-IN")}</div>}
         </div>
         <span style={{ padding: "0.2rem 0.7rem", borderRadius: 999, fontSize: "0.75rem", fontWeight: 700, color: "#fff", background: statusColor[c.status] || "#94a3b8", whiteSpace: "nowrap" }}>
           {c.status.charAt(0).toUpperCase() + c.status.slice(1)}
