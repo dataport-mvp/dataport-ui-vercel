@@ -16,6 +16,7 @@ function SignoutModal({ onConfirm, onCancel }) {
         <p style={{ color: "#64748b", fontSize: "0.9rem", marginBottom: "1.5rem" }}>Your progress is saved. You can continue anytime.</p>
         <div style={{ display: "flex", gap: "0.75rem" }}>
           <button onClick={onCancel}  style={{ flex: 1, padding: "0.75rem", borderRadius: 8, border: "1px solid #cbd5e1", background: "#f8fafc", cursor: "pointer", fontWeight: 600 }}>Stay</button>
+          {saveStatus && <span style={{ color: saveStatus.startsWith("Error") ? "#dc2626" : "#64748b", fontSize: "0.85rem", flex: 1, textAlign: "center" }}>{saveStatus}</span>}
           <button onClick={onConfirm} style={{ flex: 1, padding: "0.75rem", borderRadius: 8, border: "none", background: "#ef4444", color: "#fff", cursor: "pointer", fontWeight: 600 }}>Sign out</button>
         </div>
       </div>
@@ -33,6 +34,25 @@ const ACKNOWLEDGEMENTS = [
 
 const emptyPfRecord = () => ({ companyName: "", pfMemberId: "", dojEpfo: "", doeEpfo: "", pfTransferred: "" });
 
+const hasMeaningfulUan = (data = {}) => {
+  const u = data?.uanMaster || {};
+  const pf = Array.isArray(data?.pfRecords) ? data.pfRecords : [];
+  const uanValues = [u.uanNumber, u.nameAsPerUan, u.mobileLinked, u.isActive];
+  const hasUan = uanValues.some(v => String(v || "").trim().length > 0);
+  const hasPf = pf.some(r => Object.values(r || {}).some(v => String(v || "").trim().length > 0));
+  return hasUan || hasPf;
+};
+
+const safeParseLocalJson = (key, fallback) => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw);
+  } catch (_) {
+    return fallback;
+  }
+};
+
 export default function UANPage() {
   const router = useRouter();
   const { user, apiFetch, logout, ready } = useAuth();
@@ -48,6 +68,7 @@ export default function UANPage() {
   });
 
   const [submitError, setSubmitError] = useState("");
+  const [saveStatus, setSaveStatus]   = useState("");
   const [loading, setLoading]         = useState(false);
   const [submitted, setSubmitted]     = useState(false);
 
@@ -93,7 +114,10 @@ export default function UANPage() {
 
   // Auto-save UAN form on every change
   useEffect(() => {
-    try { localStorage.setItem("dg_uan", JSON.stringify(form)); } catch (_) {}
+    try {
+      if (!hasMeaningfulUan(form)) return;
+      localStorage.setItem("dg_uan", JSON.stringify(form));
+    } catch (_) {}
   }, [form]);
 
   const updateUan = (field, value) => setForm(prev => ({ ...prev, uanMaster: { ...prev.uanMaster, [field]: value } }));
@@ -407,8 +431,18 @@ export default function UANPage() {
           </div>
         )}
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <button style={styles.secondaryBtn} onClick={() => router.push("/employee/previous")}>Previous</button>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem" }}>
+          <button style={styles.secondaryBtn} onClick={async () => {
+            setSaveStatus("Saving draft...");
+            try {
+              await saveDraftServer();
+              setSaveStatus("Draft saved ✓");
+              router.push("/employee/previous");
+            } catch (err) {
+              setSaveStatus(`Error: ${err.message || "Could not save draft"}`);
+            }
+          }}>Previous</button>
+          {saveStatus && <span style={{ color: saveStatus.startsWith("Error") ? "#dc2626" : "#64748b", fontSize: "0.85rem", flex: 1, textAlign: "center" }}>{saveStatus}</span>}
           <button
             style={{
               ...styles.primaryBtn,

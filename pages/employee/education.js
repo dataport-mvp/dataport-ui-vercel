@@ -7,6 +7,16 @@ import { parseError } from "../../utils/apiError";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
+const hasMeaningfulEducation = (d = {}) => {
+  const values = [
+    d.xSchool, d.xBoard, d.xHall, d.xFrom, d.xTo, d.xAddress, d.xYear, d.xResultType, d.xResultValue, d.xMedium,
+    d.iCollege, d.iBoard, d.iHall, d.iFrom, d.iTo, d.iAddress, d.iMode, d.iYear, d.iResultType, d.iResultValue, d.iMedium,
+    d.ugCollege, d.ugUniversity, d.ugCourse, d.ugHall, d.ugFrom, d.ugTo, d.ugAddress, d.ugMode, d.ugYear, d.ugResultType, d.ugResultValue, d.ugBacklogs, d.ugMedium,
+    d.pgCollege, d.pgUniversity, d.pgCourse, d.pgHall, d.pgFrom, d.pgTo, d.pgAddress, d.pgMode, d.pgYear, d.pgResultType, d.pgResultValue, d.pgBacklogs, d.pgMedium,
+  ];
+  return values.some(v => String(v || "").trim().length > 0);
+};
+
 function SignoutModal({ onConfirm, onCancel }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
@@ -218,12 +228,14 @@ export default function EducationDetails() {
   // Auto-save to localStorage on every field change
   useEffect(() => {
     try {
-      localStorage.setItem("dg_education", JSON.stringify({
+      const draft = {
         xSchool, xBoard, xHall, xFrom, xTo, xAddress, xYear, xResultType, xResultValue, xMedium,
         iCollege, iBoard, iHall, iFrom, iTo, iAddress, iMode, iYear, iResultType, iResultValue, iMedium,
         ugCollege, ugUniversity, ugCourse, ugHall, ugFrom, ugTo, ugAddress, ugMode, ugYear, ugResultType, ugResultValue, ugBacklogs, ugMedium,
         pgCollege, pgUniversity, pgCourse, pgHall, pgFrom, pgTo, pgAddress, pgMode, pgYear, pgResultType, pgResultValue, pgBacklogs, pgMedium,
-      }));
+      };
+      if (!hasMeaningfulEducation(draft)) return;
+      localStorage.setItem("dg_education", JSON.stringify(draft));
     } catch (_) {}
   }, [xSchool, xBoard, xHall, xFrom, xTo, xAddress, xYear, xResultType, xResultValue, xMedium,
       iCollege, iBoard, iHall, iFrom, iTo, iAddress, iMode, iYear, iResultType, iResultValue, iMedium,
