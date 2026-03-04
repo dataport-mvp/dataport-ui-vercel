@@ -54,11 +54,44 @@ export default function PersonalDetails() {
   useEffect(() => {
     if (!ready || !user) return;
 
-    // 1. Pre-fill from auth context (signup data)
+    // 1. Pre-fill from auth context (signup data) — baseline
     if (user?.email) setEmail(user.email);
     if (user?.phone) setMobile(user.phone);
 
-    // 2. Restore any saved draft
+    // Helper: map API response (nested) → component state (flat)
+    const applyApiData = (d) => {
+      if (d.firstName)    setFirstName(d.firstName);
+      if (d.middleName)   setMiddleName(d.middleName);
+      if (d.lastName)     setLastName(d.lastName);
+      if (d.fatherFirst)  setFatherFirst(d.fatherFirst);
+      if (d.fatherMiddle) setFatherMiddle(d.fatherMiddle);
+      if (d.fatherLast)   setFatherLast(d.fatherLast);
+      if (d.dob)          setDob(d.dob);
+      if (d.gender)       setGender(d.gender);
+      if (d.nationality)  setNationality(d.nationality);
+      if (d.mobile)       setMobile(d.mobile);
+      if (d.email)        setEmail(d.email);
+      // API stores "aadhaar", local state uses "aadhar"
+      if (d.aadhaar || d.aadhar) setAadhar(d.aadhaar || d.aadhar);
+      if (d.pan)          setPan(d.pan);
+      if (d.passport)     setPassport(d.passport);
+      const cur = d.currentAddress || {};
+      if (cur.from)     setCurFrom(cur.from);
+      if (cur.to)       setCurTo(cur.to);
+      if (cur.door)     setCurDoor(cur.door);
+      if (cur.village)  setCurVillage(cur.village);
+      if (cur.district) setCurDistrict(cur.district);
+      if (cur.pin)      setCurPin(cur.pin);
+      const perm = d.permanentAddress || {};
+      if (perm.from)     setPermFrom(perm.from);
+      if (perm.door)     setPermDoor(perm.door);
+      if (perm.village)  setPermVillage(perm.village);
+      if (perm.district) setPermDistrict(perm.district);
+      if (perm.pin)      setPermPin(perm.pin);
+      if (d.employee_id) localStorage.setItem("dg_employee_id", d.employee_id);
+    };
+
+    // 2. Try localStorage first (same session — instant)
     try {
       const saved = localStorage.getItem("dg_personal");
       if (saved) {
@@ -88,8 +121,21 @@ export default function PersonalDetails() {
         if (d.permVillage)  setPermVillage(d.permVillage);
         if (d.permDistrict) setPermDistrict(d.permDistrict);
         if (d.permPin)      setPermPin(d.permPin);
+        return; // localStorage had data — skip API call
       }
     } catch (_) {}
+
+    // 3. localStorage empty (re-login / new device) — fetch from API and map fields
+    const fetchDraft = async () => {
+      try {
+        const res = await apiFetch(`${API}/employee/draft`);
+        if (res.ok) {
+          const d = await res.json();
+          if (d) applyApiData(d);
+        }
+      } catch (_) {}
+    };
+    fetchDraft();
   }, [ready, user]);
 
   const buildPayload = () => ({
@@ -114,24 +160,27 @@ export default function PersonalDetails() {
       permFrom, permDoor, permVillage, permDistrict, permPin,
     }));
 
-    try {
-      const empId = localStorage.getItem("dg_employee_id") || `emp-${Date.now()}`;
-      if (!localStorage.getItem("dg_employee_id")) localStorage.setItem("dg_employee_id", empId);
+    // EmployeeCreate requires firstName, lastName, mobile — skip API if not filled yet
+    if (firstName && lastName && mobile) {
+      try {
+        const empId = localStorage.getItem("dg_employee_id") || `emp-${Date.now()}`;
+        if (!localStorage.getItem("dg_employee_id")) localStorage.setItem("dg_employee_id", empId);
 
-      const res = await apiFetch(`${API}/employee`, {
-        method: "POST",
-        body: JSON.stringify({ ...data, employee_id: empId, status: "draft" }),
-      });
+        const res = await apiFetch(`${API}/employee`, {
+          method: "POST",
+          body: JSON.stringify({ ...data, employee_id: empId, status: "draft" }),
+        });
 
-      if (res.ok) {
-        const resData = await res.json();
-        if (resData.employee_id) localStorage.setItem("dg_employee_id", resData.employee_id);
-      } else {
-        const errData = await res.json().catch(() => ({}));
-        setSaveStatus(`Error: ${parseError(errData)}`);
-        return false;
-      }
-    } catch (_) {}
+        if (res.ok) {
+          const resData = await res.json();
+          if (resData.employee_id) localStorage.setItem("dg_employee_id", resData.employee_id);
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          setSaveStatus(`Error: ${parseError(errData)}`);
+          return false;
+        }
+      } catch (_) {}
+    }
     return true;
   };
 
