@@ -87,7 +87,7 @@ export default function EducationDetails() {
   }, [ready, user, router]);
 
   useEffect(() => {
-    if (!ready || !user) return;
+    // Restore from localStorage immediately on mount — no auth needed for local data
     try {
       const saved = localStorage.getItem("dg_education");
       if (!saved) return;
@@ -140,7 +140,7 @@ export default function EducationDetails() {
       if (d.pgBacklogs)    setPgBacklogs(d.pgBacklogs);
       if (d.pgMedium)      setPgMedium(d.pgMedium);
     } catch (_) {}
-  }, [ready, user]);
+  }, []); // run once on mount
 
   const buildPayload = () => ({
     classX:        { school: xSchool, board: xBoard, hallTicket: xHall, from: xFrom, to: xTo, address: xAddress, yearOfPassing: xYear, resultType: xResultType, resultValue: xResultValue, medium: xMedium },
@@ -148,6 +148,21 @@ export default function EducationDetails() {
     undergraduate: { college: ugCollege, university: ugUniversity, course: ugCourse, hallTicket: ugHall, from: ugFrom, to: ugTo, address: ugAddress, mode: ugMode, yearOfPassing: ugYear, resultType: ugResultType, resultValue: ugResultValue, backlogs: ugBacklogs, medium: ugMedium },
     postgraduate:  { college: pgCollege, university: pgUniversity, course: pgCourse, hallTicket: pgHall, from: pgFrom, to: pgTo, address: pgAddress, mode: pgMode, yearOfPassing: pgYear, resultType: pgResultType, resultValue: pgResultValue, backlogs: pgBacklogs, medium: pgMedium },
   });
+
+  // Auto-save to localStorage on every field change
+  useEffect(() => {
+    try {
+      localStorage.setItem("dg_education", JSON.stringify({
+        xSchool, xBoard, xHall, xFrom, xTo, xAddress, xYear, xResultType, xResultValue, xMedium,
+        iCollege, iBoard, iHall, iFrom, iTo, iAddress, iMode, iYear, iResultType, iResultValue, iMedium,
+        ugCollege, ugUniversity, ugCourse, ugHall, ugFrom, ugTo, ugAddress, ugMode, ugYear, ugResultType, ugResultValue, ugBacklogs, ugMedium,
+        pgCollege, pgUniversity, pgCourse, pgHall, pgFrom, pgTo, pgAddress, pgMode, pgYear, pgResultType, pgResultValue, pgBacklogs, pgMedium,
+      }));
+    } catch (_) {}
+  }, [xSchool, xBoard, xHall, xFrom, xTo, xAddress, xYear, xResultType, xResultValue, xMedium,
+      iCollege, iBoard, iHall, iFrom, iTo, iAddress, iMode, iYear, iResultType, iResultValue, iMedium,
+      ugCollege, ugUniversity, ugCourse, ugHall, ugFrom, ugTo, ugAddress, ugMode, ugYear, ugResultType, ugResultValue, ugBacklogs, ugMedium,
+      pgCollege, pgUniversity, pgCourse, pgHall, pgFrom, pgTo, pgAddress, pgMode, pgYear, pgResultType, pgResultValue, pgBacklogs, pgMedium]);
 
   const saveDraft = () => {
     // Save to localStorage only — no API call on this page
@@ -160,9 +175,7 @@ export default function EducationDetails() {
   };
 
   const handleSave = () => {
-    setSaveStatus("Saving...");
-    saveDraft();
-    setSaveStatus("Saved ✓");
+    saveDraft(); // ensure latest state written
     router.push("/employee/previous");
   };
 
