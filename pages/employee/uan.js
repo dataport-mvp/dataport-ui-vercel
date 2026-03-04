@@ -57,16 +57,39 @@ export default function UANPage() {
     if (!user) { router.replace("/employee/login"); return; }
   }, [ready, user, router]);
 
-  // Restore from localStorage on mount
+  // Restore from localStorage, API fallback for cross-device/re-login
   useEffect(() => {
     try {
       const saved = localStorage.getItem("dg_uan");
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.uanMaster || parsed.pfRecords) setForm(parsed);
+        if (parsed.uanMaster || parsed.pfRecords) {
+          setForm(parsed);
+          return;
+        }
       }
     } catch (_) {}
-  }, []);
+
+    const fetchDraft = async () => {
+      if (!ready || !user) return;
+      try {
+        const res = await apiFetch(`${API}/employee/draft`);
+        if (!res.ok) return;
+        const d = await res.json();
+        setForm({
+          uanMaster: {
+            uanNumber: d?.uanNumber || "",
+            nameAsPerUan: d?.nameAsPerUan || "",
+            mobileLinked: d?.mobileLinked || "",
+            isActive: d?.isActive || "",
+          },
+          pfRecords: Array.isArray(d?.pfRecords) && d.pfRecords.length ? d.pfRecords : [emptyPfRecord()],
+        });
+      } catch (_) {}
+    };
+
+    fetchDraft();
+  }, [ready, user, apiFetch]);
 
   // Auto-save UAN form on every change
   useEffect(() => {
@@ -146,10 +169,20 @@ export default function UANPage() {
       }
 
       // API call 2: employment history (page 3)
-      if (employments.length > 0 && employments[0].companyName) {
+      const hasEmploymentHistory = Array.isArray(employments) && employments.some((e) =>
+        e && Object.values(e).some((v) => {
+          if (v == null) return false;
+          if (typeof v === "string") return v.trim().length > 0;
+          if (Array.isArray(v)) return v.length > 0;
+          if (typeof v === "object") return Object.values(v).some((inner) => String(inner || "").trim().length > 0);
+          return Boolean(v);
+        })
+      );
+
+      if (hasEmploymentHistory) {
         const histRes = await apiFetch(`${API}/employee/employment-history`, {
           method: "POST",
-          body: JSON.stringify({ employments, acknowledgements: ack }),
+          body: JSON.stringify({ employee_id: empId, employments, acknowledgements: ack }),
         });
         if (!histRes.ok) {
           const errData = await histRes.json().catch(() => ({}));
