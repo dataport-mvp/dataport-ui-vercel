@@ -1,23 +1,48 @@
-// pages/employee/personal.js — Page 1 of 4
+// pages/employee/personal.js  — Page 1 of 4
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import ProgressBar from "../../components/ProgressBar";
 import { useAuth } from "../../utils/AuthContext";
+import { parseError } from "../../utils/apiError";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
-const INITIAL = {
-  firstName: "", lastName: "", dob: "", gender: "",
-  phone: "", aadhaar: "", pan: "", address: "",
-};
-
-export default function PersonalPage() {
-  const { user, apiFetch, ready } = useAuth();
+export default function PersonalDetails() {
   const router = useRouter();
-  const [form, setForm] = useState(INITIAL);
-  const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(true);
-  const [error, setError] = useState("");
+  const { user, apiFetch, ready } = useAuth();
+
+  const [photoPreview, setPhotoPreview] = useState(null);
+
+  const [firstName,    setFirstName]    = useState("");
+  const [middleName,   setMiddleName]   = useState("");
+  const [lastName,     setLastName]     = useState("");
+  const [fatherFirst,  setFatherFirst]  = useState("");
+  const [fatherMiddle, setFatherMiddle] = useState("");
+  const [fatherLast,   setFatherLast]   = useState("");
+
+  const [dob,         setDob]         = useState("");
+  const [gender,      setGender]      = useState("");
+  const [nationality, setNationality] = useState("");
+  const [mobile,      setMobile]      = useState("");
+  const [email,       setEmail]       = useState("");
+  const [aadhar,      setAadhar]      = useState("");
+  const [pan,         setPan]         = useState("");
+  const [passport,    setPassport]    = useState("");
+
+  const [curFrom,     setCurFrom]     = useState("");
+  const [curTo,       setCurTo]       = useState("");
+  const [curDoor,     setCurDoor]     = useState("");
+  const [curVillage,  setCurVillage]  = useState("");
+  const [curDistrict, setCurDistrict] = useState("");
+  const [curPin,      setCurPin]      = useState("");
+
+  const [permFrom,     setPermFrom]     = useState("");
+  const [permDoor,     setPermDoor]     = useState("");
+  const [permVillage,  setPermVillage]  = useState("");
+  const [permDistrict, setPermDistrict] = useState("");
+  const [permPin,      setPermPin]      = useState("");
+
+  const [saveStatus, setSaveStatus] = useState("");
 
   // Auth guard
   useEffect(() => {
@@ -25,150 +50,243 @@ export default function PersonalPage() {
     if (!user) { router.replace("/employee/login"); return; }
   }, [ready, user, router]);
 
-  // Load existing draft
+  /* ---------- Auto-populate from signup & restore draft ---------- */
   useEffect(() => {
     if (!ready || !user) return;
-    const load = async () => {
-      try {
-        const res = await apiFetch(`${API}/employee/draft`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data) {
-            setForm(prev => ({
-              ...prev,
-              firstName: data.firstName || "",
-              lastName: data.lastName || "",
-              dob: data.dob || "",
-              gender: data.gender || "",
-              phone: data.phone || "",
-              aadhaar: data.aadhaar || "",
-              pan: data.pan || "",
-              address: data.address || "",
-            }));
-            if (data.employee_id) localStorage.setItem("dg_employee_id", data.employee_id);
-          }
-        }
-      } catch (_) {}
-      setFetching(false);
-    };
-    load();
-  }, [ready, user, apiFetch]);
 
-  const set = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
+    // 1. Pre-fill from auth context (signup data)
+    if (user?.email) setEmail(user.email);
+    if (user?.phone) setMobile(user.phone);
 
-  const handleNext = async () => {
-    setError("");
-    if (!form.firstName || !form.lastName || !form.dob || !form.phone) {
-      setError("Please fill in all required fields");
-      return;
-    }
-    setLoading(true);
+    // 2. Restore any saved draft
     try {
+      const saved = localStorage.getItem("dg_personal");
+      if (saved) {
+        const d = JSON.parse(saved);
+        if (d.firstName)    setFirstName(d.firstName);
+        if (d.middleName)   setMiddleName(d.middleName);
+        if (d.lastName)     setLastName(d.lastName);
+        if (d.fatherFirst)  setFatherFirst(d.fatherFirst);
+        if (d.fatherMiddle) setFatherMiddle(d.fatherMiddle);
+        if (d.fatherLast)   setFatherLast(d.fatherLast);
+        if (d.dob)          setDob(d.dob);
+        if (d.gender)       setGender(d.gender);
+        if (d.nationality)  setNationality(d.nationality);
+        if (d.mobile)       setMobile(d.mobile);
+        if (d.email)        setEmail(d.email);
+        if (d.aadhar)       setAadhar(d.aadhar);
+        if (d.pan)          setPan(d.pan);
+        if (d.passport)     setPassport(d.passport);
+        if (d.curFrom)      setCurFrom(d.curFrom);
+        if (d.curTo)        setCurTo(d.curTo);
+        if (d.curDoor)      setCurDoor(d.curDoor);
+        if (d.curVillage)   setCurVillage(d.curVillage);
+        if (d.curDistrict)  setCurDistrict(d.curDistrict);
+        if (d.curPin)       setCurPin(d.curPin);
+        if (d.permFrom)     setPermFrom(d.permFrom);
+        if (d.permDoor)     setPermDoor(d.permDoor);
+        if (d.permVillage)  setPermVillage(d.permVillage);
+        if (d.permDistrict) setPermDistrict(d.permDistrict);
+        if (d.permPin)      setPermPin(d.permPin);
+      }
+    } catch (_) {}
+  }, [ready, user]);
+
+  const buildPayload = () => ({
+    firstName, middleName, lastName,
+    fatherName: `${fatherFirst} ${fatherMiddle} ${fatherLast}`.trim(),
+    fatherFirst, fatherMiddle, fatherLast,
+    dob, gender, nationality,
+    mobile, email,
+    aadhaar: aadhar, pan, passport,
+    currentAddress:   { from: curFrom, to: curTo, door: curDoor, village: curVillage, district: curDistrict, pin: curPin },
+    permanentAddress: { from: permFrom, door: permDoor, village: permVillage, district: permDistrict, pin: permPin },
+  });
+
+  const saveDraft = async () => {
+    const data = buildPayload();
+    localStorage.setItem("dg_personal", JSON.stringify({
+      firstName, middleName, lastName,
+      fatherFirst, fatherMiddle, fatherLast,
+      dob, gender, nationality, mobile, email,
+      aadhar, pan, passport,
+      curFrom, curTo, curDoor, curVillage, curDistrict, curPin,
+      permFrom, permDoor, permVillage, permDistrict, permPin,
+    }));
+
+    try {
+      const empId = localStorage.getItem("dg_employee_id") || `emp-${Date.now()}`;
+      if (!localStorage.getItem("dg_employee_id")) localStorage.setItem("dg_employee_id", empId);
+
       const res = await apiFetch(`${API}/employee`, {
         method: "POST",
-        body: JSON.stringify({ ...form, step: "personal" }),
+        body: JSON.stringify({ ...data, employee_id: empId, status: "draft" }),
       });
-      const data = await res.json();
-      if (!res.ok) { setError(data.detail || "Save failed"); return; }
-      if (data.employee_id) localStorage.setItem("dg_employee_id", data.employee_id);
+
+      if (res.ok) {
+        const resData = await res.json();
+        if (resData.employee_id) localStorage.setItem("dg_employee_id", resData.employee_id);
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setSaveStatus(`Error: ${parseError(errData)}`);
+        return false;
+      }
+    } catch (_) {}
+    return true;
+  };
+
+  const handleSave = async () => {
+    setSaveStatus("Saving...");
+    const ok = await saveDraft();
+    if (ok !== false) {
+      setSaveStatus("Saved ✓");
       router.push("/employee/education");
-    } catch {
-      setError("Network error — please try again");
-    } finally {
-      setLoading(false);
     }
   };
 
   if (!ready || !user) return null;
-  if (fetching) return <div style={styles.loading}>Loading…</div>;
 
   return (
     <div style={styles.page}>
-      <div style={styles.container}>
-        <div style={styles.header}>
-          <div style={styles.logo}>Datagate</div>
-        </div>
+      <div style={styles.card}>
         <ProgressBar currentStep={1} totalSteps={4} />
+        <h1 style={styles.title}>Personal Details</h1>
 
-        <div style={styles.card}>
-          <h2 style={styles.title}>Personal Information</h2>
-          <p style={styles.sub}>Tell us about yourself</p>
-
-          <div style={styles.grid2}>
-            <Field label="First Name *" value={form.firstName} onChange={v => set("firstName", v)} />
-            <Field label="Last Name *" value={form.lastName} onChange={v => set("lastName", v)} />
+        <Section title="Profile Photo">
+          <div style={{ textAlign: "center" }}>
+            {photoPreview
+              ? <img src={photoPreview} style={styles.photo} alt="profile" />
+              : <div style={styles.photoPlaceholder}>Upload Photo</div>
+            }
+            <input type="file" accept="image/*" onChange={(e) => setPhotoPreview(URL.createObjectURL(e.target.files[0]))} />
           </div>
-          <div style={styles.grid2}>
-            <Field label="Date of Birth *" type="date" value={form.dob} onChange={v => set("dob", v)} />
-            <Field label="Gender" as="select" value={form.gender} onChange={v => set("gender", v)}
-              options={["", "Male", "Female", "Other", "Prefer not to say"]} />
-          </div>
-          <Field label="Phone Number *" value={form.phone} onChange={v => set("phone", v)} placeholder="+91 XXXXX XXXXX" />
-          <Field label="Aadhaar Number" value={form.aadhaar} onChange={v => set("aadhaar", v)} placeholder="XXXX XXXX XXXX" />
-          <Field label="PAN Number" value={form.pan} onChange={v => set("pan", v)} placeholder="ABCDE1234F" />
-          <Field label="Address" as="textarea" value={form.address} onChange={v => set("address", v)} rows={3} />
+        </Section>
 
-          {error && <p style={styles.error}>{error}</p>}
+        <Section title="Name">
+          <Row>
+            <Input label="First Name"  value={firstName}  onChange={setFirstName} />
+            <Input label="Middle Name" value={middleName} onChange={setMiddleName} />
+            <Input label="Last Name"   value={lastName}   onChange={setLastName} />
+          </Row>
+        </Section>
 
-          <div style={styles.actions}>
-            <button style={styles.btnPrimary} onClick={handleNext} disabled={loading}>
-              {loading ? "Saving…" : "Next: Education →"}
-            </button>
-          </div>
+        <Section title="Father Name">
+          <Row>
+            <Input label="First Name"  value={fatherFirst}  onChange={setFatherFirst} />
+            <Input label="Middle Name" value={fatherMiddle} onChange={setFatherMiddle} />
+            <Input label="Last Name"   value={fatherLast}   onChange={setFatherLast} />
+          </Row>
+        </Section>
+
+        <Section title="Personal Information">
+          <Row>
+            <Input type="date" label="Date of Birth" value={dob} onChange={setDob} />
+            <SelectField label="Gender" value={gender} onChange={setGender} options={["Male","Female","Other"]} />
+            <Input label="Nationality" value={nationality} onChange={setNationality} />
+          </Row>
+          <Row>
+            <div style={{ flex: 1 }}>
+              <label style={styles.label}>Email (from signup)</label>
+              <input value={email} disabled style={{ ...styles.input, background: "#f1f5f9", color: "#64748b" }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={styles.label}>Mobile Number (India)</label>
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <input value="+91" disabled style={{ ...styles.input, maxWidth: "80px", background: "#e5e7eb" }} />
+                <input value={mobile} disabled style={{ ...styles.input, background: "#f1f5f9", color: "#64748b" }} />
+              </div>
+            </div>
+            <Input label="Passport Number" value={passport} onChange={setPassport} />
+          </Row>
+        </Section>
+
+        <Section title="Identity Documents">
+          <Row>
+            <div style={{ flex: 1 }}>
+              <Input label="Aadhaar Number" value={aadhar} onChange={(v) => { const d = v.replace(/\D/g,""); if(d.length<=12) setAadhar(d); }} />
+              {aadhar && aadhar.length !== 12 && <p style={styles.error}>Must be 12 digits</p>}
+              <div style={{ marginTop: "0.5rem" }}>
+                <label style={styles.label}>Upload Aadhaar (coming soon)</label>
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png" disabled style={{ opacity: 0.5 }} />
+              </div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <Input label="PAN Number" value={pan} onChange={(v) => {
+                let val = v.toUpperCase();
+                if (val.length <= 5)       val = val.replace(/[^A-Z]/g,"");
+                else if (val.length <= 9)  val = val.slice(0,5) + val.slice(5).replace(/[^0-9]/g,"");
+                else if (val.length <= 10) val = val.slice(0,5) + val.slice(5,9).replace(/[^0-9]/g,"") + val.slice(9).replace(/[^A-Z]/g,"");
+                setPan(val);
+              }} />
+              {pan && pan.length !== 10 && <p style={styles.error}>Format: AAAAA9999A</p>}
+              <div style={{ marginTop: "0.5rem" }}>
+                <label style={styles.label}>Upload PAN (coming soon)</label>
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png" disabled style={{ opacity: 0.5 }} />
+              </div>
+            </div>
+          </Row>
+        </Section>
+
+        <Section title="Current Address">
+          <Row>
+            <Input type="date" label="Residing From" value={curFrom} onChange={setCurFrom} />
+            <Input type="date" label="Residing To"   value={curTo}   onChange={setCurTo} />
+          </Row>
+          <Input label="Door & Street"    value={curDoor}     onChange={setCurDoor} />
+          <Input label="Village / Mandal" value={curVillage}  onChange={setCurVillage} />
+          <Input label="District / State" value={curDistrict} onChange={setCurDistrict} />
+          <Input label="Pincode" value={curPin} onChange={(v) => setCurPin(v.replace(/\D/g,""))} />
+        </Section>
+
+        <Section title="Permanent Address">
+          <Input type="date" label="Residing From" value={permFrom}     onChange={setPermFrom} />
+          <Input label="Door & Street"              value={permDoor}     onChange={setPermDoor} />
+          <Input label="Village / Mandal"           value={permVillage}  onChange={setPermVillage} />
+          <Input label="District / State"           value={permDistrict} onChange={setPermDistrict} />
+          <Input label="Pincode" value={permPin} onChange={(v) => setPermPin(v.replace(/\D/g,""))} />
+        </Section>
+
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ color: saveStatus.startsWith("Error") ? "#dc2626" : "#64748b", fontSize: "0.85rem" }}>{saveStatus}</span>
+          <button onClick={handleSave} style={{ ...styles.button, background: "#2563eb" }}>Save & Proceed →</button>
         </div>
       </div>
     </div>
   );
 }
 
-function Field({ label, value, onChange, type = "text", as, options, placeholder, rows }) {
-  const inputStyle = {
-    width: "100%",
-    padding: "0.7rem 0.9rem",
-    border: "1.5px solid #e2e8f0",
-    borderRadius: 8,
-    fontSize: 14,
-    outline: "none",
-    fontFamily: "inherit",
-    boxSizing: "border-box",
-    resize: as === "textarea" ? "vertical" : undefined,
-  };
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <label style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>{label}</label>
-      {as === "select" ? (
-        <select style={inputStyle} value={value} onChange={e => onChange(e.target.value)}>
-          {options.map(o => <option key={o} value={o}>{o || "Select…"}</option>)}
-        </select>
-      ) : as === "textarea" ? (
-        <textarea style={inputStyle} value={value} onChange={e => onChange(e.target.value)} rows={rows || 3} placeholder={placeholder} />
-      ) : (
-        <input style={inputStyle} type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} />
-      )}
-    </div>
-  );
-}
+const Section = ({ title, children }) => (
+  <div style={{ marginBottom: "2rem" }}>
+    <h2 style={styles.sectionTitle}>{title}</h2>
+    {children}
+  </div>
+);
+const Row = ({ children }) => <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>{children}</div>;
+const Input = ({ label, value, onChange, type = "text" }) => (
+  <div style={{ flex: 1, minWidth: "200px" }}>
+    <label style={styles.label}>{label}</label>
+    <input type={type} value={value} onChange={(e) => onChange(e.target.value)} style={styles.input} />
+  </div>
+);
+const SelectField = ({ label, value, onChange, options }) => (
+  <div style={{ flex: 1 }}>
+    <label style={styles.label}>{label}</label>
+    <select value={value} onChange={(e) => onChange(e.target.value)} style={styles.input}>
+      <option value="">Select</option>
+      {options.map((o) => <option key={o}>{o}</option>)}
+    </select>
+  </div>
+);
 
 const styles = {
-  page: { minHeight: "100vh", background: "#f8fafc", fontFamily: "'Inter', sans-serif" },
-  container: { maxWidth: 640, margin: "0 auto", padding: "1.5rem 1rem" },
-  header: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
-  logo: { fontSize: 20, fontWeight: 800, color: "#2563eb" },
-  loading: { display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", fontSize: 15, color: "#64748b" },
-  card: { background: "#fff", borderRadius: 16, padding: "2rem", boxShadow: "0 2px 16px rgba(0,0,0,0.07)", display: "flex", flexDirection: "column", gap: "1rem" },
-  title: { fontSize: 22, fontWeight: 700, color: "#0f172a", margin: 0 },
-  sub: { fontSize: 14, color: "#64748b", margin: 0 },
-  grid2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" },
-  error: { color: "#ef4444", fontSize: 13, margin: 0 },
-  actions: { display: "flex", justifyContent: "flex-end", marginTop: 8 },
-  btnPrimary: {
-    padding: "0.8rem 2rem",
-    background: "#2563eb",
-    color: "#fff",
-    border: "none",
-    borderRadius: 8,
-    fontSize: 15,
-    fontWeight: 600,
-    cursor: "pointer",
-  },
+  page:             { background: "#f1f5f9", padding: "2rem", minHeight: "100vh", fontFamily: "Inter, system-ui, sans-serif" },
+  card:             { maxWidth: "980px", margin: "auto", background: "#fff", padding: "2rem", borderRadius: "14px", boxShadow: "0 12px 30px rgba(0,0,0,0.08)" },
+  title:            { marginBottom: "2rem" },
+  sectionTitle:     { marginBottom: "1rem", color: "#0f172a" },
+  label:            { fontSize: "0.85rem", color: "#475569" },
+  input:            { width: "100%", padding: "0.65rem", borderRadius: "8px", border: "1px solid #cbd5e1" },
+  button:           { padding: "0.9rem 2.5rem", borderRadius: "10px", border: "none", color: "#fff", fontSize: "1rem", cursor: "pointer" },
+  photo:            { width: "140px", height: "140px", borderRadius: "50%", objectFit: "cover", marginBottom: "0.5rem" },
+  photoPlaceholder: { width: "140px", height: "140px", borderRadius: "50%", background: "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "0.5rem" },
+  error:            { color: "#dc2626", fontSize: "0.8rem", marginTop: "0.25rem" },
 };
