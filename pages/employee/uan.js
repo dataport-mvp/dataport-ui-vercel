@@ -57,16 +57,39 @@ export default function UANPage() {
     if (!user) { router.replace("/employee/login"); return; }
   }, [ready, user, router]);
 
-  // Restore from localStorage on mount
+  // Restore from localStorage, API fallback for cross-device/re-login
   useEffect(() => {
     try {
       const saved = localStorage.getItem("dg_uan");
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.uanMaster || parsed.pfRecords) setForm(parsed);
+        if (parsed.uanMaster || parsed.pfRecords) {
+          setForm(parsed);
+          return;
+        }
       }
     } catch (_) {}
-  }, []);
+
+    const fetchDraft = async () => {
+      if (!ready || !user) return;
+      try {
+        const res = await apiFetch(`${API}/employee/draft`);
+        if (!res.ok) return;
+        const d = await res.json();
+        setForm({
+          uanMaster: {
+            uanNumber: d?.uanNumber || "",
+            nameAsPerUan: d?.nameAsPerUan || "",
+            mobileLinked: d?.mobileLinked || "",
+            isActive: d?.isActive || "",
+          },
+          pfRecords: Array.isArray(d?.pfRecords) && d.pfRecords.length ? d.pfRecords : [emptyPfRecord()],
+        });
+      } catch (_) {}
+    };
+
+    fetchDraft();
+  }, [ready, user, apiFetch]);
 
   // Auto-save UAN form on every change
   useEffect(() => {

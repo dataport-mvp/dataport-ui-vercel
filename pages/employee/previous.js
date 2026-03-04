@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import ProgressBar from "../../components/ProgressBar";
 import { useAuth } from "../../utils/AuthContext";
+import { parseError } from "../../utils/apiError";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
@@ -73,7 +74,7 @@ const emptyAck = () => ({ val: "", note: "" });
 
 export default function PreviousCompany() {
   const router = useRouter();
-  const { user, logout, ready } = useAuth();
+  const { user, apiFetch, logout, ready } = useAuth();
   const [showSignout, setShowSignout] = useState(false);
   const [employments, setEmployments] = useState([emptyEmployment()]);
   const [ack, setAck] = useState({ business: emptyAck(), dismissed: emptyAck(), criminal: emptyAck(), civil: emptyAck() });
@@ -85,14 +86,29 @@ export default function PreviousCompany() {
   }, [ready, user, router]);
 
   useEffect(() => {
-    // Restore from localStorage immediately on mount
     try {
       const savedEmp = localStorage.getItem("dg_employments");
       const savedAck = localStorage.getItem("dg_ack");
-      if (savedEmp) setEmployments(JSON.parse(savedEmp));
-      if (savedAck) setAck(JSON.parse(savedAck));
+      if (savedEmp || savedAck) {
+        if (savedEmp) setEmployments(JSON.parse(savedEmp));
+        if (savedAck) setAck(JSON.parse(savedAck));
+        return;
+      }
     } catch (_) {}
-  }, []); // run once on mount
+
+    const fetchDraft = async () => {
+      if (!ready || !user) return;
+      try {
+        const res = await apiFetch(`${API}/employee/employment-history`);
+        if (!res.ok) return;
+        const d = await res.json();
+        if (Array.isArray(d?.employments) && d.employments.length) setEmployments(d.employments);
+        if (d?.acknowledgements) setAck(d.acknowledgements);
+      } catch (_) {}
+    };
+
+    fetchDraft();
+  }, [ready, user, apiFetch]);
 
   const update = (i, path, value) => {
     const copy = JSON.parse(JSON.stringify(employments));
@@ -119,11 +135,41 @@ export default function PreviousCompany() {
   const addEmployer    = () => setEmployments([...employments, emptyEmployment()]);
   const removeEmployer = (i) => setEmployments(employments.filter((_, idx) => idx !== i));
 
-  const handleNext = () => {
-    // Auto-save already wrote to localStorage, just navigate
+  const handleNext = async () => {
     localStorage.setItem("dg_employments", JSON.stringify(employments));
     localStorage.setItem("dg_ack", JSON.stringify(ack));
-    router.push("/employee/uan");
+
+    setSaveStatus("Saving...");
+    try {
+      const empId = localStorage.getItem("dg_employee_id") || `emp-${Date.now()}`;
+      if (!localStorage.getItem("dg_employee_id")) localStorage.setItem("dg_employee_id", empId);
+
+      const hasEmploymentHistory = Array.isArray(employments) && employments.some((e) =>
+        e && Object.values(e).some((v) => {
+          if (v == null) return false;
+          if (typeof v === "string") return v.trim().length > 0;
+          if (Array.isArray(v)) return v.length > 0;
+          if (typeof v === "object") return Object.values(v).some((inner) => String(inner || "").trim().length > 0);
+          return Boolean(v);
+        })
+      );
+
+      if (hasEmploymentHistory) {
+        const res = await apiFetch(`${API}/employee/employment-history`, {
+          method: "POST",
+          body: JSON.stringify({ employee_id: empId, employments, acknowledgements: ack, status: "draft" }),
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(parseError(errData));
+        }
+      }
+
+      setSaveStatus("Saved ✓");
+      router.push("/employee/uan");
+    } catch (err) {
+      setSaveStatus(`Error: ${err.message || "Could not save draft"}`);
+    }
   };
 
   if (!ready || !user) return null;
