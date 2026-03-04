@@ -38,9 +38,10 @@ function ConsentTab({ apiFetch, canRespond, profileStatus }) {
     ...c,
     consent_id:      c?.consent_id || c?.id || c?.consentId || c?._id,
     status:          normalizeStatus(c?.status),
-    employer_name:   c?.employer_name  || c?.employerName  || c?.company_name || c?.companyName || "",
-    employer_email:  c?.employer_email || c?.employerEmail || c?.email || "",
-    request_message: c?.message || c?.comment || c?.request_message || c?.note || "",
+    // API stores employer's name as requestor_name
+    employer_name:   c?.requestor_name  || c?.employer_name || c?.employerName || c?.company_name || "",
+    employer_email:  c?.requestor_email || c?.employer_email || c?.employerEmail || c?.email || "",
+    request_message: c?.message || c?.request_message || c?.comment || c?.note || "",
   });
 
   const load = useCallback(async () => {
