@@ -148,8 +148,9 @@ export function AuthProvider({ children }) {
     resetInactivityTimer();
   }, [clearFormCache, resetInactivityTimer]);
 
-  // ── logout: clears everything and calls API ───────────────────────────────
+  // ── logout: clears auth session and calls API ─────────────────────────────
   const logoutFull = useCallback(async (reason = "explicit") => {
+    const role = user?.role;
     const rt = localStorage.getItem("dg_refresh_token");
     if (rt) {
       // Best effort — don't await, don't block UI
@@ -164,14 +165,15 @@ export function AuthProvider({ children }) {
     setUser(null);
     localStorage.removeItem("dg_refresh_token");
     localStorage.removeItem("dg_user");
-    clearFormCache();
+
+    // Keep in-progress draft cache across logout/re-login for the same user.
+    // Cache is still cleared when a different user logs in (see login()).
+    // For forced expiry, we also keep cache so users can continue after re-auth.
 
     // Redirect to appropriate login
-    const u = localStorage.getItem("dg_user");
-    const role = u ? JSON.parse(u)?.role : null;
     const dest = role === "employer" ? "/employer/login" : "/employee/login";
     if (typeof window !== "undefined") window.location.href = dest;
-  }, [clearFormCache]);
+  }, [user]);
 
   // Keep ref in sync so inactivity timer can call it
   useEffect(() => { logoutRef.current = logoutFull; }, [logoutFull]);

@@ -1,11 +1,21 @@
 // pages/employee/education.js  — Page 2 of 4
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import ProgressBar from "../../components/ProgressBar";
 import { useAuth } from "../../utils/AuthContext";
 import { parseError } from "../../utils/apiError";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
+
+
+const pick = (...vals) => vals.find(v => v !== undefined && v !== null && v !== "");
+
+const normalizeEducation = (ed = {}) => ({
+  classX: ed?.classX || ed?.class_x || ed?.x || {},
+  intermediate: ed?.intermediate || ed?.inter || ed?.classXII || ed?.class_xii || {},
+  undergraduate: ed?.undergraduate || ed?.ug || {},
+  postgraduate: ed?.postgraduate || ed?.pg || {},
+});
 
 const hasMeaningfulEducation = (d = {}) => {
   const values = [
@@ -90,6 +100,8 @@ export default function EducationDetails() {
   const [pgMedium, setPgMedium]             = useState("");
 
   const [saveStatus, setSaveStatus] = useState("");
+  const [hydrated, setHydrated] = useState(false);
+  const autosaveTimerRef = useRef(null);
 
   useEffect(() => {
     if (!ready) return;
@@ -150,8 +162,12 @@ export default function EducationDetails() {
     try {
       const saved = localStorage.getItem("dg_education");
       if (saved) {
-        applyEducation(JSON.parse(saved));
-        return;
+        const parsed = JSON.parse(saved);
+        if (hasMeaningfulEducation(parsed)) {
+          applyEducation(parsed);
+          setHydrated(true);
+          return;
+        }
       }
     } catch (_) {}
 
@@ -161,61 +177,61 @@ export default function EducationDetails() {
         const res = await apiFetch(`${API}/employee/draft`);
         if (!res.ok) return;
         const d = await res.json();
-        const ed = d?.education;
-        if (!ed) return;
+        const ed = normalizeEducation(d?.education || {});
+        if (!Object.keys(ed).length) return;
         applyEducation({
-          xSchool: ed?.classX?.school,
-          xBoard: ed?.classX?.board,
-          xHall: ed?.classX?.hallTicket,
+          xSchool: pick(ed?.classX?.school, ed?.classX?.schoolName),
+          xBoard: pick(ed?.classX?.board, ed?.classX?.boardName),
+          xHall: pick(ed?.classX?.hallTicket, ed?.classX?.hall_ticket),
           xFrom: ed?.classX?.from,
           xTo: ed?.classX?.to,
           xAddress: ed?.classX?.address,
-          xYear: ed?.classX?.yearOfPassing,
-          xResultType: ed?.classX?.resultType,
-          xResultValue: ed?.classX?.resultValue,
+          xYear: pick(ed?.classX?.yearOfPassing, ed?.classX?.year_of_passing),
+          xResultType: pick(ed?.classX?.resultType, ed?.classX?.result_type),
+          xResultValue: pick(ed?.classX?.resultValue, ed?.classX?.result_value),
           xMedium: ed?.classX?.medium,
-          iCollege: ed?.intermediate?.college,
-          iBoard: ed?.intermediate?.board,
-          iHall: ed?.intermediate?.hallTicket,
+          iCollege: pick(ed?.intermediate?.college, ed?.intermediate?.school),
+          iBoard: pick(ed?.intermediate?.board, ed?.intermediate?.boardName),
+          iHall: pick(ed?.intermediate?.hallTicket, ed?.intermediate?.hall_ticket),
           iFrom: ed?.intermediate?.from,
           iTo: ed?.intermediate?.to,
           iAddress: ed?.intermediate?.address,
           iMode: ed?.intermediate?.mode,
-          iYear: ed?.intermediate?.yearOfPassing,
-          iResultType: ed?.intermediate?.resultType,
-          iResultValue: ed?.intermediate?.resultValue,
+          iYear: pick(ed?.intermediate?.yearOfPassing, ed?.intermediate?.year_of_passing),
+          iResultType: pick(ed?.intermediate?.resultType, ed?.intermediate?.result_type),
+          iResultValue: pick(ed?.intermediate?.resultValue, ed?.intermediate?.result_value),
           iMedium: ed?.intermediate?.medium,
           ugCollege: ed?.undergraduate?.college,
           ugUniversity: ed?.undergraduate?.university,
           ugCourse: ed?.undergraduate?.course,
-          ugHall: ed?.undergraduate?.hallTicket,
+          ugHall: pick(ed?.undergraduate?.hallTicket, ed?.undergraduate?.hall_ticket),
           ugFrom: ed?.undergraduate?.from,
           ugTo: ed?.undergraduate?.to,
           ugAddress: ed?.undergraduate?.address,
           ugMode: ed?.undergraduate?.mode,
-          ugYear: ed?.undergraduate?.yearOfPassing,
-          ugResultType: ed?.undergraduate?.resultType,
-          ugResultValue: ed?.undergraduate?.resultValue,
+          ugYear: pick(ed?.undergraduate?.yearOfPassing, ed?.undergraduate?.year_of_passing),
+          ugResultType: pick(ed?.undergraduate?.resultType, ed?.undergraduate?.result_type),
+          ugResultValue: pick(ed?.undergraduate?.resultValue, ed?.undergraduate?.result_value),
           ugBacklogs: ed?.undergraduate?.backlogs,
           ugMedium: ed?.undergraduate?.medium,
           pgCollege: ed?.postgraduate?.college,
           pgUniversity: ed?.postgraduate?.university,
           pgCourse: ed?.postgraduate?.course,
-          pgHall: ed?.postgraduate?.hallTicket,
+          pgHall: pick(ed?.postgraduate?.hallTicket, ed?.postgraduate?.hall_ticket),
           pgFrom: ed?.postgraduate?.from,
           pgTo: ed?.postgraduate?.to,
           pgAddress: ed?.postgraduate?.address,
           pgMode: ed?.postgraduate?.mode,
-          pgYear: ed?.postgraduate?.yearOfPassing,
-          pgResultType: ed?.postgraduate?.resultType,
-          pgResultValue: ed?.postgraduate?.resultValue,
+          pgYear: pick(ed?.postgraduate?.yearOfPassing, ed?.postgraduate?.year_of_passing),
+          pgResultType: pick(ed?.postgraduate?.resultType, ed?.postgraduate?.result_type),
+          pgResultValue: pick(ed?.postgraduate?.resultValue, ed?.postgraduate?.result_value),
           pgBacklogs: ed?.postgraduate?.backlogs,
           pgMedium: ed?.postgraduate?.medium,
         });
       } catch (_) {}
     };
 
-    fetchDraft();
+    fetchDraft().finally(() => setHydrated(true));
   }, [ready, user, apiFetch]);
 
   const buildPayload = () => ({
@@ -254,12 +270,17 @@ export default function EducationDetails() {
   };
 
   const saveDraft = async () => {
-    localStorage.setItem("dg_education", JSON.stringify({
+    const educationDraft = {
       xSchool, xBoard, xHall, xFrom, xTo, xAddress, xYear, xResultType, xResultValue, xMedium,
       iCollege, iBoard, iHall, iFrom, iTo, iAddress, iMode, iYear, iResultType, iResultValue, iMedium,
       ugCollege, ugUniversity, ugCourse, ugHall, ugFrom, ugTo, ugAddress, ugMode, ugYear, ugResultType, ugResultValue, ugBacklogs, ugMedium,
       pgCollege, pgUniversity, pgCourse, pgHall, pgFrom, pgTo, pgAddress, pgMode, pgYear, pgResultType, pgResultValue, pgBacklogs, pgMedium,
-    }));
+    };
+    if (hasMeaningfulEducation(educationDraft)) {
+      localStorage.setItem("dg_education", JSON.stringify(educationDraft));
+    } else {
+      localStorage.removeItem("dg_education");
+    }
 
     const personal = JSON.parse(localStorage.getItem("dg_personal") || "{}");
     const serverDraft = await loadServerDraft();
@@ -318,6 +339,36 @@ export default function EducationDetails() {
     if (rd.employee_id) localStorage.setItem("dg_employee_id", rd.employee_id);
   };
 
+  useEffect(() => {
+    if (!ready || !user || !hydrated) return;
+
+    const draft = {
+      xSchool, xBoard, xHall, xFrom, xTo, xAddress, xYear, xResultType, xResultValue, xMedium,
+      iCollege, iBoard, iHall, iFrom, iTo, iAddress, iMode, iYear, iResultType, iResultValue, iMedium,
+      ugCollege, ugUniversity, ugCourse, ugHall, ugFrom, ugTo, ugAddress, ugMode, ugYear, ugResultType, ugResultValue, ugBacklogs, ugMedium,
+      pgCollege, pgUniversity, pgCourse, pgHall, pgFrom, pgTo, pgAddress, pgMode, pgYear, pgResultType, pgResultValue, pgBacklogs, pgMedium,
+    };
+    if (!hasMeaningfulEducation(draft)) return;
+
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    autosaveTimerRef.current = setTimeout(async () => {
+      try {
+        await saveDraft();
+        setSaveStatus("Auto-saved ✓");
+      } catch (_) {
+        // silent autosave failure; explicit save will still show errors
+      }
+    }, 1200);
+
+    return () => {
+      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    };
+  }, [ready, user, hydrated,
+      xSchool, xBoard, xHall, xFrom, xTo, xAddress, xYear, xResultType, xResultValue, xMedium,
+      iCollege, iBoard, iHall, iFrom, iTo, iAddress, iMode, iYear, iResultType, iResultValue, iMedium,
+      ugCollege, ugUniversity, ugCourse, ugHall, ugFrom, ugTo, ugAddress, ugMode, ugYear, ugResultType, ugResultValue, ugBacklogs, ugMedium,
+      pgCollege, pgUniversity, pgCourse, pgHall, pgFrom, pgTo, pgAddress, pgMode, pgYear, pgResultType, pgResultValue, pgBacklogs, pgMedium]);
+
   const handleSave = async () => {
     setSaveStatus("Saving...");
     try {
@@ -329,11 +380,22 @@ export default function EducationDetails() {
     }
   };
 
+  const handleSignout = async () => {
+    setSaveStatus("Saving before sign out...");
+    try {
+      await saveDraft();
+      setSaveStatus("Saved ✓");
+    } catch (_) {
+      // Best effort: keep logout non-blocking even if draft sync fails
+    }
+    logout();
+  };
+
   if (!ready || !user) return null;
 
   return (
     <div style={styles.page}>
-      {showSignout && <SignoutModal onConfirm={logout} onCancel={() => setShowSignout(false)} />}
+      {showSignout && <SignoutModal onConfirm={handleSignout} onCancel={() => setShowSignout(false)} />}
       <div style={styles.card}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
           <span style={{ fontSize: "0.85rem", color: "#475569" }}>👤 {user.name || user.email}</span>

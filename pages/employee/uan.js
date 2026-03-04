@@ -1,5 +1,5 @@
 // pages/employee/uan.js  — Page 4 of 4  (FINAL SUBMIT)
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import ProgressBar from "../../components/ProgressBar";
 import { useAuth } from "../../utils/AuthContext";
@@ -43,6 +43,23 @@ const hasMeaningfulUan = (data = {}) => {
   return hasUan || hasPf;
 };
 
+
+const pick = (...vals) => vals.find(v => v !== undefined && v !== null && v !== "");
+
+const normalizeUanFromDraft = (d = {}) => {
+  const u = d?.uanMaster || d?.uan_master || {};
+  const pf = d?.pfRecords || d?.pf_records;
+  return {
+    uanMaster: {
+      uanNumber: pick(d?.uanNumber, d?.uan_number, u?.uanNumber, u?.uan_number),
+      nameAsPerUan: pick(d?.nameAsPerUan, d?.name_as_per_uan, u?.nameAsPerUan, u?.name_as_per_uan),
+      mobileLinked: pick(d?.mobileLinked, d?.mobile_linked, u?.mobileLinked, u?.mobile_linked),
+      isActive: pick(d?.isActive, d?.is_active, u?.isActive, u?.is_active),
+    },
+    pfRecords: Array.isArray(pf) && pf.length ? pf : [emptyPfRecord()],
+  };
+};
+
 const safeParseLocalJson = (key, fallback) => {
   try {
     const raw = localStorage.getItem(key);
@@ -71,6 +88,8 @@ export default function UANPage() {
   const [saveStatus, setSaveStatus]   = useState("");
   const [loading, setLoading]         = useState(false);
   const [submitted, setSubmitted]     = useState(false);
+  const [hydrated, setHydrated]       = useState(false);
+  const autosaveTimerRef              = useRef(null);
 
   // Auth guard
   useEffect(() => {
@@ -84,8 +103,10 @@ export default function UANPage() {
       const saved = localStorage.getItem("dg_uan");
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.uanMaster || parsed.pfRecords) {
-          setForm(parsed);
+        const normalized = normalizeUanFromDraft(parsed);
+        if (hasMeaningfulUan(normalized)) {
+          setForm(normalized);
+          setHydrated(true);
           return;
         }
       }
@@ -97,26 +118,21 @@ export default function UANPage() {
         const res = await apiFetch(`${API}/employee/draft`);
         if (!res.ok) return;
         const d = await res.json();
-        setForm({
-          uanMaster: {
-            uanNumber: d?.uanNumber || "",
-            nameAsPerUan: d?.nameAsPerUan || "",
-            mobileLinked: d?.mobileLinked || "",
-            isActive: d?.isActive || "",
-          },
-          pfRecords: Array.isArray(d?.pfRecords) && d.pfRecords.length ? d.pfRecords : [emptyPfRecord()],
-        });
+        setForm(normalizeUanFromDraft(d));
       } catch (_) {}
     };
 
-    fetchDraft();
+    fetchDraft().finally(() => setHydrated(true));
   }, [ready, user, apiFetch]);
 
   // Auto-save UAN form on every change
   useEffect(() => {
     try {
-      if (!hasMeaningfulUan(form)) return;
-      localStorage.setItem("dg_uan", JSON.stringify(form));
+      if (hasMeaningfulUan(form)) {
+        localStorage.setItem("dg_uan", JSON.stringify(form));
+      } else {
+        localStorage.removeItem("dg_uan");
+      }
     } catch (_) {}
   }, [form]);
 
@@ -150,6 +166,88 @@ export default function UANPage() {
       return {};
     }
   };
+
+  const saveUanDraft = async () => {
+    localStorage.setItem("dg_uan", JSON.stringify(form));
+
+    const serverDraft = await loadServerDraft();
+    const empId = localStorage.getItem("dg_employee_id") || serverDraft?.employee_id || `emp-${Date.now()}`;
+    if (!localStorage.getItem("dg_employee_id")) localStorage.setItem("dg_employee_id", empId);
+
+    const payload = {
+      employee_id: empId,
+      status: serverDraft?.status === "submitted" ? "submitted" : "draft",
+      firstName: serverDraft.firstName || "",
+      lastName: serverDraft.lastName || "",
+      middleName: serverDraft.middleName || "",
+      fatherName: serverDraft.fatherName || "",
+      fatherFirst: serverDraft.fatherFirst || "",
+      fatherMiddle: serverDraft.fatherMiddle || "",
+      fatherLast: serverDraft.fatherLast || "",
+      dob: serverDraft.dob || "",
+      gender: serverDraft.gender || "",
+      nationality: serverDraft.nationality || "",
+      mobile: serverDraft.mobile || user?.phone || "",
+      email: serverDraft.email || user?.email || "",
+      passport: serverDraft.passport || "",
+      aadhaar: serverDraft.aadhaar || serverDraft.aadhar || "",
+      pan: serverDraft.pan || "",
+      currentAddress: serverDraft.currentAddress || {},
+      permanentAddress: serverDraft.permanentAddress || {},
+      education: serverDraft.education || {},
+      uanNumber: form.uanMaster.uanNumber || "",
+      nameAsPerUan: form.uanMaster.nameAsPerUan || "",
+      mobileLinked: form.uanMaster.mobileLinked || "",
+      isActive: form.uanMaster.isActive || "",
+      pfRecords: form.pfRecords,
+      uanMaster: {
+        uanNumber: form.uanMaster.uanNumber || "",
+        nameAsPerUan: form.uanMaster.nameAsPerUan || "",
+        mobileLinked: form.uanMaster.mobileLinked || "",
+        isActive: form.uanMaster.isActive || "",
+      },
+    };
+
+    const res = await apiFetch(`${API}/employee`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(parseError(errData));
+    }
+  };
+
+  const handleSignout = async () => {
+    setSaveStatus("Saving before sign out...");
+    try {
+      await saveUanDraft();
+      setSaveStatus("Saved ✓");
+    } catch (_) {
+      // Best effort: keep logout non-blocking even if draft sync fails
+    }
+    logout();
+  };
+
+  useEffect(() => {
+    if (!ready || !user || !hydrated || submitted) return;
+    if (!hasMeaningfulUan(form)) return;
+
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    autosaveTimerRef.current = setTimeout(async () => {
+      try {
+        await saveUanDraft();
+        setSaveStatus("Auto-saved ✓");
+      } catch (_) {
+        // silent autosave failure; explicit submit/signout handles hard errors
+      }
+    }, 1200);
+
+    return () => {
+      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    };
+  }, [ready, user, hydrated, submitted, form]);
 
   /* ── FINAL SUBMIT ── */
   const handleSubmit = async () => {
@@ -223,6 +321,7 @@ export default function UANPage() {
         mobileLinked:     form.uanMaster.mobileLinked || "",
         isActive:         form.uanMaster.isActive     || "",
         pfRecords:        form.pfRecords,
+        uanMaster:        { ...form.uanMaster },
         acknowledgements_profile: acks,
         submitted_at:     Date.now(),
       };
@@ -300,7 +399,7 @@ export default function UANPage() {
 
   return (
     <div style={styles.page}>
-      {showSignout && <SignoutModal onConfirm={logout} onCancel={() => setShowSignout(false)} />}
+      {showSignout && <SignoutModal onConfirm={handleSignout} onCancel={() => setShowSignout(false)} />}
       <div style={styles.card}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
           <span style={{ fontSize: "0.85rem", color: "#475569" }}>👤 {user.name || user.email}</span>

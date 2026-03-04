@@ -7,6 +7,29 @@ import { parseError } from "../../utils/apiError";
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 const DATA_TABS = ["Personal", "Education", "Employment", "UAN & PF"];
 
+const pick = (...vals) => vals.find(v => v !== undefined && v !== null && v !== "");
+
+const normalizeEducationSnapshot = (ed = {}) => ({
+  classX: ed?.classX || ed?.class_x || {},
+  intermediate: ed?.intermediate || ed?.classXII || ed?.class_xii || {},
+  undergraduate: ed?.undergraduate || ed?.ug || {},
+  postgraduate: ed?.postgraduate || ed?.pg || {},
+});
+
+const normalizeProfileSnapshot = (snap = {}) => {
+  const u = snap?.uanMaster || snap?.uan_master || {};
+  return {
+    ...snap,
+    education: normalizeEducationSnapshot(snap?.education || {}),
+    uanNumber: pick(snap?.uanNumber, snap?.uan_number, u?.uanNumber, u?.uan_number),
+    nameAsPerUan: pick(snap?.nameAsPerUan, snap?.name_as_per_uan, u?.nameAsPerUan, u?.name_as_per_uan),
+    mobileLinked: pick(snap?.mobileLinked, snap?.mobile_linked, u?.mobileLinked, u?.mobile_linked),
+    isActive: pick(snap?.isActive, snap?.is_active, u?.isActive, u?.is_active),
+    pfRecords: Array.isArray(snap?.pfRecords) ? snap.pfRecords : (Array.isArray(snap?.pf_records) ? snap.pf_records : []),
+  };
+};
+
+
 /* ── IST timestamp helper ─────────────────────────────────────────────── */
 function toIST(ts) {
   if (!ts) return "—";
@@ -128,7 +151,14 @@ export default function EmployerDashboard() {
     setLoadingProfile(true);
     try {
       const res = await apiFetch(`${API}/consent/${getConsentId(consent)}`);
-      if (res.ok) setProfileData(await res.json());
+      if (res.ok) {
+        const raw = await res.json();
+        setProfileData({
+          ...raw,
+          profile_snapshot: normalizeProfileSnapshot(raw?.profile_snapshot || raw?.employee || {}),
+          employment_snapshot: raw?.employment_snapshot || raw?.employmentHistory || raw?.employment_history || [],
+        });
+      }
     } catch (_) {}
     setLoadingProfile(false);
   }, [apiFetch]);
@@ -364,13 +394,13 @@ function EducationTab({ data }) {
       {sections.map(([title, d]) => (
         <Card key={title} title={title}>
           <Grid fields={[
-            ["School / College",  d.school || d.college],
-            ["Board / University",d.board  || d.university],
+            ["School / College",  d.school || d.college || d.school_name],
+            ["Board / University",d.board  || d.university || d.board_name],
             ["Course / Degree",   d.course],
-            ["Hall Ticket",       d.hallTicket],
-            ["Year of Passing",   d.yearOfPassing],
-            ["Result Type",       d.resultType],
-            ["Result Value",      d.resultValue],
+            ["Hall Ticket",       d.hallTicket || d.hall_ticket],
+            ["Year of Passing",   d.yearOfPassing || d.year_of_passing],
+            ["Result Type",       d.resultType || d.result_type],
+            ["Result Value",      d.resultValue || d.result_value],
             ["Mode",              d.mode],
             ["Medium",            d.medium],
             ["Backlogs",          d.backlogs],
@@ -432,11 +462,11 @@ function UanTab({ data }) {
       {Array.isArray(data.pfRecords) && data.pfRecords.map((pf, i) => (
         <Card key={i} title={`PF Record — ${pf.companyName || `Company ${i + 1}`}`}>
           <Grid fields={[
-            ["Company",         pf.companyName],
-            ["PF Member ID",    pf.pfMemberId],
-            ["Date of Joining", pf.dojEpfo],
-            ["Date of Exit",    pf.doeEpfo],
-            ["PF Transferred",  pf.pfTransferred],
+            ["Company",         pf.companyName || pf.company_name],
+            ["PF Member ID",    pf.pfMemberId || pf.pf_member_id],
+            ["Date of Joining", pf.dojEpfo || pf.doj_epfo],
+            ["Date of Exit",    pf.doeEpfo || pf.doe_epfo],
+            ["PF Transferred",  pf.pfTransferred || pf.pf_transferred],
           ]} />
         </Card>
       ))}
