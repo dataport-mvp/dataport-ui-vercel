@@ -1,23 +1,45 @@
-// pages/employee/uan.js — Page 4 of 4 (FINAL SUBMIT)
+// pages/employee/uan.js  — Page 4 of 4  (FINAL SUBMIT)
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import ProgressBar from "../../components/ProgressBar";
 import { useAuth } from "../../utils/AuthContext";
+import { parseError } from "../../utils/apiError";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
-const EMPTY_PF = { employer_name: "", pf_account_number: "", epf_member_id: "", period: "" };
+const styles = {
+  page:         { background: "#f1f5f9", padding: "2rem", minHeight: "100vh", fontFamily: "Inter, system-ui, sans-serif" },
+  card:         { maxWidth: "980px", margin: "auto", background: "#fff", padding: "2rem", borderRadius: "14px", boxShadow: "0 12px 30px rgba(0,0,0,0.08)" },
+  title:        { marginBottom: "2rem" },
+  section:      { marginBottom: "2.5rem" },
+  row:          { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "1.5rem" },
+  label:        { fontSize: "0.85rem", color: "#475569" },
+  input:        { width: "100%", padding: "0.65rem", borderRadius: "8px", border: "1px solid #cbd5e1" },
+  pillContainer:{ display: "flex", gap: "1rem", marginTop: "0.5rem" },
+  pill: (active) => ({ padding: "0.5rem 1rem", borderRadius: "20px", cursor: "pointer", border: active ? "1px solid #2563eb" : "1px solid #cbd5e1", background: active ? "#2563eb" : "#fff", color: active ? "#fff" : "#000" }),
+  uploadCard:   { border: "1px dashed #cbd5e1", padding: "1.5rem", borderRadius: "12px", background: "#f8fafc" },
+  helperText:   { fontSize: "0.75rem", marginTop: "0.5rem", color: "#64748b" },
+  addBtn:       { marginTop: "1rem", cursor: "pointer", color: "#2563eb", background: "none", border: "none", fontSize: "1rem" },
+  removeBtn:    { cursor: "pointer", color: "#dc2626", marginTop: "0.75rem", background: "none", border: "none", fontSize: "0.9rem" },
+  primaryBtn:   { marginTop: "2rem", padding: "0.9rem 2.5rem", background: "#2563eb", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "1rem" },
+  secondaryBtn: { padding: "0.9rem 2.5rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#f8fafc", cursor: "pointer" },
+  errorBox:     { color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "8px", padding: "0.75rem 1rem", marginBottom: "1rem", fontSize: "0.9rem" },
+};
 
-export default function UanPage() {
-  const { user, apiFetch, ready } = useAuth();
+const emptyPfRecord = () => ({ companyName: "", pfMemberId: "", dojEpfo: "", doeEpfo: "", pfTransferred: "" });
+
+export default function UANPage() {
   const router = useRouter();
-  const [uanNumber, setUanNumber] = useState("");
-  const [pfRecords, setPfRecords] = useState([{ ...EMPTY_PF }]);
-  const [ackChecked, setAckChecked] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(true);
-  const [error, setError] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  const { user, apiFetch, ready } = useAuth();
+
+  const [form, setForm] = useState({
+    uanMaster: { uanNumber: "", nameAsPerUan: "", mobileLinked: "", isActive: "", aadhaarLinked: "", panLinked: "", serviceHistory: null },
+    pfRecords: [emptyPfRecord()]
+  });
+
+  const [submitError, setSubmitError] = useState("");
+  const [loading, setLoading]         = useState(false);
+  const [submitted, setSubmitted]     = useState(false);
 
   // Auth guard
   useEffect(() => {
@@ -25,77 +47,116 @@ export default function UanPage() {
     if (!user) { router.replace("/employee/login"); return; }
   }, [ready, user, router]);
 
-  // Load existing draft
+  /* ---------- Restore draft ---------- */
   useEffect(() => {
     if (!ready || !user) return;
-    const load = async () => {
-      try {
-        const res = await apiFetch(`${API}/employee/draft`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data?.uanNumber) setUanNumber(data.uanNumber);
-          if (data?.pfRecords && Array.isArray(data.pfRecords) && data.pfRecords.length > 0) {
-            setPfRecords(data.pfRecords);
-          }
-          if (data?.status === "submitted") setSubmitted(true);
-        }
-      } catch (_) {}
-      setFetching(false);
-    };
-    load();
-  }, [ready, user, apiFetch]);
-
-  const setPf = (i, k, v) => setPfRecords(prev => prev.map((r, idx) => idx === i ? { ...r, [k]: v } : r));
-  const addPf = () => setPfRecords(prev => [...prev, { ...EMPTY_PF }]);
-  const removePf = i => setPfRecords(prev => prev.filter((_, idx) => idx !== i));
-
-  const handleSubmit = async () => {
-    setError("");
-    if (!ackChecked) { setError("Please confirm that all information is accurate"); return; }
-    if (!uanNumber) { setError("UAN number is required"); return; }
-
-    setLoading(true);
     try {
-      const employeeId = localStorage.getItem("dg_employee_id");
-      const res = await apiFetch(`${API}/employee`, {
+      const saved = localStorage.getItem("dg_uan");
+      if (saved) setForm(JSON.parse(saved));
+    } catch (_) {}
+  }, [ready, user]);
+
+  const updateUan = (field, value) =>
+    setForm((prev) => ({ ...prev, uanMaster: { ...prev.uanMaster, [field]: value } }));
+
+  const updatePf = (index, field, value) => {
+    const updated = form.pfRecords.map((r, i) => i === index ? { ...r, [field]: value } : r);
+    setForm({ ...form, pfRecords: updated });
+  };
+
+  const addPfRecord    = () => setForm({ ...form, pfRecords: [...form.pfRecords, emptyPfRecord()] });
+  const removePfRecord = (index) => {
+    if (index === 0) return;
+    setForm({ ...form, pfRecords: form.pfRecords.filter((_, i) => i !== index) });
+  };
+
+  /* ---------- FINAL SUBMIT — collects all 4 pages ---------- */
+  const handleSubmit = async () => {
+    setSubmitError("");
+    setLoading(true);
+    localStorage.setItem("dg_uan", JSON.stringify(form));
+
+    try {
+      const personal    = JSON.parse(localStorage.getItem("dg_personal")    || "{}");
+      const education   = JSON.parse(localStorage.getItem("dg_education")   || "{}");
+      const employments = JSON.parse(localStorage.getItem("dg_employments") || "[]");
+      const ack         = JSON.parse(localStorage.getItem("dg_ack")         || "{}");
+      const empId       = localStorage.getItem("dg_employee_id") || `emp-${Date.now()}`;
+
+      const employeePayload = {
+        employee_id:      empId,
+        status:           "submitted",
+        firstName:        personal.firstName    || "",
+        lastName:         personal.lastName     || "",
+        middleName:       personal.middleName   || "",
+        fatherName:       personal.fatherName   || "",
+        aadhaar:          personal.aadhar       || "",
+        pan:              personal.pan          || "",
+        mobile:           personal.mobile       || "",
+        email:            personal.email        || "",
+        passport:         personal.passport     || "",
+        dob:              personal.dob          || "",
+        gender:           personal.gender       || "",
+        nationality:      personal.nationality  || "",
+        currentAddress:   personal.curDoor ? { from: personal.curFrom, to: personal.curTo, door: personal.curDoor, village: personal.curVillage, district: personal.curDistrict, pin: personal.curPin } : {},
+        permanentAddress: personal.permDoor ? { from: personal.permFrom, door: personal.permDoor, village: personal.permVillage, district: personal.permDistrict, pin: personal.permPin } : {},
+        education:        education,
+        uanNumber:        form.uanMaster.uanNumber    || "",
+        nameAsPerUan:     form.uanMaster.nameAsPerUan || "",
+        mobileLinked:     form.uanMaster.mobileLinked || "",
+        isActive:         form.uanMaster.isActive     || "",
+        pfRecords:        form.pfRecords,
+        submitted_at:     Date.now(),
+      };
+
+      // POST /employee (final submit)
+      const empRes = await apiFetch(`${API}/employee`, {
         method: "POST",
-        body: JSON.stringify({
-          employee_id: employeeId,
-          uanNumber,
-          pfRecords,
-          status: "submitted",
-          step: "uan",
-        }),
+        body: JSON.stringify(employeePayload),
       });
-      const data = await res.json();
-      if (!res.ok) { setError(data.detail || "Submission failed"); return; }
+
+      if (!empRes.ok) {
+        const errData = await empRes.json().catch(() => ({}));
+        throw new Error(parseError(errData));
+      }
+
+      // POST /employee/employment-history
+      if (employments.length > 0) {
+        const histRes = await apiFetch(`${API}/employee/employment-history`, {
+          method: "POST",
+          body: JSON.stringify({ employments, acknowledgements: ack }),
+        });
+        if (!histRes.ok) {
+          const errData = await histRes.json().catch(() => ({}));
+          throw new Error(parseError(errData));
+        }
+      }
+
+      // Clear all local drafts
+      ["dg_personal","dg_education","dg_employments","dg_ack","dg_uan","dg_employee_id"].forEach(k => localStorage.removeItem(k));
       setSubmitted(true);
-    } catch {
-      setError("Network error — please try again");
+
+    } catch (err) {
+      setSubmitError(err.message || "Submission failed. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   if (!ready || !user) return null;
-  if (fetching) return <div style={styles.loading}>Loading…</div>;
 
+  /* ---------- SUCCESS SCREEN ---------- */
   if (submitted) {
     return (
       <div style={styles.page}>
-        <div style={styles.container}>
-          <ProgressBar currentStep={4} totalSteps={4} />
-          <div style={styles.successCard}>
-            <div style={styles.successIcon}>✓</div>
-            <h2 style={styles.successTitle}>Profile Submitted!</h2>
-            <p style={styles.successSub}>
-              Your profile is complete. Employers can now request access to your information.
-              You'll receive an email when a consent request arrives.
-            </p>
-            <button style={styles.btnPrimary} onClick={() => router.push("/consent")}>
-              View Consent Requests
-            </button>
-          </div>
+        <div style={{ ...styles.card, textAlign: "center", padding: "4rem 2rem" }}>
+          <div style={{ fontSize: "4rem", marginBottom: "1rem" }}>✅</div>
+          <h2 style={{ color: "#2563eb", marginBottom: "0.75rem" }}>Profile Submitted Successfully!</h2>
+          <p style={{ color: "#475569", maxWidth: "500px", margin: "0 auto 2rem", lineHeight: "1.6" }}>
+            Your employment profile is securely saved on <strong>Datagate</strong>.
+            When an employer or BGV agency requests your data, you'll receive a consent notification.
+          </p>
+          <button style={styles.primaryBtn} onClick={() => router.push("/consent")}>View Consent Requests</button>
         </div>
       </div>
     );
@@ -103,106 +164,92 @@ export default function UanPage() {
 
   return (
     <div style={styles.page}>
-      <div style={styles.container}>
-        <div style={styles.header}>
-          <div style={styles.logo}>Datagate</div>
-        </div>
+      <div style={styles.card}>
         <ProgressBar currentStep={4} totalSteps={4} />
+        <h1 style={styles.title}>UAN & PF Information</h1>
 
-        <div style={styles.card}>
-          <h2 style={styles.title}>UAN & PF Details</h2>
-          <p style={styles.sub}>Your Universal Account Number and Provident Fund records</p>
-
-          <Field label="UAN Number *" value={uanNumber} onChange={setUanNumber}
-            placeholder="12-digit UAN" />
-
-          <div style={styles.sectionLabel}>PF Account Records</div>
-
-          {pfRecords.map((pf, i) => (
-            <div key={i} style={styles.entryBlock}>
-              <div style={styles.entryHeader}>
-                <span style={styles.entryLabel}>PF Record {i + 1}</span>
-                {pfRecords.length > 1 && (
-                  <button style={styles.removeBtn} onClick={() => removePf(i)}>Remove</button>
-                )}
+        <div style={styles.section}>
+          <h3>UAN Details</h3>
+          <div style={styles.row}>
+            <div>
+              <label style={styles.label}>UAN Number</label>
+              <input style={styles.input} maxLength={12} value={form.uanMaster.uanNumber} onChange={(e) => updateUan("uanNumber", e.target.value.replace(/\D/g,""))} />
+              <div style={{ marginTop: "1rem" }}>
+                <label style={styles.label}>Name as per UAN</label>
+                <input style={styles.input} value={form.uanMaster.nameAsPerUan} onChange={(e) => updateUan("nameAsPerUan", e.target.value)} />
               </div>
-              <Field label="Employer Name" value={pf.employer_name}
-                onChange={v => setPf(i, "employer_name", v)} />
-              <div style={styles.grid2}>
-                <Field label="PF Account Number" value={pf.pf_account_number}
-                  onChange={v => setPf(i, "pf_account_number", v)} />
-                <Field label="EPF Member ID" value={pf.epf_member_id}
-                  onChange={v => setPf(i, "epf_member_id", v)} />
+            </div>
+            <div>
+              <div style={styles.uploadCard}>
+                <label style={styles.label}>EPFO Service History Record</label>
+                <input type="file" style={{ marginTop: "0.75rem", opacity: 0.5 }} disabled />
+                <p style={styles.helperText}>Upload full service history screenshot from EPFO portal. <em>(S3 upload — next commit)</em></p>
               </div>
-              <Field label="Period (e.g. Jan 2020 – Dec 2022)" value={pf.period}
-                onChange={v => setPf(i, "period", v)} />
+            </div>
+          </div>
+          <div style={styles.row}>
+            <div>
+              <label style={styles.label}>Mobile Linked with UAN</label>
+              <input style={styles.input} maxLength={10} value={form.uanMaster.mobileLinked} onChange={(e) => updateUan("mobileLinked", e.target.value.replace(/\D/g,""))} />
+            </div>
+            <div>
+              <label style={styles.label}>Is UAN Active?</label>
+              <div style={styles.pillContainer}>
+                {["Yes","No"].map((val) => (
+                  <div key={val} style={styles.pill(form.uanMaster.isActive === val)} onClick={() => updateUan("isActive", val)}>{val}</div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={styles.section}>
+          <h3>PF Details (Per Previous Employer)</h3>
+          {form.pfRecords.map((record, index) => (
+            <div key={index} style={{ marginBottom: "2rem" }}>
+              <div style={styles.row}>
+                <div>
+                  <label style={styles.label}>Company Name</label>
+                  <input style={styles.input} value={record.companyName} onChange={(e) => updatePf(index, "companyName", e.target.value)} />
+                </div>
+                <div>
+                  <label style={styles.label}>PF Member ID</label>
+                  <input style={styles.input} value={record.pfMemberId} onChange={(e) => updatePf(index, "pfMemberId", e.target.value)} />
+                </div>
+              </div>
+              <div style={styles.row}>
+                <div>
+                  <label style={styles.label}>Date of Joining (EPFO)</label>
+                  <input type="date" style={styles.input} value={record.dojEpfo} onChange={(e) => updatePf(index, "dojEpfo", e.target.value)} />
+                </div>
+                <div>
+                  <label style={styles.label}>Date of Exit (EPFO)</label>
+                  <input type="date" style={styles.input} value={record.doeEpfo} onChange={(e) => updatePf(index, "doeEpfo", e.target.value)} />
+                </div>
+              </div>
+              <div>
+                <label style={styles.label}>Was PF Transferred?</label>
+                <div style={styles.pillContainer}>
+                  {["Yes","No"].map((val) => (
+                    <div key={val} style={styles.pill(record.pfTransferred === val)} onClick={() => updatePf(index, "pfTransferred", val)}>{val}</div>
+                  ))}
+                </div>
+              </div>
+              {index > 0 && <button style={styles.removeBtn} onClick={() => removePfRecord(index)}>− Remove This Company</button>}
             </div>
           ))}
+          <button style={styles.addBtn} onClick={addPfRecord}>+ Add Another Company</button>
+        </div>
 
-          <button style={styles.addBtn} onClick={addPf}>+ Add PF record</button>
+        {submitError && <div style={styles.errorBox}>⚠️ {submitError}</div>}
 
-          {/* Acknowledgement */}
-          <div style={styles.ackBox}>
-            <label style={styles.checkLabel}>
-              <input type="checkbox" checked={ackChecked} onChange={e => setAckChecked(e.target.checked)} />
-              <span>
-                I confirm that all information provided is accurate and I authorise Datagate to share
-                this data with employers upon my explicit consent.
-              </span>
-            </label>
-          </div>
-
-          {error && <p style={styles.error}>{error}</p>}
-
-          <div style={styles.actions}>
-            <button style={styles.btnSecondary} onClick={() => router.push("/employee/previous")}>← Back</button>
-            <button style={styles.btnSubmit} onClick={handleSubmit} disabled={loading}>
-              {loading ? "Submitting…" : "Submit Profile ✓"}
-            </button>
-          </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <button style={styles.secondaryBtn} onClick={() => router.push("/employee/previous")}>Previous</button>
+          <button style={{ ...styles.primaryBtn, marginTop: 0, opacity: loading ? 0.7 : 1 }} onClick={handleSubmit} disabled={loading}>
+            {loading ? "Submitting..." : "Save & Proceed"}
+          </button>
         </div>
       </div>
     </div>
   );
 }
-
-function Field({ label, value, onChange, placeholder }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <label style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>{label}</label>
-      <input
-        style={{ width: "100%", padding: "0.7rem 0.9rem", border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 14, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
-        value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-      />
-    </div>
-  );
-}
-
-const styles = {
-  page: { minHeight: "100vh", background: "#f8fafc", fontFamily: "'Inter', sans-serif" },
-  container: { maxWidth: 640, margin: "0 auto", padding: "1.5rem 1rem" },
-  header: { display: "flex", alignItems: "center", marginBottom: 8 },
-  logo: { fontSize: 20, fontWeight: 800, color: "#2563eb" },
-  loading: { display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", fontSize: 15, color: "#64748b" },
-  card: { background: "#fff", borderRadius: 16, padding: "2rem", boxShadow: "0 2px 16px rgba(0,0,0,0.07)", display: "flex", flexDirection: "column", gap: "1rem" },
-  title: { fontSize: 22, fontWeight: 700, color: "#0f172a", margin: 0 },
-  sub: { fontSize: 14, color: "#64748b", margin: 0 },
-  sectionLabel: { fontSize: 15, fontWeight: 700, color: "#1e293b", borderBottom: "1.5px solid #e2e8f0", paddingBottom: 8 },
-  grid2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" },
-  entryBlock: { border: "1.5px solid #e2e8f0", borderRadius: 12, padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem" },
-  entryHeader: { display: "flex", alignItems: "center", justifyContent: "space-between" },
-  entryLabel: { fontWeight: 700, fontSize: 14, color: "#1e293b" },
-  removeBtn: { background: "none", border: "none", color: "#ef4444", fontSize: 13, cursor: "pointer", fontWeight: 600 },
-  addBtn: { background: "none", border: "1.5px dashed #cbd5e1", color: "#2563eb", padding: "0.65rem", borderRadius: 8, fontSize: 14, cursor: "pointer", fontWeight: 600 },
-  ackBox: { background: "#f8fafc", borderRadius: 10, padding: "1rem", border: "1.5px solid #e2e8f0" },
-  checkLabel: { display: "flex", alignItems: "flex-start", gap: 10, fontSize: 13, color: "#374151", cursor: "pointer", lineHeight: 1.5 },
-  error: { color: "#ef4444", fontSize: 13, margin: 0 },
-  actions: { display: "flex", justifyContent: "space-between", marginTop: 8 },
-  btnPrimary: { padding: "0.8rem 2rem", background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: "pointer" },
-  btnSecondary: { padding: "0.8rem 1.5rem", background: "#f1f5f9", color: "#374151", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: "pointer" },
-  btnSubmit: { padding: "0.8rem 2rem", background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: "pointer" },
-  successCard: { background: "#fff", borderRadius: 16, padding: "3rem 2rem", boxShadow: "0 2px 16px rgba(0,0,0,0.07)", display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem", textAlign: "center" },
-  successIcon: { width: 64, height: 64, borderRadius: "50%", background: "#dcfce7", color: "#16a34a", fontSize: 28, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 },
-  successTitle: { fontSize: 24, fontWeight: 700, color: "#0f172a", margin: 0 },
-  successSub: { fontSize: 15, color: "#64748b", maxWidth: 420, lineHeight: 1.6, margin: 0 },
-};
