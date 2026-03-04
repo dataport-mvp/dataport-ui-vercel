@@ -1,25 +1,59 @@
 // pages/employer/dashboard.js
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "../../utils/AuthContext";
+import { parseError } from "../../utils/apiError";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 const DATA_TABS = ["Personal", "Education", "Employment", "UAN & PF"];
 
+/* ── IST timestamp helper ─────────────────────────────────────────────── */
+function toIST(ts) {
+  if (!ts) return "—";
+  try {
+    const d = new Date(typeof ts === "number" && ts < 1e12 ? ts * 1000 : ts);
+    return d.toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  } catch { return "—"; }
+}
+
+/* ── Signout modal ────────────────────────────────────────────────────── */
+function SignoutModal({ onConfirm, onCancel }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+      <div style={{ background: "#fff", borderRadius: 14, padding: "2rem", maxWidth: 340, width: "90%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+        <div style={{ fontSize: 34, marginBottom: "0.75rem" }}>👋</div>
+        <h3 style={{ margin: "0 0 0.5rem", color: "#0f172a" }}>Sign out?</h3>
+        <p style={{ color: "#64748b", fontSize: "0.88rem", marginBottom: "1.5rem" }}>You can sign back in anytime.</p>
+        <div style={{ display: "flex", gap: "0.75rem" }}>
+          <button onClick={onCancel}  style={{ flex: 1, padding: "0.7rem", borderRadius: 8, border: "1px solid #cbd5e1", background: "#f8fafc", cursor: "pointer", fontWeight: 600 }}>Stay</button>
+          <button onClick={onConfirm} style={{ flex: 1, padding: "0.7rem", borderRadius: 8, border: "none", background: "#ef4444", color: "#fff", cursor: "pointer", fontWeight: 600 }}>Sign out</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Main dashboard ───────────────────────────────────────────────────── */
 export default function EmployerDashboard() {
   const { user, apiFetch, logout, ready } = useAuth();
   const router = useRouter();
 
-  const [consents, setConsents] = useState([]);
-  const [selected, setSelected] = useState(null); // active consent
-  const [profileData, setProfileData] = useState(null);
-  const [activeTab, setActiveTab] = useState("Personal");
-  const [requestEmail, setRequestEmail] = useState("");
-  const [requestMsg, setRequestMsg] = useState("");
-  const [requesting, setRequesting] = useState(false);
-  const [requestError, setRequestError] = useState("");
+  const [showSignout,    setShowSignout]    = useState(false);
+  const [consents,       setConsents]       = useState([]);
+  const [selected,       setSelected]       = useState(null);
+  const [profileData,    setProfileData]    = useState(null);
+  const [activeDataTab,  setActiveDataTab]  = useState("Personal");
+  const [consentTab,     setConsentTab]     = useState("pending"); // pending | completed | rejected
+  const [searchPending,  setSearchPending]  = useState("");
+  const [searchCompleted,setSearchCompleted]= useState("");
+  const [searchRejected, setSearchRejected] = useState("");
+  const [requestEmail,   setRequestEmail]   = useState("");
+  const [requestMsg,     setRequestMsg]     = useState("");
+  const [requesting,     setRequesting]     = useState(false);
+  const [requestError,   setRequestError]   = useState("");
   const [requestSuccess, setRequestSuccess] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [loading,        setLoading]        = useState(true);
 
   // Auth guard
   useEffect(() => {
@@ -43,24 +77,39 @@ export default function EmployerDashboard() {
     if (ready && user) loadConsents();
   }, [ready, user, loadConsents]);
 
+  // Buckets
+  const pending   = useMemo(() => consents.filter(c => c.status === "pending"),  [consents]);
+  const completed = useMemo(() => consents.filter(c => c.status === "approved"), [consents]);
+  const rejected  = useMemo(() => consents.filter(c => c.status === "declined"), [consents]);
+
+  // Filtered per tab search
+  const filter = (list, q) => {
+    if (!q.trim()) return list;
+    const lq = q.toLowerCase();
+    return list.filter(c =>
+      (c.employee_email || "").toLowerCase().includes(lq) ||
+      (c.employee_name  || "").toLowerCase().includes(lq)
+    );
+  };
+  const filteredPending   = useMemo(() => filter(pending,   searchPending),   [pending,   searchPending]);
+  const filteredCompleted = useMemo(() => filter(completed, searchCompleted), [completed, searchCompleted]);
+  const filteredRejected  = useMemo(() => filter(rejected,  searchRejected),  [rejected,  searchRejected]);
+
   const selectConsent = useCallback(async (consent) => {
     setSelected(consent);
     setProfileData(null);
-    setActiveTab("Personal");
+    setActiveDataTab("Personal");
     if (consent.status !== "approved") return;
+    setLoadingProfile(true);
     try {
-      // Profile snapshot is embedded in consent details
       const res = await apiFetch(`${API}/consent/${consent.consent_id}`);
-      if (res.ok) {
-        const data = await res.json();
-        setProfileData(data);
-      }
+      if (res.ok) setProfileData(await res.json());
     } catch (_) {}
+    setLoadingProfile(false);
   }, [apiFetch]);
 
   const sendRequest = async () => {
-    setRequestError("");
-    setRequestSuccess("");
+    setRequestError(""); setRequestSuccess("");
     if (!requestEmail) { setRequestError("Email is required"); return; }
     setRequesting(true);
     try {
@@ -69,123 +118,170 @@ export default function EmployerDashboard() {
         body: JSON.stringify({ employee_email: requestEmail, message: requestMsg }),
       });
       const data = await res.json();
-      if (!res.ok) { setRequestError(data.detail || "Request failed"); return; }
-      setRequestSuccess("Request sent successfully!");
-      setRequestEmail("");
-      setRequestMsg("");
+      if (!res.ok) { setRequestError(parseError(data)); return; }
+      setRequestSuccess("Request sent!");
+      setRequestEmail(""); setRequestMsg("");
       loadConsents();
-    } catch {
-      setRequestError("Network error — please try again");
-    } finally {
-      setRequesting(false);
-    }
+    } catch { setRequestError("Network error"); }
+    finally { setRequesting(false); }
   };
 
   if (!ready || !user) return null;
 
-  const approved = consents.filter(c => c.status === "approved");
-  const pending = consents.filter(c => c.status === "pending");
-  const declined = consents.filter(c => c.status === "declined");
+  const tabCounts = { pending: pending.length, completed: completed.length, rejected: rejected.length };
+  const currentList = consentTab === "pending" ? filteredPending : consentTab === "completed" ? filteredCompleted : filteredRejected;
+  const currentSearch = consentTab === "pending" ? searchPending : consentTab === "completed" ? searchCompleted : searchRejected;
+  const setCurrentSearch = consentTab === "pending" ? setSearchPending : consentTab === "completed" ? setSearchCompleted : setSearchRejected;
 
   return (
-    <div style={styles.page}>
-      {/* Sidebar */}
-      <aside style={styles.sidebar}>
-        <div style={styles.sidebarTop}>
-          <div style={styles.logo}>Datagate</div>
-          <div style={styles.employerName}>{user.name}</div>
-          <div style={styles.employerRole}>Employer</div>
+    <div style={s.page}>
+      {showSignout && <SignoutModal onConfirm={logout} onCancel={() => setShowSignout(false)} />}
+
+      {/* ── LEFT PANEL ─────────────────────────────────────── */}
+      <aside style={s.sidebar}>
+        {/* Header */}
+        <div style={s.sideHeader}>
+          <div style={s.logo}>Datagate</div>
+          <div style={{ flex: 1 }}>
+            <div style={s.userName}>{user.name || user.email}</div>
+            <div style={s.userRole}>Employer</div>
+          </div>
+          <button onClick={() => setShowSignout(true)} style={s.signoutBtn} title="Sign out">⏻</button>
         </div>
 
-        {/* Request new */}
-        <div style={styles.requestBox}>
-          <div style={styles.requestTitle}>Request Employee Data</div>
+        {/* Request box */}
+        <div style={s.requestBox}>
+          <div style={s.boxTitle}>Request Employee Data</div>
           <input
-            style={styles.sideInput}
+            style={s.sideInput}
             type="email"
-            placeholder="Employee email"
+            placeholder="Employee email address"
             value={requestEmail}
             onChange={e => setRequestEmail(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && sendRequest()}
           />
           <textarea
-            style={{ ...styles.sideInput, resize: "vertical", minHeight: 56 }}
+            style={{ ...s.sideInput, resize: "vertical", minHeight: 52 }}
             placeholder="Message (optional)"
             value={requestMsg}
             onChange={e => setRequestMsg(e.target.value)}
           />
-          {requestError && <p style={styles.reqError}>{requestError}</p>}
-          {requestSuccess && <p style={styles.reqSuccess}>{requestSuccess}</p>}
-          <button style={styles.reqBtn} onClick={sendRequest} disabled={requesting}>
+          {requestError   && <p style={s.reqError}>{requestError}</p>}
+          {requestSuccess && <p style={s.reqSuccess}>{requestSuccess}</p>}
+          <button style={s.reqBtn} onClick={sendRequest} disabled={requesting}>
             {requesting ? "Sending…" : "Send Request"}
           </button>
         </div>
 
-        {/* Consent list */}
-        <div style={styles.consentList}>
-          {loading ? (
-            <div style={styles.sideEmpty}>Loading…</div>
-          ) : consents.length === 0 ? (
-            <div style={styles.sideEmpty}>No requests yet</div>
-          ) : (
-            <>
-              {approved.length > 0 && <SideSection label="Approved" items={approved} selected={selected} onSelect={selectConsent} color="#16a34a" />}
-              {pending.length > 0 && <SideSection label="Pending" items={pending} selected={selected} onSelect={selectConsent} color="#f59e0b" />}
-              {declined.length > 0 && <SideSection label="Declined" items={declined} selected={selected} onSelect={selectConsent} color="#ef4444" />}
-            </>
-          )}
+        {/* Consent tabs */}
+        <div style={s.tabRow}>
+          {[["pending","Pending"],["completed","Completed"],["rejected","Rejected"]].map(([key, label]) => (
+            <button key={key} style={{ ...s.tabBtn, ...(consentTab === key ? s.tabBtnActive : {}) }} onClick={() => setConsentTab(key)}>
+              {label}
+              {tabCounts[key] > 0 && (
+                <span style={{ ...s.badge, background: consentTab === key ? "#2563eb" : "#e2e8f0", color: consentTab === key ? "#fff" : "#64748b" }}>
+                  {tabCounts[key]}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
 
-        <button style={styles.logoutBtn} onClick={logout}>Sign out</button>
+        {/* Search */}
+        <div style={{ padding: "0.5rem 0.75rem 0.25rem" }}>
+          <input
+            style={s.searchInput}
+            placeholder="Search by email or name…"
+            value={currentSearch}
+            onChange={e => setCurrentSearch(e.target.value)}
+          />
+        </div>
+
+        {/* List */}
+        <div style={s.consentList}>
+          {loading ? (
+            <div style={s.sideEmpty}>Loading…</div>
+          ) : currentList.length === 0 ? (
+            <div style={s.sideEmpty}>
+              {currentSearch ? "No matches found" : `No ${consentTab} requests`}
+            </div>
+          ) : (
+            currentList.map(c => {
+              const dotColor = c.status === "approved" ? "#16a34a" : c.status === "pending" ? "#f59e0b" : "#ef4444";
+              const ts = c.status === "approved" ? c.responded_at : c.status === "declined" ? c.responded_at : c.requested_at;
+              return (
+                <div
+                  key={c.consent_id}
+                  style={{ ...s.sideItem, ...(selected?.consent_id === c.consent_id ? s.sideItemActive : {}) }}
+                  onClick={() => selectConsent(c)}
+                >
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: dotColor, flexShrink: 0, marginTop: 3 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={s.sideEmail}>{c.employee_email}</div>
+                    {c.employee_name && <div style={s.sideName}>{c.employee_name}</div>}
+                    <div style={s.sideTs}>{toIST(ts)}</div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
       </aside>
 
-      {/* Main content */}
-      <main style={styles.main}>
+      {/* ── RIGHT PANEL ────────────────────────────────────── */}
+      <main style={s.main}>
         {!selected ? (
-          <div style={styles.emptyMain}>
-            <div style={styles.emptyIcon}>👥</div>
-            <p style={styles.emptyText}>Select an employee from the sidebar</p>
-            <p style={styles.emptySub}>Approved requests will show full employee data here</p>
+          <div style={s.emptyState}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>👥</div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: "#374151", marginBottom: 6 }}>Select an employee</div>
+            <div style={{ fontSize: 14, color: "#94a3b8" }}>Approved requests will show full profile data here</div>
           </div>
         ) : (
-          <div style={styles.profilePanel}>
-            <div style={styles.profileHeader}>
+          <div style={s.profileCard}>
+            {/* Profile header */}
+            <div style={s.profileHeader}>
               <div>
-                <h2 style={styles.profileName}>{selected.employee_email}</h2>
-                <span style={{ ...styles.statusBadge, background: selected.status === "approved" ? "#16a34a" : selected.status === "pending" ? "#f59e0b" : "#ef4444" }}>
-                  {selected.status}
-                </span>
+                <div style={s.profileEmail}>{selected.employee_email}</div>
+                {selected.employee_name && <div style={s.profileName}>{selected.employee_name}</div>}
+                <div style={{ display: "flex", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
+                  <span style={{ ...s.pill, background: selected.status === "approved" ? "#dcfce7" : selected.status === "pending" ? "#fef9c3" : "#fee2e2", color: selected.status === "approved" ? "#15803d" : selected.status === "pending" ? "#a16207" : "#dc2626" }}>
+                    {selected.status.charAt(0).toUpperCase() + selected.status.slice(1)}
+                  </span>
+                  {selected.requested_at && <span style={s.tsChip}>Requested: {toIST(selected.requested_at)}</span>}
+                  {selected.responded_at && <span style={s.tsChip}>Responded: {toIST(selected.responded_at)}</span>}
+                </div>
               </div>
             </div>
 
-            {selected.status !== "approved" ? (
-              <div style={styles.pendingMsg}>
-                {selected.status === "pending"
-                  ? "Waiting for employee to respond to your request."
-                  : "Employee declined this request."}
-              </div>
-            ) : !profileData ? (
-              <div style={styles.pendingMsg}>Loading profile…</div>
-            ) : (
-              <>
-                <div style={styles.tabs}>
-                  {DATA_TABS.map(tab => (
-                    <button
-                      key={tab}
-                      style={{ ...styles.tab, ...(activeTab === tab ? styles.tabActive : {}) }}
-                      onClick={() => setActiveTab(tab)}
-                    >
-                      {tab}
-                    </button>
-                  ))}
-                </div>
-
-                <div style={styles.tabContent}>
-                  {activeTab === "Personal" && <PersonalTab data={profileData?.profile_snapshot} />}
-                  {activeTab === "Education" && <EducationTab data={profileData?.profile_snapshot?.education} />}
-                  {activeTab === "Employment" && <EmploymentTab data={profileData?.employment_snapshot} />}
-                  {activeTab === "UAN & PF" && <UanTab data={profileData?.profile_snapshot} />}
-                </div>
-              </>
+            {/* Content */}
+            {selected.status === "pending" && (
+              <div style={s.statusMsg}>⏳ Waiting for employee to respond to your request.</div>
+            )}
+            {selected.status === "declined" && (
+              <div style={{ ...s.statusMsg, background: "#fef2f2", color: "#dc2626" }}>❌ Employee declined this request.</div>
+            )}
+            {selected.status === "approved" && (
+              loadingProfile ? (
+                <div style={s.statusMsg}>Loading profile…</div>
+              ) : !profileData ? (
+                <div style={s.statusMsg}>Could not load profile data.</div>
+              ) : (
+                <>
+                  <div style={s.dataTabs}>
+                    {DATA_TABS.map(tab => (
+                      <button key={tab} style={{ ...s.dataTab, ...(activeDataTab === tab ? s.dataTabActive : {}) }} onClick={() => setActiveDataTab(tab)}>
+                        {tab}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ paddingTop: 8 }}>
+                    {activeDataTab === "Personal"    && <PersonalTab   data={profileData?.profile_snapshot} />}
+                    {activeDataTab === "Education"   && <EducationTab  data={profileData?.profile_snapshot?.education} />}
+                    {activeDataTab === "Employment"  && <EmploymentTab data={profileData?.employment_snapshot} />}
+                    {activeDataTab === "UAN & PF"    && <UanTab        data={profileData?.profile_snapshot} />}
+                  </div>
+                </>
+              )
             )}
           </div>
         )}
@@ -194,160 +290,209 @@ export default function EmployerDashboard() {
   );
 }
 
-// ── Sidebar sub-components ────────────────────────────────────────────────────
+/* ── Data tab components ─────────────────────────────────────────────── */
 
-function SideSection({ label, items, selected, onSelect, color }) {
+function PersonalTab({ data }) {
+  if (!data) return <NoData />;
   return (
-    <div style={{ marginBottom: "1rem" }}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 1, padding: "0 0.75rem", marginBottom: 4 }}>{label}</div>
-      {items.map(c => (
-        <div
-          key={c.consent_id}
-          style={{
-            ...styles.sideItem,
-            ...(selected?.consent_id === c.consent_id ? styles.sideItemActive : {}),
-          }}
-          onClick={() => onSelect(c)}
-        >
-          <div style={styles.sideItemDot(color)} />
-          <span style={styles.sideItemEmail}>{c.employee_email}</span>
-        </div>
-      ))}
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+      <Card title="Name & Identity">
+        <Grid fields={[
+          ["First Name",    data.firstName],
+          ["Middle Name",   data.middleName],
+          ["Last Name",     data.lastName],
+          ["Father's Name", data.fatherName],
+          ["Date of Birth", data.dob],
+          ["Gender",        data.gender],
+          ["Nationality",   data.nationality],
+          ["Passport",      data.passport],
+        ]} />
+      </Card>
+      <Card title="Contact">
+        <Grid fields={[
+          ["Email",  data.email],
+          ["Mobile", data.mobile],
+          ["Aadhaar",data.aadhaar],
+          ["PAN",    data.pan],
+        ]} />
+      </Card>
+      {data.currentAddress && <Card title="Current Address"><AddressBlock a={data.currentAddress} /></Card>}
+      {data.permanentAddress && <Card title="Permanent Address"><AddressBlock a={data.permanentAddress} /></Card>}
     </div>
   );
 }
 
-// ── Data tab components ───────────────────────────────────────────────────────
-
-function PersonalTab({ data }) {
-  if (!data) return <Empty />;
-  const fields = [
-    ["First Name", data.firstName],
-    ["Last Name", data.lastName],
-    ["Date of Birth", data.dob],
-    ["Gender", data.gender],
-    ["Phone", data.phone],
-    ["Aadhaar", data.aadhaar],
-    ["PAN", data.pan],
-    ["Address", data.address],
-  ];
-  return <FieldGrid fields={fields} />;
-}
-
 function EducationTab({ data }) {
-  if (!data || !Array.isArray(data) || data.length === 0) return <Empty label="No education records" />;
+  if (!data) return <NoData label="No education records" />;
+  const sections = [
+    ["Class X",         data.classX],
+    ["Intermediate",    data.intermediate],
+    ["Undergraduate",   data.undergraduate],
+    ["Postgraduate",    data.postgraduate],
+  ].filter(([, d]) => d && Object.values(d).some(Boolean));
+  if (!sections.length) return <NoData label="No education records" />;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-      {data.map((edu, i) => (
-        <div key={i} style={styles.dataCard}>
-          <div style={styles.dataCardTitle}>{edu.level} — {edu.institution}</div>
-          <FieldGrid fields={[
-            ["Board / University", edu.board_or_university],
-            ["Field of Study", edu.field_of_study],
-            ["Year of Passing", edu.year_of_passing],
-            ["Percentage / CGPA", edu.percentage_or_cgpa],
+      {sections.map(([title, d]) => (
+        <Card key={title} title={title}>
+          <Grid fields={[
+            ["School / College",  d.school || d.college],
+            ["Board / University",d.board  || d.university],
+            ["Course / Degree",   d.course],
+            ["Hall Ticket",       d.hallTicket],
+            ["Year of Passing",   d.yearOfPassing],
+            ["Result Type",       d.resultType],
+            ["Result Value",      d.resultValue],
+            ["Mode",              d.mode],
+            ["Medium",            d.medium],
+            ["Backlogs",          d.backlogs],
+            ["From",              d.from],
+            ["To",                d.to],
           ]} />
-        </div>
+        </Card>
       ))}
     </div>
   );
 }
 
 function EmploymentTab({ data }) {
-  if (!data || !Array.isArray(data) || data.length === 0) return <Empty label="No employment records" />;
+  const list = Array.isArray(data) ? data : (data?.employments || []);
+  if (!list.length) return <NoData label="No employment records" />;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-      {data.map((job, i) => (
-        <div key={i} style={styles.dataCard}>
-          <div style={styles.dataCardTitle}>{job.designation} @ {job.company_name}</div>
-          <FieldGrid fields={[
-            ["Employment Type", job.employment_type],
-            ["Location", job.location],
-            ["Start Date", job.start_date],
-            ["End Date", job.is_current ? "Present" : job.end_date],
-            ["Reason for Leaving", job.reason_for_leaving],
+      {list.map((job, i) => (
+        <Card key={i} title={`${job.designation || "Employee"} @ ${job.companyName || job.company_name || "—"}`}>
+          <Grid fields={[
+            ["Company",          job.companyName    || job.company_name],
+            ["Employee ID",      job.employeeId     || job.employee_id],
+            ["Work Email",       job.workEmail      || job.work_email],
+            ["Designation",      job.designation],
+            ["Department",       job.department],
+            ["Employment Type",  job.employmentType || job.employment_type],
+            ["Reason for Leaving",job.reasonForRelieving || job.reason_for_leaving],
+            ["Office Address",   job.officeAddress  || job.office_address],
           ]} />
-        </div>
+          {job.reference?.name && (
+            <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid #f1f5f9" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Reference</div>
+              <Grid fields={[
+                ["Name",  job.reference.name],
+                ["Role",  job.reference.role],
+                ["Email", job.reference.email],
+                ["Mobile",job.reference.mobile],
+              ]} />
+            </div>
+          )}
+        </Card>
       ))}
     </div>
   );
 }
 
 function UanTab({ data }) {
-  if (!data) return <Empty />;
+  if (!data) return <NoData />;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-      <FieldGrid fields={[["UAN Number", data.uanNumber]]} />
+      <Card title="UAN Details">
+        <Grid fields={[
+          ["UAN Number",     data.uanNumber],
+          ["Name as per UAN",data.nameAsPerUan],
+          ["Mobile Linked",  data.mobileLinked],
+          ["UAN Active",     data.isActive],
+        ]} />
+      </Card>
       {Array.isArray(data.pfRecords) && data.pfRecords.map((pf, i) => (
-        <div key={i} style={styles.dataCard}>
-          <div style={styles.dataCardTitle}>PF Record {i + 1}</div>
-          <FieldGrid fields={[
-            ["Employer", pf.employer_name],
-            ["PF Account", pf.pf_account_number],
-            ["EPF Member ID", pf.epf_member_id],
-            ["Period", pf.period],
+        <Card key={i} title={`PF Record — ${pf.companyName || `Company ${i + 1}`}`}>
+          <Grid fields={[
+            ["Company",         pf.companyName],
+            ["PF Member ID",    pf.pfMemberId],
+            ["Date of Joining", pf.dojEpfo],
+            ["Date of Exit",    pf.doeEpfo],
+            ["PF Transferred",  pf.pfTransferred],
           ]} />
-        </div>
+        </Card>
       ))}
     </div>
   );
 }
 
-function FieldGrid({ fields }) {
+/* ── Shared UI helpers ───────────────────────────────────────────────── */
+function Card({ title, children }) {
   return (
-    <div style={styles.fieldGrid}>
-      {fields.filter(([, v]) => v).map(([label, value]) => (
-        <div key={label} style={styles.fieldItem}>
-          <div style={styles.fieldLabel}>{label}</div>
-          <div style={styles.fieldValue}>{value}</div>
+    <div style={{ border: "1.5px solid #e2e8f0", borderRadius: 10, padding: "1rem" }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: "0.75rem" }}>{title}</div>
+      {children}
+    </div>
+  );
+}
+
+function Grid({ fields }) {
+  const filled = fields.filter(([, v]) => v);
+  if (!filled.length) return <div style={{ fontSize: 13, color: "#94a3b8" }}>No data</div>;
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem" }}>
+      {filled.map(([label, value]) => (
+        <div key={label}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
+          <div style={{ fontSize: 14, color: "#0f172a", fontWeight: 500, marginTop: 2 }}>{value}</div>
         </div>
       ))}
     </div>
   );
 }
 
-function Empty({ label = "No data available" }) {
-  return <div style={styles.pendingMsg}>{label}</div>;
+function AddressBlock({ a }) {
+  const parts = [a.door, a.village, a.district, a.pin].filter(Boolean).join(", ");
+  const period = a.from ? `${a.from}${a.to ? ` → ${a.to}` : ""}` : null;
+  return (
+    <div>
+      {parts && <div style={{ fontSize: 14, color: "#0f172a" }}>{parts}</div>}
+      {period && <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>Residing: {period}</div>}
+    </div>
+  );
 }
 
-const styles = {
-  page: { display: "flex", minHeight: "100vh", fontFamily: "'Inter', sans-serif", background: "#f8fafc" },
-  sidebar: { width: 280, minWidth: 280, background: "#fff", borderRight: "1.5px solid #e2e8f0", display: "flex", flexDirection: "column", height: "100vh", position: "sticky", top: 0, overflow: "hidden" },
-  sidebarTop: { padding: "1.25rem 1rem 0.75rem", borderBottom: "1.5px solid #f1f5f9" },
-  logo: { fontSize: 18, fontWeight: 800, color: "#2563eb", marginBottom: 4 },
-  employerName: { fontSize: 14, fontWeight: 600, color: "#0f172a" },
-  employerRole: { fontSize: 12, color: "#94a3b8" },
-  requestBox: { padding: "1rem", borderBottom: "1.5px solid #f1f5f9", display: "flex", flexDirection: "column", gap: "0.5rem" },
-  requestTitle: { fontSize: 12, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: 0.5 },
-  sideInput: { width: "100%", padding: "0.6rem 0.75rem", border: "1.5px solid #e2e8f0", borderRadius: 7, fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" },
-  reqError: { fontSize: 12, color: "#ef4444", margin: 0 },
-  reqSuccess: { fontSize: 12, color: "#16a34a", margin: 0 },
-  reqBtn: { padding: "0.6rem", background: "#2563eb", color: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" },
-  consentList: { flex: 1, overflowY: "auto", padding: "0.75rem 0" },
-  sideEmpty: { fontSize: 13, color: "#94a3b8", padding: "0.75rem 1rem" },
-  sideItem: { display: "flex", alignItems: "center", gap: 8, padding: "0.6rem 0.75rem", cursor: "pointer", borderRadius: 7, margin: "0 0.25rem 2px", transition: "background 0.15s" },
+function NoData({ label = "No data available" }) {
+  return <div style={{ fontSize: 14, color: "#94a3b8", padding: "1rem", background: "#f8fafc", borderRadius: 8 }}>{label}</div>;
+}
+
+/* ── Styles ──────────────────────────────────────────────────────────── */
+const s = {
+  page:        { display: "flex", minHeight: "100vh", fontFamily: "'Inter', sans-serif", background: "#f1f5f9" },
+  sidebar:     { width: 300, minWidth: 300, background: "#fff", borderRight: "1.5px solid #e2e8f0", display: "flex", flexDirection: "column", height: "100vh", position: "sticky", top: 0 },
+  sideHeader:  { display: "flex", alignItems: "center", gap: 10, padding: "1rem 0.85rem", borderBottom: "1.5px solid #f1f5f9" },
+  logo:        { fontSize: 17, fontWeight: 800, color: "#2563eb", letterSpacing: -0.5, flexShrink: 0 },
+  userName:    { fontSize: 13, fontWeight: 600, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  userRole:    { fontSize: 11, color: "#94a3b8" },
+  signoutBtn:  { background: "none", border: "1px solid #e2e8f0", borderRadius: 7, width: 30, height: 30, cursor: "pointer", color: "#64748b", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  requestBox:  { padding: "0.85rem", borderBottom: "1.5px solid #f1f5f9", display: "flex", flexDirection: "column", gap: "0.5rem" },
+  boxTitle:    { fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: 0.5 },
+  sideInput:   { width: "100%", padding: "0.55rem 0.75rem", border: "1.5px solid #e2e8f0", borderRadius: 7, fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" },
+  reqError:    { fontSize: 12, color: "#ef4444", margin: 0 },
+  reqSuccess:  { fontSize: 12, color: "#16a34a", margin: 0 },
+  reqBtn:      { padding: "0.55rem", background: "#2563eb", color: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" },
+  tabRow:      { display: "flex", borderBottom: "1.5px solid #f1f5f9", padding: "0 0.5rem" },
+  tabBtn:      { flex: 1, padding: "0.6rem 0.25rem", background: "none", border: "none", borderBottom: "2px solid transparent", fontSize: 12, fontWeight: 600, color: "#94a3b8", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, marginBottom: -1.5 },
+  tabBtnActive:{ color: "#2563eb", borderBottomColor: "#2563eb" },
+  badge:       { padding: "1px 7px", borderRadius: 999, fontSize: 11, fontWeight: 700 },
+  searchInput: { width: "100%", padding: "0.5rem 0.75rem", border: "1.5px solid #e2e8f0", borderRadius: 7, fontSize: 12, outline: "none", fontFamily: "inherit", boxSizing: "border-box", background: "#f8fafc" },
+  consentList: { flex: 1, overflowY: "auto", padding: "0.25rem 0 1rem" },
+  sideEmpty:   { fontSize: 13, color: "#94a3b8", padding: "1rem 0.85rem" },
+  sideItem:    { display: "flex", alignItems: "flex-start", gap: 8, padding: "0.6rem 0.85rem", cursor: "pointer", borderRadius: 8, margin: "0 0.3rem 2px", transition: "background 0.1s" },
   sideItemActive: { background: "#eff6ff" },
-  sideItemDot: (color) => ({ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }),
-  sideItemEmail: { fontSize: 13, color: "#374151", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-  logoutBtn: { margin: "0.75rem", padding: "0.6rem", background: "none", border: "1.5px solid #e2e8f0", borderRadius: 7, fontSize: 13, color: "#64748b", cursor: "pointer" },
-  main: { flex: 1, padding: "2rem", overflowY: "auto" },
-  emptyMain: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", minHeight: 400, gap: 8, textAlign: "center" },
-  emptyIcon: { fontSize: 40 },
-  emptyText: { fontSize: 16, fontWeight: 600, color: "#374151", margin: 0 },
-  emptySub: { fontSize: 14, color: "#94a3b8", margin: 0 },
-  profilePanel: { background: "#fff", borderRadius: 16, boxShadow: "0 2px 16px rgba(0,0,0,0.07)", padding: "1.75rem", display: "flex", flexDirection: "column", gap: "1.25rem" },
-  profileHeader: { display: "flex", alignItems: "flex-start", justifyContent: "space-between" },
-  profileName: { fontSize: 18, fontWeight: 700, color: "#0f172a", margin: "0 0 6px" },
-  statusBadge: { padding: "0.2rem 0.7rem", borderRadius: 999, fontSize: 12, fontWeight: 600, color: "#fff" },
-  pendingMsg: { fontSize: 14, color: "#64748b", padding: "1rem", background: "#f8fafc", borderRadius: 8 },
-  tabs: { display: "flex", gap: 4, borderBottom: "1.5px solid #e2e8f0", paddingBottom: 0 },
-  tab: { padding: "0.6rem 1.1rem", background: "none", border: "none", borderBottom: "2.5px solid transparent", fontSize: 14, fontWeight: 500, color: "#64748b", cursor: "pointer", marginBottom: -1.5 },
-  tabActive: { borderBottomColor: "#2563eb", color: "#2563eb", fontWeight: 700 },
-  tabContent: { paddingTop: 8 },
-  dataCard: { border: "1.5px solid #e2e8f0", borderRadius: 10, padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" },
-  dataCardTitle: { fontSize: 15, fontWeight: 700, color: "#1e293b" },
-  fieldGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" },
-  fieldItem: { display: "flex", flexDirection: "column", gap: 2 },
-  fieldLabel: { fontSize: 11, fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.5 },
-  fieldValue: { fontSize: 14, color: "#0f172a", fontWeight: 500 },
+  sideEmail:   { fontSize: 13, color: "#1e293b", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  sideName:    { fontSize: 11, color: "#64748b", marginTop: 1 },
+  sideTs:      { fontSize: 11, color: "#94a3b8", marginTop: 2 },
+  main:        { flex: 1, padding: "2rem", overflowY: "auto" },
+  emptyState:  { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", minHeight: 400, textAlign: "center" },
+  profileCard: { background: "#fff", borderRadius: 16, boxShadow: "0 2px 16px rgba(0,0,0,0.06)", padding: "1.75rem", display: "flex", flexDirection: "column", gap: "1.25rem" },
+  profileHeader:{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" },
+  profileEmail:{ fontSize: 18, fontWeight: 700, color: "#0f172a" },
+  profileName: { fontSize: 14, color: "#64748b", marginTop: 2 },
+  pill:        { padding: "0.2rem 0.75rem", borderRadius: 999, fontSize: 12, fontWeight: 700 },
+  tsChip:      { fontSize: 12, color: "#64748b", background: "#f1f5f9", padding: "0.2rem 0.6rem", borderRadius: 6 },
+  statusMsg:   { fontSize: 14, color: "#64748b", padding: "1rem", background: "#f8fafc", borderRadius: 8 },
+  dataTabs:    { display: "flex", gap: 4, borderBottom: "1.5px solid #e2e8f0", marginBottom: 0 },
+  dataTab:     { padding: "0.55rem 1rem", background: "none", border: "none", borderBottom: "2.5px solid transparent", fontSize: 14, fontWeight: 500, color: "#64748b", cursor: "pointer", marginBottom: -1.5 },
+  dataTabActive:{ borderBottomColor: "#2563eb", color: "#2563eb", fontWeight: 700 },
 };
