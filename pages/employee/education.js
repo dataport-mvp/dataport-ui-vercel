@@ -7,36 +7,15 @@ import { parseError } from "../../utils/apiError";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
-
-const pick = (...vals) => vals.find(v => v !== undefined && v !== null && v !== "");
-
-const normalizeEducation = (ed = {}) => ({
-  classX: ed?.classX || ed?.class_x || ed?.x || {},
-  intermediate: ed?.intermediate || ed?.inter || ed?.classXII || ed?.class_xii || {},
-  undergraduate: ed?.undergraduate || ed?.ug || {},
-  postgraduate: ed?.postgraduate || ed?.pg || {},
-});
-
-const hasMeaningfulEducation = (d = {}) => {
-  const values = [
-    d.xSchool, d.xBoard, d.xHall, d.xFrom, d.xTo, d.xAddress, d.xYear, d.xResultType, d.xResultValue, d.xMedium,
-    d.iCollege, d.iBoard, d.iHall, d.iFrom, d.iTo, d.iAddress, d.iMode, d.iYear, d.iResultType, d.iResultValue, d.iMedium,
-    d.ugCollege, d.ugUniversity, d.ugCourse, d.ugHall, d.ugFrom, d.ugTo, d.ugAddress, d.ugMode, d.ugYear, d.ugResultType, d.ugResultValue, d.ugBacklogs, d.ugMedium,
-    d.pgCollege, d.pgUniversity, d.pgCourse, d.pgHall, d.pgFrom, d.pgTo, d.pgAddress, d.pgMode, d.pgYear, d.pgResultType, d.pgResultValue, d.pgBacklogs, d.pgMedium,
-  ];
-  return values.some(v => String(v || "").trim().length > 0);
-};
-
 function SignoutModal({ onConfirm, onCancel }) {
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-      <div style={{ background: "#fff", borderRadius: 14, padding: "2rem", maxWidth: 360, width: "90%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
-        <div style={{ fontSize: 36, marginBottom: "0.75rem" }}>👋</div>
-        <h3 style={{ margin: "0 0 0.5rem", color: "#0f172a" }}>Sign out?</h3>
-        <p style={{ color: "#64748b", fontSize: "0.9rem", marginBottom: "1.5rem" }}>Your progress is saved. You can continue anytime.</p>
-        <div style={{ display: "flex", gap: "0.75rem" }}>
-          <button onClick={onCancel}  style={{ flex: 1, padding: "0.75rem", borderRadius: 8, border: "1px solid #cbd5e1", background: "#f8fafc", cursor: "pointer", fontWeight: 600 }}>Stay</button>
-          <button onClick={onConfirm} style={{ flex: 1, padding: "0.75rem", borderRadius: 8, border: "none", background: "#ef4444", color: "#fff", cursor: "pointer", fontWeight: 600 }}>Sign out</button>
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
+      <div style={{ background:"#fff", borderRadius:14, padding:"2rem", maxWidth:360, width:"90%", textAlign:"center", boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }}>
+        <h3 style={{ margin:"0 0 0.5rem", color:"#0f172a" }}>Sign out?</h3>
+        <p style={{ color:"#64748b", fontSize:"0.9rem", marginBottom:"1.5rem" }}>Your progress is saved. You can continue anytime.</p>
+        <div style={{ display:"flex", gap:"0.75rem" }}>
+          <button onClick={onCancel}  style={{ flex:1, padding:"0.75rem", borderRadius:8, border:"1px solid #cbd5e1", background:"#f8fafc", cursor:"pointer", fontWeight:600 }}>Stay</button>
+          <button onClick={onConfirm} style={{ flex:1, padding:"0.75rem", borderRadius:8, border:"none", background:"#ef4444", color:"#fff", cursor:"pointer", fontWeight:600 }}>Sign out</button>
         </div>
       </div>
     </div>
@@ -46,294 +25,138 @@ function SignoutModal({ onConfirm, onCancel }) {
 export default function EducationDetails() {
   const router = useRouter();
   const { user, apiFetch, logout, ready } = useAuth();
+
   const [showSignout, setShowSignout] = useState(false);
+  const [saveStatus,  setSaveStatus]  = useState("");
+  const [loading,     setLoading]     = useState(true);
 
-  const [xSchool, setXSchool]           = useState("");
-  const [xBoard, setXBoard]             = useState("");
-  const [xHall, setXHall]               = useState("");
-  const [xFrom, setXFrom]               = useState("");
-  const [xTo, setXTo]                   = useState("");
-  const [xAddress, setXAddress]         = useState("");
-  const [xYear, setXYear]               = useState("");
-  const [xResultType, setXResultType]   = useState("");
-  const [xResultValue, setXResultValue] = useState("");
-  const [xMedium, setXMedium]           = useState("");
+  // We keep the full draft in state so we can merge on save
+  // without making an extra API call
+  const [serverDraft, setServerDraft] = useState(null);
 
-  const [iCollege, setICollege]           = useState("");
-  const [iBoard, setIBoard]               = useState("");
-  const [iHall, setIHall]                 = useState("");
-  const [iFrom, setIFrom]                 = useState("");
-  const [iTo, setITo]                     = useState("");
-  const [iAddress, setIAddress]           = useState("");
-  const [iMode, setIMode]                 = useState("");
-  const [iYear, setIYear]                 = useState("");
-  const [iResultType, setIResultType]     = useState("");
-  const [iResultValue, setIResultValue]   = useState("");
-  const [iMedium, setIMedium]             = useState("");
-
-  const [ugCollege, setUgCollege]           = useState("");
-  const [ugUniversity, setUgUniversity]     = useState("");
-  const [ugCourse, setUgCourse]             = useState("");
-  const [ugHall, setUgHall]                 = useState("");
-  const [ugFrom, setUgFrom]                 = useState("");
-  const [ugTo, setUgTo]                     = useState("");
-  const [ugAddress, setUgAddress]           = useState("");
-  const [ugMode, setUgMode]                 = useState("");
-  const [ugYear, setUgYear]                 = useState("");
-  const [ugResultType, setUgResultType]     = useState("");
-  const [ugResultValue, setUgResultValue]   = useState("");
-  const [ugBacklogs, setUgBacklogs]         = useState("");
-  const [ugMedium, setUgMedium]             = useState("");
-
-  const [pgCollege, setPgCollege]           = useState("");
-  const [pgUniversity, setPgUniversity]     = useState("");
-  const [pgCourse, setPgCourse]             = useState("");
-  const [pgHall, setPgHall]                 = useState("");
-  const [pgFrom, setPgFrom]                 = useState("");
-  const [pgTo, setPgTo]                     = useState("");
-  const [pgAddress, setPgAddress]           = useState("");
-  const [pgMode, setPgMode]                 = useState("");
-  const [pgYear, setPgYear]                 = useState("");
-  const [pgResultType, setPgResultType]     = useState("");
-  const [pgResultValue, setPgResultValue]   = useState("");
-  const [pgBacklogs, setPgBacklogs]         = useState("");
-  const [pgMedium, setPgMedium]             = useState("");
-
-  const [saveStatus, setSaveStatus] = useState("");
+  // 10th
+  const [xSchool,   setXSchool]   = useState("");
+  const [xBoard,    setXBoard]    = useState("");
+  const [xYear,     setXYear]     = useState("");
+  const [xPercent,  setXPercent]  = useState("");
+  // 12th
+  const [xiiSchool,  setXiiSchool]  = useState("");
+  const [xiiBoard,   setXiiBoard]   = useState("");
+  const [xiiYear,    setXiiYear]    = useState("");
+  const [xiiPercent, setXiiPercent] = useState("");
+  // Degree
+  const [degCollege, setDegCollege] = useState("");
+  const [degName,    setDegName]    = useState("");
+  const [degBranch,  setDegBranch]  = useState("");
+  const [degYear,    setDegYear]    = useState("");
+  const [degPercent, setDegPercent] = useState("");
+  // PG
+  const [pgCollege,  setPgCollege]  = useState("");
+  const [pgName,     setPgName]     = useState("");
+  const [pgBranch,   setPgBranch]   = useState("");
+  const [pgYear,     setPgYear]     = useState("");
+  const [pgPercent,  setPgPercent]  = useState("");
 
   useEffect(() => {
     if (!ready) return;
     if (!user) { router.replace("/employee/login"); return; }
   }, [ready, user, router]);
 
+  // Fetch draft from API on mount — any device, any browser
   useEffect(() => {
-    const applyEducation = (d = {}) => {
-      if (d.xSchool)       setXSchool(d.xSchool);
-      if (d.xBoard)        setXBoard(d.xBoard);
-      if (d.xHall)         setXHall(d.xHall);
-      if (d.xFrom)         setXFrom(d.xFrom);
-      if (d.xTo)           setXTo(d.xTo);
-      if (d.xAddress)      setXAddress(d.xAddress);
-      if (d.xYear)         setXYear(d.xYear);
-      if (d.xResultType)   setXResultType(d.xResultType);
-      if (d.xResultValue)  setXResultValue(d.xResultValue);
-      if (d.xMedium)       setXMedium(d.xMedium);
-      if (d.iCollege)      setICollege(d.iCollege);
-      if (d.iBoard)        setIBoard(d.iBoard);
-      if (d.iHall)         setIHall(d.iHall);
-      if (d.iFrom)         setIFrom(d.iFrom);
-      if (d.iTo)           setITo(d.iTo);
-      if (d.iAddress)      setIAddress(d.iAddress);
-      if (d.iMode)         setIMode(d.iMode);
-      if (d.iYear)         setIYear(d.iYear);
-      if (d.iResultType)   setIResultType(d.iResultType);
-      if (d.iResultValue)  setIResultValue(d.iResultValue);
-      if (d.iMedium)       setIMedium(d.iMedium);
-      if (d.ugCollege)     setUgCollege(d.ugCollege);
-      if (d.ugUniversity)  setUgUniversity(d.ugUniversity);
-      if (d.ugCourse)      setUgCourse(d.ugCourse);
-      if (d.ugHall)        setUgHall(d.ugHall);
-      if (d.ugFrom)        setUgFrom(d.ugFrom);
-      if (d.ugTo)          setUgTo(d.ugTo);
-      if (d.ugAddress)     setUgAddress(d.ugAddress);
-      if (d.ugMode)        setUgMode(d.ugMode);
-      if (d.ugYear)        setUgYear(d.ugYear);
-      if (d.ugResultType)  setUgResultType(d.ugResultType);
-      if (d.ugResultValue) setUgResultValue(d.ugResultValue);
-      if (d.ugBacklogs)    setUgBacklogs(d.ugBacklogs);
-      if (d.ugMedium)      setUgMedium(d.ugMedium);
-      if (d.pgCollege)     setPgCollege(d.pgCollege);
-      if (d.pgUniversity)  setPgUniversity(d.pgUniversity);
-      if (d.pgCourse)      setPgCourse(d.pgCourse);
-      if (d.pgHall)        setPgHall(d.pgHall);
-      if (d.pgFrom)        setPgFrom(d.pgFrom);
-      if (d.pgTo)          setPgTo(d.pgTo);
-      if (d.pgAddress)     setPgAddress(d.pgAddress);
-      if (d.pgMode)        setPgMode(d.pgMode);
-      if (d.pgYear)        setPgYear(d.pgYear);
-      if (d.pgResultType)  setPgResultType(d.pgResultType);
-      if (d.pgResultValue) setPgResultValue(d.pgResultValue);
-      if (d.pgBacklogs)    setPgBacklogs(d.pgBacklogs);
-      if (d.pgMedium)      setPgMedium(d.pgMedium);
-    };
-
-    try {
-      const saved = localStorage.getItem("dg_education");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (hasMeaningfulEducation(parsed)) {
-          applyEducation(parsed);
-          return;
-        }
-      }
-    } catch (_) {}
-
+    if (!ready || !user) return;
     const fetchDraft = async () => {
-      if (!ready || !user) return;
       try {
         const res = await apiFetch(`${API}/employee/draft`);
-        if (!res.ok) return;
-        const d = await res.json();
-        const ed = normalizeEducation(d?.education || {});
-        if (!Object.keys(ed).length) return;
-        applyEducation({
-          xSchool: pick(ed?.classX?.school, ed?.classX?.schoolName),
-          xBoard: pick(ed?.classX?.board, ed?.classX?.boardName),
-          xHall: pick(ed?.classX?.hallTicket, ed?.classX?.hall_ticket),
-          xFrom: ed?.classX?.from,
-          xTo: ed?.classX?.to,
-          xAddress: ed?.classX?.address,
-          xYear: pick(ed?.classX?.yearOfPassing, ed?.classX?.year_of_passing),
-          xResultType: pick(ed?.classX?.resultType, ed?.classX?.result_type),
-          xResultValue: pick(ed?.classX?.resultValue, ed?.classX?.result_value),
-          xMedium: ed?.classX?.medium,
-          iCollege: pick(ed?.intermediate?.college, ed?.intermediate?.school),
-          iBoard: pick(ed?.intermediate?.board, ed?.intermediate?.boardName),
-          iHall: pick(ed?.intermediate?.hallTicket, ed?.intermediate?.hall_ticket),
-          iFrom: ed?.intermediate?.from,
-          iTo: ed?.intermediate?.to,
-          iAddress: ed?.intermediate?.address,
-          iMode: ed?.intermediate?.mode,
-          iYear: pick(ed?.intermediate?.yearOfPassing, ed?.intermediate?.year_of_passing),
-          iResultType: pick(ed?.intermediate?.resultType, ed?.intermediate?.result_type),
-          iResultValue: pick(ed?.intermediate?.resultValue, ed?.intermediate?.result_value),
-          iMedium: ed?.intermediate?.medium,
-          ugCollege: ed?.undergraduate?.college,
-          ugUniversity: ed?.undergraduate?.university,
-          ugCourse: ed?.undergraduate?.course,
-          ugHall: pick(ed?.undergraduate?.hallTicket, ed?.undergraduate?.hall_ticket),
-          ugFrom: ed?.undergraduate?.from,
-          ugTo: ed?.undergraduate?.to,
-          ugAddress: ed?.undergraduate?.address,
-          ugMode: ed?.undergraduate?.mode,
-          ugYear: pick(ed?.undergraduate?.yearOfPassing, ed?.undergraduate?.year_of_passing),
-          ugResultType: pick(ed?.undergraduate?.resultType, ed?.undergraduate?.result_type),
-          ugResultValue: pick(ed?.undergraduate?.resultValue, ed?.undergraduate?.result_value),
-          ugBacklogs: ed?.undergraduate?.backlogs,
-          ugMedium: ed?.undergraduate?.medium,
-          pgCollege: ed?.postgraduate?.college,
-          pgUniversity: ed?.postgraduate?.university,
-          pgCourse: ed?.postgraduate?.course,
-          pgHall: pick(ed?.postgraduate?.hallTicket, ed?.postgraduate?.hall_ticket),
-          pgFrom: ed?.postgraduate?.from,
-          pgTo: ed?.postgraduate?.to,
-          pgAddress: ed?.postgraduate?.address,
-          pgMode: ed?.postgraduate?.mode,
-          pgYear: pick(ed?.postgraduate?.yearOfPassing, ed?.postgraduate?.year_of_passing),
-          pgResultType: pick(ed?.postgraduate?.resultType, ed?.postgraduate?.result_type),
-          pgResultValue: pick(ed?.postgraduate?.resultValue, ed?.postgraduate?.result_value),
-          pgBacklogs: ed?.postgraduate?.backlogs,
-          pgMedium: ed?.postgraduate?.medium,
-        });
-      } catch (_) {}
-    };
+        if (res.ok) {
+          const d = await res.json();
+          setServerDraft(d); // cache full draft for merge on save
 
+          // education is stored as a dict under d.education
+          const edu = d.education || {};
+
+          // 10th
+          if (edu.xSchool)   setXSchool(edu.xSchool);
+          if (edu.xBoard)    setXBoard(edu.xBoard);
+          if (edu.xYear)     setXYear(edu.xYear);
+          if (edu.xPercent)  setXPercent(edu.xPercent);
+          // 12th
+          if (edu.xiiSchool)  setXiiSchool(edu.xiiSchool);
+          if (edu.xiiBoard)   setXiiBoard(edu.xiiBoard);
+          if (edu.xiiYear)    setXiiYear(edu.xiiYear);
+          if (edu.xiiPercent) setXiiPercent(edu.xiiPercent);
+          // Degree
+          if (edu.degCollege) setDegCollege(edu.degCollege);
+          if (edu.degName)    setDegName(edu.degName);
+          if (edu.degBranch)  setDegBranch(edu.degBranch);
+          if (edu.degYear)    setDegYear(edu.degYear);
+          if (edu.degPercent) setDegPercent(edu.degPercent);
+          // PG
+          if (edu.pgCollege)  setPgCollege(edu.pgCollege);
+          if (edu.pgName)     setPgName(edu.pgName);
+          if (edu.pgBranch)   setPgBranch(edu.pgBranch);
+          if (edu.pgYear)     setPgYear(edu.pgYear);
+          if (edu.pgPercent)  setPgPercent(edu.pgPercent);
+        }
+        // 404 = new user or page 1 not done yet — empty form is fine
+      } catch (_) {}
+      setLoading(false);
+    };
     fetchDraft();
   }, [ready, user, apiFetch]);
 
-  const buildPayload = () => ({
-    classX:        { school: xSchool, board: xBoard, hallTicket: xHall, from: xFrom, to: xTo, address: xAddress, yearOfPassing: xYear, resultType: xResultType, resultValue: xResultValue, medium: xMedium },
-    intermediate:  { college: iCollege, board: iBoard, hallTicket: iHall, from: iFrom, to: iTo, address: iAddress, mode: iMode, yearOfPassing: iYear, resultType: iResultType, resultValue: iResultValue, medium: iMedium },
-    undergraduate: { college: ugCollege, university: ugUniversity, course: ugCourse, hallTicket: ugHall, from: ugFrom, to: ugTo, address: ugAddress, mode: ugMode, yearOfPassing: ugYear, resultType: ugResultType, resultValue: ugResultValue, backlogs: ugBacklogs, medium: ugMedium },
-    postgraduate:  { college: pgCollege, university: pgUniversity, course: pgCourse, hallTicket: pgHall, from: pgFrom, to: pgTo, address: pgAddress, mode: pgMode, yearOfPassing: pgYear, resultType: pgResultType, resultValue: pgResultValue, backlogs: pgBacklogs, medium: pgMedium },
-  });
-
-  // Auto-save to localStorage on every field change
-  useEffect(() => {
-    try {
-      const draft = {
-        xSchool, xBoard, xHall, xFrom, xTo, xAddress, xYear, xResultType, xResultValue, xMedium,
-        iCollege, iBoard, iHall, iFrom, iTo, iAddress, iMode, iYear, iResultType, iResultValue, iMedium,
-        ugCollege, ugUniversity, ugCourse, ugHall, ugFrom, ugTo, ugAddress, ugMode, ugYear, ugResultType, ugResultValue, ugBacklogs, ugMedium,
-        pgCollege, pgUniversity, pgCourse, pgHall, pgFrom, pgTo, pgAddress, pgMode, pgYear, pgResultType, pgResultValue, pgBacklogs, pgMedium,
-      };
-      if (!hasMeaningfulEducation(draft)) return;
-      localStorage.setItem("dg_education", JSON.stringify(draft));
-    } catch (_) {}
-  }, [xSchool, xBoard, xHall, xFrom, xTo, xAddress, xYear, xResultType, xResultValue, xMedium,
-      iCollege, iBoard, iHall, iFrom, iTo, iAddress, iMode, iYear, iResultType, iResultValue, iMedium,
-      ugCollege, ugUniversity, ugCourse, ugHall, ugFrom, ugTo, ugAddress, ugMode, ugYear, ugResultType, ugResultValue, ugBacklogs, ugMedium,
-      pgCollege, pgUniversity, pgCourse, pgHall, pgFrom, pgTo, pgAddress, pgMode, pgYear, pgResultType, pgResultValue, pgBacklogs, pgMedium]);
-
-  const loadServerDraft = async () => {
-    try {
-      const res = await apiFetch(`${API}/employee/draft`);
-      if (!res.ok) return {};
-      const d = await res.json();
-      return d || {};
-    } catch (_) {
-      return {};
-    }
-  };
-
   const saveDraft = async () => {
-    const educationDraft = {
-      xSchool, xBoard, xHall, xFrom, xTo, xAddress, xYear, xResultType, xResultValue, xMedium,
-      iCollege, iBoard, iHall, iFrom, iTo, iAddress, iMode, iYear, iResultType, iResultValue, iMedium,
-      ugCollege, ugUniversity, ugCourse, ugHall, ugFrom, ugTo, ugAddress, ugMode, ugYear, ugResultType, ugResultValue, ugBacklogs, ugMedium,
-      pgCollege, pgUniversity, pgCourse, pgHall, pgFrom, pgTo, pgAddress, pgMode, pgYear, pgResultType, pgResultValue, pgBacklogs, pgMedium,
-    };
-    if (hasMeaningfulEducation(educationDraft)) {
-      localStorage.setItem("dg_education", JSON.stringify(educationDraft));
-    } else {
-      localStorage.removeItem("dg_education");
-    }
-
-    const personal = JSON.parse(localStorage.getItem("dg_personal") || "{}");
-    const serverDraft = await loadServerDraft();
-    const educationPayload = buildPayload();
-
-    const empId = localStorage.getItem("dg_employee_id") || serverDraft?.employee_id || `emp-${Date.now()}`;
-    if (!localStorage.getItem("dg_employee_id")) localStorage.setItem("dg_employee_id", empId);
+    // serverDraft already has all page-1 fields (firstName, lastName, etc.)
+    // We merge education into it and POST the full object back.
+    // API uses PUT semantics via POST — sends entire employee object.
+    const d = serverDraft || {};
 
     const payload = {
-      employee_id: empId,
-      status: serverDraft?.status === "submitted" ? "submitted" : "draft",
-      firstName: personal.firstName || serverDraft.firstName || "",
-      lastName: personal.lastName || serverDraft.lastName || "",
-      middleName: personal.middleName || serverDraft.middleName || "",
-      fatherName: personal.fatherName || serverDraft.fatherName || `${personal.fatherFirst || serverDraft.fatherFirst || ""} ${personal.fatherMiddle || serverDraft.fatherMiddle || ""} ${personal.fatherLast || serverDraft.fatherLast || ""}`.trim(),
-      fatherFirst: personal.fatherFirst || serverDraft.fatherFirst || "",
-      fatherMiddle: personal.fatherMiddle || serverDraft.fatherMiddle || "",
-      fatherLast: personal.fatherLast || serverDraft.fatherLast || "",
-      dob: personal.dob || serverDraft.dob || "",
-      gender: personal.gender || serverDraft.gender || "",
-      nationality: personal.nationality || serverDraft.nationality || "",
-      mobile: personal.mobile || serverDraft.mobile || user?.phone || "",
-      email: personal.email || serverDraft.email || user?.email || "",
-      passport: personal.passport || serverDraft.passport || "",
-      aadhaar: personal.aadhar || serverDraft.aadhaar || serverDraft.aadhar || "",
-      pan: personal.pan || serverDraft.pan || "",
-      currentAddress: {
-        from: personal.curFrom || serverDraft?.currentAddress?.from,
-        to: personal.curTo || serverDraft?.currentAddress?.to,
-        door: personal.curDoor || serverDraft?.currentAddress?.door,
-        village: personal.curVillage || serverDraft?.currentAddress?.village,
-        district: personal.curDistrict || serverDraft?.currentAddress?.district,
-        pin: personal.curPin || serverDraft?.currentAddress?.pin,
+      // Required fields from page 1 — must always be present
+      employee_id:  d.employee_id,
+      status:       d.status === "submitted" ? "submitted" : "draft",
+      firstName:    d.firstName    || "",
+      lastName:     d.lastName     || "",
+      mobile:       d.mobile       || "",
+      // Carry forward all other page-1 fields untouched
+      middleName:       d.middleName,
+      fatherName:       d.fatherName,
+      fatherFirst:      d.fatherFirst,
+      fatherMiddle:     d.fatherMiddle,
+      fatherLast:       d.fatherLast,
+      dob:              d.dob,
+      gender:           d.gender,
+      nationality:      d.nationality,
+      email:            d.email,
+      aadhaar:          d.aadhaar,
+      pan:              d.pan,
+      passport:         d.passport,
+      currentAddress:   d.currentAddress,
+      permanentAddress: d.permanentAddress,
+      // Carry forward uan fields if already saved
+      uanNumber:    d.uanNumber,
+      nameAsPerUan: d.nameAsPerUan,
+      mobileLinked: d.mobileLinked,
+      isActive:     d.isActive,
+      pfRecords:    d.pfRecords,
+      // This page's data — education dict
+      education: {
+        xSchool,   xBoard,    xYear,     xPercent,
+        xiiSchool, xiiBoard,  xiiYear,   xiiPercent,
+        degCollege, degName,  degBranch, degYear, degPercent,
+        pgCollege,  pgName,   pgBranch,  pgYear,  pgPercent,
       },
-      permanentAddress: {
-        from: personal.permFrom || serverDraft?.permanentAddress?.from,
-        door: personal.permDoor || serverDraft?.permanentAddress?.door,
-        village: personal.permVillage || serverDraft?.permanentAddress?.village,
-        district: personal.permDistrict || serverDraft?.permanentAddress?.district,
-        pin: personal.permPin || serverDraft?.permanentAddress?.pin,
-      },
-      education: educationPayload,
     };
 
     const res = await apiFetch(`${API}/employee`, {
       method: "POST",
-      body: JSON.stringify(payload),
+      body:   JSON.stringify(payload),
     });
+    if (!res.ok) throw new Error(parseError(await res.json().catch(() => ({}))));
 
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(parseError(errData));
-    }
-
-    const rd = await res.json().catch(() => ({}));
-    if (rd.employee_id) localStorage.setItem("dg_employee_id", rd.employee_id);
+    // Update cached draft so if user navigates back, we have fresh data
+    const updated = await res.json().catch(() => ({}));
+    setServerDraft({ ...payload, ...updated });
   };
 
   const handleSave = async () => {
@@ -343,169 +166,104 @@ export default function EducationDetails() {
       setSaveStatus("Saved ✓");
       router.push("/employee/previous");
     } catch (err) {
-      setSaveStatus(`Error: ${err.message || "Could not save draft"}`);
+      setSaveStatus(`Error: ${err.message || "Could not save"}`);
+    }
+  };
+
+  const handlePrevious = async () => {
+    setSaveStatus("Saving...");
+    try {
+      await saveDraft();
+      router.push("/employee/personal");
+    } catch (_) {
+      router.push("/employee/personal");
     }
   };
 
   const handleSignout = async () => {
-    setSaveStatus("Saving before sign out...");
-    try {
-      await saveDraft();
-      setSaveStatus("Saved ✓");
-    } catch (_) {
-      // Best effort: keep logout non-blocking even if draft sync fails
-    }
+    try { await saveDraft(); } catch (_) {}
     logout();
   };
 
   if (!ready || !user) return null;
+  if (loading) return <div style={{ ...styles.page, display:"flex", alignItems:"center", justifyContent:"center" }}><p style={{ color:"#64748b" }}>Loading education details…</p></div>;
 
   return (
     <div style={styles.page}>
       {showSignout && <SignoutModal onConfirm={handleSignout} onCancel={() => setShowSignout(false)} />}
       <div style={styles.card}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-          <span style={{ fontSize: "0.85rem", color: "#475569" }}>👤 {user.name || user.email}</span>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"1rem" }}>
+          <span style={{ fontSize:"0.85rem", color:"#475569" }}>👤 {user.name || user.email}</span>
           <button onClick={() => setShowSignout(true)} style={styles.signoutBtn}>Sign out</button>
         </div>
+
         <ProgressBar currentStep={2} totalSteps={4} />
         <h1 style={styles.title}>Education Details</h1>
 
-        <Section title="Class X">
+        <Section title="10th Standard">
           <Row>
-            <Input label="School Name"               value={xSchool}      onChange={setXSchool} />
-            <Input label="Board Name"                value={xBoard}       onChange={setXBoard} />
-            <Input label="Hall Ticket / Roll Number" value={xHall}        onChange={setXHall} />
+            <Input label="School Name"   value={xSchool}  onChange={setXSchool} />
+            <Input label="Board"         value={xBoard}   onChange={setXBoard} />
+            <Input label="Year"          value={xYear}    onChange={setXYear} />
+            <Input label="Percentage"    value={xPercent} onChange={setXPercent} />
           </Row>
-          <Row>
-            <Input type="date" label="From" value={xFrom} onChange={setXFrom} />
-            <Input type="date" label="To"   value={xTo}   onChange={setXTo} />
-          </Row>
-          <Input label="School Address" value={xAddress} onChange={setXAddress} />
-          <Row>
-            <Input  label="Year of Passing" value={xYear}        onChange={setXYear} />
-            <Select label="Result Type"     value={xResultType}  onChange={setXResultType}  options={["Percentage","Grade"]} />
-            <Input  label="Result Value"    value={xResultValue} onChange={setXResultValue} />
-          </Row>
-          <Input label="Medium of Study" value={xMedium} onChange={setXMedium} />
-          <FileField label="Upload Class X Certificate (coming soon)" />
         </Section>
 
-        <Section title="Intermediate">
+        <Section title="12th Standard">
           <Row>
-            <Input label="College Name"              value={iCollege} onChange={setICollege} />
-            <Input label="Board Name"                value={iBoard}   onChange={setIBoard} />
-            <Input label="Hall Ticket / Roll Number" value={iHall}    onChange={setIHall} />
+            <Input label="School Name"   value={xiiSchool}  onChange={setXiiSchool} />
+            <Input label="Board"         value={xiiBoard}   onChange={setXiiBoard} />
+            <Input label="Year"          value={xiiYear}    onChange={setXiiYear} />
+            <Input label="Percentage"    value={xiiPercent} onChange={setXiiPercent} />
           </Row>
-          <Row>
-            <Input type="date" label="From" value={iFrom} onChange={setIFrom} />
-            <Input type="date" label="To"   value={iTo}   onChange={setITo} />
-          </Row>
-          <Input label="College Address" value={iAddress} onChange={setIAddress} />
-          <Row>
-            <Select label="Mode of Education" value={iMode} onChange={setIMode} options={["Full-time","Part-time","Distance"]} />
-            <Input  label="Year of Passing"   value={iYear} onChange={setIYear} />
-          </Row>
-          <Row>
-            <Select label="Result Type"  value={iResultType}  onChange={setIResultType}  options={["Percentage","Grade"]} />
-            <Input  label="Result Value" value={iResultValue} onChange={setIResultValue} />
-          </Row>
-          <Input label="Medium of Study" value={iMedium} onChange={setIMedium} />
-          <FileField label="Upload Intermediate Certificate (coming soon)" />
         </Section>
 
-        <Section title="Undergraduate (UG)">
+        <Section title="Degree / Graduation">
           <Row>
-            <Input label="College Name"    value={ugCollege}    onChange={setUgCollege} />
-            <Input label="University Name" value={ugUniversity} onChange={setUgUniversity} />
-            <Input label="Course / Degree" value={ugCourse}     onChange={setUgCourse} />
+            <Input label="College Name"  value={degCollege} onChange={setDegCollege} />
+            <Input label="Degree Name"   value={degName}    onChange={setDegName} />
+            <Input label="Branch"        value={degBranch}  onChange={setDegBranch} />
+            <Input label="Year"          value={degYear}    onChange={setDegYear} />
+            <Input label="Percentage"    value={degPercent} onChange={setDegPercent} />
           </Row>
-          <Row>
-            <Input  label="Hall Ticket / Roll Number" value={ugHall} onChange={setUgHall} />
-            <Select label="Mode of Education"         value={ugMode} onChange={setUgMode} options={["Full-time","Part-time","Distance"]} />
-          </Row>
-          <Row>
-            <Input type="date" label="From" value={ugFrom} onChange={setUgFrom} />
-            <Input type="date" label="To"   value={ugTo}   onChange={setUgTo} />
-          </Row>
-          <Input label="College Address" value={ugAddress} onChange={setUgAddress} />
-          <Row>
-            <Input  label="Year of Passing" value={ugYear}        onChange={setUgYear} />
-            <Select label="Result Type"     value={ugResultType}  onChange={setUgResultType}  options={["Percentage","CGPA","Grade"]} />
-            <Input  label="Result Value"    value={ugResultValue} onChange={setUgResultValue} />
-          </Row>
-          <Input label="Medium of Study" value={ugMedium} onChange={setUgMedium} />
-          <Select label="Any Active Backlogs?" value={ugBacklogs} onChange={setUgBacklogs} options={["No","Yes"]} />
-          <FileField label="Upload UG Degree / Provisional Certificate (coming soon)" />
         </Section>
 
-        <Section title="Postgraduate (PG)">
+        <Section title="Post Graduation (optional)">
           <Row>
-            <Input label="College Name"    value={pgCollege}    onChange={setPgCollege} />
-            <Input label="University Name" value={pgUniversity} onChange={setPgUniversity} />
-            <Input label="Course / Degree" value={pgCourse}     onChange={setPgCourse} />
+            <Input label="College Name"  value={pgCollege} onChange={setPgCollege} />
+            <Input label="Degree Name"   value={pgName}    onChange={setPgName} />
+            <Input label="Branch"        value={pgBranch}  onChange={setPgBranch} />
+            <Input label="Year"          value={pgYear}    onChange={setPgYear} />
+            <Input label="Percentage"    value={pgPercent} onChange={setPgPercent} />
           </Row>
-          <Row>
-            <Input  label="Hall Ticket / Roll Number" value={pgHall} onChange={setPgHall} />
-            <Select label="Mode of Education"         value={pgMode} onChange={setPgMode} options={["Full-time","Part-time","Distance"]} />
-          </Row>
-          <Row>
-            <Input type="date" label="From" value={pgFrom} onChange={setPgFrom} />
-            <Input type="date" label="To"   value={pgTo}   onChange={setPgTo} />
-          </Row>
-          <Input label="College Address" value={pgAddress} onChange={setPgAddress} />
-          <Row>
-            <Input  label="Year of Passing" value={pgYear}        onChange={setPgYear} />
-            <Select label="Result Type"     value={pgResultType}  onChange={setPgResultType}  options={["Percentage","CGPA","Grade"]} />
-            <Input  label="Result Value"    value={pgResultValue} onChange={setPgResultValue} />
-          </Row>
-          <Input label="Medium of Study" value={pgMedium} onChange={setPgMedium} />
-          <Select label="Any Active Backlogs?" value={pgBacklogs} onChange={setPgBacklogs} options={["No","Yes"]} />
-          <FileField label="Upload PG Degree / Provisional Certificate (coming soon)" />
         </Section>
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <button onClick={() => router.push("/employee/personal")} style={styles.secondaryBtn}>⬅ Previous</button>
-          <span style={{ color: saveStatus.startsWith("Error") ? "#dc2626" : "#64748b", fontSize: "0.85rem" }}>{saveStatus}</span>
-          <button onClick={handleSave} style={styles.primaryBtn}>Save & Proceed →</button>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <button onClick={handlePrevious} style={{ ...styles.button, background:"#64748b" }}>← Previous</button>
+          <span style={{ color: saveStatus.startsWith("Error") ? "#dc2626" : "#64748b", fontSize:"0.85rem" }}>{saveStatus}</span>
+          <button onClick={handleSave} style={{ ...styles.button, background:"#2563eb" }}>Save & Proceed →</button>
         </div>
       </div>
     </div>
   );
 }
 
-const Section = ({ title, children }) => (<div style={{ marginBottom: "2rem" }}><h2 style={styles.sectionTitle}>{title}</h2>{children}</div>);
-const Row = ({ children }) => <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>{children}</div>;
-const Input = ({ label, value, onChange, type = "text" }) => (
-  <div style={{ flex: 1, minWidth: "200px" }}>
+const Section = ({ title, children }) => (<div style={{ marginBottom:"2rem" }}><h2 style={styles.sectionTitle}>{title}</h2>{children}</div>);
+const Row     = ({ children }) => <div style={{ display:"flex", gap:"1rem", flexWrap:"wrap" }}>{children}</div>;
+const Input   = ({ label, value, onChange, type="text" }) => (
+  <div style={{ flex:1, minWidth:"180px" }}>
     <label style={styles.label}>{label}</label>
     <input type={type} value={value} onChange={(e) => onChange(e.target.value)} style={styles.input} />
   </div>
 );
-const Select = ({ label, value, onChange, options }) => (
-  <div style={{ flex: 1 }}>
-    <label style={styles.label}>{label}</label>
-    <select value={value} onChange={(e) => onChange(e.target.value)} style={styles.input}>
-      <option value="">Select</option>
-      {options.map((o) => <option key={o}>{o}</option>)}
-    </select>
-  </div>
-);
-const FileField = ({ label }) => (
-  <div style={{ marginTop: "0.5rem", marginBottom: "0.75rem" }}>
-    <label style={styles.label}>{label}</label>
-    <input type="file" accept=".pdf,.jpg,.jpeg,.png" disabled style={{ opacity: 0.5 }} />
-  </div>
-);
 
 const styles = {
-  page:         { background: "#f1f5f9", padding: "2rem", minHeight: "100vh", fontFamily: "Inter, system-ui, sans-serif" },
-  card:         { maxWidth: "980px", margin: "auto", background: "#fff", padding: "2rem", borderRadius: "14px", boxShadow: "0 12px 30px rgba(0,0,0,0.08)" },
-  title:        { marginBottom: "2rem" },
-  sectionTitle: { marginBottom: "1rem", color: "#0f172a" },
-  label:        { fontSize: "0.85rem", color: "#475569" },
-  input:        { width: "100%", padding: "0.65rem", borderRadius: "8px", border: "1px solid #cbd5e1" },
-  primaryBtn:   { padding: "0.9rem 2.5rem", borderRadius: "10px", border: "none", background: "#2563eb", color: "#fff", cursor: "pointer" },
-  secondaryBtn: { padding: "0.9rem 2.5rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#f8fafc", cursor: "pointer" },
-  signoutBtn:   { padding: "0.4rem 1rem", border: "1px solid #e2e8f0", borderRadius: 7, background: "#fff", color: "#64748b", fontSize: "0.85rem", cursor: "pointer", fontWeight: 600 },
+  page:         { background:"#f1f5f9", padding:"2rem", minHeight:"100vh", fontFamily:"Inter, system-ui, sans-serif" },
+  card:         { maxWidth:"980px", margin:"auto", background:"#fff", padding:"2rem", borderRadius:"14px", boxShadow:"0 12px 30px rgba(0,0,0,0.08)" },
+  title:        { marginBottom:"2rem" },
+  sectionTitle: { marginBottom:"1rem", color:"#0f172a" },
+  label:        { fontSize:"0.85rem", color:"#475569" },
+  input:        { width:"100%", padding:"0.65rem", borderRadius:"8px", border:"1px solid #cbd5e1" },
+  button:       { padding:"0.9rem 2rem", borderRadius:"10px", border:"none", color:"#fff", fontSize:"1rem", cursor:"pointer" },
+  signoutBtn:   { padding:"0.4rem 1rem", border:"1px solid #e2e8f0", borderRadius:7, background:"#fff", color:"#64748b", fontSize:"0.85rem", cursor:"pointer", fontWeight:600 },
 };
