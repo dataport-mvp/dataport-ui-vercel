@@ -85,14 +85,14 @@ export default function PreviousCompany() {
   }, [ready, user, router]);
 
   useEffect(() => {
-    if (!ready || !user) return;
+    // Restore from localStorage immediately on mount
     try {
       const savedEmp = localStorage.getItem("dg_employments");
       const savedAck = localStorage.getItem("dg_ack");
       if (savedEmp) setEmployments(JSON.parse(savedEmp));
       if (savedAck) setAck(JSON.parse(savedAck));
     } catch (_) {}
-  }, [ready, user]);
+  }, []); // run once on mount
 
   const update = (i, path, value) => {
     const copy = JSON.parse(JSON.stringify(employments));
@@ -103,15 +103,26 @@ export default function PreviousCompany() {
     setEmployments(copy);
   };
 
+  // Auto-save to localStorage on every change
+  useEffect(() => {
+    try {
+      localStorage.setItem("dg_employments", JSON.stringify(employments));
+    } catch (_) {}
+  }, [employments]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("dg_ack", JSON.stringify(ack));
+    } catch (_) {}
+  }, [ack]);
+
   const addEmployer    = () => setEmployments([...employments, emptyEmployment()]);
   const removeEmployer = (i) => setEmployments(employments.filter((_, idx) => idx !== i));
 
   const handleNext = () => {
-    setSaveStatus("Saving...");
-    // Save to localStorage only — API call happens on final submit (uan.js)
+    // Auto-save already wrote to localStorage, just navigate
     localStorage.setItem("dg_employments", JSON.stringify(employments));
-    localStorage.setItem("dg_ack",         JSON.stringify(ack));
-    setSaveStatus("Saved ✓");
+    localStorage.setItem("dg_ack", JSON.stringify(ack));
     router.push("/employee/uan");
   };
 
