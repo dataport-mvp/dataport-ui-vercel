@@ -7,11 +7,27 @@ import { parseError } from "../../utils/apiError";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
+function SignoutModal({ onConfirm, onCancel }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+      <div style={{ background: "#fff", borderRadius: 14, padding: "2rem", maxWidth: 360, width: "90%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+        <div style={{ fontSize: 36, marginBottom: "0.75rem" }}>👋</div>
+        <h3 style={{ margin: "0 0 0.5rem", color: "#0f172a" }}>Sign out?</h3>
+        <p style={{ color: "#64748b", fontSize: "0.9rem", marginBottom: "1.5rem" }}>Your progress is saved. You can continue anytime.</p>
+        <div style={{ display: "flex", gap: "0.75rem" }}>
+          <button onClick={onCancel}  style={{ flex: 1, padding: "0.75rem", borderRadius: 8, border: "1px solid #cbd5e1", background: "#f8fafc", cursor: "pointer", fontWeight: 600 }}>Stay</button>
+          <button onClick={onConfirm} style={{ flex: 1, padding: "0.75rem", borderRadius: 8, border: "none", background: "#ef4444", color: "#fff", cursor: "pointer", fontWeight: 600 }}>Sign out</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function EducationDetails() {
   const router = useRouter();
-  const { user, apiFetch, ready } = useAuth();
+  const { user, apiFetch, logout, ready } = useAuth();
+  const [showSignout, setShowSignout] = useState(false);
 
-  /* ================= CLASS X ================= */
   const [xSchool, setXSchool]           = useState("");
   const [xBoard, setXBoard]             = useState("");
   const [xHall, setXHall]               = useState("");
@@ -23,7 +39,6 @@ export default function EducationDetails() {
   const [xResultValue, setXResultValue] = useState("");
   const [xMedium, setXMedium]           = useState("");
 
-  /* ================= INTERMEDIATE ================= */
   const [iCollege, setICollege]           = useState("");
   const [iBoard, setIBoard]               = useState("");
   const [iHall, setIHall]                 = useState("");
@@ -36,7 +51,6 @@ export default function EducationDetails() {
   const [iResultValue, setIResultValue]   = useState("");
   const [iMedium, setIMedium]             = useState("");
 
-  /* ================= UG ================= */
   const [ugCollege, setUgCollege]           = useState("");
   const [ugUniversity, setUgUniversity]     = useState("");
   const [ugCourse, setUgCourse]             = useState("");
@@ -51,7 +65,6 @@ export default function EducationDetails() {
   const [ugBacklogs, setUgBacklogs]         = useState("");
   const [ugMedium, setUgMedium]             = useState("");
 
-  /* ================= PG ================= */
   const [pgCollege, setPgCollege]           = useState("");
   const [pgUniversity, setPgUniversity]     = useState("");
   const [pgCourse, setPgCourse]             = useState("");
@@ -68,13 +81,11 @@ export default function EducationDetails() {
 
   const [saveStatus, setSaveStatus] = useState("");
 
-  // Auth guard
   useEffect(() => {
     if (!ready) return;
     if (!user) { router.replace("/employee/login"); return; }
   }, [ready, user, router]);
 
-  /* ---------- Restore draft ---------- */
   useEffect(() => {
     if (!ready || !user) return;
     try {
@@ -138,48 +149,33 @@ export default function EducationDetails() {
     postgraduate:  { college: pgCollege, university: pgUniversity, course: pgCourse, hallTicket: pgHall, from: pgFrom, to: pgTo, address: pgAddress, mode: pgMode, yearOfPassing: pgYear, resultType: pgResultType, resultValue: pgResultValue, backlogs: pgBacklogs, medium: pgMedium },
   });
 
-  const saveDraft = async () => {
-    const data = buildPayload();
-    const flat = {
+  const saveDraft = () => {
+    // Save to localStorage only — no API call on this page
+    localStorage.setItem("dg_education", JSON.stringify({
       xSchool, xBoard, xHall, xFrom, xTo, xAddress, xYear, xResultType, xResultValue, xMedium,
       iCollege, iBoard, iHall, iFrom, iTo, iAddress, iMode, iYear, iResultType, iResultValue, iMedium,
       ugCollege, ugUniversity, ugCourse, ugHall, ugFrom, ugTo, ugAddress, ugMode, ugYear, ugResultType, ugResultValue, ugBacklogs, ugMedium,
       pgCollege, pgUniversity, pgCourse, pgHall, pgFrom, pgTo, pgAddress, pgMode, pgYear, pgResultType, pgResultValue, pgBacklogs, pgMedium,
-    };
-    localStorage.setItem("dg_education", JSON.stringify(flat));
-
-    try {
-      const personal = JSON.parse(localStorage.getItem("dg_personal") || "{}");
-      const empId    = localStorage.getItem("dg_employee_id") || `emp-${Date.now()}`;
-      if (!localStorage.getItem("dg_employee_id")) localStorage.setItem("dg_employee_id", empId);
-
-      const res = await apiFetch(`${API}/employee`, {
-        method: "POST",
-        body: JSON.stringify({ ...personal, education: data, employee_id: empId, status: "draft" }),
-      });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        setSaveStatus(`Error: ${parseError(errData)}`);
-        return false;
-      }
-    } catch (_) {}
-    return true;
+    }));
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     setSaveStatus("Saving...");
-    const ok = await saveDraft();
-    if (ok !== false) {
-      setSaveStatus("Saved ✓");
-      router.push("/employee/previous");
-    }
+    saveDraft();
+    setSaveStatus("Saved ✓");
+    router.push("/employee/previous");
   };
 
   if (!ready || !user) return null;
 
   return (
     <div style={styles.page}>
+      {showSignout && <SignoutModal onConfirm={logout} onCancel={() => setShowSignout(false)} />}
       <div style={styles.card}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+          <span style={{ fontSize: "0.85rem", color: "#475569" }}>👤 {user.name || user.email}</span>
+          <button onClick={() => setShowSignout(true)} style={styles.signoutBtn}>Sign out</button>
+        </div>
         <ProgressBar currentStep={2} totalSteps={4} />
         <h1 style={styles.title}>Education Details</h1>
 
@@ -195,9 +191,9 @@ export default function EducationDetails() {
           </Row>
           <Input label="School Address" value={xAddress} onChange={setXAddress} />
           <Row>
-            <Input label="Year of Passing" value={xYear}        onChange={setXYear} />
-            <Select label="Result Type"    value={xResultType}  onChange={setXResultType}  options={["Percentage","Grade"]} />
-            <Input label="Result Value"    value={xResultValue} onChange={setXResultValue} />
+            <Input  label="Year of Passing" value={xYear}        onChange={setXYear} />
+            <Select label="Result Type"     value={xResultType}  onChange={setXResultType}  options={["Percentage","Grade"]} />
+            <Input  label="Result Value"    value={xResultValue} onChange={setXResultValue} />
           </Row>
           <Input label="Medium of Study" value={xMedium} onChange={setXMedium} />
           <FileField label="Upload Class X Certificate (coming soon)" />
@@ -233,8 +229,8 @@ export default function EducationDetails() {
             <Input label="Course / Degree" value={ugCourse}     onChange={setUgCourse} />
           </Row>
           <Row>
-            <Input label="Hall Ticket / Roll Number" value={ugHall} onChange={setUgHall} />
-            <Select label="Mode of Education" value={ugMode} onChange={setUgMode} options={["Full-time","Part-time","Distance"]} />
+            <Input  label="Hall Ticket / Roll Number" value={ugHall} onChange={setUgHall} />
+            <Select label="Mode of Education"         value={ugMode} onChange={setUgMode} options={["Full-time","Part-time","Distance"]} />
           </Row>
           <Row>
             <Input type="date" label="From" value={ugFrom} onChange={setUgFrom} />
@@ -258,8 +254,8 @@ export default function EducationDetails() {
             <Input label="Course / Degree" value={pgCourse}     onChange={setPgCourse} />
           </Row>
           <Row>
-            <Input label="Hall Ticket / Roll Number" value={pgHall} onChange={setPgHall} />
-            <Select label="Mode of Education" value={pgMode} onChange={setPgMode} options={["Full-time","Part-time","Distance"]} />
+            <Input  label="Hall Ticket / Roll Number" value={pgHall} onChange={setPgHall} />
+            <Select label="Mode of Education"         value={pgMode} onChange={setPgMode} options={["Full-time","Part-time","Distance"]} />
           </Row>
           <Row>
             <Input type="date" label="From" value={pgFrom} onChange={setPgFrom} />
@@ -286,12 +282,7 @@ export default function EducationDetails() {
   );
 }
 
-const Section = ({ title, children }) => (
-  <div style={{ marginBottom: "2rem" }}>
-    <h2 style={styles.sectionTitle}>{title}</h2>
-    {children}
-  </div>
-);
+const Section = ({ title, children }) => (<div style={{ marginBottom: "2rem" }}><h2 style={styles.sectionTitle}>{title}</h2>{children}</div>);
 const Row = ({ children }) => <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>{children}</div>;
 const Input = ({ label, value, onChange, type = "text" }) => (
   <div style={{ flex: 1, minWidth: "200px" }}>
@@ -324,4 +315,5 @@ const styles = {
   input:        { width: "100%", padding: "0.65rem", borderRadius: "8px", border: "1px solid #cbd5e1" },
   primaryBtn:   { padding: "0.9rem 2.5rem", borderRadius: "10px", border: "none", background: "#2563eb", color: "#fff", cursor: "pointer" },
   secondaryBtn: { padding: "0.9rem 2.5rem", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#f8fafc", cursor: "pointer" },
+  signoutBtn:   { padding: "0.4rem 1rem", border: "1px solid #e2e8f0", borderRadius: 7, background: "#fff", color: "#64748b", fontSize: "0.85rem", cursor: "pointer", fontWeight: 600 },
 };
