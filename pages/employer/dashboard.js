@@ -62,12 +62,30 @@ export default function EmployerDashboard() {
     if (user.role !== "employer") { router.replace("/employee/login"); return; }
   }, [ready, user, router]);
 
+  const normalizeStatus = (status) => {
+    const s = String(status || "pending").toLowerCase();
+    if (["approved", "approve", "accepted", "granted", "allow"].includes(s)) return "approved";
+    if (["declined", "decline", "rejected", "denied", "reject"].includes(s)) return "declined";
+    return "pending";
+  };
+
+  const normalizeConsent = (c) => ({
+    ...c,
+    consent_id: c?.consent_id || c?.id || c?.consentId || c?._id,
+    status: normalizeStatus(c?.status),
+    request_message: c?.message || c?.comment || c?.request_message || c?.note || "",
+    employee_email: c?.employee_email || c?.employeeEmail || c?.email || c?.target_employee_email || c?.targetEmail || c?.user_email || "",
+    employee_name: c?.employee_name || c?.employeeName || c?.name || c?.user_name || "",
+  });
+
+  const getConsentId = (c) => c?.consent_id || c?.id || c?.consentId || c?._id;
+
   const loadConsents = useCallback(async () => {
     try {
       const res = await apiFetch(`${API}/consent/my`);
       if (res.ok) {
         const data = await res.json();
-        setConsents(Array.isArray(data) ? data : []);
+        setConsents(Array.isArray(data) ? data.map(normalizeConsent) : []);
       }
     } catch (_) {}
     setLoading(false);
@@ -75,6 +93,12 @@ export default function EmployerDashboard() {
 
   useEffect(() => {
     if (ready && user) loadConsents();
+  }, [ready, user, loadConsents]);
+
+  useEffect(() => {
+    if (!ready || !user) return;
+    const id = setInterval(loadConsents, 15000);
+    return () => clearInterval(id);
   }, [ready, user, loadConsents]);
 
   // Buckets
@@ -88,7 +112,8 @@ export default function EmployerDashboard() {
     const lq = q.toLowerCase();
     return list.filter(c =>
       (c.employee_email || "").toLowerCase().includes(lq) ||
-      (c.employee_name  || "").toLowerCase().includes(lq)
+      (c.employee_name  || "").toLowerCase().includes(lq) ||
+      (c.request_message || "").toLowerCase().includes(lq)
     );
   };
   const filteredPending   = useMemo(() => filter(pending,   searchPending),   [pending,   searchPending]);
@@ -102,7 +127,7 @@ export default function EmployerDashboard() {
     if (consent.status !== "approved") return;
     setLoadingProfile(true);
     try {
-      const res = await apiFetch(`${API}/consent/${consent.consent_id}`);
+      const res = await apiFetch(`${API}/consent/${getConsentId(consent)}`);
       if (res.ok) setProfileData(await res.json());
     } catch (_) {}
     setLoadingProfile(false);
@@ -208,11 +233,11 @@ export default function EmployerDashboard() {
           ) : (
             currentList.map(c => {
               const dotColor = c.status === "approved" ? "#16a34a" : c.status === "pending" ? "#f59e0b" : "#ef4444";
-              const ts = c.status === "approved" ? c.responded_at : c.status === "declined" ? c.responded_at : c.requested_at;
+              const ts = c.status === "approved" ? (c.approved_at || c.responded_at || c.updated_at) : c.status === "declined" ? (c.responded_at || c.updated_at) : (c.requested_at || c.created_at);
               return (
                 <div
-                  key={c.consent_id}
-                  style={{ ...s.sideItem, ...(selected?.consent_id === c.consent_id ? s.sideItemActive : {}) }}
+                  key={getConsentId(c)}
+                  style={{ ...s.sideItem, ...(getConsentId(selected) === getConsentId(c) ? s.sideItemActive : {}) }}
                   onClick={() => selectConsent(c)}
                 >
                   <div style={{ width: 8, height: 8, borderRadius: "50%", background: dotColor, flexShrink: 0, marginTop: 3 }} />
@@ -248,7 +273,10 @@ export default function EmployerDashboard() {
                     {selected.status.charAt(0).toUpperCase() + selected.status.slice(1)}
                   </span>
                   {selected.requested_at && <span style={s.tsChip}>Requested: {toIST(selected.requested_at)}</span>}
-                  {selected.responded_at && <span style={s.tsChip}>Responded: {toIST(selected.responded_at)}</span>}
+                  {(selected.responded_at || selected.approved_at || selected.updated_at) && <span style={s.tsChip}>Responded: {toIST(selected.responded_at || selected.approved_at || selected.updated_at)}</span>}
+                  {(selected.request_message || selected.message || selected.comment) && (
+                    <span style={s.msgChip}>Message: {selected.request_message || selected.message || selected.comment}</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -491,6 +519,7 @@ const s = {
   profileName: { fontSize: 14, color: "#64748b", marginTop: 2 },
   pill:        { padding: "0.2rem 0.75rem", borderRadius: 999, fontSize: 12, fontWeight: 700 },
   tsChip:      { fontSize: 12, color: "#64748b", background: "#f1f5f9", padding: "0.2rem 0.6rem", borderRadius: 6 },
+  msgChip:     { fontSize: 12, color: "#1d4ed8", background: "#eff6ff", padding: "0.2rem 0.6rem", borderRadius: 6, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
   statusMsg:   { fontSize: 14, color: "#64748b", padding: "1rem", background: "#f8fafc", borderRadius: 8 },
   dataTabs:    { display: "flex", gap: 4, borderBottom: "1.5px solid #e2e8f0", marginBottom: 0 },
   dataTab:     { padding: "0.55rem 1rem", background: "none", border: "none", borderBottom: "2.5px solid transparent", fontSize: 14, fontWeight: 500, color: "#64748b", cursor: "pointer", marginBottom: -1.5 },
