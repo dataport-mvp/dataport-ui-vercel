@@ -101,8 +101,9 @@ export default function UANPage() {
       const saved = localStorage.getItem("dg_uan");
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.uanMaster || parsed.pfRecords) {
-          setForm(parsed);
+        const normalized = normalizeUanFromDraft(parsed);
+        if (hasMeaningfulUan(normalized)) {
+          setForm(normalized);
           return;
         }
       }
@@ -124,8 +125,11 @@ export default function UANPage() {
   // Auto-save UAN form on every change
   useEffect(() => {
     try {
-      if (!hasMeaningfulUan(form)) return;
-      localStorage.setItem("dg_uan", JSON.stringify(form));
+      if (hasMeaningfulUan(form)) {
+        localStorage.setItem("dg_uan", JSON.stringify(form));
+      } else {
+        localStorage.removeItem("dg_uan");
+      }
     } catch (_) {}
   }, [form]);
 

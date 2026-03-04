@@ -160,8 +160,11 @@ export default function EducationDetails() {
     try {
       const saved = localStorage.getItem("dg_education");
       if (saved) {
-        applyEducation(JSON.parse(saved));
-        return;
+        const parsed = JSON.parse(saved);
+        if (hasMeaningfulEducation(parsed)) {
+          applyEducation(parsed);
+          return;
+        }
       }
     } catch (_) {}
 
@@ -264,12 +267,17 @@ export default function EducationDetails() {
   };
 
   const saveDraft = async () => {
-    localStorage.setItem("dg_education", JSON.stringify({
+    const educationDraft = {
       xSchool, xBoard, xHall, xFrom, xTo, xAddress, xYear, xResultType, xResultValue, xMedium,
       iCollege, iBoard, iHall, iFrom, iTo, iAddress, iMode, iYear, iResultType, iResultValue, iMedium,
       ugCollege, ugUniversity, ugCourse, ugHall, ugFrom, ugTo, ugAddress, ugMode, ugYear, ugResultType, ugResultValue, ugBacklogs, ugMedium,
       pgCollege, pgUniversity, pgCourse, pgHall, pgFrom, pgTo, pgAddress, pgMode, pgYear, pgResultType, pgResultValue, pgBacklogs, pgMedium,
-    }));
+    };
+    if (hasMeaningfulEducation(educationDraft)) {
+      localStorage.setItem("dg_education", JSON.stringify(educationDraft));
+    } else {
+      localStorage.removeItem("dg_education");
+    }
 
     const personal = JSON.parse(localStorage.getItem("dg_personal") || "{}");
     const serverDraft = await loadServerDraft();
