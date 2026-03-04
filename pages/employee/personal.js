@@ -237,6 +237,24 @@ export default function PersonalDetails() {
     permanentAddress: { from: permFrom, door: permDoor, village: permVillage, district: permDistrict, pin: permPin },
   });
 
+  // Auto-save personal fields to localStorage on every change
+  useEffect(() => {
+    try {
+      if (!firstName && !lastName && !mobile) return; // don't save empty state on first load
+      localStorage.setItem("dg_personal", JSON.stringify({
+        firstName, middleName, lastName,
+        fatherFirst, fatherMiddle, fatherLast,
+        dob, gender, nationality, mobile, email,
+        aadhar, pan, passport,
+        curFrom, curTo, curDoor, curVillage, curDistrict, curPin,
+        permFrom, permDoor, permVillage, permDistrict, permPin,
+      }));
+    } catch (_) {}
+  }, [firstName, middleName, lastName, fatherFirst, fatherMiddle, fatherLast,
+      dob, gender, nationality, mobile, email, aadhar, pan, passport,
+      curFrom, curTo, curDoor, curVillage, curDistrict, curPin,
+      permFrom, permDoor, permVillage, permDistrict, permPin]);
+
   const saveDraft = async () => {
     const data = buildPayload();
     // Always save locally first
