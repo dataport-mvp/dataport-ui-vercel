@@ -106,10 +106,12 @@ export default function EducationDetails() {
   }, [ready, user, apiFetch]);
 
   const saveDraft = async () => {
-    // serverDraft already has all page-1 fields (firstName, lastName, etc.)
-    // We merge education into it and POST the full object back.
-    // API uses PUT semantics via POST — sends entire employee object.
-    const d = serverDraft || {};
+    // Guard: if serverDraft didn't load (network issue), we can't safely save
+    // because we'd send empty firstName/lastName/employee_id to the API
+    if (!serverDraft || !serverDraft.employee_id) {
+      throw new Error("Profile not loaded — please go back to page 1 first");
+    }
+    const d = serverDraft;
 
     const payload = {
       // Required fields from page 1 — must always be present
