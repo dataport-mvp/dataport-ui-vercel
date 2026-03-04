@@ -146,10 +146,20 @@ export default function UANPage() {
       }
 
       // API call 2: employment history (page 3)
-      if (employments.length > 0 && employments[0].companyName) {
+      const hasEmploymentHistory = Array.isArray(employments) && employments.some((e) =>
+        e && Object.values(e).some((v) => {
+          if (v == null) return false;
+          if (typeof v === "string") return v.trim().length > 0;
+          if (Array.isArray(v)) return v.length > 0;
+          if (typeof v === "object") return Object.values(v).some((inner) => String(inner || "").trim().length > 0);
+          return Boolean(v);
+        })
+      );
+
+      if (hasEmploymentHistory) {
         const histRes = await apiFetch(`${API}/employee/employment-history`, {
           method: "POST",
-          body: JSON.stringify({ employments, acknowledgements: ack }),
+          body: JSON.stringify({ employee_id: empId, employments, acknowledgements: ack }),
         });
         if (!histRes.ok) {
           const errData = await histRes.json().catch(() => ({}));
