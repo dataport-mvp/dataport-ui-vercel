@@ -11,6 +11,7 @@ export default function ConsentPage() {
   const [consents, setConsents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(null); // consent_id being actioned
+  const [profileStatus, setProfileStatus] = useState("draft");
 
   // Auth guard
   useEffect(() => {
@@ -19,12 +20,42 @@ export default function ConsentPage() {
     if (user.role !== "employee") { router.replace("/employer/dashboard"); return; }
   }, [ready, user, router]);
 
+
+  useEffect(() => {
+    const loadProfileStatus = async () => {
+      if (!ready || !user) return;
+      try {
+        const res = await apiFetch(`${API}/employee/draft`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.status) setProfileStatus(String(data.status).toLowerCase());
+        }
+      } catch (_) {}
+    };
+    loadProfileStatus();
+  }, [ready, user, apiFetch]);
+  const normalizeStatus = (status) => {
+    const s = String(status || "pending").toLowerCase();
+    if (["approved", "approve", "accepted", "granted", "allow"].includes(s)) return "approved";
+    if (["declined", "decline", "rejected", "denied", "reject"].includes(s)) return "declined";
+    return "pending";
+  };
+
+  const normalizeConsent = (c) => ({
+    ...c,
+    consent_id: c?.consent_id || c?.id || c?.consentId || c?._id,
+    status: normalizeStatus(c?.status),
+    employer_name: c?.employer_name || c?.employerName || c?.company_name || c?.companyName || "",
+    employer_email: c?.employer_email || c?.employerEmail || c?.email || "",
+    request_message: c?.message || c?.comment || c?.request_message || c?.note || "",
+  });
+
   const loadConsents = useCallback(async () => {
     try {
       const res = await apiFetch(`${API}/consent/my`);
       if (res.ok) {
         const data = await res.json();
-        setConsents(Array.isArray(data) ? data : []);
+        setConsents(Array.isArray(data) ? data.map(normalizeConsent) : []);
       }
     } catch (_) {}
     setLoading(false);
@@ -34,12 +65,19 @@ export default function ConsentPage() {
     if (ready && user) loadConsents();
   }, [ready, user, loadConsents]);
 
+  useEffect(() => {
+    if (!ready || !user) return;
+    const id = setInterval(loadConsents, 15000);
+    return () => clearInterval(id);
+  }, [ready, user, loadConsents]);
+
   const respond = async (consentId, decision) => {
+    if (profileStatus !== "submitted") return;
     setActing(consentId);
     try {
       const res = await apiFetch(`${API}/consent/respond`, {
         method: "POST",
-        body: JSON.stringify({ consent_id: consentId, decision }),
+        body: JSON.stringify({ consent_id: consentId, status: decision === "approve" ? "APPROVED" : "DECLINED", responded_at: Date.now() }),
       });
       if (res.ok) await loadConsents();
     } catch (_) {}
@@ -49,6 +87,7 @@ export default function ConsentPage() {
   if (!ready || !user) return null;
 
   const pending = consents.filter(c => c.status === "pending");
+  const getConsentId = (c) => c.consent_id || c.id || c.consentId || c._id;
   const resolved = consents.filter(c => c.status !== "pending");
 
   return (
@@ -66,6 +105,10 @@ export default function ConsentPage() {
         <h1 style={styles.title}>Consent Requests</h1>
         <p style={styles.sub}>Employers requesting access to your profile</p>
 
+        {profileStatus !== "submitted" && (
+          <div style={styles.blocker}>Complete and submit all 4 profile pages before approving consent requests. Current status: <strong>{profileStatus}</strong>.</div>
+        )}
+
         {loading ? (
           <div style={styles.emptyState}>Loading…</div>
         ) : consents.length === 0 ? (
@@ -81,11 +124,12 @@ export default function ConsentPage() {
                 <div style={styles.sectionLabel}>Pending ({pending.length})</div>
                 {pending.map(c => (
                   <ConsentCard
-                    key={c.consent_id}
+                    key={getConsentId(c)}
                     consent={c}
-                    acting={acting === c.consent_id}
-                    onApprove={() => respond(c.consent_id, "approved")}
-                    onDecline={() => respond(c.consent_id, "declined")}
+                    acting={acting === getConsentId(c)}
+                    disabled={profileStatus !== "submitted"}
+                    onApprove={() => respond(getConsentId(c), "approve")}
+                    onDecline={() => respond(getConsentId(c), "decline")}
                   />
                 ))}
               </section>
@@ -95,7 +139,7 @@ export default function ConsentPage() {
               <section style={styles.section}>
                 <div style={styles.sectionLabel}>History</div>
                 {resolved.map(c => (
-                  <ConsentCard key={c.consent_id} consent={c} acting={false} resolved />
+                  <ConsentCard key={getConsentId(c)} consent={c} acting={false} resolved />
                 ))}
               </section>
             )}
@@ -110,7 +154,7 @@ export default function ConsentPage() {
   );
 }
 
-function ConsentCard({ consent, acting, onApprove, onDecline, resolved }) {
+function ConsentCard({ consent, acting, onApprove, onDecline, resolved, disabled }) {
   const statusColor = {
     pending: "#f59e0b",
     approved: "#16a34a",
@@ -129,8 +173,12 @@ function ConsentCard({ consent, acting, onApprove, onDecline, resolved }) {
         </span>
       </div>
 
-      {consent.message && (
-        <p style={styles.message}>"{consent.message}"</p>
+      {(consent.message || consent.comment || consent.request_message) && (
+        <p style={styles.message}>"{consent.request_message || consent.message || consent.comment || consent.request_message}"</p>
+      )}
+
+      {(consent.approved_at || consent.responded_at || consent.updated_at) && (
+        <p style={styles.timeMeta}>Responded: {formatDateTime(consent.approved_at || consent.responded_at || consent.updated_at)}</p>
       )}
 
       {!resolved && (
@@ -138,14 +186,14 @@ function ConsentCard({ consent, acting, onApprove, onDecline, resolved }) {
           <button
             style={styles.approveBtn}
             onClick={onApprove}
-            disabled={acting}
+            disabled={acting || disabled}
           >
             {acting ? "…" : "Approve"}
           </button>
           <button
             style={styles.declineBtn}
             onClick={onDecline}
-            disabled={acting}
+            disabled={acting || disabled}
           >
             {acting ? "…" : "Decline"}
           </button>
@@ -158,6 +206,12 @@ function ConsentCard({ consent, acting, onApprove, onDecline, resolved }) {
 function formatDate(ts) {
   if (!ts) return "";
   try { return new Date(ts).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); }
+  catch { return ""; }
+}
+
+function formatDateTime(ts) {
+  if (!ts) return "";
+  try { return new Date(ts).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }); }
   catch { return ""; }
 }
 
@@ -179,10 +233,12 @@ const styles = {
   cardMeta: { fontSize: 12, color: "#94a3b8", marginTop: 2 },
   badge: { padding: "0.25rem 0.75rem", borderRadius: 999, fontSize: 12, fontWeight: 600, color: "#fff" },
   message: { fontSize: 14, color: "#475569", fontStyle: "italic", margin: 0, background: "#f8fafc", borderRadius: 8, padding: "0.75rem" },
+  timeMeta: { fontSize: 12, color: "#94a3b8", margin: "-2px 0 0" },
   cardActions: { display: "flex", gap: "0.75rem" },
   approveBtn: { flex: 1, padding: "0.65rem", background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" },
   declineBtn: { flex: 1, padding: "0.65rem", background: "#fff", color: "#ef4444", border: "1.5px solid #ef4444", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" },
   emptyState: { display: "flex", flexDirection: "column", alignItems: "center", padding: "4rem 2rem", textAlign: "center", gap: "0.5rem" },
+  blocker: { marginBottom: "0.9rem", padding: "0.7rem", borderRadius: 8, border: "1px solid #fed7aa", background: "#fff7ed", color: "#9a3412", fontSize: 13 },
   emptyIcon: { fontSize: 40 },
   emptyText: { fontSize: 16, fontWeight: 600, color: "#374151", margin: 0 },
   emptySub: { fontSize: 14, color: "#94a3b8", margin: 0 },
