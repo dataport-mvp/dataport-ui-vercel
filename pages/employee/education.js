@@ -17,17 +17,6 @@ const hasMeaningfulEducation = (d = {}) => {
   return values.some(v => String(v || "").trim().length > 0);
 };
 
-
-const safeParseLocalJson = (key, fallback) => {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw);
-  } catch (_) {
-    return fallback;
-  }
-};
-
 function SignoutModal({ onConfirm, onCancel }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
@@ -161,11 +150,8 @@ export default function EducationDetails() {
     try {
       const saved = localStorage.getItem("dg_education");
       if (saved) {
-        const parsed = JSON.parse(saved);
-        if (hasMeaningfulEducation(parsed)) {
-          applyEducation(parsed);
-          return;
-        }
+        applyEducation(JSON.parse(saved));
+        return;
       }
     } catch (_) {}
 
@@ -275,7 +261,7 @@ export default function EducationDetails() {
       pgCollege, pgUniversity, pgCourse, pgHall, pgFrom, pgTo, pgAddress, pgMode, pgYear, pgResultType, pgResultValue, pgBacklogs, pgMedium,
     }));
 
-    const personal = safeParseLocalJson("dg_personal", {});
+    const personal = JSON.parse(localStorage.getItem("dg_personal") || "{}");
     const serverDraft = await loadServerDraft();
     const educationPayload = buildPayload();
 
