@@ -106,8 +106,6 @@ export default function EducationDetails() {
   }, [ready, user, apiFetch]);
 
   const saveDraft = async () => {
-    // Guard: if serverDraft didn't load (network issue), we can't safely save
-    // because we'd send empty firstName/lastName/employee_id to the API
     if (!serverDraft || !serverDraft.employee_id) {
       throw new Error("Profile not loaded — please go back to page 1 first");
     }
