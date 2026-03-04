@@ -16,6 +16,7 @@ function SignoutModal({ onConfirm, onCancel }) {
         <p style={{ color: "#64748b", fontSize: "0.9rem", marginBottom: "1.5rem" }}>Your progress is saved. You can continue anytime.</p>
         <div style={{ display: "flex", gap: "0.75rem" }}>
           <button onClick={onCancel}  style={{ flex: 1, padding: "0.75rem", borderRadius: 8, border: "1px solid #cbd5e1", background: "#f8fafc", cursor: "pointer", fontWeight: 600 }}>Stay</button>
+          {saveStatus && <span style={{ color: saveStatus.startsWith("Error") ? "#dc2626" : "#64748b", fontSize: "0.85rem", flex: 1, textAlign: "center" }}>{saveStatus}</span>}
           <button onClick={onConfirm} style={{ flex: 1, padding: "0.75rem", borderRadius: 8, border: "none", background: "#ef4444", color: "#fff", cursor: "pointer", fontWeight: 600 }}>Sign out</button>
         </div>
       </div>
@@ -33,6 +34,25 @@ const ACKNOWLEDGEMENTS = [
 
 const emptyPfRecord = () => ({ companyName: "", pfMemberId: "", dojEpfo: "", doeEpfo: "", pfTransferred: "" });
 
+const hasMeaningfulUan = (data = {}) => {
+  const u = data?.uanMaster || {};
+  const pf = Array.isArray(data?.pfRecords) ? data.pfRecords : [];
+  const uanValues = [u.uanNumber, u.nameAsPerUan, u.mobileLinked, u.isActive];
+  const hasUan = uanValues.some(v => String(v || "").trim().length > 0);
+  const hasPf = pf.some(r => Object.values(r || {}).some(v => String(v || "").trim().length > 0));
+  return hasUan || hasPf;
+};
+
+const safeParseLocalJson = (key, fallback) => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw);
+  } catch (_) {
+    return fallback;
+  }
+};
+
 export default function UANPage() {
   const router = useRouter();
   const { user, apiFetch, logout, ready } = useAuth();
@@ -48,6 +68,7 @@ export default function UANPage() {
   });
 
   const [submitError, setSubmitError] = useState("");
+  const [saveStatus, setSaveStatus]   = useState("");
   const [loading, setLoading]         = useState(false);
   const [submitted, setSubmitted]     = useState(false);
 
@@ -57,20 +78,46 @@ export default function UANPage() {
     if (!user) { router.replace("/employee/login"); return; }
   }, [ready, user, router]);
 
-  // Restore from localStorage on mount
+  // Restore from localStorage, API fallback for cross-device/re-login
   useEffect(() => {
     try {
       const saved = localStorage.getItem("dg_uan");
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.uanMaster || parsed.pfRecords) setForm(parsed);
+        if ((parsed.uanMaster || parsed.pfRecords) && hasMeaningfulUan(parsed)) {
+          setForm(parsed);
+          return;
+        }
       }
     } catch (_) {}
-  }, []);
+
+    const fetchDraft = async () => {
+      if (!ready || !user) return;
+      try {
+        const res = await apiFetch(`${API}/employee/draft`);
+        if (!res.ok) return;
+        const d = await res.json();
+        setForm({
+          uanMaster: {
+            uanNumber: d?.uanNumber || "",
+            nameAsPerUan: d?.nameAsPerUan || "",
+            mobileLinked: d?.mobileLinked || "",
+            isActive: d?.isActive || "",
+          },
+          pfRecords: Array.isArray(d?.pfRecords) && d.pfRecords.length ? d.pfRecords : [emptyPfRecord()],
+        });
+      } catch (_) {}
+    };
+
+    fetchDraft();
+  }, [ready, user, apiFetch]);
 
   // Auto-save UAN form on every change
   useEffect(() => {
-    try { localStorage.setItem("dg_uan", JSON.stringify(form)); } catch (_) {}
+    try {
+      if (!hasMeaningfulUan(form)) return;
+      localStorage.setItem("dg_uan", JSON.stringify(form));
+    } catch (_) {}
   }, [form]);
 
   const updateUan = (field, value) => setForm(prev => ({ ...prev, uanMaster: { ...prev.uanMaster, [field]: value } }));
@@ -80,6 +127,99 @@ export default function UANPage() {
   const toggleAck = (id) => setAcks(prev => ({ ...prev, [id]: !prev[id] }));
 
   const allAcksChecked = Object.values(acks).every(Boolean);
+
+  const loadServerDraft = async () => {
+    try {
+      const res = await apiFetch(`${API}/employee/draft`);
+      if (!res.ok) return {};
+      const d = await res.json();
+      return d || {};
+    } catch (_) {
+      return {};
+    }
+  };
+
+  const loadServerEmploymentHistory = async (employeeId) => {
+    try {
+      if (!employeeId) return {};
+      const res = await apiFetch(`${API}/employee/employment-history/${employeeId}`);
+      if (!res.ok) return {};
+      const d = await res.json();
+      return d || {};
+    } catch (_) {
+      return {};
+    }
+  };
+
+  const saveDraftServer = async () => {
+    const personalLocal    = safeParseLocalJson("dg_personal", {});
+    const educationLocal   = safeParseLocalJson("dg_education", {});
+
+    const serverDraft = await loadServerDraft();
+    const personal = { ...serverDraft, ...personalLocal };
+    const education = Object.keys(educationLocal || {}).length ? educationLocal : (serverDraft.education || {});
+    const empId = localStorage.getItem("dg_employee_id") || serverDraft?.employee_id || `emp-${Date.now()}`;
+    if (!localStorage.getItem("dg_employee_id")) localStorage.setItem("dg_employee_id", empId);
+
+    const educationPayload = education?.classX ? education : {
+      classX:        { school: education.xSchool, board: education.xBoard, hallTicket: education.xHall, from: education.xFrom, to: education.xTo, address: education.xAddress, yearOfPassing: education.xYear, resultType: education.xResultType, resultValue: education.xResultValue, medium: education.xMedium },
+      intermediate:  { college: education.iCollege, board: education.iBoard, hallTicket: education.iHall, from: education.iFrom, to: education.iTo, address: education.iAddress, mode: education.iMode, yearOfPassing: education.iYear, resultType: education.iResultType, resultValue: education.iResultValue, medium: education.iMedium },
+      undergraduate: { college: education.ugCollege, university: education.ugUniversity, course: education.ugCourse, hallTicket: education.ugHall, from: education.ugFrom, to: education.ugTo, address: education.ugAddress, mode: education.ugMode, yearOfPassing: education.ugYear, resultType: education.ugResultType, resultValue: education.ugResultValue, backlogs: education.ugBacklogs, medium: education.ugMedium },
+      postgraduate:  { college: education.pgCollege, university: education.pgUniversity, course: education.pgCourse, hallTicket: education.pgHall, from: education.pgFrom, to: education.pgTo, address: education.pgAddress, mode: education.pgMode, yearOfPassing: education.pgYear, resultType: education.pgResultType, resultValue: education.pgResultValue, backlogs: education.pgBacklogs, medium: education.pgMedium },
+    };
+
+    const payload = {
+      employee_id:      empId,
+      status:           "draft",
+      firstName:        personal.firstName    || "",
+      lastName:         personal.lastName     || "",
+      middleName:       personal.middleName   || "",
+      fatherName:       personal.fatherName   || `${personal.fatherFirst||""} ${personal.fatherMiddle||""} ${personal.fatherLast||""}`.trim(),
+      fatherFirst:      personal.fatherFirst  || "",
+      fatherMiddle:     personal.fatherMiddle || "",
+      fatherLast:       personal.fatherLast   || "",
+      dob:              personal.dob          || "",
+      gender:           personal.gender       || "",
+      nationality:      personal.nationality  || "",
+      mobile:           personal.mobile       || user?.phone || "",
+      email:            personal.email        || user?.email || "",
+      passport:         personal.passport     || "",
+      aadhaar:          personal.aadhar || personal.aadhaar || "",
+      pan:              personal.pan          || "",
+      currentAddress:   {
+        from: personal.curFrom || personal?.currentAddress?.from || "",
+        to: personal.curTo || personal?.currentAddress?.to || "",
+        door: personal.curDoor || personal?.currentAddress?.door || "",
+        village: personal.curVillage || personal?.currentAddress?.village || "",
+        district: personal.curDistrict || personal?.currentAddress?.district || "",
+        pin: personal.curPin || personal?.currentAddress?.pin || "",
+      },
+      permanentAddress: {
+        from: personal.permFrom || personal?.permanentAddress?.from || "",
+        door: personal.permDoor || personal?.permanentAddress?.door || "",
+        village: personal.permVillage || personal?.permanentAddress?.village || "",
+        district: personal.permDistrict || personal?.permanentAddress?.district || "",
+        pin: personal.permPin || personal?.permanentAddress?.pin || "",
+      },
+      education:        educationPayload,
+      uanNumber:        form.uanMaster.uanNumber    || "",
+      nameAsPerUan:     form.uanMaster.nameAsPerUan || "",
+      mobileLinked:     form.uanMaster.mobileLinked || "",
+      isActive:         form.uanMaster.isActive     || "",
+      pfRecords:        form.pfRecords,
+    };
+
+    const res = await apiFetch(`${API}/employee`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(parseError(errData));
+    }
+    const rd = await res.json().catch(() => ({}));
+    if (rd.employee_id) localStorage.setItem("dg_employee_id", rd.employee_id);
+  };
 
   /* ── FINAL SUBMIT ── */
   const handleSubmit = async () => {
@@ -91,14 +231,23 @@ export default function UANPage() {
     setLoading(true);
 
     try {
-      const personal    = JSON.parse(localStorage.getItem("dg_personal")    || "{}");
-      const education   = JSON.parse(localStorage.getItem("dg_education")   || "{}");
-      const employments = JSON.parse(localStorage.getItem("dg_employments") || "[]");
-      const ack         = JSON.parse(localStorage.getItem("dg_ack")         || "{}");
-      const empId       = localStorage.getItem("dg_employee_id") || `emp-${Date.now()}`;
+      const personalLocal    = safeParseLocalJson("dg_personal", {});
+      const educationLocal   = safeParseLocalJson("dg_education", {});
+      const employmentsLocal = safeParseLocalJson("dg_employments", []);
+      const ackLocal         = safeParseLocalJson("dg_ack", {});
+
+      const serverDraft = await loadServerDraft();
+      const inferredEmpId = localStorage.getItem("dg_employee_id") || serverDraft?.employee_id;
+      const serverHist  = await loadServerEmploymentHistory(inferredEmpId);
+
+      const personal = { ...serverDraft, ...personalLocal };
+      const education = Object.keys(educationLocal || {}).length ? educationLocal : (serverDraft.education || {});
+      const employments = Array.isArray(employmentsLocal) && employmentsLocal.length ? employmentsLocal : (Array.isArray(serverHist?.employments) ? serverHist.employments : []);
+      const ack = Object.keys(ackLocal || {}).length ? ackLocal : (serverHist?.acknowledgements || {});
+      const empId = localStorage.getItem("dg_employee_id") || serverDraft?.employee_id || `emp-${Date.now()}`;
 
       // Build education dict from flat localStorage keys
-      const educationPayload = education.classX ? education : {
+      const educationPayload = education?.classX ? education : {
         classX:        { school: education.xSchool, board: education.xBoard, hallTicket: education.xHall, from: education.xFrom, to: education.xTo, address: education.xAddress, yearOfPassing: education.xYear, resultType: education.xResultType, resultValue: education.xResultValue, medium: education.xMedium },
         intermediate:  { college: education.iCollege, board: education.iBoard, hallTicket: education.iHall, from: education.iFrom, to: education.iTo, address: education.iAddress, mode: education.iMode, yearOfPassing: education.iYear, resultType: education.iResultType, resultValue: education.iResultValue, medium: education.iMedium },
         undergraduate: { college: education.ugCollege, university: education.ugUniversity, course: education.ugCourse, hallTicket: education.ugHall, from: education.ugFrom, to: education.ugTo, address: education.ugAddress, mode: education.ugMode, yearOfPassing: education.ugYear, resultType: education.ugResultType, resultValue: education.ugResultValue, backlogs: education.ugBacklogs, medium: education.ugMedium },
@@ -121,10 +270,23 @@ export default function UANPage() {
         mobile:           personal.mobile       || user?.phone || "",
         email:            personal.email        || user?.email || "",
         passport:         personal.passport     || "",
-        aadhaar:          personal.aadhar       || "",
+        aadhaar:          personal.aadhar || personal.aadhaar || "",
         pan:              personal.pan          || "",
-        currentAddress:   { from: personal.curFrom, to: personal.curTo, door: personal.curDoor, village: personal.curVillage, district: personal.curDistrict, pin: personal.curPin },
-        permanentAddress: { from: personal.permFrom, door: personal.permDoor, village: personal.permVillage, district: personal.permDistrict, pin: personal.permPin },
+        currentAddress:   {
+          from: personal.curFrom || personal?.currentAddress?.from || "",
+          to: personal.curTo || personal?.currentAddress?.to || "",
+          door: personal.curDoor || personal?.currentAddress?.door || "",
+          village: personal.curVillage || personal?.currentAddress?.village || "",
+          district: personal.curDistrict || personal?.currentAddress?.district || "",
+          pin: personal.curPin || personal?.currentAddress?.pin || "",
+        },
+        permanentAddress: {
+          from: personal.permFrom || personal?.permanentAddress?.from || "",
+          door: personal.permDoor || personal?.permanentAddress?.door || "",
+          village: personal.permVillage || personal?.permanentAddress?.village || "",
+          district: personal.permDistrict || personal?.permanentAddress?.district || "",
+          pin: personal.permPin || personal?.permanentAddress?.pin || "",
+        },
         education:        educationPayload,
         uanNumber:        form.uanMaster.uanNumber    || "",
         nameAsPerUan:     form.uanMaster.nameAsPerUan || "",
@@ -146,10 +308,20 @@ export default function UANPage() {
       }
 
       // API call 2: employment history (page 3)
-      if (employments.length > 0 && employments[0].companyName) {
+      const hasEmploymentHistory = Array.isArray(employments) && employments.some((e) =>
+        e && Object.values(e).some((v) => {
+          if (v == null) return false;
+          if (typeof v === "string") return v.trim().length > 0;
+          if (Array.isArray(v)) return v.length > 0;
+          if (typeof v === "object") return Object.values(v).some((inner) => String(inner || "").trim().length > 0);
+          return Boolean(v);
+        })
+      );
+
+      if (hasEmploymentHistory) {
         const histRes = await apiFetch(`${API}/employee/employment-history`, {
           method: "POST",
-          body: JSON.stringify({ employments, acknowledgements: ack }),
+          body: JSON.stringify({ employee_id: empId, employments, acknowledgements: ack }),
         });
         if (!histRes.ok) {
           const errData = await histRes.json().catch(() => ({}));
@@ -329,8 +501,18 @@ export default function UANPage() {
           </div>
         )}
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <button style={styles.secondaryBtn} onClick={() => router.push("/employee/previous")}>Previous</button>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem" }}>
+          <button style={styles.secondaryBtn} onClick={async () => {
+            setSaveStatus("Saving draft...");
+            try {
+              await saveDraftServer();
+              setSaveStatus("Draft saved ✓");
+              router.push("/employee/previous");
+            } catch (err) {
+              setSaveStatus(`Error: ${err.message || "Could not save draft"}`);
+            }
+          }}>Previous</button>
+          {saveStatus && <span style={{ color: saveStatus.startsWith("Error") ? "#dc2626" : "#64748b", fontSize: "0.85rem", flex: 1, textAlign: "center" }}>{saveStatus}</span>}
           <button
             style={{
               ...styles.primaryBtn,
