@@ -230,6 +230,17 @@ export default function EducationDetails() {
       ugCollege, ugUniversity, ugCourse, ugHall, ugFrom, ugTo, ugAddress, ugMode, ugYear, ugResultType, ugResultValue, ugBacklogs, ugMedium,
       pgCollege, pgUniversity, pgCourse, pgHall, pgFrom, pgTo, pgAddress, pgMode, pgYear, pgResultType, pgResultValue, pgBacklogs, pgMedium]);
 
+  const loadServerDraft = async () => {
+    try {
+      const res = await apiFetch(`${API}/employee/draft`);
+      if (!res.ok) return {};
+      const d = await res.json();
+      return d || {};
+    } catch (_) {
+      return {};
+    }
+  };
+
   const saveDraft = async () => {
     localStorage.setItem("dg_education", JSON.stringify({
       xSchool, xBoard, xHall, xFrom, xTo, xAddress, xYear, xResultType, xResultValue, xMedium,
@@ -239,31 +250,45 @@ export default function EducationDetails() {
     }));
 
     const personal = JSON.parse(localStorage.getItem("dg_personal") || "{}");
+    const serverDraft = await loadServerDraft();
     const educationPayload = buildPayload();
 
-    const empId = localStorage.getItem("dg_employee_id") || `emp-${Date.now()}`;
+    const empId = localStorage.getItem("dg_employee_id") || serverDraft?.employee_id || `emp-${Date.now()}`;
     if (!localStorage.getItem("dg_employee_id")) localStorage.setItem("dg_employee_id", empId);
 
     const payload = {
       employee_id: empId,
-      status: "draft",
-      firstName: personal.firstName || "",
-      lastName: personal.lastName || "",
-      middleName: personal.middleName || "",
-      fatherName: personal.fatherName || `${personal.fatherFirst || ""} ${personal.fatherMiddle || ""} ${personal.fatherLast || ""}`.trim(),
-      fatherFirst: personal.fatherFirst || "",
-      fatherMiddle: personal.fatherMiddle || "",
-      fatherLast: personal.fatherLast || "",
-      dob: personal.dob || "",
-      gender: personal.gender || "",
-      nationality: personal.nationality || "",
-      mobile: personal.mobile || user?.phone || "",
-      email: personal.email || user?.email || "",
-      passport: personal.passport || "",
-      aadhaar: personal.aadhar || "",
-      pan: personal.pan || "",
-      currentAddress: { from: personal.curFrom, to: personal.curTo, door: personal.curDoor, village: personal.curVillage, district: personal.curDistrict, pin: personal.curPin },
-      permanentAddress: { from: personal.permFrom, door: personal.permDoor, village: personal.permVillage, district: personal.permDistrict, pin: personal.permPin },
+      status: serverDraft?.status === "submitted" ? "submitted" : "draft",
+      firstName: personal.firstName || serverDraft.firstName || "",
+      lastName: personal.lastName || serverDraft.lastName || "",
+      middleName: personal.middleName || serverDraft.middleName || "",
+      fatherName: personal.fatherName || serverDraft.fatherName || `${personal.fatherFirst || serverDraft.fatherFirst || ""} ${personal.fatherMiddle || serverDraft.fatherMiddle || ""} ${personal.fatherLast || serverDraft.fatherLast || ""}`.trim(),
+      fatherFirst: personal.fatherFirst || serverDraft.fatherFirst || "",
+      fatherMiddle: personal.fatherMiddle || serverDraft.fatherMiddle || "",
+      fatherLast: personal.fatherLast || serverDraft.fatherLast || "",
+      dob: personal.dob || serverDraft.dob || "",
+      gender: personal.gender || serverDraft.gender || "",
+      nationality: personal.nationality || serverDraft.nationality || "",
+      mobile: personal.mobile || serverDraft.mobile || user?.phone || "",
+      email: personal.email || serverDraft.email || user?.email || "",
+      passport: personal.passport || serverDraft.passport || "",
+      aadhaar: personal.aadhar || serverDraft.aadhaar || serverDraft.aadhar || "",
+      pan: personal.pan || serverDraft.pan || "",
+      currentAddress: {
+        from: personal.curFrom || serverDraft?.currentAddress?.from,
+        to: personal.curTo || serverDraft?.currentAddress?.to,
+        door: personal.curDoor || serverDraft?.currentAddress?.door,
+        village: personal.curVillage || serverDraft?.currentAddress?.village,
+        district: personal.curDistrict || serverDraft?.currentAddress?.district,
+        pin: personal.curPin || serverDraft?.currentAddress?.pin,
+      },
+      permanentAddress: {
+        from: personal.permFrom || serverDraft?.permanentAddress?.from,
+        door: personal.permDoor || serverDraft?.permanentAddress?.door,
+        village: personal.permVillage || serverDraft?.permanentAddress?.village,
+        district: personal.permDistrict || serverDraft?.permanentAddress?.district,
+        pin: personal.permPin || serverDraft?.permanentAddress?.pin,
+      },
       education: educationPayload,
     };
 

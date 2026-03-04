@@ -34,10 +34,20 @@ export default function ConsentPage() {
     };
     loadProfileStatus();
   }, [ready, user, apiFetch]);
+  const normalizeStatus = (status) => {
+    const s = String(status || "pending").toLowerCase();
+    if (["approved", "approve", "accepted", "granted", "allow"].includes(s)) return "approved";
+    if (["declined", "decline", "rejected", "denied", "reject"].includes(s)) return "declined";
+    return "pending";
+  };
+
   const normalizeConsent = (c) => ({
     ...c,
     consent_id: c?.consent_id || c?.id || c?.consentId || c?._id,
-    status: (c?.status || "pending").toLowerCase(),
+    status: normalizeStatus(c?.status),
+    employer_name: c?.employer_name || c?.employerName || c?.company_name || c?.companyName || "",
+    employer_email: c?.employer_email || c?.employerEmail || c?.email || "",
+    request_message: c?.message || c?.comment || c?.request_message || c?.note || "",
   });
 
   const loadConsents = useCallback(async () => {
@@ -67,7 +77,7 @@ export default function ConsentPage() {
     try {
       const res = await apiFetch(`${API}/consent/respond`, {
         method: "POST",
-        body: JSON.stringify({ consent_id: consentId, decision }),
+        body: JSON.stringify({ consent_id: consentId, status: decision === "approve" ? "APPROVED" : "DECLINED", responded_at: Date.now() }),
       });
       if (res.ok) await loadConsents();
     } catch (_) {}
@@ -118,8 +128,8 @@ export default function ConsentPage() {
                     consent={c}
                     acting={acting === getConsentId(c)}
                     disabled={profileStatus !== "submitted"}
-                    onApprove={() => respond(getConsentId(c), "approved")}
-                    onDecline={() => respond(getConsentId(c), "declined")}
+                    onApprove={() => respond(getConsentId(c), "approve")}
+                    onDecline={() => respond(getConsentId(c), "decline")}
                   />
                 ))}
               </section>
@@ -164,7 +174,7 @@ function ConsentCard({ consent, acting, onApprove, onDecline, resolved, disabled
       </div>
 
       {(consent.message || consent.comment || consent.request_message) && (
-        <p style={styles.message}>"{consent.message || consent.comment || consent.request_message}"</p>
+        <p style={styles.message}>"{consent.request_message || consent.message || consent.comment || consent.request_message}"</p>
       )}
 
       {(consent.approved_at || consent.responded_at || consent.updated_at) && (

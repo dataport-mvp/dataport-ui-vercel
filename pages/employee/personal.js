@@ -30,10 +30,20 @@ function ConsentTab({ apiFetch, canRespond, profileStatus }) {
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(null);
 
+  const normalizeStatus = (status) => {
+    const s = String(status || "pending").toLowerCase();
+    if (["approved", "approve", "accepted", "granted", "allow"].includes(s)) return "approved";
+    if (["declined", "decline", "rejected", "denied", "reject"].includes(s)) return "declined";
+    return "pending";
+  };
+
   const normalizeConsent = (c) => ({
     ...c,
     consent_id: c?.consent_id || c?.id || c?.consentId || c?._id,
-    status: (c?.status || "pending").toLowerCase(),
+    status: normalizeStatus(c?.status),
+    employer_name: c?.employer_name || c?.employerName || c?.company_name || c?.companyName || "",
+    employer_email: c?.employer_email || c?.employerEmail || c?.email || "",
+    request_message: c?.message || c?.comment || c?.request_message || c?.note || "",
   });
 
   const load = useCallback(async () => {
@@ -60,7 +70,7 @@ function ConsentTab({ apiFetch, canRespond, profileStatus }) {
     try {
       const res = await apiFetch(`${API}/consent/respond`, {
         method: "POST",
-        body: JSON.stringify({ consent_id: consentId, decision }),
+        body: JSON.stringify({ consent_id: consentId, status: decision === "approve" ? "APPROVED" : "DECLINED", responded_at: Date.now() }),
       });
       if (res.ok) await load();
     } catch (_) {}
@@ -89,7 +99,7 @@ function ConsentTab({ apiFetch, canRespond, profileStatus }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
           <div style={{ fontWeight: 600, color: "#0f172a", fontSize: "0.95rem" }}>{c.employer_name || c.employer_email}</div>
-          {(c.message || c.comment || c.request_message) && <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: 2, fontStyle: "italic" }}>"{c.message || c.comment || c.request_message}"</div>}
+          {(c.message || c.comment || c.request_message) && <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: 2, fontStyle: "italic" }}>"{c.request_message || c.message || c.comment || c.request_message}"</div>}
           {(c.approved_at || c.responded_at || c.updated_at) && <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: 4 }}>Responded: {new Date(c.approved_at || c.responded_at || c.updated_at).toLocaleString("en-IN")}</div>}
         </div>
         <span style={{ padding: "0.2rem 0.7rem", borderRadius: 999, fontSize: "0.75rem", fontWeight: 700, color: "#fff", background: statusColor[c.status] || "#94a3b8", whiteSpace: "nowrap" }}>
@@ -98,11 +108,11 @@ function ConsentTab({ apiFetch, canRespond, profileStatus }) {
       </div>
       {c.status === "pending" && (
         <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem" }}>
-          <button disabled={!canRespond || acting === getConsentId(c)} onClick={() => respond(getConsentId(c), "approved")}
+          <button disabled={!canRespond || acting === getConsentId(c)} onClick={() => respond(getConsentId(c), "approve")}
             style={{ flex: 1, padding: "0.5rem", background: "#16a34a", color: "#fff", border: "none", borderRadius: 7, fontWeight: 600, cursor: "pointer" }}>
             {acting === getConsentId(c) ? "…" : "Approve"}
           </button>
-          <button disabled={!canRespond || acting === getConsentId(c)} onClick={() => respond(getConsentId(c), "declined")}
+          <button disabled={!canRespond || acting === getConsentId(c)} onClick={() => respond(getConsentId(c), "decline")}
             style={{ flex: 1, padding: "0.5rem", background: "#fff", color: "#ef4444", border: "1px solid #ef4444", borderRadius: 7, fontWeight: 600, cursor: "pointer" }}>
             {acting === getConsentId(c) ? "…" : "Decline"}
           </button>
@@ -299,7 +309,7 @@ export default function PersonalDetails() {
         if (!localStorage.getItem("dg_employee_id")) localStorage.setItem("dg_employee_id", empId);
         const res = await apiFetch(`${API}/employee`, {
           method: "POST",
-          body: JSON.stringify({ ...data, employee_id: empId, status: "draft" }),
+          body: JSON.stringify({ ...data, employee_id: empId, status: profileStatus === "submitted" ? "submitted" : "draft" }),
         });
         if (res.ok) {
           const rd = await res.json();

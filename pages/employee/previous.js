@@ -99,7 +99,11 @@ export default function PreviousCompany() {
     const fetchDraft = async () => {
       if (!ready || !user) return;
       try {
-        const res = await apiFetch(`${API}/employee/employment-history`);
+        const serverDraftRes = await apiFetch(`${API}/employee/draft`);
+        const serverDraft = serverDraftRes.ok ? await serverDraftRes.json() : {};
+        const empId = localStorage.getItem("dg_employee_id") || serverDraft?.employee_id;
+        if (!empId) return;
+        const res = await apiFetch(`${API}/employee/employment-history/${empId}`);
         if (!res.ok) return;
         const d = await res.json();
         if (Array.isArray(d?.employments) && d.employments.length) setEmployments(d.employments);
@@ -135,13 +139,25 @@ export default function PreviousCompany() {
   const addEmployer    = () => setEmployments([...employments, emptyEmployment()]);
   const removeEmployer = (i) => setEmployments(employments.filter((_, idx) => idx !== i));
 
+  const loadServerDraft = async () => {
+    try {
+      const res = await apiFetch(`${API}/employee/draft`);
+      if (!res.ok) return {};
+      const d = await res.json();
+      return d || {};
+    } catch (_) {
+      return {};
+    }
+  };
+
   const handleNext = async () => {
     localStorage.setItem("dg_employments", JSON.stringify(employments));
     localStorage.setItem("dg_ack", JSON.stringify(ack));
 
     setSaveStatus("Saving...");
     try {
-      const empId = localStorage.getItem("dg_employee_id") || `emp-${Date.now()}`;
+      const serverDraft = await loadServerDraft();
+      const empId = localStorage.getItem("dg_employee_id") || serverDraft?.employee_id || `emp-${Date.now()}`;
       if (!localStorage.getItem("dg_employee_id")) localStorage.setItem("dg_employee_id", empId);
 
       const hasEmploymentHistory = Array.isArray(employments) && employments.some((e) =>

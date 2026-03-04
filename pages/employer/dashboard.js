@@ -62,11 +62,20 @@ export default function EmployerDashboard() {
     if (user.role !== "employer") { router.replace("/employee/login"); return; }
   }, [ready, user, router]);
 
+  const normalizeStatus = (status) => {
+    const s = String(status || "pending").toLowerCase();
+    if (["approved", "approve", "accepted", "granted", "allow"].includes(s)) return "approved";
+    if (["declined", "decline", "rejected", "denied", "reject"].includes(s)) return "declined";
+    return "pending";
+  };
+
   const normalizeConsent = (c) => ({
     ...c,
     consent_id: c?.consent_id || c?.id || c?.consentId || c?._id,
-    status: (c?.status || "pending").toLowerCase(),
-    request_message: c?.message || c?.comment || c?.request_message || "",
+    status: normalizeStatus(c?.status),
+    request_message: c?.message || c?.comment || c?.request_message || c?.note || "",
+    employee_email: c?.employee_email || c?.employeeEmail || c?.email || c?.target_employee_email || c?.targetEmail || c?.user_email || "",
+    employee_name: c?.employee_name || c?.employeeName || c?.name || c?.user_name || "",
   });
 
   const getConsentId = (c) => c?.consent_id || c?.id || c?.consentId || c?._id;
@@ -103,7 +112,8 @@ export default function EmployerDashboard() {
     const lq = q.toLowerCase();
     return list.filter(c =>
       (c.employee_email || "").toLowerCase().includes(lq) ||
-      (c.employee_name  || "").toLowerCase().includes(lq)
+      (c.employee_name  || "").toLowerCase().includes(lq) ||
+      (c.request_message || "").toLowerCase().includes(lq)
     );
   };
   const filteredPending   = useMemo(() => filter(pending,   searchPending),   [pending,   searchPending]);

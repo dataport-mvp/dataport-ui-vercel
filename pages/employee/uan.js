@@ -104,6 +104,29 @@ export default function UANPage() {
 
   const allAcksChecked = Object.values(acks).every(Boolean);
 
+  const loadServerDraft = async () => {
+    try {
+      const res = await apiFetch(`${API}/employee/draft`);
+      if (!res.ok) return {};
+      const d = await res.json();
+      return d || {};
+    } catch (_) {
+      return {};
+    }
+  };
+
+  const loadServerEmploymentHistory = async (employeeId) => {
+    try {
+      if (!employeeId) return {};
+      const res = await apiFetch(`${API}/employee/employment-history/${employeeId}`);
+      if (!res.ok) return {};
+      const d = await res.json();
+      return d || {};
+    } catch (_) {
+      return {};
+    }
+  };
+
   /* ── FINAL SUBMIT ── */
   const handleSubmit = async () => {
     if (!allAcksChecked) {
@@ -114,14 +137,23 @@ export default function UANPage() {
     setLoading(true);
 
     try {
-      const personal    = JSON.parse(localStorage.getItem("dg_personal")    || "{}");
-      const education   = JSON.parse(localStorage.getItem("dg_education")   || "{}");
-      const employments = JSON.parse(localStorage.getItem("dg_employments") || "[]");
-      const ack         = JSON.parse(localStorage.getItem("dg_ack")         || "{}");
-      const empId       = localStorage.getItem("dg_employee_id") || `emp-${Date.now()}`;
+      const personalLocal    = JSON.parse(localStorage.getItem("dg_personal")    || "{}");
+      const educationLocal   = JSON.parse(localStorage.getItem("dg_education")   || "{}");
+      const employmentsLocal = JSON.parse(localStorage.getItem("dg_employments") || "[]");
+      const ackLocal         = JSON.parse(localStorage.getItem("dg_ack")         || "{}");
+
+      const serverDraft = await loadServerDraft();
+      const inferredEmpId = localStorage.getItem("dg_employee_id") || serverDraft?.employee_id;
+      const serverHist  = await loadServerEmploymentHistory(inferredEmpId);
+
+      const personal = { ...serverDraft, ...personalLocal };
+      const education = Object.keys(educationLocal || {}).length ? educationLocal : (serverDraft.education || {});
+      const employments = Array.isArray(employmentsLocal) && employmentsLocal.length ? employmentsLocal : (Array.isArray(serverHist?.employments) ? serverHist.employments : []);
+      const ack = Object.keys(ackLocal || {}).length ? ackLocal : (serverHist?.acknowledgements || {});
+      const empId = localStorage.getItem("dg_employee_id") || serverDraft?.employee_id || `emp-${Date.now()}`;
 
       // Build education dict from flat localStorage keys
-      const educationPayload = education.classX ? education : {
+      const educationPayload = education?.classX ? education : {
         classX:        { school: education.xSchool, board: education.xBoard, hallTicket: education.xHall, from: education.xFrom, to: education.xTo, address: education.xAddress, yearOfPassing: education.xYear, resultType: education.xResultType, resultValue: education.xResultValue, medium: education.xMedium },
         intermediate:  { college: education.iCollege, board: education.iBoard, hallTicket: education.iHall, from: education.iFrom, to: education.iTo, address: education.iAddress, mode: education.iMode, yearOfPassing: education.iYear, resultType: education.iResultType, resultValue: education.iResultValue, medium: education.iMedium },
         undergraduate: { college: education.ugCollege, university: education.ugUniversity, course: education.ugCourse, hallTicket: education.ugHall, from: education.ugFrom, to: education.ugTo, address: education.ugAddress, mode: education.ugMode, yearOfPassing: education.ugYear, resultType: education.ugResultType, resultValue: education.ugResultValue, backlogs: education.ugBacklogs, medium: education.ugMedium },
