@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import ProgressBar from "../../components/ProgressBar";
 import { useAuth } from "../../utils/AuthContext";
 import { parseError } from "../../utils/apiError";
+import FileUpload from "../../components/FileUpload";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
@@ -27,138 +28,88 @@ function ConsentTab({ apiFetch }) {
   const [consents, setConsents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(null);
-
   const load = useCallback(async () => {
-    try {
-      const res = await apiFetch(`${API}/consent/my`);
-      if (res.ok) setConsents(await res.json());
-    } catch (_) {}
+    try { const res = await apiFetch(`${API}/consent/my`); if (res.ok) setConsents(await res.json()); } catch (_) {}
     setLoading(false);
   }, [apiFetch]);
-
   useEffect(() => { load(); }, [load]);
   useEffect(() => { const id = setInterval(load, 15000); return () => clearInterval(id); }, [load]);
-
   const respond = async (consentId, decision) => {
     setActing(consentId);
     try {
-      const res = await apiFetch(`${API}/consent/respond`, {
-        method: "POST",
-        body: JSON.stringify({ consent_id: consentId, status: decision === "approved" ? "APPROVED" : "DECLINED", responded_at: Date.now() }),
-      });
+      const res = await apiFetch(`${API}/consent/respond`, { method: "POST", body: JSON.stringify({ consent_id: consentId, status: decision === "approved" ? "APPROVED" : "DECLINED", responded_at: Date.now() }) });
       if (res.ok) await load();
     } catch (_) {}
     setActing(null);
   };
-
   const statusColor = { pending: "#f59e0b", approved: "#16a34a", declined: "#ef4444" };
   const norm = (c) => ({ ...c, status: String(c.status || "pending").toLowerCase() });
-
   if (loading) return <p style={{ color: "#94a3b8", padding: "1rem 0" }}>Loading consents…</p>;
-  if (!consents.length) return (
-    <div style={{ textAlign: "center", padding: "2rem 0", color: "#94a3b8" }}>
-      <div style={{ fontSize: 32, marginBottom: 8 }}>📋</div>
-      <p style={{ margin: 0 }}>No consent requests yet</p>
-      <p style={{ fontSize: "0.8rem", margin: "4px 0 0" }}>Employers will appear here when they request your data</p>
-    </div>
-  );
-
-  const all      = consents.map(norm);
-  const pending  = all.filter(c => c.status === "pending");
+  if (!consents.length) return (<div style={{ textAlign: "center", padding: "2rem 0", color: "#94a3b8" }}><div style={{ fontSize: 32, marginBottom: 8 }}>📋</div><p style={{ margin: 0 }}>No consent requests yet</p><p style={{ fontSize: "0.8rem", margin: "4px 0 0" }}>Employers will appear here when they request your data</p></div>);
+  const all = consents.map(norm);
+  const pending = all.filter(c => c.status === "pending");
   const approved = all.filter(c => c.status === "approved");
   const declined = all.filter(c => c.status === "declined");
-
   const ConsentCard = ({ c }) => (
     <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, padding: "1rem", marginBottom: "0.75rem" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
-          <div style={{ fontWeight: 600, color: "#0f172a", fontSize: "0.95rem" }}>
-            {c.requestor_name || c.employer_name || c.requestor_email || c.employer_email}
-          </div>
-          {c.message && (
-            <div style={{ marginTop: "0.5rem", padding: "0.6rem 0.75rem", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 7 }}>
-              <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#1d4ed8", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>Message from employer</div>
-              <div style={{ fontSize: "0.85rem", color: "#1e40af", lineHeight: 1.5 }}>{c.message}</div>
-            </div>
-          )}
+          <div style={{ fontWeight: 600, color: "#0f172a", fontSize: "0.95rem" }}>{c.requestor_name || c.employer_name || c.requestor_email || c.employer_email}</div>
+          {c.message && (<div style={{ marginTop: "0.5rem", padding: "0.6rem 0.75rem", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 7 }}><div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#1d4ed8", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>Message from employer</div><div style={{ fontSize: "0.85rem", color: "#1e40af", lineHeight: 1.5 }}>{c.message}</div></div>)}
         </div>
-        <span style={{ padding: "0.2rem 0.7rem", borderRadius: 999, fontSize: "0.75rem", fontWeight: 700, color: "#fff", background: statusColor[c.status] || "#94a3b8", whiteSpace: "nowrap" }}>
-          {c.status.charAt(0).toUpperCase() + c.status.slice(1)}
-        </span>
+        <span style={{ padding: "0.2rem 0.7rem", borderRadius: 999, fontSize: "0.75rem", fontWeight: 700, color: "#fff", background: statusColor[c.status] || "#94a3b8", whiteSpace: "nowrap" }}>{c.status.charAt(0).toUpperCase() + c.status.slice(1)}</span>
       </div>
-      {c.status === "pending" && (
-        <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem" }}>
-          <button disabled={acting === c.consent_id} onClick={() => respond(c.consent_id, "approved")}
-            style={{ flex: 1, padding: "0.5rem", background: "#16a34a", color: "#fff", border: "none", borderRadius: 7, fontWeight: 600, cursor: "pointer" }}>
-            {acting === c.consent_id ? "…" : "Approve"}
-          </button>
-          <button disabled={acting === c.consent_id} onClick={() => respond(c.consent_id, "declined")}
-            style={{ flex: 1, padding: "0.5rem", background: "#fff", color: "#ef4444", border: "1px solid #ef4444", borderRadius: 7, fontWeight: 600, cursor: "pointer" }}>
-            {acting === c.consent_id ? "…" : "Decline"}
-          </button>
-        </div>
-      )}
+      {c.status === "pending" && (<div style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem" }}><button disabled={acting === c.consent_id} onClick={() => respond(c.consent_id, "approved")} style={{ flex: 1, padding: "0.5rem", background: "#16a34a", color: "#fff", border: "none", borderRadius: 7, fontWeight: 600, cursor: "pointer" }}>{acting === c.consent_id ? "…" : "Approve"}</button><button disabled={acting === c.consent_id} onClick={() => respond(c.consent_id, "declined")} style={{ flex: 1, padding: "0.5rem", background: "#fff", color: "#ef4444", border: "1px solid #ef4444", borderRadius: 7, fontWeight: 600, cursor: "pointer" }}>{acting === c.consent_id ? "…" : "Decline"}</button></div>)}
     </div>
   );
-
   const sectionLabel = { fontSize: "0.75rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 1, margin: "1rem 0 0.5rem" };
-  return (
-    <div>
-      {pending.length  > 0 && <><div style={sectionLabel}>Pending ({pending.length})</div>{pending.map(c  => <ConsentCard key={c.consent_id} c={c} />)}</>}
-      {approved.length > 0 && <><div style={sectionLabel}>Approved</div>{approved.map(c => <ConsentCard key={c.consent_id} c={c} />)}</>}
-      {declined.length > 0 && <><div style={sectionLabel}>Declined</div>{declined.map(c => <ConsentCard key={c.consent_id} c={c} />)}</>}
-    </div>
-  );
+  return (<div>{pending.length > 0 && <><div style={sectionLabel}>Pending ({pending.length})</div>{pending.map(c => <ConsentCard key={c.consent_id} c={c} />)}</>}{approved.length > 0 && <><div style={sectionLabel}>Approved</div>{approved.map(c => <ConsentCard key={c.consent_id} c={c} />)}</>}{declined.length > 0 && <><div style={sectionLabel}>Declined</div>{declined.map(c => <ConsentCard key={c.consent_id} c={c} />)}</>}</div>);
 }
 
 export default function PersonalDetails() {
   const router = useRouter();
   const { user, apiFetch, logout, ready } = useAuth();
-
-  const [activeTab,    setActiveTab]    = useState("profile");
-  const [showSignout,  setShowSignout]  = useState(false);
-  const [saveStatus,   setSaveStatus]   = useState("");
-  const [loading,      setLoading]      = useState(true);
-  const [employeeId,   setEmployeeId]   = useState("");
-
+  const [activeTab, setActiveTab]     = useState("profile");
+  const [showSignout, setShowSignout] = useState(false);
+  const [saveStatus, setSaveStatus]   = useState("");
+  const [loading, setLoading]         = useState(true);
+  const [employeeId, setEmployeeId]   = useState("");
   const [photoPreview, setPhotoPreview] = useState(null);
-  const [firstName,    setFirstName]    = useState("");
-  const [middleName,   setMiddleName]   = useState("");
-  const [lastName,     setLastName]     = useState("");
-  const [fatherFirst,  setFatherFirst]  = useState("");
+  const [firstName, setFirstName]     = useState("");
+  const [middleName, setMiddleName]   = useState("");
+  const [lastName, setLastName]       = useState("");
+  const [fatherFirst, setFatherFirst] = useState("");
   const [fatherMiddle, setFatherMiddle] = useState("");
-  const [fatherLast,   setFatherLast]   = useState("");
-  const [dob,          setDob]          = useState("");
-  const [gender,       setGender]       = useState("");
-  const [nationality,  setNationality]  = useState("");
-  const [mobile,       setMobile]       = useState("");
-  const [email,        setEmail]        = useState("");
-  const [aadhar,       setAadhar]       = useState("");
-  const [pan,          setPan]          = useState("");
-  const [passport,     setPassport]     = useState("");
-  const [curFrom,      setCurFrom]      = useState("");
-  const [curTo,        setCurTo]        = useState("");
-  const [curDoor,      setCurDoor]      = useState("");
-  const [curVillage,   setCurVillage]   = useState("");
-  const [curDistrict,  setCurDistrict]  = useState("");
-  const [curPin,       setCurPin]       = useState("");
-  const [permFrom,     setPermFrom]     = useState("");
-  const [permDoor,     setPermDoor]     = useState("");
-  const [permVillage,  setPermVillage]  = useState("");
+  const [fatherLast, setFatherLast]   = useState("");
+  const [dob, setDob]                 = useState("");
+  const [gender, setGender]           = useState("");
+  const [nationality, setNationality] = useState("");
+  const [mobile, setMobile]           = useState("");
+  const [email, setEmail]             = useState("");
+  const [aadhar, setAadhar]           = useState("");
+  const [pan, setPan]                 = useState("");
+  const [passport, setPassport]       = useState("");
+  const [curFrom, setCurFrom]         = useState("");
+  const [curTo, setCurTo]             = useState("");
+  const [curDoor, setCurDoor]         = useState("");
+  const [curVillage, setCurVillage]   = useState("");
+  const [curDistrict, setCurDistrict] = useState("");
+  const [curPin, setCurPin]           = useState("");
+  const [permFrom, setPermFrom]       = useState("");
+  const [permDoor, setPermDoor]       = useState("");
+  const [permVillage, setPermVillage] = useState("");
   const [permDistrict, setPermDistrict] = useState("");
-  const [permPin,      setPermPin]      = useState("");
+  const [permPin, setPermPin]         = useState("");
+  // S3 document keys
+  const [aadhaarKey, setAadhaarKey]   = useState("");
+  const [panKey, setPanKey]           = useState("");
 
-  useEffect(() => {
-    if (!ready) return;
-    if (!user) { router.replace("/employee/login"); return; }
-  }, [ready, user, router]);
+  useEffect(() => { if (!ready) return; if (!user) { router.replace("/employee/login"); return; } }, [ready, user, router]);
 
   useEffect(() => {
     if (!ready || !user) return;
-    // Pre-fill from auth token immediately
     if (user?.email) setEmail(user.email);
     if (user?.phone) setMobile(user.phone);
-
     const fetchDraft = async () => {
       try {
         const res = await apiFetch(`${API}/employee/draft`);
@@ -179,21 +130,16 @@ export default function PersonalDetails() {
           if (d.aadhaar || d.aadhar) setAadhar(d.aadhaar || d.aadhar);
           if (d.pan)                 setPan(d.pan);
           if (d.passport)            setPassport(d.passport);
-          const cur  = d.currentAddress   || {};
-          const perm = d.permanentAddress || {};
-          if (cur.from)      setCurFrom(cur.from);
-          if (cur.to)        setCurTo(cur.to);
-          if (cur.door)      setCurDoor(cur.door);
-          if (cur.village)   setCurVillage(cur.village);
-          if (cur.district)  setCurDistrict(cur.district);
-          if (cur.pin)       setCurPin(cur.pin);
-          if (perm.from)     setPermFrom(perm.from);
-          if (perm.door)     setPermDoor(perm.door);
-          if (perm.village)  setPermVillage(perm.village);
-          if (perm.district) setPermDistrict(perm.district);
-          if (perm.pin)      setPermPin(perm.pin);
+          if (d.aadhaarKey)          setAadhaarKey(d.aadhaarKey);
+          if (d.panKey)              setPanKey(d.panKey);
+          const cur = d.currentAddress || {}; const perm = d.permanentAddress || {};
+          if (cur.from)     setCurFrom(cur.from);    if (cur.to)       setCurTo(cur.to);
+          if (cur.door)     setCurDoor(cur.door);    if (cur.village)  setCurVillage(cur.village);
+          if (cur.district) setCurDistrict(cur.district); if (cur.pin) setCurPin(cur.pin);
+          if (perm.from)    setPermFrom(perm.from);  if (perm.door)    setPermDoor(perm.door);
+          if (perm.village) setPermVillage(perm.village); if (perm.district) setPermDistrict(perm.district);
+          if (perm.pin)     setPermPin(perm.pin);
         }
-        // 404 = brand new user, empty form is correct
       } catch (_) {}
       setLoading(false);
     };
@@ -203,19 +149,16 @@ export default function PersonalDetails() {
   const saveDraft = async () => {
     const empId = employeeId || `emp-${Date.now()}`;
     if (!employeeId) setEmployeeId(empId);
-
     const res = await apiFetch(`${API}/employee`, {
       method: "POST",
       body: JSON.stringify({
-        employee_id:  empId,
-        status:       "draft",
-        firstName,    middleName,   lastName,
-        fatherName:   `${fatherFirst} ${fatherMiddle} ${fatherLast}`.trim(),
-        fatherFirst,  fatherMiddle, fatherLast,
-        dob,          gender,       nationality,
-        mobile,       email,
-        aadhaar:      aadhar,
-        pan,          passport,
+        employee_id: empId, status: "draft",
+        firstName, middleName, lastName,
+        fatherName: `${fatherFirst} ${fatherMiddle} ${fatherLast}`.trim(),
+        fatherFirst, fatherMiddle, fatherLast,
+        dob, gender, nationality, mobile, email,
+        aadhaar: aadhar, pan, passport,
+        aadhaarKey, panKey,
         currentAddress:   { from: curFrom, to: curTo, door: curDoor, village: curVillage, district: curDistrict, pin: curPin },
         permanentAddress: { from: permFrom, door: permDoor, village: permVillage, district: permDistrict, pin: permPin },
       }),
@@ -225,21 +168,8 @@ export default function PersonalDetails() {
     if (rd.employee_id) setEmployeeId(rd.employee_id);
   };
 
-  const handleSave = async () => {
-    setSaveStatus("Saving...");
-    try {
-      await saveDraft();
-      setSaveStatus("Saved ✓");
-      router.push("/employee/education");
-    } catch (err) {
-      setSaveStatus(`Error: ${err.message || "Could not save"}`);
-    }
-  };
-
-  const handleSignout = async () => {
-    try { await saveDraft(); } catch (_) {}
-    logout();
-  };
+  const handleSave    = async () => { setSaveStatus("Saving..."); try { await saveDraft(); setSaveStatus("Saved ✓"); router.push("/employee/education"); } catch (err) { setSaveStatus(`Error: ${err.message || "Could not save"}`); } };
+  const handleSignout = async () => { try { await saveDraft(); } catch (_) {} logout(); };
 
   if (!ready || !user) return null;
   if (loading) return <div style={{ ...styles.page, display: "flex", alignItems: "center", justifyContent: "center" }}><p style={{ color: "#64748b" }}>Loading your profile…</p></div>;
@@ -252,45 +182,22 @@ export default function PersonalDetails() {
           <span style={{ fontSize: "0.85rem", color: "#475569" }}>👤 {user.name || user.email}</span>
           <button onClick={() => setShowSignout(true)} style={styles.signoutBtn}>Sign out</button>
         </div>
-
         <div style={styles.tabRow}>
           <button style={{ ...styles.tab, ...(activeTab === "profile"  ? styles.tabActive : {}) }} onClick={() => setActiveTab("profile")}>My Profile</button>
           <button style={{ ...styles.tab, ...(activeTab === "consents" ? styles.tabActive : {}) }} onClick={() => setActiveTab("consents")}>Consent Requests</button>
         </div>
-
-        {activeTab === "consents" ? (
-          <ConsentTab apiFetch={apiFetch} />
-        ) : (
+        {activeTab === "consents" ? <ConsentTab apiFetch={apiFetch} /> : (
           <>
             <ProgressBar currentStep={1} totalSteps={4} />
             <h1 style={styles.title}>Personal Details</h1>
-
             <Section title="Profile Photo">
               <div style={{ textAlign: "center" }}>
-                {photoPreview
-                  ? <img src={photoPreview} style={styles.photo} alt="profile" />
-                  : <div style={styles.photoPlaceholder}>Upload Photo</div>
-                }
+                {photoPreview ? <img src={photoPreview} style={styles.photo} alt="profile" /> : <div style={styles.photoPlaceholder}>Upload Photo</div>}
                 <input type="file" accept="image/*" onChange={(e) => setPhotoPreview(URL.createObjectURL(e.target.files[0]))} />
               </div>
             </Section>
-
-            <Section title="Name">
-              <Row>
-                <Input label="First Name"  value={firstName}  onChange={setFirstName} />
-                <Input label="Middle Name" value={middleName} onChange={setMiddleName} />
-                <Input label="Last Name"   value={lastName}   onChange={setLastName} />
-              </Row>
-            </Section>
-
-            <Section title="Father Name">
-              <Row>
-                <Input label="First Name"  value={fatherFirst}  onChange={setFatherFirst} />
-                <Input label="Middle Name" value={fatherMiddle} onChange={setFatherMiddle} />
-                <Input label="Last Name"   value={fatherLast}   onChange={setFatherLast} />
-              </Row>
-            </Section>
-
+            <Section title="Name"><Row><Input label="First Name" value={firstName} onChange={setFirstName} /><Input label="Middle Name" value={middleName} onChange={setMiddleName} /><Input label="Last Name" value={lastName} onChange={setLastName} /></Row></Section>
+            <Section title="Father Name"><Row><Input label="First Name" value={fatherFirst} onChange={setFatherFirst} /><Input label="Middle Name" value={fatherMiddle} onChange={setFatherMiddle} /><Input label="Last Name" value={fatherLast} onChange={setFatherLast} /></Row></Section>
             <Section title="Personal Information">
               <Row>
                 <Input type="date" label="Date of Birth" value={dob} onChange={setDob} />
@@ -298,67 +205,39 @@ export default function PersonalDetails() {
                 <Input label="Nationality" value={nationality} onChange={setNationality} />
               </Row>
               <Row>
-                <div style={{ flex: 1 }}>
-                  <label style={styles.label}>Email (from signup)</label>
-                  <input value={email} disabled style={{ ...styles.input, background: "#f1f5f9", color: "#64748b" }} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={styles.label}>Mobile Number (India)</label>
-                  <div style={{ display: "flex", gap: "0.5rem" }}>
-                    <input value="+91" disabled style={{ ...styles.input, maxWidth: "80px", background: "#e5e7eb" }} />
-                    <input value={mobile} disabled style={{ ...styles.input, background: "#f1f5f9", color: "#64748b" }} />
-                  </div>
-                </div>
+                <div style={{ flex: 1 }}><label style={styles.label}>Email (from signup)</label><input value={email} disabled style={{ ...styles.input, background: "#f1f5f9", color: "#64748b" }} /></div>
+                <div style={{ flex: 1 }}><label style={styles.label}>Mobile Number (India)</label><div style={{ display: "flex", gap: "0.5rem" }}><input value="+91" disabled style={{ ...styles.input, maxWidth: "80px", background: "#e5e7eb" }} /><input value={mobile} disabled style={{ ...styles.input, background: "#f1f5f9", color: "#64748b" }} /></div></div>
                 <Input label="Passport Number" value={passport} onChange={setPassport} />
               </Row>
             </Section>
-
             <Section title="Identity Documents">
               <Row>
                 <div style={{ flex: 1 }}>
                   <Input label="Aadhaar Number" value={aadhar} onChange={(v) => { const d = v.replace(/\D/g,""); if(d.length<=12) setAadhar(d); }} />
                   {aadhar && aadhar.length !== 12 && <p style={styles.error}>Must be 12 digits</p>}
-                  <div style={{ marginTop: "0.5rem" }}>
-                    <label style={styles.label}>Upload Aadhaar (coming soon)</label>
-                    <input type="file" accept=".pdf,.jpg,.jpeg,.png" disabled style={{ opacity: 0.5 }} />
-                  </div>
+                  <FileUpload label="Upload Aadhaar Card" category="personal" subKey="aadhaar" apiFetch={apiFetch} value={aadhaarKey} onChange={setAadhaarKey} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <Input label="PAN Number" value={pan} onChange={(v) => {
-                    let val = v.toUpperCase();
-                    if (val.length <= 5)       val = val.replace(/[^A-Z]/g,"");
-                    else if (val.length <= 9)  val = val.slice(0,5) + val.slice(5).replace(/[^0-9]/g,"");
-                    else if (val.length <= 10) val = val.slice(0,5) + val.slice(5,9).replace(/[^0-9]/g,"") + val.slice(9).replace(/[^A-Z]/g,"");
-                    setPan(val);
-                  }} />
+                  <Input label="PAN Number" value={pan} onChange={(v) => { let val = v.toUpperCase(); if (val.length<=5) val=val.replace(/[^A-Z]/g,""); else if (val.length<=9) val=val.slice(0,5)+val.slice(5).replace(/[^0-9]/g,""); else if (val.length<=10) val=val.slice(0,5)+val.slice(5,9).replace(/[^0-9]/g,"")+val.slice(9).replace(/[^A-Z]/g,""); setPan(val); }} />
                   {pan && pan.length !== 10 && <p style={styles.error}>Format: AAAAA9999A</p>}
-                  <div style={{ marginTop: "0.5rem" }}>
-                    <label style={styles.label}>Upload PAN (coming soon)</label>
-                    <input type="file" accept=".pdf,.jpg,.jpeg,.png" disabled style={{ opacity: 0.5 }} />
-                  </div>
+                  <FileUpload label="Upload PAN Card" category="personal" subKey="pan" apiFetch={apiFetch} value={panKey} onChange={setPanKey} />
                 </div>
               </Row>
             </Section>
-
             <Section title="Current Address">
-              <Row>
-                <Input type="date" label="Residing From" value={curFrom} onChange={setCurFrom} />
-                <Input type="date" label="Residing To"   value={curTo}   onChange={setCurTo} />
-              </Row>
-              <Input label="Door & Street"    value={curDoor}     onChange={setCurDoor} />
-              <Input label="Village / Mandal" value={curVillage}  onChange={setCurVillage} />
+              <Row><Input type="date" label="Residing From" value={curFrom} onChange={setCurFrom} /><Input type="date" label="Residing To" value={curTo} onChange={setCurTo} /></Row>
+              <Input label="Door & Street" value={curDoor} onChange={setCurDoor} />
+              <Input label="Village / Mandal" value={curVillage} onChange={setCurVillage} />
               <Input label="District / State" value={curDistrict} onChange={setCurDistrict} />
               <Input label="Pincode" value={curPin} onChange={(v) => setCurPin(v.replace(/\D/g,""))} />
             </Section>
-
             <Section title="Permanent Address">
-              <Input type="date" label="Residing From" value={permFrom}     onChange={setPermFrom} />
-              <Input label="Door & Street"              value={permDoor}     onChange={setPermDoor} />
-              <Input label="Village / Mandal"           value={permVillage}  onChange={setPermVillage} />
-              <Input label="District / State"           value={permDistrict} onChange={setPermDistrict} />
+              <Input type="date" label="Residing From" value={permFrom} onChange={setPermFrom} />
+              <Input label="Door & Street" value={permDoor} onChange={setPermDoor} />
+              <Input label="Village / Mandal" value={permVillage} onChange={setPermVillage} />
+              <Input label="District / State" value={permDistrict} onChange={setPermDistrict} />
               <Input label="Pincode" value={permPin} onChange={(v) => setPermPin(v.replace(/\D/g,""))} />
             </Section>
-
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ color: saveStatus.startsWith("Error") ? "#dc2626" : "#64748b", fontSize: "0.85rem" }}>{saveStatus}</span>
               <button onClick={handleSave} style={{ ...styles.button, background: "#2563eb" }}>Save & Proceed →</button>
