@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import ProgressBar from "../../components/ProgressBar";
 import { useAuth } from "../../utils/AuthContext";
 import { parseError } from "../../utils/apiError";
+import FileUpload from "../../components/FileUpload";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
@@ -25,12 +26,12 @@ function SignoutModal({ onConfirm, onCancel }) {
 
 const emptyEmployment = () => ({
   companyName: "", officeAddress: "", employeeId: "", workEmail: "",
-  designation: "", department: "", duties: "", employmentType: "",
-  reasonForRelieving: "",
+  designation: "", department: "", duties: "", employmentType: "", reasonForRelieving: "",
   reference:      { role: "", name: "", email: "", mobile: "" },
   contractVendor: { company: "", email: "", mobile: "" },
-  documents:      { payslips: [], offerLetter: null, resignation: null, experience: null },
+  documents:      { payslipsKey: "", offerLetterKey: "", resignationKey: "", experienceKey: "" },
   gap:            { hasGap: "", reason: "" },
+  company_id:     "",
 });
 const emptyAck = () => ({ val: "", note: "" });
 
@@ -50,57 +51,31 @@ const styles = {
 };
 
 const Row      = ({ children }) => <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "0.75rem" }}>{children}</div>;
-const Input    = ({ label, value, onChange, type = "text", maxLength }) => (
-  <div style={{ flex: 1, minWidth: "200px" }}>
-    <label style={styles.label}>{label}</label>
-    <input type={type} value={value || ""} maxLength={maxLength} onChange={(e) => onChange(e.target.value)} style={styles.input} />
-  </div>
-);
-const TextArea = ({ label, value, onChange }) => (
-  <div style={{ width: "100%", marginBottom: "0.75rem" }}>
-    <label style={styles.label}>{label}</label>
-    <textarea value={value || ""} onChange={(e) => onChange(e.target.value)} style={{ ...styles.input, minHeight: "80px" }} />
-  </div>
-);
-const Select   = ({ label, value, onChange, options }) => (
-  <div style={{ flex: 1, minWidth: "200px" }}>
-    <label style={styles.label}>{label}</label>
-    <select value={value} onChange={(e) => onChange(e.target.value)} style={styles.input}>
-      <option value="">Select</option>
-      {options.map((o) => <option key={o} value={o}>{o}</option>)}
-    </select>
-  </div>
-);
+const Input    = ({ label, value, onChange, type = "text", maxLength }) => (<div style={{ flex: 1, minWidth: "200px" }}><label style={styles.label}>{label}</label><input type={type} value={value || ""} maxLength={maxLength} onChange={(e) => onChange(e.target.value)} style={styles.input} /></div>);
+const TextArea = ({ label, value, onChange }) => (<div style={{ width: "100%", marginBottom: "0.75rem" }}><label style={styles.label}>{label}</label><textarea value={value || ""} onChange={(e) => onChange(e.target.value)} style={{ ...styles.input, minHeight: "80px" }} /></div>);
+const Select   = ({ label, value, onChange, options }) => (<div style={{ flex: 1, minWidth: "200px" }}><label style={styles.label}>{label}</label><select value={value} onChange={(e) => onChange(e.target.value)} style={styles.input}><option value="">Select</option>{options.map((o) => <option key={o} value={o}>{o}</option>)}</select></div>);
 
 export default function PreviousCompany() {
   const router = useRouter();
   const { user, apiFetch, logout, ready } = useAuth();
+  const [showSignout, setShowSignout]   = useState(false);
+  const [saveStatus,  setSaveStatus]    = useState("");
+  const [loading,     setLoading]       = useState(true);
+  const [employeeId,  setEmployeeId]    = useState("");
+  const [employments, setEmployments]   = useState([emptyEmployment()]);
+  const [ack,         setAck]           = useState({ business: emptyAck(), dismissed: emptyAck(), criminal: emptyAck(), civil: emptyAck() });
 
-  const [showSignout,  setShowSignout]  = useState(false);
-  const [saveStatus,   setSaveStatus]   = useState("");
-  const [loading,      setLoading]      = useState(true);
-  const [employeeId,   setEmployeeId]   = useState("");
-  const [employments,  setEmployments]  = useState([emptyEmployment()]);
-  const [ack,          setAck]          = useState({ business: emptyAck(), dismissed: emptyAck(), criminal: emptyAck(), civil: emptyAck() });
+  useEffect(() => { if (!ready) return; if (!user) { router.replace("/employee/login"); return; } }, [ready, user, router]);
 
-  useEffect(() => {
-    if (!ready) return;
-    if (!user) { router.replace("/employee/login"); return; }
-  }, [ready, user, router]);
-
-  // Fetch employment history from API on mount — restores on any device
   useEffect(() => {
     if (!ready || !user) return;
     const fetchData = async () => {
       try {
-        // Get employee_id from draft
         const draftRes = await apiFetch(`${API}/employee/draft`);
         if (!draftRes.ok) { setLoading(false); return; }
         const draft = await draftRes.json();
         if (!draft.employee_id) { setLoading(false); return; }
         setEmployeeId(draft.employee_id);
-
-        // Fetch employment history
         const histRes = await apiFetch(`${API}/employee/employment-history/${draft.employee_id}`);
         if (histRes.ok) {
           const data = await histRes.json();
@@ -117,21 +92,16 @@ export default function PreviousCompany() {
               reasonForRelieving: e.reasonForRelieving || "",
               reference:      { role: e.reference?.role || "", name: e.reference?.name || "", email: e.reference?.email || "", mobile: e.reference?.mobile || "" },
               contractVendor: { company: e.contractVendor?.company || "", email: e.contractVendor?.email || "", mobile: e.contractVendor?.mobile || "" },
-              documents:      e.documents || { payslips: [], offerLetter: null, resignation: null, experience: null },
+              documents:      { payslipsKey: e.documents?.payslipsKey || "", offerLetterKey: e.documents?.offerLetterKey || "", resignationKey: e.documents?.resignationKey || "", experienceKey: e.documents?.experienceKey || "" },
               gap:            { hasGap: e.gap?.hasGap || "", reason: e.gap?.reason || "" },
+              company_id:     e.company_id || "",
             })));
           }
           if (data.acknowledgements) {
             const a = data.acknowledgements;
-            setAck({
-              business:  { val: a.business?.val  || "", note: a.business?.note  || "" },
-              dismissed: { val: a.dismissed?.val || "", note: a.dismissed?.note || "" },
-              criminal:  { val: a.criminal?.val  || "", note: a.criminal?.note  || "" },
-              civil:     { val: a.civil?.val     || "", note: a.civil?.note     || "" },
-            });
+            setAck({ business: { val: a.business?.val || "", note: a.business?.note || "" }, dismissed: { val: a.dismissed?.val || "", note: a.dismissed?.note || "" }, criminal: { val: a.criminal?.val || "", note: a.criminal?.note || "" }, civil: { val: a.civil?.val || "", note: a.civil?.note || "" } });
           }
         }
-        // 404 = no employment history yet, one empty form is correct
       } catch (_) {}
       setLoading(false);
     };
@@ -159,26 +129,9 @@ export default function PreviousCompany() {
     if (!res.ok) throw new Error(parseError(await res.json().catch(() => ({}))));
   };
 
-  const handleNext = async () => {
-    setSaveStatus("Saving...");
-    try {
-      await saveHistory();
-      setSaveStatus("Saved ✓");
-      router.push("/employee/uan");
-    } catch (err) {
-      setSaveStatus(`Error: ${err.message || "Could not save"}`);
-    }
-  };
-
-  const handlePrevious = async () => {
-    try { await saveHistory(); } catch (_) {}
-    router.push("/employee/education");
-  };
-
-  const handleSignout = async () => {
-    try { await saveHistory(); } catch (_) {}
-    logout();
-  };
+  const handleNext     = async () => { setSaveStatus("Saving..."); try { await saveHistory(); setSaveStatus("Saved ✓"); router.push("/employee/uan"); } catch (err) { setSaveStatus(`Error: ${err.message || "Could not save"}`); } };
+  const handlePrevious = async () => { try { await saveHistory(); } catch (_) {} router.push("/employee/education"); };
+  const handleSignout  = async () => { try { await saveHistory(); } catch (_) {} logout(); };
 
   if (!ready || !user) return null;
   if (loading) return <div style={{ ...styles.page, display: "flex", alignItems: "center", justifyContent: "center" }}><p style={{ color: "#64748b" }}>Loading employment history…</p></div>;
@@ -200,48 +153,22 @@ export default function PreviousCompany() {
               <h3>{index === 0 ? "Current Employer" : `Previous Employer ${index}`}</h3>
               {index !== 0 && <button style={styles.toggleBtn} onClick={() => removeEmployer(index)}>−</button>}
             </div>
-            <Row>
-              <Input label="Company Name"        value={emp.companyName}   onChange={(v) => update(index, "companyName", v)} />
-              <Input label="Office Address"      value={emp.officeAddress} onChange={(v) => update(index, "officeAddress", v)} />
-            </Row>
-            <Row>
-              <Input label="Employee ID"         value={emp.employeeId}    onChange={(v) => update(index, "employeeId", v)} />
-              <Input label="Official Work Email" value={emp.workEmail}     onChange={(v) => update(index, "workEmail", v)} />
-            </Row>
-            <Row>
-              <Input label="Designation" value={emp.designation} onChange={(v) => update(index, "designation", v)} />
-              <Input label="Department"  value={emp.department}  onChange={(v) => update(index, "department", v)} />
-            </Row>
-            <Row>
-              <Input  label="Duties & Responsibilities" value={emp.duties}          onChange={(v) => update(index, "duties", v)} />
-              <Select label="Employment Type"           value={emp.employmentType}  onChange={(v) => update(index, "employmentType", v)} options={["Full-time","Intern","Contract"]} />
-            </Row>
-            {emp.employmentType === "Contract" && (
-              <>
-                <h4>Vendor / Third-Party Details</h4>
-                <Row>
-                  <Input label="Vendor Company Name"   value={emp.contractVendor.company} onChange={(v) => update(index, "contractVendor.company", v)} />
-                  <Input label="Vendor Email"          value={emp.contractVendor.email}   onChange={(v) => update(index, "contractVendor.email", v)} />
-                  <Input label="Vendor Mobile (India)" value={emp.contractVendor.mobile}  maxLength={10} onChange={(v) => /^\d*$/.test(v) && update(index, "contractVendor.mobile", v)} />
-                </Row>
-              </>
-            )}
+            <Row><Input label="Company Name" value={emp.companyName} onChange={(v) => update(index, "companyName", v)} /><Input label="Office Address" value={emp.officeAddress} onChange={(v) => update(index, "officeAddress", v)} /></Row>
+            <Row><Input label="Employee ID" value={emp.employeeId} onChange={(v) => update(index, "employeeId", v)} /><Input label="Official Work Email" value={emp.workEmail} onChange={(v) => update(index, "workEmail", v)} /></Row>
+            <Row><Input label="Designation" value={emp.designation} onChange={(v) => update(index, "designation", v)} /><Input label="Department" value={emp.department} onChange={(v) => update(index, "department", v)} /></Row>
+            <Row><Input label="Duties & Responsibilities" value={emp.duties} onChange={(v) => update(index, "duties", v)} /><Select label="Employment Type" value={emp.employmentType} onChange={(v) => update(index, "employmentType", v)} options={["Full-time","Intern","Contract"]} /></Row>
+            {emp.employmentType === "Contract" && (<><h4>Vendor / Third-Party Details</h4><Row><Input label="Vendor Company Name" value={emp.contractVendor.company} onChange={(v) => update(index, "contractVendor.company", v)} /><Input label="Vendor Email" value={emp.contractVendor.email} onChange={(v) => update(index, "contractVendor.email", v)} /><Input label="Vendor Mobile (India)" value={emp.contractVendor.mobile} maxLength={10} onChange={(v) => /^\d*$/.test(v) && update(index, "contractVendor.mobile", v)} /></Row></>)}
             <TextArea label="Reason for Relieving / Leaving" value={emp.reasonForRelieving} onChange={(v) => update(index, "reasonForRelieving", v)} />
             <h4>Reference Details</h4>
-            <Row>
-              <Select label="Reference Role" value={emp.reference.role}  onChange={(v) => update(index, "reference.role", v)}  options={["Manager","Colleague","HR","Client"]} />
-              <Input  label="Reference Name" value={emp.reference.name}  onChange={(v) => update(index, "reference.name", v)} />
-            </Row>
-            <Row>
-              <Input label="Reference Official Email" value={emp.reference.email}  onChange={(v) => update(index, "reference.email", v)} />
-              <Input label="Reference Mobile (India)" value={emp.reference.mobile} maxLength={10} onChange={(v) => /^\d*$/.test(v) && update(index, "reference.mobile", v)} />
-            </Row>
-            <h4>Attachments <span style={{ fontWeight: 400, fontSize: "0.8rem", color: "#94a3b8" }}>(S3 upload — next commit)</span></h4>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-              {["Payslips (Last 3 Months)","Offer Letter","Resignation Acceptance","Experience / Relieving Letter"].map(lbl => (
-                <div key={lbl}><label style={styles.label}>{lbl}</label><input type="file" disabled style={{ opacity: 0.5 }} /></div>
-              ))}
-            </div>
+            <Row><Select label="Reference Role" value={emp.reference.role} onChange={(v) => update(index, "reference.role", v)} options={["Manager","Colleague","HR","Client"]} /><Input label="Reference Name" value={emp.reference.name} onChange={(v) => update(index, "reference.name", v)} /></Row>
+            <Row><Input label="Reference Official Email" value={emp.reference.email} onChange={(v) => update(index, "reference.email", v)} /><Input label="Reference Mobile (India)" value={emp.reference.mobile} maxLength={10} onChange={(v) => /^\d*$/.test(v) && update(index, "reference.mobile", v)} /></Row>
+
+            <h4>Attachments</h4>
+            <FileUpload label="Payslips (Last 3 Months)" category="employment" subKey="payslips" companyId={emp.company_id || undefined} apiFetch={apiFetch} value={emp.documents.payslipsKey} onChange={(v) => update(index, "documents.payslipsKey", v)} />
+            <FileUpload label="Offer Letter" category="employment" subKey="offerLetter" companyId={emp.company_id || undefined} apiFetch={apiFetch} value={emp.documents.offerLetterKey} onChange={(v) => update(index, "documents.offerLetterKey", v)} />
+            <FileUpload label="Resignation Acceptance" category="employment" subKey="resignation" companyId={emp.company_id || undefined} apiFetch={apiFetch} value={emp.documents.resignationKey} onChange={(v) => update(index, "documents.resignationKey", v)} />
+            <FileUpload label="Experience / Relieving Letter" category="employment" subKey="experience" companyId={emp.company_id || undefined} apiFetch={apiFetch} value={emp.documents.experienceKey} onChange={(v) => update(index, "documents.experienceKey", v)} />
+
             <h4>Employment Gap</h4>
             <div style={{ display: "flex", gap: "1rem" }}>
               <button style={styles.yesNo(emp.gap.hasGap === "Yes")} onClick={() => update(index, "gap.hasGap", "Yes")}>Yes</button>
