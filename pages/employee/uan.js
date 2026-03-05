@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import ProgressBar from "../../components/ProgressBar";
 import { useAuth } from "../../utils/AuthContext";
 import { parseError } from "../../utils/apiError";
+import FileUpload from "../../components/FileUpload";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
@@ -37,9 +38,8 @@ export default function UANPage() {
   const router = useRouter();
   const { user, apiFetch, logout, ready } = useAuth();
   const [showSignout, setShowSignout] = useState(false);
-
-  // Cached full draft from API — used to carry page 1+2 fields on final submit
   const [serverDraft, setServerDraft] = useState(null);
+  const [epfoKey,     setEpfoKey]     = useState("");  // S3 key for EPFO document
 
   const [form, setForm] = useState({
     uanMaster: { uanNumber: "", nameAsPerUan: "", mobileLinked: "", isActive: "" },
@@ -54,12 +54,8 @@ export default function UANPage() {
   const [loading,     setLoading]     = useState(true);
   const [submitted,   setSubmitted]   = useState(false);
 
-  useEffect(() => {
-    if (!ready) return;
-    if (!user) { router.replace("/employee/login"); return; }
-  }, [ready, user, router]);
+  useEffect(() => { if (!ready) return; if (!user) { router.replace("/employee/login"); return; } }, [ready, user, router]);
 
-  // Fetch draft on mount — restores UAN fields on any device
   useEffect(() => {
     if (!ready || !user) return;
     const fetchDraft = async () => {
@@ -67,8 +63,8 @@ export default function UANPage() {
         const res = await apiFetch(`${API}/employee/draft`);
         if (res.ok) {
           const d = await res.json();
-          setServerDraft(d); // cache full draft for use in handleSubmit
-
+          setServerDraft(d);
+          if (d.epfoKey) setEpfoKey(d.epfoKey);
           if (d.uanNumber || d.nameAsPerUan || d.mobileLinked || d.isActive || d.pfRecords) {
             setForm({
               uanMaster: {
@@ -78,13 +74,7 @@ export default function UANPage() {
                 isActive:     d.isActive     || "",
               },
               pfRecords: d.pfRecords && d.pfRecords.length > 0
-                ? d.pfRecords.map((r) => ({
-                    companyName:   r.companyName   || "",
-                    pfMemberId:    r.pfMemberId    || "",
-                    dojEpfo:       r.dojEpfo       || "",
-                    doeEpfo:       r.doeEpfo       || "",
-                    pfTransferred: r.pfTransferred || "",
-                  }))
+                ? d.pfRecords.map((r) => ({ companyName: r.companyName || "", pfMemberId: r.pfMemberId || "", dojEpfo: r.dojEpfo || "", doeEpfo: r.doeEpfo || "", pfTransferred: r.pfTransferred || "" }))
                 : [emptyPfRecord()],
             });
           }
@@ -100,32 +90,20 @@ export default function UANPage() {
   const addPfRecord    = () => setForm(prev => ({ ...prev, pfRecords: [...prev.pfRecords, emptyPfRecord()] }));
   const removePfRecord = (i) => { if (i === 0) return; setForm(prev => ({ ...prev, pfRecords: prev.pfRecords.filter((_, idx) => idx !== i) })); };
   const toggleAck = (id) => setAcks(prev => ({ ...prev, [id]: !prev[id] }));
-
   const allAcksChecked = Object.values(acks).every(Boolean);
 
   const handleSubmit = async () => {
-    if (!allAcksChecked) {
-      setSubmitError("Please confirm all acknowledgements before submitting.");
-      return;
-    }
-    if (!serverDraft || !serverDraft.employee_id) {
-      setSubmitError("Profile not found — please complete Page 1 first.");
-      return;
-    }
+    if (!allAcksChecked) { setSubmitError("Please confirm all acknowledgements before submitting."); return; }
+    if (!serverDraft || !serverDraft.employee_id) { setSubmitError("Profile not found — please complete Page 1 first."); return; }
     setSubmitError("");
     setLoading(true);
-
     try {
       const d = serverDraft;
-
-      // API call 1: POST final employee profile with all fields from server draft + UAN from this page
-      // Pages 1 and 2 data already saved in DB — we carry it forward here to do the final status=submitted write
       const empRes = await apiFetch(`${API}/employee`, {
         method: "POST",
         body: JSON.stringify({
           employee_id:      d.employee_id,
           status:           "submitted",
-          // Page 1 fields — from server draft, not localStorage
           firstName:        d.firstName        || "",
           lastName:         d.lastName         || "",
           middleName:       d.middleName,
@@ -141,27 +119,22 @@ export default function UANPage() {
           passport:         d.passport,
           aadhaar:          d.aadhaar,
           pan:              d.pan,
+          aadhaarKey:       d.aadhaarKey,
+          panKey:           d.panKey,
           currentAddress:   d.currentAddress,
           permanentAddress: d.permanentAddress,
-          // Page 2 fields — from server draft
           education:        d.education,
-          // Page 4 fields — from this page's form state
           uanNumber:        form.uanMaster.uanNumber    || "",
           nameAsPerUan:     form.uanMaster.nameAsPerUan || "",
           mobileLinked:     form.uanMaster.mobileLinked || "",
           isActive:         form.uanMaster.isActive     || "",
           pfRecords:        form.pfRecords,
+          epfoKey,
           acknowledgements_profile: acks,
           submitted_at:     Date.now(),
         }),
       });
       if (!empRes.ok) throw new Error(parseError(await empRes.json().catch(() => ({}))));
-
-      // API call 2: employment history (page 3) — already saved on page 3, this is a no-op if unchanged
-      // We only re-post if there is history in the draft (server already saved it, just ensuring it's linked)
-      // Employment history is saved separately via /employee/employment-history on page 3 save,
-      // so no need to re-post it here. The employer dashboard fetches it independently.
-
       setSubmitted(true);
     } catch (err) {
       setSubmitError(err.message || "Submission failed. Please try again.");
@@ -171,19 +144,11 @@ export default function UANPage() {
   };
 
   const handleSignout = async () => {
-    // Save UAN draft before signing out
     if (serverDraft && serverDraft.employee_id) {
       try {
         await apiFetch(`${API}/employee`, {
           method: "POST",
-          body: JSON.stringify({
-            ...serverDraft,
-            uanNumber:    form.uanMaster.uanNumber,
-            nameAsPerUan: form.uanMaster.nameAsPerUan,
-            mobileLinked: form.uanMaster.mobileLinked,
-            isActive:     form.uanMaster.isActive,
-            pfRecords:    form.pfRecords,
-          }),
+          body: JSON.stringify({ ...serverDraft, uanNumber: form.uanMaster.uanNumber, nameAsPerUan: form.uanMaster.nameAsPerUan, mobileLinked: form.uanMaster.mobileLinked, isActive: form.uanMaster.isActive, pfRecords: form.pfRecords, epfoKey }),
         });
       } catch (_) {}
     }
@@ -199,16 +164,11 @@ export default function UANPage() {
           <div style={{ background: "#fff", borderRadius: 20, padding: "3rem 2rem", boxShadow: "0 8px 40px rgba(0,0,0,0.1)" }}>
             <div style={{ fontSize: 64, marginBottom: "1rem" }}>✅</div>
             <h2 style={{ color: "#16a34a", fontSize: 24, marginBottom: "0.5rem" }}>Data Saved Successfully!</h2>
-            <p style={{ color: "#374151", fontSize: 16, lineHeight: 1.6, marginBottom: "0.5rem" }}>
-              Your employment profile is now securely stored with <strong>Datagate</strong>.
-            </p>
+            <p style={{ color: "#374151", fontSize: 16, lineHeight: 1.6, marginBottom: "0.5rem" }}>Your employment profile is now securely stored with <strong>Datagate</strong>.</p>
             <p style={{ color: "#64748b", fontSize: 14, lineHeight: 1.6, marginBottom: "2rem", padding: "1rem", background: "#f0fdf4", borderRadius: 10, border: "1px solid #bbf7d0" }}>
-              🔒 Your data is <strong>private by default</strong>. We will only share your information with an employer when you explicitly approve their consent request. You are always in control.
+              🔒 Your data is <strong>private by default</strong>. We will only share your information with an employer when you explicitly approve their consent request.
             </p>
-            <button
-              style={{ padding: "0.85rem 2.5rem", background: "#2563eb", color: "#fff", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: "pointer" }}
-              onClick={() => router.push("/employee/personal")}
-            >
+            <button style={{ padding: "0.85rem 2.5rem", background: "#2563eb", color: "#fff", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: "pointer" }} onClick={() => router.push("/employee/personal")}>
               Go to My Profile & Consents →
             </button>
           </div>
@@ -230,7 +190,6 @@ export default function UANPage() {
         <ProgressBar currentStep={4} totalSteps={4} />
         <h1 style={styles.title}>UAN & PF Information</h1>
 
-        {/* UAN Details */}
         <div style={styles.section}>
           <h3>UAN Details</h3>
           <div style={styles.row}>
@@ -243,11 +202,15 @@ export default function UANPage() {
               </div>
             </div>
             <div>
-              <div style={styles.uploadCard}>
-                <label style={styles.label}>EPFO Service History Record</label>
-                <input type="file" style={{ marginTop: "0.75rem", opacity: 0.5 }} disabled />
-                <p style={styles.helperText}>Upload from EPFO portal. <em>(S3 upload — next commit)</em></p>
-              </div>
+              <FileUpload
+                label="EPFO Service History Record"
+                category="uan"
+                subKey="epfo"
+                apiFetch={apiFetch}
+                value={epfoKey}
+                onChange={setEpfoKey}
+              />
+              <p style={styles.helperText}>Download from EPFO portal → Upload here</p>
             </div>
           </div>
           <div style={styles.row}>
@@ -258,45 +221,28 @@ export default function UANPage() {
             <div>
               <label style={styles.label}>Is UAN Active?</label>
               <div style={styles.pillContainer}>
-                {["Yes","No"].map(val => (
-                  <div key={val} style={styles.pill(form.uanMaster.isActive === val)} onClick={() => updateUan("isActive", val)}>{val}</div>
-                ))}
+                {["Yes","No"].map(val => (<div key={val} style={styles.pill(form.uanMaster.isActive === val)} onClick={() => updateUan("isActive", val)}>{val}</div>))}
               </div>
             </div>
           </div>
         </div>
 
-        {/* PF Records */}
         <div style={styles.section}>
           <h3>PF Details (Per Previous Employer)</h3>
           {form.pfRecords.map((record, i) => (
             <div key={i} style={{ marginBottom: "2rem" }}>
               <div style={styles.row}>
-                <div>
-                  <label style={styles.label}>Company Name</label>
-                  <input style={styles.input} value={record.companyName} onChange={e => updatePf(i, "companyName", e.target.value)} />
-                </div>
-                <div>
-                  <label style={styles.label}>PF Member ID</label>
-                  <input style={styles.input} value={record.pfMemberId} onChange={e => updatePf(i, "pfMemberId", e.target.value)} />
-                </div>
+                <div><label style={styles.label}>Company Name</label><input style={styles.input} value={record.companyName} onChange={e => updatePf(i, "companyName", e.target.value)} /></div>
+                <div><label style={styles.label}>PF Member ID</label><input style={styles.input} value={record.pfMemberId} onChange={e => updatePf(i, "pfMemberId", e.target.value)} /></div>
               </div>
               <div style={styles.row}>
-                <div>
-                  <label style={styles.label}>Date of Joining (EPFO)</label>
-                  <input type="date" style={styles.input} value={record.dojEpfo} onChange={e => updatePf(i, "dojEpfo", e.target.value)} />
-                </div>
-                <div>
-                  <label style={styles.label}>Date of Exit (EPFO)</label>
-                  <input type="date" style={styles.input} value={record.doeEpfo} onChange={e => updatePf(i, "doeEpfo", e.target.value)} />
-                </div>
+                <div><label style={styles.label}>Date of Joining (EPFO)</label><input type="date" style={styles.input} value={record.dojEpfo} onChange={e => updatePf(i, "dojEpfo", e.target.value)} /></div>
+                <div><label style={styles.label}>Date of Exit (EPFO)</label><input type="date" style={styles.input} value={record.doeEpfo} onChange={e => updatePf(i, "doeEpfo", e.target.value)} /></div>
               </div>
               <div>
                 <label style={styles.label}>Was PF Transferred?</label>
                 <div style={styles.pillContainer}>
-                  {["Yes","No"].map(val => (
-                    <div key={val} style={styles.pill(record.pfTransferred === val)} onClick={() => updatePf(i, "pfTransferred", val)}>{val}</div>
-                  ))}
+                  {["Yes","No"].map(val => (<div key={val} style={styles.pill(record.pfTransferred === val)} onClick={() => updatePf(i, "pfTransferred", val)}>{val}</div>))}
                 </div>
               </div>
               {i > 0 && <button style={styles.removeBtn} onClick={() => removePfRecord(i)}>− Remove This Company</button>}
@@ -305,57 +251,29 @@ export default function UANPage() {
           <button style={styles.addBtn} onClick={addPfRecord}>+ Add Another Company</button>
         </div>
 
-        {/* Acknowledgements */}
         <div style={styles.section}>
           <h3>Declaration & Acknowledgement</h3>
-          <p style={{ fontSize: "0.85rem", color: "#64748b", marginBottom: "1rem" }}>
-            Please read and confirm each statement before submitting your profile.
-          </p>
+          <p style={{ fontSize: "0.85rem", color: "#64748b", marginBottom: "1rem" }}>Please read and confirm each statement before submitting.</p>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
             {ACKNOWLEDGEMENTS.map(({ id, text }) => (
-              <div
-                key={id}
-                onClick={() => toggleAck(id)}
-                style={{
-                  display: "flex", gap: "0.75rem", alignItems: "flex-start",
-                  padding: "0.85rem 1rem", borderRadius: 10,
-                  border: `1.5px solid ${acks[id] ? "#16a34a" : "#e2e8f0"}`,
-                  background: acks[id] ? "#f0fdf4" : "#fafafa",
-                  cursor: "pointer", transition: "all 0.15s",
-                }}
-              >
-                <div style={{
-                  width: 20, height: 20, borderRadius: 5, flexShrink: 0, marginTop: 1,
-                  border: `2px solid ${acks[id] ? "#16a34a" : "#cbd5e1"}`,
-                  background: acks[id] ? "#16a34a" : "#fff",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
+              <div key={id} onClick={() => toggleAck(id)} style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start", padding: "0.85rem 1rem", borderRadius: 10, border: `1.5px solid ${acks[id] ? "#16a34a" : "#e2e8f0"}`, background: acks[id] ? "#f0fdf4" : "#fafafa", cursor: "pointer", transition: "all 0.15s" }}>
+                <div style={{ width: 20, height: 20, borderRadius: 5, flexShrink: 0, marginTop: 1, border: `2px solid ${acks[id] ? "#16a34a" : "#cbd5e1"}`, background: acks[id] ? "#16a34a" : "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {acks[id] && <span style={{ color: "#fff", fontSize: 13, fontWeight: 700, lineHeight: 1 }}>✓</span>}
                 </div>
                 <span style={{ fontSize: "0.88rem", color: acks[id] ? "#15803d" : "#374151", lineHeight: 1.5 }}>{text}</span>
               </div>
             ))}
           </div>
-          {!allAcksChecked && (
-            <p style={{ fontSize: "0.8rem", color: "#f59e0b", marginTop: "0.75rem" }}>
-              ⚠️ Please confirm all {ACKNOWLEDGEMENTS.length} statements to enable submission.
-            </p>
-          )}
+          {!allAcksChecked && <p style={{ fontSize: "0.8rem", color: "#f59e0b", marginTop: "0.75rem" }}>⚠️ Please confirm all {ACKNOWLEDGEMENTS.length} statements to enable submission.</p>}
         </div>
 
         {submitError && (
-          <div style={{ color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "0.75rem 1rem", marginBottom: "1rem", fontSize: "0.9rem" }}>
-            ⚠️ {submitError}
-          </div>
+          <div style={{ color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "0.75rem 1rem", marginBottom: "1rem", fontSize: "0.9rem" }}>⚠️ {submitError}</div>
         )}
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <button style={styles.secondaryBtn} onClick={() => router.push("/employee/previous")}>Previous</button>
-          <button
-            style={{ ...styles.primaryBtn, opacity: (!allAcksChecked || loading) ? 0.5 : 1, cursor: (!allAcksChecked || loading) ? "not-allowed" : "pointer" }}
-            onClick={handleSubmit}
-            disabled={!allAcksChecked || loading}
-          >
+          <button style={{ ...styles.primaryBtn, opacity: (!allAcksChecked || loading) ? 0.5 : 1, cursor: (!allAcksChecked || loading) ? "not-allowed" : "pointer" }} onClick={handleSubmit} disabled={!allAcksChecked || loading}>
             {loading ? "Submitting…" : "Submit Profile"}
           </button>
         </div>
@@ -374,8 +292,7 @@ const styles = {
   input:         { width: "100%", padding: "0.65rem", borderRadius: "8px", border: "1px solid #cbd5e1", boxSizing: "border-box" },
   pillContainer: { display: "flex", gap: "1rem", marginTop: "0.5rem" },
   pill: (active) => ({ padding: "0.5rem 1rem", borderRadius: "20px", cursor: "pointer", border: active ? "1px solid #2563eb" : "1px solid #cbd5e1", background: active ? "#2563eb" : "#fff", color: active ? "#fff" : "#000" }),
-  uploadCard:    { border: "1px dashed #cbd5e1", padding: "1.5rem", borderRadius: "12px", background: "#f8fafc" },
-  helperText:    { fontSize: "0.75rem", marginTop: "0.5rem", color: "#64748b" },
+  helperText:    { fontSize: "0.75rem", marginTop: "0.25rem", color: "#94a3b8" },
   addBtn:        { cursor: "pointer", color: "#2563eb", background: "none", border: "none", fontSize: "1rem" },
   removeBtn:     { cursor: "pointer", color: "#dc2626", marginTop: "0.75rem", background: "none", border: "none", fontSize: "0.9rem" },
   primaryBtn:    { padding: "0.9rem 2.5rem", background: "#2563eb", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "1rem", fontWeight: 700 },
