@@ -103,6 +103,7 @@ export default function PersonalDetails() {
   // S3 document keys
   const [aadhaarKey, setAadhaarKey]   = useState("");
   const [panKey, setPanKey]           = useState("");
+  const [photoKey,  setPhotoKey]      = useState("");
 
   useEffect(() => { if (!ready) return; if (!user) { router.replace("/employee/login"); return; } }, [ready, user, router]);
 
@@ -132,6 +133,7 @@ export default function PersonalDetails() {
           if (d.passport)            setPassport(d.passport);
           if (d.aadhaarKey)          setAadhaarKey(d.aadhaarKey);
           if (d.panKey)              setPanKey(d.panKey);
+          if (d.photoKey)            setPhotoKey(d.photoKey);
           const cur = d.currentAddress || {}; const perm = d.permanentAddress || {};
           if (cur.from)     setCurFrom(cur.from);    if (cur.to)       setCurTo(cur.to);
           if (cur.door)     setCurDoor(cur.door);    if (cur.village)  setCurVillage(cur.village);
@@ -191,9 +193,26 @@ export default function PersonalDetails() {
             <ProgressBar currentStep={1} totalSteps={4} />
             <h1 style={styles.title}>Personal Details</h1>
             <Section title="Profile Photo">
-              <div style={{ textAlign: "center" }}>
-                {photoPreview ? <img src={photoPreview} style={styles.photo} alt="profile" /> : <div style={styles.photoPlaceholder}>Upload Photo</div>}
-                <input type="file" accept="image/*" onChange={(e) => setPhotoPreview(URL.createObjectURL(e.target.files[0]))} />
+              <div style={{ display: "flex", alignItems: "center", gap: "1.5rem", flexWrap: "wrap" }}>
+                {photoPreview
+                  ? <img src={photoPreview} style={styles.photo} alt="profile" />
+                  : <div style={styles.photoPlaceholder}><span style={{ color: "#94a3b8", fontSize: "0.8rem" }}>No photo</span></div>
+                }
+                <div style={{ flex: 1 }}>
+                  <FileUpload
+                    label="Upload Profile Photo"
+                    category="personal"
+                    subKey="photo"
+                    apiFetch={apiFetch}
+                    value={photoKey}
+                    onChange={(key) => {
+                      setPhotoKey(key);
+                      // Also show a local preview immediately
+                    }}
+                    accept="image/*"
+                  />
+                  <p style={{ fontSize: "0.75rem", color: "#94a3b8", margin: "4px 0 0" }}>JPG or PNG, max 5MB</p>
+                </div>
               </div>
             </Section>
             <Section title="Name"><Row><Input label="First Name" value={firstName} onChange={setFirstName} /><Input label="Middle Name" value={middleName} onChange={setMiddleName} /><Input label="Last Name" value={lastName} onChange={setLastName} /></Row></Section>
