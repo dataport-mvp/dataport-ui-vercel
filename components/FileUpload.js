@@ -1,7 +1,4 @@
 // components/FileUpload.js
-// Uploads directly to S3 via pre-signed PUT URL.
-// Uses deterministic S3 key: {employee_id}/{category}/{subKey}.{ext}
-// This means re-uploading the same field OVERWRITES the same S3 object — no orphans ever.
 import { useState } from "react";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
@@ -11,7 +8,7 @@ const ALLOWED_EXTS  = { "application/pdf": "pdf", "image/jpeg": "jpg", "image/pn
 const MAX_SIZE      = 5 * 1024 * 1024; // 5MB
 
 export default function FileUpload({ label, category, subKey, companyId, apiFetch, value, onChange, disabled }) {
-  const [status,   setStatus]   = useState(""); // "" | "uploading" | "done" | "error"
+  const [status,   setStatus]   = useState(""); // "" | "uploading" | "deleting" | "done" | "error"
   const [progress, setProgress] = useState(0);
   const [error,    setError]    = useState("");
 
@@ -19,16 +16,13 @@ export default function FileUpload({ label, category, subKey, companyId, apiFetc
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate
     if (!ALLOWED_TYPES.includes(file.type)) { setError("Only PDF, JPG, PNG allowed"); return; }
     if (file.size > MAX_SIZE)               { setError("File must be under 5MB"); return; }
 
     setError(""); setStatus("uploading"); setProgress(15);
 
     try {
-      // Use deterministic filename: subKey + extension
-      // This ensures re-upload overwrites the same S3 object — no orphan files
-      const ext          = ALLOWED_EXTS[file.type] || "pdf";
+      const ext            = ALLOWED_EXTS[file.type] || "pdf";
       const stableFilename = `${subKey}.${ext}`;
 
       const body = { category, sub_key: subKey, filename: stableFilename };
@@ -59,7 +53,7 @@ export default function FileUpload({ label, category, subKey, companyId, apiFetc
 
       setProgress(100);
       setStatus("done");
-      onChange(s3_key); // notify parent — parent saves this key to DynamoDB on page save
+      onChange(s3_key); // notify parent — parent saves s3_key to DynamoDB on page save
     } catch (err) {
       setStatus("error");
       setError(err.message || "Upload failed");
@@ -67,8 +61,31 @@ export default function FileUpload({ label, category, subKey, companyId, apiFetc
     }
   };
 
-  const isUploaded = !!value;
-  // Extract readable filename from s3_key for display
+  const handleRemove = async () => {
+    if (!value) return;
+    setError(""); setStatus("deleting");
+
+    try {
+      // DELETE /upload?s3_key=... — physically removes the file from S3
+      // Sensitive documents (Aadhaar, PAN etc.) must not be left in storage unreferenced
+      const res = await apiFetch(`${API}/upload?s3_key=${encodeURIComponent(value)}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "Could not delete file");
+      }
+
+      setStatus("");
+      onChange(""); // clear s3_key in parent — DynamoDB updated on next page save
+    } catch (err) {
+      setStatus("error");
+      setError(err.message || "Delete failed");
+    }
+  };
+
+  const isUploaded  = !!value;
   const displayName = value ? value.split("/").pop() : null;
 
   return (
@@ -88,21 +105,33 @@ export default function FileUpload({ label, category, subKey, companyId, apiFetc
               <div style={{ height: 4, background: "#2563eb", borderRadius: 2, width: `${progress}%`, transition: "width 0.3s" }} />
             </div>
           </div>
+        ) : status === "deleting" ? (
+          <div style={{ fontSize: "0.8rem", color: "#ef4444" }}>Removing file…</div>
         ) : isUploaded ? (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
             <span style={{ fontSize: "0.82rem", color: "#15803d", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               ✓ {displayName}
             </span>
-            <label style={fs.changeBtn}>
-              Replace
-              <input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={handleFile}
+            <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+              <label style={fs.changeBtn}>
+                Replace
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={handleFile}
+                  disabled={disabled}
+                  style={{ display: "none" }}
+                />
+              </label>
+              <button
+                onClick={handleRemove}
                 disabled={disabled}
-                style={{ display: "none" }}
-              />
-            </label>
+                style={fs.removeBtn}
+                title="Remove file"
+              >
+                ✕
+              </button>
+            </div>
           </div>
         ) : (
           <label style={fs.uploadBtn}>
@@ -126,6 +155,7 @@ const fs = {
   label:     { fontSize: "0.85rem", color: "#475569", display: "block", marginBottom: 4 },
   box:       { border: "1.5px dashed", borderRadius: 8, padding: "0.65rem 0.85rem", transition: "all 0.2s" },
   uploadBtn: { fontSize: "0.82rem", color: "#2563eb", cursor: "pointer", fontWeight: 500 },
-  changeBtn: { fontSize: "0.75rem", color: "#2563eb", cursor: "pointer", padding: "0.2rem 0.6rem", border: "1px solid #2563eb", borderRadius: 5, background: "#fff", whiteSpace: "nowrap", flexShrink: 0 },
+  changeBtn: { fontSize: "0.75rem", color: "#2563eb", cursor: "pointer", padding: "0.2rem 0.6rem", border: "1px solid #2563eb", borderRadius: 5, background: "#fff", whiteSpace: "nowrap" },
+  removeBtn: { fontSize: "0.75rem", color: "#ef4444", cursor: "pointer", padding: "0.2rem 0.5rem", border: "1px solid #fca5a5", borderRadius: 5, background: "#fff", whiteSpace: "nowrap" },
   error:     { fontSize: "0.78rem", color: "#ef4444", marginTop: 3, margin: 0 },
 };
