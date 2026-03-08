@@ -1,4 +1,8 @@
 // components/FileUpload.js
+// Uploads directly to S3 via pre-signed PUT URL.
+// Deterministic S3 key: {employee_id}/{category}/{subKey}.{ext}
+// Re-uploading overwrites the same S3 object — no orphans.
+// Removing calls DELETE /upload — file is physically deleted from S3 immediately.
 import { useState } from "react";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
@@ -56,7 +60,7 @@ export default function FileUpload({ label, category, subKey, companyId, apiFetc
       onChange(s3_key); // notify parent — parent saves s3_key to DynamoDB on page save
     } catch (err) {
       setStatus("error");
-      setError(err.message || "Upload failed");
+      setError(typeof err.message==="string"?err.message:"Upload failed");
       setProgress(0);
     }
   };
@@ -81,12 +85,12 @@ export default function FileUpload({ label, category, subKey, companyId, apiFetc
       onChange(""); // clear s3_key in parent — DynamoDB updated on next page save
     } catch (err) {
       setStatus("error");
-      setError(err.message || "Delete failed");
+      setError(typeof err.message==="string"?err.message:"Delete failed");
     }
   };
 
-  const isUploaded  = !!value;
-  const displayName = value ? value.split("/").pop() : null;
+  const isUploaded  = !!(value && typeof value==="string");
+  const displayName = value && typeof value==="string" ? value.split("/").pop() : null;
 
   return (
     <div style={{ marginBottom: "0.75rem" }}>
