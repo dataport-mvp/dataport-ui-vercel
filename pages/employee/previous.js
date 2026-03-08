@@ -14,13 +14,14 @@ const STEP_DONE_CK = "#a78bfa";
 const STEP_CONN    = "#a78bfa";
 const STEP_SHADOW  = "rgba(124,58,237,0.35)";
 
+const genId = () => typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)+Date.now().toString(36);
 const emptyEmployment = () => ({
   companyName:"", officeAddress:"", employeeId:"", workEmail:"",
   designation:"", department:"", duties:"", employmentType:"", reasonForRelieving:"",
   reference:{ role:"", name:"", email:"", mobile:"" },
   contractVendor:{ company:"", email:"", mobile:"" },
   documents:{ payslipsKey:"", offerLetterKey:"", resignationKey:"", experienceKey:"", idCardKey:"" },
-  gap:{ hasGap:"", reason:"" }, company_id:"",
+  gap:{ hasGap:"", reason:"" }, company_id: genId(),
 });
 const emptyAck = () => ({ val:"", note:"" });
 
@@ -226,7 +227,7 @@ export default function PreviousCompany() {
               reference:{role:e.reference?.role||"",name:e.reference?.name||"",email:e.reference?.email||"",mobile:e.reference?.mobile||""},
               contractVendor:{company:e.contractVendor?.company||"",email:e.contractVendor?.email||"",mobile:e.contractVendor?.mobile||""},
               documents:{payslipsKey:e.documents?.payslipsKey||"",offerLetterKey:e.documents?.offerLetterKey||"",resignationKey:e.documents?.resignationKey||"",experienceKey:e.documents?.experienceKey||"",idCardKey:e.documents?.idCardKey||""},
-              gap:{hasGap:e.gap?.hasGap||"",reason:e.gap?.reason||""},company_id:e.company_id||"",
+              gap:{hasGap:e.gap?.hasGap||"",reason:e.gap?.reason||""},company_id:e.company_id||genId(),
             })));
           }
           if(data.acknowledgements){
