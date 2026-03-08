@@ -233,7 +233,7 @@ export default function EducationDetails() {
           if(dip.institute){setHasDip("Yes");setDipInstitute(dip.institute);} if(dip.board)setDipBoard(dip.board); if(dip.course)setDipCourse(dip.course);
           if(dip.from)setDipFrom(dip.from); if(dip.to)setDipTo(dip.to); if(dip.yearOfPassing)setDipYear(dip.yearOfPassing);
           if(dip.resultType)setDipResultType(dip.resultType); if(dip.resultValue)setDipResultValue(dip.resultValue); if(dip.mode)setDipMode(dip.mode); if(dip.certKey)setDipCertKey(dip.certKey);
-          if(certsData.length>0){setHasCerts("Yes");setCerts(certsData);}
+          if(certsData.length>0){setHasCerts("Yes");setCerts(certsData.map(c=>({name:typeof c.name==="string"?c.name:"",certKey:typeof c.certKey==="string"?c.certKey:""})));}
         }
       } catch(_) {}
       setLoading(false);
@@ -420,7 +420,7 @@ export default function EducationDetails() {
                   <div style={{marginTop:"0.5rem"}}>
                     <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Upload Certificate <span style={{color:"#ef4444"}}>*</span></span>
                     {errors[`cert_key_${idx}`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload is required</span>}
-                    <FileUpload label="Upload Certificate" category="education" subKey={`cert_${idx}`} apiFetch={apiFetch} value={cert.certKey} onChange={(k)=>{const c=[...certs];c[idx]={...c[idx],certKey:k};setCerts(c);isDirtyRef.current=true;fixErr(`cert_key_${idx}`);}}/>
+                    <FileUpload label="Upload Certificate" category="education" subKey={`cert_${idx}`} apiFetch={apiFetch} value={typeof cert.certKey==="string"?cert.certKey:""} onChange={(k)=>{const c=[...certs];c[idx]={...c[idx],certKey:typeof k==="string"?k:""};setCerts(c);isDirtyRef.current=true;fixErr(`cert_key_${idx}`);}}/>
                   </div>
                 </div>
               ))}
