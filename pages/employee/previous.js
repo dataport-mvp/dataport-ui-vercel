@@ -264,6 +264,11 @@ export default function PreviousCompany() {
       if(!emp.department) e[`${i}_department`]=true;
       if(!emp.duties) e[`${i}_duties`]=true;
       if(!emp.employmentType) e[`${i}_employmentType`]=true;
+      if(emp.employmentType==="Contract"){
+        if(!emp.contractVendor.company) e[`${i}_vendorCompany`]=true;
+        if(!emp.contractVendor.email) e[`${i}_vendorEmail`]=true;
+        if(!emp.contractVendor.mobile) e[`${i}_vendorMobile`]=true;
+      }
       if(!emp.reasonForRelieving) e[`${i}_reasonForRelieving`]=true;
       if(!emp.reference.role) e[`${i}_refRole`]=true;
       if(!emp.reference.name) e[`${i}_refName`]=true;
@@ -352,7 +357,7 @@ export default function PreviousCompany() {
               {emp.employmentType==="Contract"&&(
                 <div className="subsec">
                   <div className="sub-lbl">Vendor / Third-Party Details</div>
-                  <div className="fr"><F l="Vendor Company" v={emp.contractVendor.company} s={v=>update(index,"contractVendor.company",v)} r={false}/><F l="Vendor Email" v={emp.contractVendor.email} s={v=>update(index,"contractVendor.email",v)} r={false}/><F l="Vendor Mobile" v={emp.contractVendor.mobile} s={v=>/^\d*$/.test(v)&&update(index,"contractVendor.mobile",v)} mx={10} r={false}/></div>
+                  <div className="fr"><F l="Vendor Company" v={emp.contractVendor.company} s={v=>update(index,"contractVendor.company",v)} r={true} errKey={`${index}_vendorCompany`} errors={errors} onFix={fixErr}/><F l="Vendor Email" v={emp.contractVendor.email} s={v=>update(index,"contractVendor.email",v)} r={true} errKey={`${index}_vendorEmail`} errors={errors} onFix={fixErr}/><F l="Vendor Mobile" v={emp.contractVendor.mobile} s={v=>/^\d*$/.test(v)&&update(index,"contractVendor.mobile",v)} mx={10} r={true} errKey={`${index}_vendorMobile`} errors={errors} onFix={fixErr}/></div>
                 </div>
               )}
               <div style={{marginTop:"0.75rem"}}>
