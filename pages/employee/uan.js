@@ -175,6 +175,8 @@ export default function UANPage() {
           if(dr.epfoKey)setEpfoKey(dr.epfoKey);
           if(dr.hasUan)setHasUan(dr.hasUan);
           if(dr.uanCardKey)setUanCardKey(dr.uanCardKey);
+          // Never pre-load acks — user must always re-confirm on each submission.
+          // Acks are intentional declarations and should not be silently carried over.
           if(dr.uanNumber||dr.nameAsPerUan||dr.mobileLinked||dr.isActive||dr.pfRecords){
             setForm({
               uanMaster:{uanNumber:dr.uanNumber||"",nameAsPerUan:dr.nameAsPerUan||"",mobileLinked:dr.mobileLinked||"",isActive:dr.isActive||""},
@@ -188,10 +190,17 @@ export default function UANPage() {
     fetchDraft();
   },[ready,user,apiFetch]);
 
-  const updateUan=(field,value)=>{setForm(p=>({...p,uanMaster:{...p.uanMaster,[field]:value}}));isDirtyRef.current=true;};
-  const updatePf=(i,field,value)=>{setForm(p=>({...p,pfRecords:p.pfRecords.map((r,idx)=>idx===i?{...r,[field]:value}:r)}));isDirtyRef.current=true;};
-  const addPfRecord=()=>{setForm(p=>({...p,pfRecords:[...p.pfRecords,emptyPfRecord()]}));isDirtyRef.current=true;};
-  const removePfRecord=(i)=>{if(i===0)return;setForm(p=>({...p,pfRecords:p.pfRecords.filter((_,idx)=>idx!==i)}));isDirtyRef.current=true;};
+  const updateUan=(field,value)=>{setForm(p=>({...p,uanMaster:{...p.uanMaster,[field]:value}}));markDirty();};
+  const updatePf=(i,field,value)=>{setForm(p=>({...p,pfRecords:p.pfRecords.map((r,idx)=>idx===i?{...r,[field]:value}:r)}));markDirty();};
+  const addPfRecord=()=>{setForm(p=>({...p,pfRecords:[...p.pfRecords,emptyPfRecord()]}));markDirty();};
+  const removePfRecord=(i)=>{if(i===0)return;setForm(p=>({...p,pfRecords:p.pfRecords.filter((_,idx)=>idx!==i)}));markDirty();};
+  // When user edits any field after a submitted profile, clear acks so they must re-confirm
+  const markDirty=()=>{
+    if(isDirtyRef.current===false&&serverDraft?.status==="submitted"){
+      setAcks({truthful:false,notTampered:false,consent:false,liability:false,updates:false});
+    }
+    isDirtyRef.current=true;
+  };
   const toggleAck=(id)=>setAcks(p=>({...p,[id]:!p[id]}));
   const allAcksChecked=Object.values(acks).every(Boolean);
   const fixErr=(key)=>setErrors(p=>({...p,[key]:false}));
@@ -301,7 +310,7 @@ export default function UANPage() {
               <span style={{fontSize:"0.8rem",fontWeight:700,color:"#1a1730",textTransform:"uppercase",letterSpacing:"0.5px"}}>Do you have a UAN?</span>
               {errors.hasUan&&<span style={{fontSize:"0.7rem",color:"#ef4444",fontWeight:600}}>Please select an option</span>}
               {["Yes","No"].map(opt=>(
-                <button key={opt} onClick={()=>{setHasUan(opt);setErrors({});isDirtyRef.current=true;}}
+                <button key={opt} onClick={()=>{setHasUan(opt);setErrors({});markDirty();}}
                   style={{padding:"0.45rem 1.4rem",borderRadius:999,fontWeight:700,fontSize:"0.82rem",cursor:"pointer",transition:"all 0.18s",
                     background:hasUan===opt?"#4f46e5":"transparent",
                     color:hasUan===opt?"#fff":"#4f46e5",
@@ -335,7 +344,7 @@ export default function UANPage() {
             <div style={{marginTop:"0.85rem"}}>
               <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>EPFO Service History Record <span style={{color:"#ef4444"}}>*</span></span>
               {errors.epfoKey&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload is required</span>}
-              <FileUpload label="EPFO Service History" category="uan" subKey="epfo" apiFetch={apiFetch} value={epfoKey} onChange={v=>{setEpfoKey(v);isDirtyRef.current=true;fixErr("epfoKey");}}/>
+              <FileUpload label="EPFO Service History" category="uan" subKey="epfo" apiFetch={apiFetch} value={epfoKey} onChange={v=>{setEpfoKey(v);markDirty();fixErr("epfoKey");}}/>
               <p style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:4}}>Download from EPFO portal → Upload here</p>
             </div>
 
@@ -343,7 +352,7 @@ export default function UANPage() {
             <div style={{marginTop:"0.85rem"}}>
               <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>UAN Card <span style={{color:"#ef4444"}}>*</span></span>
               {errors.uanCardKey&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload is required</span>}
-              <FileUpload label="UAN Card" category="uan" subKey="epfo" apiFetch={apiFetch} value={uanCardKey} onChange={v=>{setUanCardKey(v);isDirtyRef.current=true;fixErr("uanCardKey");}}/>
+              <FileUpload label="UAN Card" category="uan" subKey="uanCard" apiFetch={apiFetch} value={uanCardKey} onChange={v=>{setUanCardKey(v);markDirty();fixErr("uanCardKey");}}/>
               <p style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:4}}>Download from UAN portal → Download UAN Card → Upload here</p>
             </div>
           </div>} {/* end hasUan===Yes UAN Details card */}
