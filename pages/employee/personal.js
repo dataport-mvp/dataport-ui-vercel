@@ -17,8 +17,8 @@ const STEP_SHADOW  = "rgba(79,70,229,0.35)";
 const G = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #e8e6f4; font-family: 'Plus Jakarta Sans', sans-serif; }
-  .pg { min-height: 100vh; background: #e8e6f4; padding-bottom: 3rem; }
+  body { background: #dfe3f5; font-family: 'Plus Jakarta Sans', sans-serif; }
+  .pg { min-height: 100vh; background: #dfe3f5; padding-bottom: 3rem; }
   .wrap { max-width: 860px; margin: auto; padding: 0 1.25rem; }
 
   /* Topbar */
@@ -78,7 +78,7 @@ const G = `
   .fr:last-child { margin-bottom: 0; }
   .fi { display: flex; flex-direction: column; gap: 0.28rem; flex: 1; min-width: 138px; }
   .fl { font-size: 0.7rem; font-weight: 700; color: #8b88b0; letter-spacing: 0.55px; text-transform: uppercase; }
-  .in { padding: 0.65rem 0.875rem; background: #f2f1f9; border: 1.5px solid #dddaf0;
+  .in { padding: 0.65rem 0.875rem; background: #f0effe; border: 1.5px solid #c8c4e0;
     border-radius: 9px; font-family: inherit; font-size: 0.875rem; color: #1e293b;
     outline: none; width: 100%; transition: all 0.18s; }
   .in:focus { border-color: #4f46e5; background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.13); }
@@ -180,7 +180,7 @@ function StepNav({ current, onNavigate }) {
               color: current===s.n ? STEP_COLOR : current>s.n ? STEP_DONE_CK : "#8b88b0"}}>{s.label}</span>
           </button>
           {i < steps.length - 1 && (
-            <div style={{width:52,height:2,background:current>s.n ? STEP_CONN : "#dddaf0",margin:"0 -0.25rem",marginBottom:"1.4rem",borderRadius:2}}/>
+            <div style={{width:52,height:2,background:current>s.n ? STEP_CONN : "#ccc9e4",margin:"0 -0.25rem",marginBottom:"1.4rem",borderRadius:2}}/>
           )}
         </div>
       ))}
@@ -447,7 +447,7 @@ export default function PersonalDetails() {
 
   if (!ready || !user) return null;
   if (loading) return (
-    <div style={{minHeight:"100vh",background:"#e8e6f4",display:"flex",alignItems:"center",justifyContent:"center"}}>
+    <div style={{minHeight:"100vh",background:"#dfe3f5",display:"flex",alignItems:"center",justifyContent:"center"}}>
       <p style={{color:"#8b88b0",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:500}}>Loading your profile…</p>
     </div>
   );
@@ -500,7 +500,7 @@ export default function PersonalDetails() {
                 <div className="sh"><div className="si cyn">✏️</div><span className="st">Full Name</span></div>
                 <div className="fr">
                   <F l="First Name"  v={firstName}  s={dirty(setFirstName)} />
-                  <F l="Middle Name" v={middleName} s={dirty(setMiddleName)} />
+                  <F l="Middle Name" v={middleName} s={dirty(setMiddleName)} r={false} />
                   <F l="Last Name"   v={lastName}   s={dirty(setLastName)} />
                 </div>
               </div>
@@ -509,7 +509,7 @@ export default function PersonalDetails() {
                 <div className="sh"><div className="si vio">👨</div><span className="st">Father's Name</span></div>
                 <div className="fr">
                   <F l="First Name"  v={fatherFirst}  s={dirty(setFatherFirst)} />
-                  <F l="Middle Name" v={fatherMiddle} s={dirty(setFatherMiddle)} />
+                  <F l="Middle Name" v={fatherMiddle} s={dirty(setFatherMiddle)} r={false} />
                   <F l="Last Name"   v={fatherLast}   s={dirty(setFatherLast)} />
                 </div>
               </div>
@@ -518,7 +518,7 @@ export default function PersonalDetails() {
                 <div className="sh"><div className="si ros">👩</div><span className="st">Mother's Name</span></div>
                 <div className="fr">
                   <F l="First Name"  v={motherFirst}  s={dirty(setMotherFirst)} />
-                  <F l="Middle Name" v={motherMiddle} s={dirty(setMotherMiddle)} />
+                  <F l="Middle Name" v={motherMiddle} s={dirty(setMotherMiddle)} r={false} />
                   <F l="Last Name"   v={motherLast}   s={dirty(setMotherLast)} />
                 </div>
               </div>
