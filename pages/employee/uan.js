@@ -26,8 +26,8 @@ const emptyPfRecord = () => ({ companyName:"", pfMemberId:"", dojEpfo:"", doeEpf
 const G = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #dfe3f5; font-family: 'Plus Jakarta Sans', sans-serif; }
-  .pg { min-height: 100vh; background: #dfe3f5; padding-bottom: 3rem; }
+  body { background: #cdd2ed; font-family: 'Plus Jakarta Sans', sans-serif; }
+  .pg { min-height: 100vh; background: #cdd2ed; padding-bottom: 3rem; }
   .wrap { max-width: 860px; margin: auto; padding: 0 1.25rem; }
   .topbar { background: #1e1a3e; border-bottom: 1px solid #2d2860; padding: 0.85rem 1.75rem;
     display: flex; justify-content: space-between; align-items: center;
@@ -48,7 +48,7 @@ const G = `
     border-radius: 999px; font-size: 0.6rem; font-weight: 800; min-width: 16px; height: 16px;
     display: flex; align-items: center; justify-content: center; padding: 0 3px; border: 2px solid #1e1a3e; }
   .sc { background: #ffffff; border-radius: 16px; padding: 1.5rem 1.6rem; margin-bottom: 1.1rem;
-    box-shadow: 0 4px 24px rgba(30,26,62,0.10), 0 1px 4px rgba(30,26,62,0.06); position: relative; overflow: hidden; }
+    box-shadow: 0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12); border: 1px solid rgba(255,255,255,0.85); position: relative; overflow: hidden; }
   .sc::before { content:''; position:absolute; top:0; left:0; bottom:0; width:4px; border-radius:16px 0 0 16px; }
   .sc.ind::before{background:#4f46e5;} .sc.grn::before{background:#16a34a;} .sc.amb::before{background:#d97706;}
   .sh { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1.15rem; }
@@ -59,7 +59,7 @@ const G = `
   .fr:last-child { margin-bottom: 0; }
   .fi { display: flex; flex-direction: column; gap: 0.28rem; flex: 1; min-width: 138px; }
   .fl { font-size: 0.7rem; font-weight: 700; color: #8b88b0; letter-spacing: 0.55px; text-transform: uppercase; }
-  .in { padding: 0.65rem 0.875rem; background: #f0effe; border: 1.5px solid #c8c4e0;
+  .in { padding: 0.65rem 0.875rem; background: #ececf9; border: 1.5px solid #b8b4d4;
     border-radius: 9px; font-family: inherit; font-size: 0.875rem; color: #1a1730;
     outline: none; width: 100%; transition: all 0.18s; }
   .in:focus { border-color: #4f46e5; background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.13); }
@@ -120,7 +120,7 @@ function SignoutModal({ onConfirm, onCancel }) {
 function StepNav({ current, onNavigate }) {
   const steps=[{n:1,label:"Personal",icon:"👤",path:"/employee/personal"},{n:2,label:"Education",icon:"🎓",path:"/employee/education"},{n:3,label:"Employment",icon:"💼",path:"/employee/previous"},{n:4,label:"Review",icon:"✅",path:"/employee/uan"}];
   return (
-    <div style={{background:"#fff",borderRadius:14,padding:"1.1rem 0.5rem",marginBottom:"1.6rem",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 24px rgba(30,26,62,0.10)"}}>
+    <div style={{background:"#fff",borderRadius:14,padding:"1.1rem 0.5rem",marginBottom:"1.6rem",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12)"}}>
       {steps.map((s,i)=>(
         <div key={s.n} style={{display:"flex",alignItems:"center"}}>
           <button onClick={()=>onNavigate(s.path)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.3rem",background:"none",border:"none",cursor:"pointer",padding:"0.2rem 0.9rem"}}>
@@ -157,6 +157,7 @@ export default function UANPage() {
   const [errors,setErrors]                 = useState({});
   const isDirtyRef = useRef(false);
   const [form,setForm] = useState({ uanMaster:{uanNumber:"",nameAsPerUan:"",mobileLinked:"",isActive:""}, pfRecords:[emptyPfRecord()] });
+  const [hasUan,setHasUan]                 = useState(""); // "Yes" | "No" | "" fresher toggle
   const [acks,setAcks] = useState({ truthful:false, notTampered:false, consent:false, liability:false, updates:false });
   const [submitError,setSubmitError] = useState("");
   const [loading,setLoading]         = useState(true);
@@ -172,6 +173,7 @@ export default function UANPage() {
         if(res.ok){
           const dr=await res.json();setServerDraft(dr);
           if(dr.epfoKey)setEpfoKey(dr.epfoKey);
+          if(dr.hasUan)setHasUan(dr.hasUan);
           if(dr.uanCardKey)setUanCardKey(dr.uanCardKey);
           if(dr.uanNumber||dr.nameAsPerUan||dr.mobileLinked||dr.isActive||dr.pfRecords){
             setForm({
@@ -195,14 +197,15 @@ export default function UANPage() {
   const fixErr=(key)=>setErrors(p=>({...p,[key]:false}));
 
   const validate=()=>{
+    if(!hasUan) return {hasUan:true};
     const e={};
-    if(!form.uanMaster.uanNumber) e.uanNumber=true;
+    if(hasUan==="Yes"){if(!form.uanMaster.uanNumber) e.uanNumber=true;
     if(!form.uanMaster.nameAsPerUan) e.nameAsPerUan=true;
     if(!form.uanMaster.mobileLinked) e.mobileLinked=true;
     if(!form.uanMaster.isActive) e.isActive=true;
     if(!epfoKey) e.epfoKey=true;
-    if(!uanCardKey) e.uanCardKey=true;
-    form.pfRecords.forEach((r,i)=>{
+    if(!uanCardKey) e.uanCardKey=true;}
+    if(hasUan==="Yes") form.pfRecords.forEach((r,i)=>{
       if(!r.companyName) e[`pf_${i}_company`]=true;
       if(!r.pfMemberId) e[`pf_${i}_memberId`]=true;
     });
@@ -211,7 +214,7 @@ export default function UANPage() {
 
   const handleSignout=async()=>{
     if(serverDraft&&serverDraft.employee_id){
-      try{await apiFetch(`${API}/employee`,{method:"POST",body:JSON.stringify({...serverDraft,uanNumber:form.uanMaster.uanNumber,nameAsPerUan:form.uanMaster.nameAsPerUan,mobileLinked:form.uanMaster.mobileLinked,isActive:form.uanMaster.isActive,pfRecords:form.pfRecords,epfoKey,uanCardKey})});}catch(_){}
+      try{await apiFetch(`${API}/employee`,{method:"POST",body:JSON.stringify({...serverDraft,hasUan,uanNumber:form.uanMaster.uanNumber,nameAsPerUan:form.uanMaster.nameAsPerUan,mobileLinked:form.uanMaster.mobileLinked,isActive:form.uanMaster.isActive,pfRecords:form.pfRecords,epfoKey,uanCardKey})});}catch(_){}
     }
     logout();
   };
@@ -269,7 +272,7 @@ export default function UANPage() {
     );
   }
 
-  if(loading)return(<div style={{minHeight:"100vh",background:"#dfe3f5",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#8b88b0",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:500}}>Loading UAN details…</p></div>);
+  if(loading)return(<div style={{minHeight:"100vh",background:"#cdd2ed",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#8b88b0",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:500}}>Loading UAN details…</p></div>);
 
   return(
     <>
@@ -288,7 +291,30 @@ export default function UANPage() {
         <div className="wrap">
           <StepNav current={4} onNavigate={(path)=>router.push(path)}/>
 
-          <div className="sc ind">
+          {/* ── Do you have a UAN? ─────────────────────── */}
+          <div className="sc ind" style={{marginBottom:"1.2rem"}}>
+            <div className="sh"><div className="si ind">🏦</div><span className="st">UAN / PF Details</span></div>
+            <p style={{fontSize:"0.82rem",color:"#6b6894",marginBottom:"1rem"}}>
+              If you are a <strong>fresher</strong> or have never worked before, select <strong>No</strong>. You can skip UAN details and directly proceed to acknowledgements.
+            </p>
+            <div style={{display:"flex",alignItems:"center",gap:"0.75rem",flexWrap:"wrap"}}>
+              <span style={{fontSize:"0.8rem",fontWeight:700,color:"#1a1730",textTransform:"uppercase",letterSpacing:"0.5px"}}>Do you have a UAN?</span>
+              {errors.hasUan&&<span style={{fontSize:"0.7rem",color:"#ef4444",fontWeight:600}}>Please select an option</span>}
+              {["Yes","No"].map(opt=>(
+                <button key={opt} onClick={()=>{setHasUan(opt);setErrors({});isDirtyRef.current=true;}}
+                  style={{padding:"0.45rem 1.4rem",borderRadius:999,fontWeight:700,fontSize:"0.82rem",cursor:"pointer",transition:"all 0.18s",
+                    background:hasUan===opt?"#4f46e5":"transparent",
+                    color:hasUan===opt?"#fff":"#4f46e5",
+                    border:`2px solid ${errors.hasUan?"#ef4444":"#4f46e5"}`,
+                    boxShadow:hasUan===opt?"0 2px 10px rgba(79,70,229,0.35)":"none"}}>
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ── UAN fields — only if hasUan===Yes ──────── */}
+          {hasUan==="Yes" && <div className="sc ind">
             <div className="sh"><div className="si ind">🏦</div><span className="st">UAN Details</span></div>
             <div className="fr">
               <F l="UAN Number" v={form.uanMaster.uanNumber} s={v=>updateUan("uanNumber",v.replace(/\D/g,""))} mx={12} errKey="uanNumber" errors={errors} onFix={fixErr}/>
@@ -320,10 +346,10 @@ export default function UANPage() {
               <FileUpload label="UAN Card" category="uan" subKey="epfo" apiFetch={apiFetch} value={uanCardKey} onChange={v=>{setUanCardKey(v);isDirtyRef.current=true;fixErr("uanCardKey");}}/>
               <p style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:4}}>Download from UAN portal → Download UAN Card → Upload here</p>
             </div>
-          </div>
+          </div>} {/* end hasUan===Yes UAN Details card */}
 
-          {/* PF Details */}
-          <div className="sc grn">
+          {/* ── PF Details — only if hasUan===Yes ──────── */}
+          {hasUan==="Yes" && <div className="sc grn">
             <div className="sh"><div className="si grn">📊</div><span className="st">PF Details (Per Previous Employer)</span></div>
             {form.pfRecords.map((record,i)=>(
               <div key={i} className="pf-box">
@@ -348,9 +374,9 @@ export default function UANPage() {
               </div>
             ))}
             <button className="add-btn" onClick={addPfRecord}>+ Add Another Company</button>
-          </div>
+          </div>} {/* end hasUan===Yes PF Details card */}
 
-          {/* Declaration */}
+          {/* Declaration — always visible */}
           <div className="sc amb">
             <div className="sh"><div className="si amb">✍️</div><span className="st">Declaration & Acknowledgement</span></div>
             <p style={{fontSize:"0.84rem",color:"#6b6894",marginBottom:"1rem",lineHeight:1.5}}>Please read and confirm each statement before submitting.</p>
