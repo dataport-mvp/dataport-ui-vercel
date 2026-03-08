@@ -17,8 +17,8 @@ const STEP_SHADOW  = "rgba(217,119,6,0.35)";
 const G = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #e8e6f4; font-family: 'Plus Jakarta Sans', sans-serif; }
-  .pg { min-height: 100vh; background: #e8e6f4; padding-bottom: 3rem; }
+  body { background: #dfe3f5; font-family: 'Plus Jakarta Sans', sans-serif; }
+  .pg { min-height: 100vh; background: #dfe3f5; padding-bottom: 3rem; }
   .wrap { max-width: 860px; margin: auto; padding: 0 1.25rem; }
   .topbar { background: #1e1a3e; border-bottom: 1px solid #2d2860; padding: 0.85rem 1.75rem;
     display: flex; justify-content: space-between; align-items: center;
@@ -54,7 +54,7 @@ const G = `
   .fr:last-child { margin-bottom: 0; }
   .fi { display: flex; flex-direction: column; gap: 0.28rem; flex: 1; min-width: 138px; }
   .fl { font-size: 0.7rem; font-weight: 700; color: #8b88b0; letter-spacing: 0.55px; text-transform: uppercase; }
-  .in { padding: 0.65rem 0.875rem; background: #f2f1f9; border: 1.5px solid #dddaf0;
+  .in { padding: 0.65rem 0.875rem; background: #f0effe; border: 1.5px solid #c8c4e0;
     border-radius: 9px; font-family: inherit; font-size: 0.875rem; color: #1a1730;
     outline: none; width: 100%; transition: all 0.18s; }
   .in:focus { border-color: #4f46e5; background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.13); }
@@ -73,13 +73,13 @@ const G = `
     border: 1.5px solid #2d2860; border-radius: 10px; font-family: inherit;
     font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
   .sbtn:hover { border-color: #a78bfa; color: #a78bfa; }
-  .cert-box { background: #f7f6fd; border: 1.5px solid #dddaf0; border-radius: 10px; padding: 1rem; margin-bottom: 0.6rem; }
+  .cert-box { background: #f0effe; border: 1.5px solid #dddaf0; border-radius: 10px; padding: 1rem; margin-bottom: 0.6rem; }
   .add-btn { padding: 0.42rem 1.1rem; background: #eef2ff; color: #4f46e5; border: 1.5px solid #c7d2fe;
     border-radius: 8px; font-family: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; margin-top: 0.65rem; }
   .rm-btn { padding: 0.28rem 0.7rem; background: #fff5f5; color: #ef4444; border: 1.5px solid #fecaca;
     border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; font-family: inherit; }
   .att-split { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-top: 0.85rem; }
-  .att-box { flex: 1; min-width: 200px; background: #f7f6fd; border: 1.5px solid #dddaf0; border-radius: 10px; padding: 0.9rem 1rem; }
+  .att-box { flex: 1; min-width: 200px; background: #f0effe; border: 1.5px solid #dddaf0; border-radius: 10px; padding: 0.9rem 1rem; }
   .att-box-lbl { font-size: 0.7rem; font-weight: 700; color: #8b88b0; letter-spacing: 0.55px; text-transform: uppercase; display: block; margin-bottom: 0.5rem; }
   @media (max-width:640px){ .fr{flex-direction:column;} .fi{min-width:100%;} .topbar{flex-direction:column;gap:0.6rem;position:relative;} .att-split{flex-direction:column;} }
 `;
@@ -131,7 +131,7 @@ function StepNav({ current, onNavigate }) {
             </div>
             <span style={{fontSize:"0.67rem",fontWeight:700,letterSpacing:"0.6px",textTransform:"uppercase",color:current===s.n?STEP_COLOR:current>s.n?STEP_DONE_CK:"#8b88b0"}}>{s.label}</span>
           </button>
-          {i < steps.length-1 && <div style={{width:52,height:2,background:current>s.n?STEP_CONN:"#dddaf0",margin:"0 -0.25rem",marginBottom:"1.4rem",borderRadius:2}}/>}
+          {i < steps.length-1 && <div style={{width:52,height:2,background:current>s.n?STEP_CONN:"#c5d6ea",margin:"0 -0.25rem",marginBottom:"1.4rem",borderRadius:2}}/>}
         </div>
       ))}
     </div>
@@ -251,8 +251,8 @@ export default function EducationDetails() {
     if(!iMode)e.iMode=true; if(!iResultType)e.iResultType=true; if(!iResultValue)e.iResultValue=true; if(!iMedium)e.iMedium=true; if(!iCertKey)e.iCertKey=true;
     if(!ugCollege)e.ugCollege=true; if(!ugUniversity)e.ugUniversity=true; if(!ugCourse)e.ugCourse=true; if(!ugHall)e.ugHall=true;
     if(!ugFrom)e.ugFrom=true; if(!ugTo)e.ugTo=true; if(!ugYear)e.ugYear=true; if(!ugAddress)e.ugAddress=true;
-    if(!ugMode)e.ugMode=true; if(!ugResultType)e.ugResultType=true; if(!ugResultValue)e.ugResultValue=true; if(!ugMedium)e.ugMedium=true; if(!ugBacklogs)e.ugBacklogs=true; if(!ugProvKey)e.ugProvKey=true;
-    if(hasPG==="Yes"){ if(!pgCollege)e.pgCollege=true; if(!pgUniversity)e.pgUniversity=true; if(!pgCourse)e.pgCourse=true; if(!pgHall)e.pgHall=true; if(!pgFrom)e.pgFrom=true; if(!pgTo)e.pgTo=true; if(!pgYear)e.pgYear=true; if(!pgAddress)e.pgAddress=true; if(!pgMode)e.pgMode=true; if(!pgResultType)e.pgResultType=true; if(!pgResultValue)e.pgResultValue=true; if(!pgMedium)e.pgMedium=true; if(!pgBacklogs)e.pgBacklogs=true; if(!pgProvKey)e.pgProvKey=true; }
+    if(!ugMode)e.ugMode=true; if(!ugResultType)e.ugResultType=true; if(!ugResultValue)e.ugResultValue=true; if(!ugMedium)e.ugMedium=true; if(!ugBacklogs)e.ugBacklogs=true; if(ugBacklogs!=="Yes"&&!ugProvKey)e.ugProvKey=true;
+    if(hasPG==="Yes"){ if(!pgCollege)e.pgCollege=true; if(!pgUniversity)e.pgUniversity=true; if(!pgCourse)e.pgCourse=true; if(!pgHall)e.pgHall=true; if(!pgFrom)e.pgFrom=true; if(!pgTo)e.pgTo=true; if(!pgYear)e.pgYear=true; if(!pgAddress)e.pgAddress=true; if(!pgMode)e.pgMode=true; if(!pgResultType)e.pgResultType=true; if(!pgResultValue)e.pgResultValue=true; if(!pgMedium)e.pgMedium=true; if(!pgBacklogs)e.pgBacklogs=true; if(pgBacklogs!=="Yes"&&!pgProvKey)e.pgProvKey=true; }
     if(hasDip==="Yes"){ if(!dipInstitute)e.dipInstitute=true; if(!dipBoard)e.dipBoard=true; if(!dipCourse)e.dipCourse=true; if(!dipFrom)e.dipFrom=true; if(!dipTo)e.dipTo=true; if(!dipYear)e.dipYear=true; if(!dipResultType)e.dipResultType=true; if(!dipResultValue)e.dipResultValue=true; if(!dipMode)e.dipMode=true; if(!dipCertKey)e.dipCertKey=true; }
     if(hasCerts==="Yes"){ certs.forEach((c,idx)=>{ if(!c.name)e[`cert_name_${idx}`]=true; if(!c.certKey)e[`cert_key_${idx}`]=true; }); }
     return e;
@@ -302,7 +302,7 @@ export default function EducationDetails() {
   };
 
   if(!ready||!user) return null;
-  if(loading) return (<div style={{minHeight:"100vh",background:"#e8e6f4",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#8b88b0",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:500}}>Loading education details…</p></div>);
+  if(loading) return (<div style={{minHeight:"100vh",background:"#dfe3f5",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#8b88b0",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:500}}>Loading education details…</p></div>);
 
   const UL = ({lbl,required=true,errKey:ek}) => (<>
     <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>{lbl}{required&&<span style={{color:"#ef4444",marginLeft:2}}>*</span>}</span>
@@ -356,8 +356,12 @@ export default function EducationDetails() {
             <div className="fr"><FS l="Result Type" v={ugResultType} s={d(setUgResultType)} o={["Percentage","CGPA","Grade"]} errKey="ugResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={ugResultValue} s={d(setUgResultValue)} errKey="ugResultValue" errors={errors} onFix={fixErr}/><F l="Medium of Study" v={ugMedium} s={d(setUgMedium)} errKey="ugMedium" errors={errors} onFix={fixErr}/></div>
             <div className="fr"><FS l="Any Active Backlogs?" v={ugBacklogs} s={d(setUgBacklogs)} o={["No","Yes"]} errKey="ugBacklogs" errors={errors} onFix={fixErr}/></div>
             <div className="att-split">
-              <div className="att-box"><UL lbl="Provisional Marksheet" errKey="ugProvKey"/><FileUpload label="Upload Provisional Marksheet" category="education" subKey="ug_provisional" apiFetch={apiFetch} value={ugProvKey} onChange={(k)=>{setUgProvKey(k);isDirtyRef.current=true;fixErr("ugProvKey");}}/></div>
-              <div className="att-box"><span className="att-box-lbl">Convocation Certificate</span><FileUpload label="Upload Convocation Certificate" category="education" subKey="ug_convocation" apiFetch={apiFetch} value={ugConvoKey} onChange={(k)=>{setUgConvoKey(k);isDirtyRef.current=true;}}/></div>
+              <div className="att-box">
+                <UL lbl="Provisional Marksheet" required={ugBacklogs!=="Yes"} errKey="ugProvKey"/>
+                {ugBacklogs==="Yes"&&<p style={{fontSize:"0.7rem",color:"#d97706",fontWeight:600,marginBottom:"0.4rem"}}>⚠️ Upload when available after clearing backlogs</p>}
+                <FileUpload label="Upload Provisional Marksheet" category="education" subKey="undergraduate" apiFetch={apiFetch} value={ugProvKey} onChange={(k)=>{setUgProvKey(k);isDirtyRef.current=true;fixErr("ugProvKey");}}/>
+              </div>
+              <div className="att-box"><span className="att-box-lbl">Convocation Certificate</span><FileUpload label="Upload Convocation Certificate" category="education" subKey="undergraduate" apiFetch={apiFetch} value={ugConvoKey} onChange={(k)=>{setUgConvoKey(k);isDirtyRef.current=true;}}/></div>
             </div>
           </div>
 
@@ -373,8 +377,12 @@ export default function EducationDetails() {
               <div className="fr"><FS l="Result Type" v={pgResultType} s={d(setPgResultType)} o={["Percentage","CGPA","Grade"]} errKey="pgResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={pgResultValue} s={d(setPgResultValue)} errKey="pgResultValue" errors={errors} onFix={fixErr}/><F l="Medium of Study" v={pgMedium} s={d(setPgMedium)} errKey="pgMedium" errors={errors} onFix={fixErr}/></div>
               <div className="fr"><FS l="Any Active Backlogs?" v={pgBacklogs} s={d(setPgBacklogs)} o={["No","Yes"]} errKey="pgBacklogs" errors={errors} onFix={fixErr}/></div>
               <div className="att-split">
-                <div className="att-box"><UL lbl="Provisional Marksheet" errKey="pgProvKey"/><FileUpload label="Upload Provisional Marksheet" category="education" subKey="pg_provisional" apiFetch={apiFetch} value={pgProvKey} onChange={(k)=>{setPgProvKey(k);isDirtyRef.current=true;fixErr("pgProvKey");}}/></div>
-                <div className="att-box"><span className="att-box-lbl">Convocation Certificate</span><FileUpload label="Upload Convocation Certificate" category="education" subKey="pg_convocation" apiFetch={apiFetch} value={pgConvoKey} onChange={(k)=>{setPgConvoKey(k);isDirtyRef.current=true;}}/></div>
+                <div className="att-box">
+                  <UL lbl="Provisional Marksheet" required={pgBacklogs!=="Yes"} errKey="pgProvKey"/>
+                  {pgBacklogs==="Yes"&&<p style={{fontSize:"0.7rem",color:"#d97706",fontWeight:600,marginBottom:"0.4rem"}}>⚠️ Upload when available after clearing backlogs</p>}
+                  <FileUpload label="Upload Provisional Marksheet" category="education" subKey="postgraduate" apiFetch={apiFetch} value={pgProvKey} onChange={(k)=>{setPgProvKey(k);isDirtyRef.current=true;fixErr("pgProvKey");}}/>
+                </div>
+                <div className="att-box"><span className="att-box-lbl">Convocation Certificate</span><FileUpload label="Upload Convocation Certificate" category="education" subKey="postgraduate" apiFetch={apiFetch} value={pgConvoKey} onChange={(k)=>{setPgConvoKey(k);isDirtyRef.current=true;}}/></div>
               </div>
             </>)}
           </div>
