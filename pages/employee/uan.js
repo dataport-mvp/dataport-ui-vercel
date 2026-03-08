@@ -316,7 +316,7 @@ export default function UANPage() {
                     background:hasUan===opt?"#4f46e5":"transparent",
                     color:hasUan===opt?"#fff":"#4f46e5",
                     border:`2px solid ${errors.hasUan?"#ef4444":"#4f46e5"}`,
-                    boxShadow:hasUan===opt?"0 2px 10px rgba(79,70,229,0.35)":"none"}}}>
+                    boxShadow:hasUan===opt?"0 2px 10px rgba(79,70,229,0.35)":"none"}}>
                   {opt}
                 </button>
               ))}
