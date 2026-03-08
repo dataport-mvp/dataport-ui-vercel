@@ -359,9 +359,9 @@ export default function EducationDetails() {
               <div className="att-box">
                 <UL lbl="Provisional Marksheet" required={ugBacklogs!=="Yes"} errKey="ugProvKey"/>
                 {ugBacklogs==="Yes"&&<p style={{fontSize:"0.7rem",color:"#d97706",fontWeight:600,marginBottom:"0.4rem"}}>⚠️ Upload when available after clearing backlogs</p>}
-                <FileUpload label="Upload Provisional Marksheet" category="education" subKey="undergraduate" apiFetch={apiFetch} value={ugProvKey} onChange={(k)=>{setUgProvKey(k);isDirtyRef.current=true;fixErr("ugProvKey");}}/>
+                <FileUpload label="Upload Provisional Marksheet" category="education" subKey="ug_provisional" apiFetch={apiFetch} value={ugProvKey} onChange={(k)=>{setUgProvKey(k);isDirtyRef.current=true;fixErr("ugProvKey");}}/>
               </div>
-              <div className="att-box"><span className="att-box-lbl">Convocation Certificate</span><FileUpload label="Upload Convocation Certificate" category="education" subKey="undergraduate" apiFetch={apiFetch} value={ugConvoKey} onChange={(k)=>{setUgConvoKey(k);isDirtyRef.current=true;}}/></div>
+              <div className="att-box"><span className="att-box-lbl">Convocation Certificate</span><FileUpload label="Upload Convocation Certificate" category="education" subKey="ug_convocation" apiFetch={apiFetch} value={ugConvoKey} onChange={(k)=>{setUgConvoKey(k);isDirtyRef.current=true;}}/></div>
             </div>
           </div>
 
@@ -380,9 +380,9 @@ export default function EducationDetails() {
                 <div className="att-box">
                   <UL lbl="Provisional Marksheet" required={pgBacklogs!=="Yes"} errKey="pgProvKey"/>
                   {pgBacklogs==="Yes"&&<p style={{fontSize:"0.7rem",color:"#d97706",fontWeight:600,marginBottom:"0.4rem"}}>⚠️ Upload when available after clearing backlogs</p>}
-                  <FileUpload label="Upload Provisional Marksheet" category="education" subKey="postgraduate" apiFetch={apiFetch} value={pgProvKey} onChange={(k)=>{setPgProvKey(k);isDirtyRef.current=true;fixErr("pgProvKey");}}/>
+                  <FileUpload label="Upload Provisional Marksheet" category="education" subKey="pg_provisional" apiFetch={apiFetch} value={pgProvKey} onChange={(k)=>{setPgProvKey(k);isDirtyRef.current=true;fixErr("pgProvKey");}}/>
                 </div>
-                <div className="att-box"><span className="att-box-lbl">Convocation Certificate</span><FileUpload label="Upload Convocation Certificate" category="education" subKey="postgraduate" apiFetch={apiFetch} value={pgConvoKey} onChange={(k)=>{setPgConvoKey(k);isDirtyRef.current=true;}}/></div>
+                <div className="att-box"><span className="att-box-lbl">Convocation Certificate</span><FileUpload label="Upload Convocation Certificate" category="education" subKey="pg_convocation" apiFetch={apiFetch} value={pgConvoKey} onChange={(k)=>{setPgConvoKey(k);isDirtyRef.current=true;}}/></div>
               </div>
             </>)}
           </div>
