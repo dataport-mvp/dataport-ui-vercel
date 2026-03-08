@@ -27,8 +27,8 @@ const emptyAck = () => ({ val:"", note:"" });
 const G = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #e8e6f4; font-family: 'Plus Jakarta Sans', sans-serif; }
-  .pg { min-height: 100vh; background: #e8e6f4; padding-bottom: 3rem; }
+  body { background: #dfe3f5; font-family: 'Plus Jakarta Sans', sans-serif; }
+  .pg { min-height: 100vh; background: #dfe3f5; padding-bottom: 3rem; }
   .wrap { max-width: 860px; margin: auto; padding: 0 1.25rem; }
   .topbar { background: #1e1a3e; border-bottom: 1px solid #2d2860; padding: 0.85rem 1.75rem;
     display: flex; justify-content: space-between; align-items: center;
@@ -53,24 +53,24 @@ const G = `
   .emp-card::before { content:''; position:absolute; top:0; left:0; bottom:0; width:4px; border-radius:16px 0 0 16px; background:#4f46e5; }
   .emp-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.1rem; }
   .emp-title { font-size: 0.93rem; font-weight: 700; color: #1a1730; }
-  .subsec { background: #f7f6fd; border: 1px solid #dddaf0; border-radius: 10px; padding: 1rem 1.1rem; margin-top: 0.85rem; }
+  .subsec { background: #f0effe; border: 1px solid #dddaf0; border-radius: 10px; padding: 1rem 1.1rem; margin-top: 0.85rem; }
   .sub-lbl { font-size: 0.68rem; font-weight: 800; color: #8b88b0; text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 0.75rem; }
   .decl-card { background: #ffffff; border-radius: 16px; padding: 1.5rem 1.6rem; margin-bottom: 1.1rem;
     box-shadow: 0 4px 24px rgba(30,26,62,0.10), 0 1px 4px rgba(30,26,62,0.06); position: relative; overflow: hidden; }
   .decl-card::before { content:''; position:absolute; top:0; left:0; bottom:0; width:4px; border-radius:16px 0 0 16px; background:#7c3aed; }
   .decl-q { font-size: 0.875rem; color: #1a1730; margin-bottom: 0.5rem; font-weight: 500; line-height: 1.5; }
-  .decl-item { padding: 0.9rem 1rem; background: #f7f6fd; border-radius: 10px; border: 1px solid #dddaf0; margin-bottom: 0.75rem; }
+  .decl-item { padding: 0.9rem 1rem; background: #f0effe; border-radius: 10px; border: 1px solid #dddaf0; margin-bottom: 0.75rem; }
   .fr { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-bottom: 0.85rem; }
   .fr:last-child { margin-bottom: 0; }
   .fi { display: flex; flex-direction: column; gap: 0.28rem; flex: 1; min-width: 138px; }
   .fl { font-size: 0.7rem; font-weight: 700; color: #8b88b0; letter-spacing: 0.55px; text-transform: uppercase; }
-  .in { padding: 0.65rem 0.875rem; background: #f2f1f9; border: 1.5px solid #dddaf0;
+  .in { padding: 0.65rem 0.875rem; background: #f0effe; border: 1.5px solid #c8c4e0;
     border-radius: 9px; font-family: inherit; font-size: 0.875rem; color: #1a1730;
     outline: none; width: 100%; transition: all 0.18s; }
   .in:focus { border-color: #4f46e5; background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.13); }
   .in.err { border-color: #ef4444 !important; background: #fff8f8 !important; box-shadow: 0 0 0 3px rgba(239,68,68,0.10) !important; }
   .err-msg { font-size: 0.68rem; color: #ef4444; font-weight: 600; margin-top: 0.2rem; display: block; }
-  .ta { padding: 0.65rem 0.875rem; background: #f2f1f9; border: 1.5px solid #dddaf0;
+  .ta { padding: 0.65rem 0.875rem; background: #f0effe; border: 1.5px solid #c8c4e0;
     border-radius: 9px; font-family: inherit; font-size: 0.875rem; color: #1a1730;
     outline: none; width: 100%; min-height: 72px; resize: vertical; transition: all 0.18s; }
   .ta:focus { border-color: #4f46e5; background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.13); }
@@ -161,7 +161,7 @@ function StepNav({ current, onNavigate }) {
             </div>
             <span style={{fontSize:"0.67rem",fontWeight:700,letterSpacing:"0.6px",textTransform:"uppercase",color:current===s.n?STEP_COLOR:current>s.n?STEP_DONE_CK:"#8b88b0"}}>{s.label}</span>
           </button>
-          {i<steps.length-1&&<div style={{width:52,height:2,background:current>s.n?STEP_CONN:"#dddaf0",margin:"0 -0.25rem",marginBottom:"1.4rem",borderRadius:2}}/>}
+          {i<steps.length-1&&<div style={{width:52,height:2,background:current>s.n?STEP_CONN:"#c2d9c8",margin:"0 -0.25rem",marginBottom:"1.4rem",borderRadius:2}}/>}
         </div>
       ))}
     </div>
@@ -305,7 +305,7 @@ export default function PreviousCompany() {
   };
 
   if(!ready||!user)return null;
-  if(loading)return(<div style={{minHeight:"100vh",background:"#e8e6f4",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#8b88b0",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:500}}>Loading employment history…</p></div>);
+  if(loading)return(<div style={{minHeight:"100vh",background:"#dfe3f5",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#8b88b0",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:500}}>Loading employment history…</p></div>);
 
   return (
     <>
