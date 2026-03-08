@@ -26,8 +26,8 @@ const emptyPfRecord = () => ({ companyName:"", pfMemberId:"", dojEpfo:"", doeEpf
 const G = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #e8e6f4; font-family: 'Plus Jakarta Sans', sans-serif; }
-  .pg { min-height: 100vh; background: #e8e6f4; padding-bottom: 3rem; }
+  body { background: #dfe3f5; font-family: 'Plus Jakarta Sans', sans-serif; }
+  .pg { min-height: 100vh; background: #dfe3f5; padding-bottom: 3rem; }
   .wrap { max-width: 860px; margin: auto; padding: 0 1.25rem; }
   .topbar { background: #1e1a3e; border-bottom: 1px solid #2d2860; padding: 0.85rem 1.75rem;
     display: flex; justify-content: space-between; align-items: center;
@@ -59,16 +59,16 @@ const G = `
   .fr:last-child { margin-bottom: 0; }
   .fi { display: flex; flex-direction: column; gap: 0.28rem; flex: 1; min-width: 138px; }
   .fl { font-size: 0.7rem; font-weight: 700; color: #8b88b0; letter-spacing: 0.55px; text-transform: uppercase; }
-  .in { padding: 0.65rem 0.875rem; background: #f2f1f9; border: 1.5px solid #dddaf0;
+  .in { padding: 0.65rem 0.875rem; background: #f0effe; border: 1.5px solid #c8c4e0;
     border-radius: 9px; font-family: inherit; font-size: 0.875rem; color: #1a1730;
     outline: none; width: 100%; transition: all 0.18s; }
   .in:focus { border-color: #4f46e5; background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.13); }
   .in.err { border-color: #ef4444 !important; background: #fff8f8 !important; box-shadow: 0 0 0 3px rgba(239,68,68,0.10) !important; }
   .err-msg { font-size: 0.68rem; color: #ef4444; font-weight: 600; margin-top: 0.2rem; display: block; }
-  .pf-box { background: #f7f6fd; border: 1.5px solid #dddaf0; border-radius: 10px; padding: 1rem; margin-bottom: 0.6rem; }
+  .pf-box { background: #f5f0e8; border: 1.5px solid #dddaf0; border-radius: 10px; padding: 1rem; margin-bottom: 0.6rem; }
   .ack-item { display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.85rem 1rem;
     border-radius: 10px; cursor: pointer; transition: all 0.15s; margin-bottom: 0.45rem;
-    border: 1.5px solid #dddaf0; background: #f7f6fd; }
+    border: 1.5px solid #dddaf0; background: #f5f0e8; }
   .ack-item.checked { border-color: #16a34a; background: #f0fdf4; }
   .ack-check { width: 20px; height: 20px; border-radius: 5px; flex-shrink: 0; margin-top: 1px;
     border: 2px solid #dddaf0; background: #f2f1f9; display: flex; align-items: center;
@@ -132,7 +132,7 @@ function StepNav({ current, onNavigate }) {
             </div>
             <span style={{fontSize:"0.67rem",fontWeight:700,letterSpacing:"0.6px",textTransform:"uppercase",color:current===s.n?STEP_COLOR:current>s.n?STEP_DONE_CK:"#8b88b0"}}>{s.label}</span>
           </button>
-          {i<steps.length-1&&<div style={{width:52,height:2,background:current>s.n?STEP_CONN:"#dddaf0",margin:"0 -0.25rem",marginBottom:"1.4rem",borderRadius:2}}/>}
+          {i<steps.length-1&&<div style={{width:52,height:2,background:current>s.n?STEP_CONN:"#ddd0bc",margin:"0 -0.25rem",marginBottom:"1.4rem",borderRadius:2}}/>}
         </div>
       ))}
     </div>
@@ -153,7 +153,7 @@ export default function UANPage() {
   const [showSignout,setShowSignout]       = useState(false);
   const [serverDraft,setServerDraft]       = useState(null);
   const [epfoKey,setEpfoKey]               = useState("");
-  const [uanPassbookKey,setUanPassbookKey] = useState("");
+  const [uanCardKey,setUanCardKey] = useState("");
   const [errors,setErrors]                 = useState({});
   const isDirtyRef = useRef(false);
   const [form,setForm] = useState({ uanMaster:{uanNumber:"",nameAsPerUan:"",mobileLinked:"",isActive:""}, pfRecords:[emptyPfRecord()] });
@@ -172,7 +172,7 @@ export default function UANPage() {
         if(res.ok){
           const dr=await res.json();setServerDraft(dr);
           if(dr.epfoKey)setEpfoKey(dr.epfoKey);
-          if(dr.uanPassbookKey)setUanPassbookKey(dr.uanPassbookKey);
+          if(dr.uanCardKey)setUanCardKey(dr.uanCardKey);
           if(dr.uanNumber||dr.nameAsPerUan||dr.mobileLinked||dr.isActive||dr.pfRecords){
             setForm({
               uanMaster:{uanNumber:dr.uanNumber||"",nameAsPerUan:dr.nameAsPerUan||"",mobileLinked:dr.mobileLinked||"",isActive:dr.isActive||""},
@@ -201,7 +201,7 @@ export default function UANPage() {
     if(!form.uanMaster.mobileLinked) e.mobileLinked=true;
     if(!form.uanMaster.isActive) e.isActive=true;
     if(!epfoKey) e.epfoKey=true;
-    if(!uanPassbookKey) e.uanPassbookKey=true;
+    if(!uanCardKey) e.uanCardKey=true;
     form.pfRecords.forEach((r,i)=>{
       if(!r.companyName) e[`pf_${i}_company`]=true;
       if(!r.pfMemberId) e[`pf_${i}_memberId`]=true;
@@ -211,7 +211,7 @@ export default function UANPage() {
 
   const handleSignout=async()=>{
     if(serverDraft&&serverDraft.employee_id){
-      try{await apiFetch(`${API}/employee`,{method:"POST",body:JSON.stringify({...serverDraft,uanNumber:form.uanMaster.uanNumber,nameAsPerUan:form.uanMaster.nameAsPerUan,mobileLinked:form.uanMaster.mobileLinked,isActive:form.uanMaster.isActive,pfRecords:form.pfRecords,epfoKey,uanPassbookKey})});}catch(_){}
+      try{await apiFetch(`${API}/employee`,{method:"POST",body:JSON.stringify({...serverDraft,uanNumber:form.uanMaster.uanNumber,nameAsPerUan:form.uanMaster.nameAsPerUan,mobileLinked:form.uanMaster.mobileLinked,isActive:form.uanMaster.isActive,pfRecords:form.pfRecords,epfoKey,uanCardKey})});}catch(_){}
     }
     logout();
   };
@@ -238,7 +238,7 @@ export default function UANPage() {
         currentAddress:dr.currentAddress,permanentAddress:dr.permanentAddress,education:dr.education,
         uanNumber:form.uanMaster.uanNumber||"",nameAsPerUan:form.uanMaster.nameAsPerUan||"",
         mobileLinked:form.uanMaster.mobileLinked||"",isActive:form.uanMaster.isActive||"",
-        pfRecords:form.pfRecords,epfoKey,uanPassbookKey,acknowledgements_profile:acks,submitted_at:Date.now(),
+        pfRecords:form.pfRecords,epfoKey,uanCardKey,acknowledgements_profile:acks,submitted_at:Date.now(),
       })});
       if(!empRes.ok) throw new Error(parseError(await empRes.json().catch(()=>({}))));
       setSubmitted(true);
@@ -269,7 +269,7 @@ export default function UANPage() {
     );
   }
 
-  if(loading)return(<div style={{minHeight:"100vh",background:"#e8e6f4",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#8b88b0",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:500}}>Loading UAN details…</p></div>);
+  if(loading)return(<div style={{minHeight:"100vh",background:"#dfe3f5",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#8b88b0",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:500}}>Loading UAN details…</p></div>);
 
   return(
     <>
@@ -313,12 +313,12 @@ export default function UANPage() {
               <p style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:4}}>Download from EPFO portal → Upload here</p>
             </div>
 
-            {/* UAN Passbook PDF */}
+            {/* UAN Card */}
             <div style={{marginTop:"0.85rem"}}>
-              <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>UAN Passbook PDF <span style={{color:"#ef4444"}}>*</span></span>
-              {errors.uanPassbookKey&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload is required</span>}
-              <FileUpload label="UAN Passbook PDF" category="uan" subKey="uanPassbook" apiFetch={apiFetch} value={uanPassbookKey} onChange={v=>{setUanPassbookKey(v);isDirtyRef.current=true;fixErr("uanPassbookKey");}}/>
-              <p style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:4}}>Download from UAN portal → Member Passbook → Upload here</p>
+              <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>UAN Card <span style={{color:"#ef4444"}}>*</span></span>
+              {errors.uanCardKey&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload is required</span>}
+              <FileUpload label="UAN Card" category="uan" subKey="epfo" apiFetch={apiFetch} value={uanCardKey} onChange={v=>{setUanCardKey(v);isDirtyRef.current=true;fixErr("uanCardKey");}}/>
+              <p style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:4}}>Download from UAN portal → Download UAN Card → Upload here</p>
             </div>
           </div>
 
