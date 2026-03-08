@@ -158,6 +158,7 @@ export default function UANPage() {
   const isDirtyRef = useRef(false);
   const [form,setForm] = useState({ uanMaster:{uanNumber:"",nameAsPerUan:"",mobileLinked:"",isActive:""}, pfRecords:[emptyPfRecord()] });
   const [hasUan,setHasUan]                 = useState(""); // "Yes" | "No" | "" fresher toggle
+  const [uanPreviouslySaved,setUanPreviouslySaved] = useState(false); // true if UAN was saved before — skip toggle
   const [acks,setAcks] = useState({ truthful:false, notTampered:false, consent:false, liability:false, updates:false });
   const [submitError,setSubmitError] = useState("");
   const [loading,setLoading]         = useState(true);
@@ -175,6 +176,9 @@ export default function UANPage() {
           if(dr.epfoKey)setEpfoKey(dr.epfoKey);
           if(dr.hasUan)setHasUan(dr.hasUan);
           if(dr.uanCardKey)setUanCardKey(dr.uanCardKey);
+          // If UAN was previously filled, skip the Yes/No toggle on next load
+          if(dr.hasUan==="Yes"&&dr.uanNumber)setUanPreviouslySaved(true);
+          if(dr.hasUan==="No")setUanPreviouslySaved(true); // fresher confirmed No before — skip too
           // Never pre-load acks — user must always re-confirm on each submission.
           // Acks are intentional declarations and should not be silently carried over.
           if(dr.uanNumber||dr.nameAsPerUan||dr.mobileLinked||dr.isActive||dr.pfRecords){
@@ -300,7 +304,8 @@ export default function UANPage() {
         <div className="wrap">
           <StepNav current={4} onNavigate={(path)=>router.push(path)}/>
 
-          {/* ── Do you have a UAN? ─────────────────────── */}
+          {/* ── Do you have a UAN? — hidden if previously answered ─────────────────────── */}
+          {!uanPreviouslySaved && (
           <div className="sc ind" style={{marginBottom:"1.2rem"}}>
             <div className="sh"><div className="si ind">🏦</div><span className="st">UAN / PF Details</span></div>
             <p style={{fontSize:"0.82rem",color:"#6b6894",marginBottom:"1rem"}}>
@@ -310,18 +315,18 @@ export default function UANPage() {
               <span style={{fontSize:"0.8rem",fontWeight:700,color:"#1a1730",textTransform:"uppercase",letterSpacing:"0.5px"}}>Do you have a UAN?</span>
               {errors.hasUan&&<span style={{fontSize:"0.7rem",color:"#ef4444",fontWeight:600}}>Please select an option</span>}
               {["Yes","No"].map(opt=>(
-                <button key={opt} onClick={()=>{setHasUan(opt);setErrors({});markDirty();}}
+                <button key={opt} onClick={()=>{setHasUan(opt);setErrors({});markDirty();setUanPreviouslySaved(true);}}
                   style={{padding:"0.45rem 1.4rem",borderRadius:999,fontWeight:700,fontSize:"0.82rem",cursor:"pointer",transition:"all 0.18s",
                     background:hasUan===opt?"#4f46e5":"transparent",
                     color:hasUan===opt?"#fff":"#4f46e5",
                     border:`2px solid ${errors.hasUan?"#ef4444":"#4f46e5"}`,
-                    boxShadow:hasUan===opt?"0 2px 10px rgba(79,70,229,0.35)":"none"}}>
+                    boxShadow:hasUan===opt?"0 2px 10px rgba(79,70,229,0.35)":"none"}}}>
                   {opt}
                 </button>
               ))}
             </div>
           </div>
-
+          )}
           {/* ── UAN fields — only if hasUan===Yes ──────── */}
           {hasUan==="Yes" && <div className="sc ind">
             <div className="sh"><div className="si ind">🏦</div><span className="st">UAN Details</span></div>
