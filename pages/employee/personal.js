@@ -17,8 +17,8 @@ const STEP_SHADOW  = "rgba(79,70,229,0.35)";
 const G = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #dfe3f5; font-family: 'Plus Jakarta Sans', sans-serif; }
-  .pg { min-height: 100vh; background: #dfe3f5; padding-bottom: 3rem; }
+  body { background: #cdd2ed; font-family: 'Plus Jakarta Sans', sans-serif; }
+  .pg { min-height: 100vh; background: #cdd2ed; padding-bottom: 3rem; }
   .wrap { max-width: 860px; margin: auto; padding: 0 1.25rem; }
 
   /* Topbar */
@@ -54,7 +54,7 @@ const G = `
 
   /* Cards */
   .sc { background: #ffffff; border-radius: 16px; padding: 1.5rem 1.6rem;
-    margin-bottom: 1.1rem; box-shadow: 0 4px 24px rgba(30,26,62,0.10), 0 1px 4px rgba(30,26,62,0.06);
+    margin-bottom: 1.1rem; box-shadow: 0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12); border: 1px solid rgba(255,255,255,0.85);
     position: relative; overflow: hidden; }
   .sc::before { content: ''; position: absolute; top: 0; left: 0; bottom: 0;
     width: 4px; border-radius: 16px 0 0 16px; }
@@ -78,7 +78,7 @@ const G = `
   .fr:last-child { margin-bottom: 0; }
   .fi { display: flex; flex-direction: column; gap: 0.28rem; flex: 1; min-width: 138px; }
   .fl { font-size: 0.7rem; font-weight: 700; color: #8b88b0; letter-spacing: 0.55px; text-transform: uppercase; }
-  .in { padding: 0.65rem 0.875rem; background: #f0effe; border: 1.5px solid #c8c4e0;
+  .in { padding: 0.65rem 0.875rem; background: #ececf9; border: 1.5px solid #b8b4d4;
     border-radius: 9px; font-family: inherit; font-size: 0.875rem; color: #1e293b;
     outline: none; width: 100%; transition: all 0.18s; }
   .in:focus { border-color: #4f46e5; background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.13); }
@@ -96,7 +96,7 @@ const G = `
   /* Save bar */
   .sbar { display: flex; justify-content: space-between; align-items: center;
     margin-top: 1.5rem; padding: 1rem 1.5rem; background: #1e1a3e;
-    border-radius: 12px; box-shadow: 0 4px 24px rgba(30,26,62,0.10), 0 1px 4px rgba(30,26,62,0.06); }
+    border-radius: 12px; box-shadow: 0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12); border: 1px solid rgba(255,255,255,0.85); }
   .ss { font-size: 0.84rem; color: #9d9bc4; font-weight: 500; }
   .ss.ok { color: #16a34a; } .ss.err { color: #ef4444; }
   .pbtn { padding: 0.72rem 1.9rem; background: #4f46e5; color: #fff; border: none;
@@ -147,7 +147,7 @@ function SignoutModal({ onConfirm, onCancel }) {
         <h3 style={{margin:"0 0 0.4rem",color:"#1a1730",fontWeight:800,fontSize:"1.05rem"}}>Sign out?</h3>
         <p style={{color:"#6b6894",fontSize:"0.875rem",marginBottom:"1.5rem",lineHeight:1.55}}>Your progress is saved. You can continue anytime.</p>
         <div style={{display:"flex",gap:"0.75rem"}}>
-          <button onClick={onCancel} style={{flex:1,padding:"0.7rem",borderRadius:9,border:"1.5px solid #dddaf0",background:"#2a2460",cursor:"pointer",fontWeight:600,color:"#6b6894",fontFamily:"inherit",fontSize:"0.875rem"}}>Stay</button>
+          <button onClick={onCancel} style={{flex:1,padding:"0.7rem",borderRadius:9,border:"1.5px solid #dddaf0",background:"inherit",cursor:"pointer",fontWeight:600,color:"#6b6894",fontFamily:"inherit",fontSize:"0.875rem"}}>Stay</button>
           <button onClick={onConfirm} style={{flex:1,padding:"0.7rem",borderRadius:9,border:"none",background:"#ef4444",color:"#fff",cursor:"pointer",fontWeight:700,fontFamily:"inherit",fontSize:"0.875rem"}}>Sign out</button>
         </div>
       </div>
@@ -164,7 +164,7 @@ function StepNav({ current, onNavigate }) {
     { n:4, label:"Review",     icon:"✅", path:"/employee/uan"       },
   ];
   return (
-    <div style={{background:"#fff",borderRadius:14,padding:"1.1rem 0.5rem",marginBottom:"1.6rem",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 24px rgba(30,26,62,0.10)"}}>
+    <div style={{background:"#fff",borderRadius:14,padding:"1.1rem 0.5rem",marginBottom:"1.6rem",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12)"}}>
       {steps.map((s, i) => (
         <div key={s.n} style={{display:"flex",alignItems:"center"}}>
           <button onClick={() => onNavigate(s.path)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.3rem",background:"none",border:"none",cursor:"pointer",padding:"0.2rem 0.9rem"}}>
@@ -207,7 +207,7 @@ function ConsentTab({ apiFetch }) {
   const norm=(c)=>({...c,status:String(c.status||"pending").toLowerCase()});
   if(loading)return <p style={{color:"#8b88b0",padding:"1rem 0",fontSize:"0.875rem"}}>Loading consents…</p>;
   if(!consents.length)return(
-    <div style={{textAlign:"center",padding:"3rem",background:"#fff",borderRadius:14,boxShadow:"0 4px 24px rgba(30,26,62,0.10)"}}>
+    <div style={{textAlign:"center",padding:"3rem",background:"#fff",borderRadius:14,boxShadow:"0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12)"}}>
       <div style={{fontSize:38,marginBottom:10}}>📋</div>
       <p style={{color:"#1a1730",margin:0,fontWeight:700}}>No consent requests yet</p>
       <p style={{fontSize:"0.82rem",color:"#8b88b0",marginTop:6}}>Employers will appear here when they request your data</p>
@@ -254,7 +254,7 @@ function FS({ l, v, s, o, r = true }) {
   return (
     <div className="fi">
       <span className="fl">{l}{r && <span style={{color:"#ef4444",marginLeft:2}}>*</span>}</span>
-      <select className="in" value={v} onChange={e => s(e.target.value)} style={{background:"#2a2460",color:v?"#1e293b":"#94a3b8"}}>
+      <select className="in" value={v} onChange={e => s(e.target.value)} style={{background:"inherit",color:v?"#1a1730":"#8b88b0",appearance:"auto"}}>
         <option value="">Select</option>
         {o.map(x => <option key={x} value={x}>{x}</option>)}
       </select>
@@ -447,7 +447,7 @@ export default function PersonalDetails() {
 
   if (!ready || !user) return null;
   if (loading) return (
-    <div style={{minHeight:"100vh",background:"#dfe3f5",display:"flex",alignItems:"center",justifyContent:"center"}}>
+    <div style={{minHeight:"100vh",background:"#cdd2ed",display:"flex",alignItems:"center",justifyContent:"center"}}>
       <p style={{color:"#8b88b0",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:500}}>Loading your profile…</p>
     </div>
   );
