@@ -1,4 +1,4 @@
-// pages/employee/education.js  — Page 2 of 4
+// pages/employee/education.js  — Page 2 of 5
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "../../utils/AuthContext";
@@ -7,12 +7,11 @@ import FileUpload from "../../components/FileUpload";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
-// ─── Page 2 step accent: AMBER ────────────────────────────────────────
-const STEP_COLOR   = "#d97706";
+// ─── Step accent colours ──────────────────────────────────────────────
+const ACCENTS    = { 1:"#4f46e5", 2:"#d97706", 3:"#7c3aed", 4:"#0891b2", 5:"#16a34a" };
 const STEP_DONE_BG = "#2a2460";
 const STEP_DONE_CK = "#a78bfa";
 const STEP_CONN    = "#a78bfa";
-const STEP_SHADOW  = "rgba(217,119,6,0.35)";
 
 const G = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -111,29 +110,36 @@ function SignoutModal({ onConfirm, onCancel }) {
   );
 }
 
+// ─── StepNav — 5 steps, free navigation ──────────────────────────────
 function StepNav({ current, onNavigate }) {
   const steps = [
-    { n:1, label:"Personal", icon:"👤", path:"/employee/personal" },
-    { n:2, label:"Education", icon:"🎓", path:"/employee/education" },
-    { n:3, label:"Employment", icon:"💼", path:"/employee/previous" },
-    { n:4, label:"Review", icon:"✅", path:"/employee/uan" },
+    { n:1, label:"Personal",   icon:"👤", path:"/employee/personal"  },
+    { n:2, label:"Education",  icon:"🎓", path:"/employee/education" },
+    { n:3, label:"Employment", icon:"💼", path:"/employee/previous"  },
+    { n:4, label:"UAN",        icon:"🏦", path:"/employee/uan"       },
+    { n:5, label:"Review",     icon:"📋", path:"/employee/review"    },
   ];
   return (
-    <div style={{background:"#fff",borderRadius:14,padding:"1.1rem 0.5rem",marginBottom:"1.6rem",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12)"}}>
-      {steps.map((s, i) => (
-        <div key={s.n} style={{display:"flex",alignItems:"center"}}>
-          <button onClick={() => onNavigate(s.path)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.3rem",background:"none",border:"none",cursor:"pointer",padding:"0.2rem 0.9rem"}}>
-            <div style={{width:40,height:40,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",transition:"all 0.25s",
-              background:current===s.n?STEP_COLOR:current>s.n?STEP_DONE_BG:"#f2f1f9",
-              border:current===s.n?`2px solid ${STEP_COLOR}`:current>s.n?`2px solid ${STEP_CONN}`:"2px solid #dddaf0",
-              boxShadow:current===s.n?`0 4px 12px ${STEP_SHADOW}`:"none"}}>
-              {current>s.n?<span style={{color:STEP_DONE_CK,fontWeight:800,fontSize:"0.9rem"}}>✓</span>:<span style={{fontSize:"1rem",filter:current===s.n?"brightness(0) invert(1)":"none"}}>{s.icon}</span>}
-            </div>
-            <span style={{fontSize:"0.67rem",fontWeight:700,letterSpacing:"0.6px",textTransform:"uppercase",color:current===s.n?STEP_COLOR:current>s.n?STEP_DONE_CK:"#8b88b0"}}>{s.label}</span>
-          </button>
-          {i < steps.length-1 && <div style={{width:52,height:2,background:current>s.n?STEP_CONN:"#c5d6ea",margin:"0 -0.25rem",marginBottom:"1.4rem",borderRadius:2}}/>}
-        </div>
-      ))}
+    <div style={{background:"#fff",borderRadius:14,padding:"1.1rem 0.5rem",marginBottom:"1.6rem",display:"flex",alignItems:"center",justifyContent:"center",overflowX:"auto",boxShadow:"0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12)"}}>
+      {steps.map((s,i)=>{
+        const isDone=current>s.n, isActive=current===s.n, col=ACCENTS[s.n];
+        return(
+          <div key={s.n} style={{display:"flex",alignItems:"center"}}>
+            <button onClick={()=>onNavigate(s.path)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.3rem",background:"none",border:"none",cursor:"pointer",padding:"0.2rem 0.75rem"}}>
+              <div style={{width:40,height:40,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",transition:"all 0.25s",
+                background:isActive?col:isDone?STEP_DONE_BG:"#f2f1f9",
+                border:isActive?`2px solid ${col}`:isDone?`2px solid ${STEP_CONN}`:"2px solid #e4e2ed",
+                boxShadow:isActive?`0 4px 12px ${col}55`:"none"}}>
+                {isDone?<span style={{color:STEP_DONE_CK,fontWeight:800,fontSize:"0.9rem"}}>✓</span>
+                  :<span style={{fontSize:"1rem",filter:isActive?"brightness(0) invert(1)":"none"}}>{s.icon}</span>}
+              </div>
+              <span style={{fontSize:"0.67rem",fontWeight:700,letterSpacing:"0.6px",textTransform:"uppercase",whiteSpace:"nowrap",
+                color:isActive?col:isDone?STEP_DONE_CK:"#8b88b0"}}>{s.label}</span>
+            </button>
+            {i<steps.length-1&&<div style={{width:38,height:2,background:current>s.n?STEP_CONN:"#c5d6ea",margin:"0 -0.25rem",marginBottom:"1.4rem",borderRadius:2,flexShrink:0}}/>}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -205,7 +211,12 @@ export default function EducationDetails() {
   const [dipResultType,setDipResultType]=useState(""); const [dipResultValue,setDipResultValue]=useState(""); const [dipMode,setDipMode]=useState(""); const [dipCertKey,setDipCertKey]=useState("");
   const [certs,setCerts]=useState([{name:"",certKey:""}]);
 
-  useEffect(() => { if (!ready) return; if (!user) { router.replace("/employee/login"); return; } }, [ready, user, router]);
+  // ─── ROLE GUARD ───────────────────────────────────────────────────
+  useEffect(() => {
+    if (!ready) return;
+    if (!user) { router.replace("/employee/login"); return; }
+    if (user.role && user.role !== "employee") { router.replace("/employee/login"); return; }
+  }, [ready, user, router]);
 
   useEffect(() => {
     if (!ready || !user) return;
