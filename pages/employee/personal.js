@@ -355,10 +355,13 @@ export default function PersonalDetails() {
     if (!ready || !user) return;
     if (user?.email) setEmail(user.email);
     if (user?.phone) setMobile(user.phone);
-    const fetchDraft = async () => {
+    const init = async () => {
+      if (!user || user.role !== "employee") return;
       try {
+        // Step 1: Try to fetch existing draft
         const res = await apiFetch(`${API}/employee/draft`);
         if (res.ok) {
+          // Existing user — populate all fields from saved draft
           const d = await res.json();
           if (d.employee_id) setEmployeeId(d.employee_id);
           if (d.firstName)    setFirstName(d.firstName);
@@ -403,28 +406,25 @@ export default function PersonalDetails() {
           if (perm.state)    setPermState(perm.state);
           if (perm.pin)      setPermPin(perm.pin);
         } else {
-          // No draft found — create minimal employee record so FileUpload can get presigned URL
+          // Step 2: New user — immediately create employee record so uploads work right away
+          // This must happen before the page renders so FileUpload can get presigned URLs
           const empId = `emp-${Date.now()}`;
-          try {
-            const createRes = await apiFetch(`${API}/employee`, {
-              method: "POST",
-              body: JSON.stringify({
-                employee_id: empId,
-                status: "draft",
-                email: user?.email || "",
-                mobile: user?.phone || "",
-              }),
-            });
-            if (createRes.ok) {
-              const rd = await createRes.json().catch(() => ({}));
-              setEmployeeId(rd.employee_id || empId);
-            }
-          } catch (_) {}
+          const createRes = await apiFetch(`${API}/employee`, {
+            method: "POST",
+            body: JSON.stringify({
+              employee_id: empId,
+              status: "draft",
+              email: user?.email || "",
+              mobile: user?.phone || "",
+            }),
+          });
+          const rd = await createRes.json().catch(() => ({}));
+          setEmployeeId(rd.employee_id || empId);
         }
       } catch (_) {}
       setLoading(false);
     };
-    fetchDraft();
+    init();
   }, [ready, user, apiFetch]);
 
   const buildPayload = (empId) => ({
