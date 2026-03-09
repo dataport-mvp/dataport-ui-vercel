@@ -198,21 +198,26 @@ function getMissingFields(d) {
   if (p1.length) issues.push({ step: 1, label: "Personal Details", path: "/employee/personal", fields: p1 });
 
   // Page 2 — Education
+  // education.js saves nested: { classX: { school, yearOfPassing, resultValue, certKey },
+  //   intermediate: { college, ... }, undergraduate: { college, course, provKey, ... } }
   const p2 = [];
   const edu = d.education || {};
-  if (!edu.xSchool)    p2.push("Class X – School Name");
-  if (!edu.xYear)      p2.push("Class X – Year");
-  if (!edu.xPercent)   p2.push("Class X – Percentage");
-  if (!edu.xDocKey)    p2.push("Class X – Document Upload");
-  if (!edu.interSchool) p2.push("Intermediate – School Name");
-  if (!edu.interYear)  p2.push("Intermediate – Year");
-  if (!edu.interPercent) p2.push("Intermediate – Percentage");
-  if (!edu.interDocKey) p2.push("Intermediate – Document Upload");
-  if (!edu.ugCollege)  p2.push("UG – College Name");
-  if (!edu.ugDegree)   p2.push("UG – Degree");
-  if (!edu.ugYear)     p2.push("UG – Year");
-  if (!edu.ugPercent)  p2.push("UG – Percentage");
-  if (!edu.ugProvisionalKey) p2.push("UG – Provisional Marksheet Upload");
+  const x   = edu.classX        || {};
+  const inter = edu.intermediate  || {};
+  const ug  = edu.undergraduate  || {};
+  if (!x.school)          p2.push("Class X – School Name");
+  if (!x.yearOfPassing)   p2.push("Class X – Year");
+  if (!x.resultValue)     p2.push("Class X – Result");
+  if (!x.certKey)         p2.push("Class X – Document Upload");
+  if (!inter.college)     p2.push("Intermediate – College Name");
+  if (!inter.yearOfPassing) p2.push("Intermediate – Year");
+  if (!inter.resultValue) p2.push("Intermediate – Result");
+  if (!inter.certKey)     p2.push("Intermediate – Document Upload");
+  if (!ug.college)        p2.push("UG – College Name");
+  if (!ug.course)         p2.push("UG – Degree / Course");
+  if (!ug.yearOfPassing)  p2.push("UG – Year");
+  if (!ug.resultValue)    p2.push("UG – Result");
+  if (ug.backlogs !== "Yes" && !ug.provKey) p2.push("UG – Provisional Marksheet Upload");
   if (p2.length) issues.push({ step: 2, label: "Education", path: "/employee/education", fields: p2 });
 
   // Page 3 — Employment (only if they have employment history)
@@ -223,11 +228,11 @@ function getMissingFields(d) {
       const n = `Employer ${idx + 1}`;
       if (!e.companyName)     p3.push(`${n} – Company Name`);
       if (!e.designation)     p3.push(`${n} – Designation`);
-      if (!e.startDate)       p3.push(`${n} – Start Date`);
-      if (!e.endDate && idx !== 0) p3.push(`${n} – End Date`);
-      if (!e.Documents?.offerLetterKey)    p3.push(`${n} – Offer Letter`);
-      if (!e.Documents?.experienceKey)     p3.push(`${n} – Experience Letter`);
-      if (idx === 0 && !e.Documents?.resignationKey) p3.push(`${n} – Resignation Acceptance`);
+      if (!e.employmentType)  p3.push(`${n} – Employment Type`);
+      // documents is lowercase (as saved by previous.js)
+      if (!e.documents?.offerLetterKey)    p3.push(`${n} – Offer Letter`);
+      if (!e.documents?.experienceKey)     p3.push(`${n} – Experience Letter`);
+      if (idx === 0 && !e.documents?.resignationKey) p3.push(`${n} – Resignation Acceptance`);
     });
     if (p3.length) issues.push({ step: 3, label: "Employment History", path: "/employee/previous", fields: p3 });
   }
@@ -235,7 +240,7 @@ function getMissingFields(d) {
   // Page 4 — UAN
   const p4 = [];
   if (d.hasUan === "yes" || d.hasUan === true) {
-    if (!d.uan)      p4.push("UAN Number");
+    if (!d.uanNumber)  p4.push("UAN Number");
     if (!d.epfoKey)  p4.push("UAN Card Upload");
   }
   if (p4.length) issues.push({ step: 4, label: "UAN Details", path: "/employee/uan", fields: p4 });
@@ -260,15 +265,12 @@ export default function ReviewPage() {
   useEffect(() => {
     if (!ready) return;
     if (!user) { router.replace("/employee/login"); return; }
-    if (user.role && user.role !== "employee") { router.replace("/employee/login"); return; }
+    if (user.role !== "employee") { router.replace("/employee/login"); return; }
   }, [ready, user, router]);
 
   const loadData = useCallback(async () => {
     try {
-      const [dRes, eRes] = await Promise.all([
-        apiFetch(`${API}/employee/draft`),
-        apiFetch(`${API}/employee/employment-history`),
-      ]);
+      const dRes = await apiFetch(`${API}/employee/draft`);
       if (dRes.ok) {
         const d = await dRes.json();
         setDraft(d);
@@ -277,10 +279,18 @@ export default function ReviewPage() {
           const saved = d.acknowledgements_profile;
           setAcks(ACK_STATEMENTS.map((_, i) => !!saved[i]));
         }
-      }
-      if (eRes.ok) {
-        const ed = await eRes.json();
-        setEmpHistory(Array.isArray(ed) ? ed : (ed.items || []));
+        // Fetch employment history using employee_id (same as previous.js)
+        if (d.employee_id) {
+          try {
+            const eRes = await apiFetch(`${API}/employee/employment-history/${d.employee_id}`);
+            if (eRes.ok) {
+              const ed = await eRes.json();
+              // previous.js saves as { employments: [...], acknowledgements: {...} }
+              const emps = ed.employments || (Array.isArray(ed) ? ed : (ed.items || []));
+              setEmpHistory(emps);
+            }
+          } catch (_) {}
+        }
       }
     } catch (_) {}
     setLoading(false);
@@ -462,50 +472,50 @@ export default function ReviewPage() {
             <SectionHead icon="🎓" title="Education" colorClass="amb" onEdit={()=>router.push("/employee/education")} />
 
             {[
-              { title:"Class X",       keys:{ school:edu.xSchool,      board:edu.xBoard,      year:edu.xYear,      pct:edu.xPercent      } },
-              { title:"Intermediate",  keys:{ school:edu.interSchool,  board:edu.interBoard,  year:edu.interYear,  pct:edu.interPercent  } },
-              { title:"Under Graduate",keys:{ school:edu.ugCollege,    board:edu.ugUniversity,year:edu.ugYear,     pct:edu.ugPercent, degree:edu.ugDegree } },
+              { title:"Class X",        keys:{ school:edu.classX?.school,       board:edu.classX?.board,       year:edu.classX?.yearOfPassing,  pct:edu.classX?.resultValue,  rtype:edu.classX?.resultType      } },
+              { title:"Intermediate",   keys:{ school:edu.intermediate?.college, board:edu.intermediate?.board, year:edu.intermediate?.yearOfPassing, pct:edu.intermediate?.resultValue, rtype:edu.intermediate?.resultType } },
+              { title:"Under Graduate", keys:{ school:edu.undergraduate?.college, board:edu.undergraduate?.university, year:edu.undergraduate?.yearOfPassing, pct:edu.undergraduate?.resultValue, degree:edu.undergraduate?.course, rtype:edu.undergraduate?.resultType } },
             ].map(sec => (
               <div key={sec.title} style={{marginBottom:"0.9rem",paddingBottom:"0.9rem",borderBottom:"1px solid #f0eef8"}}>
                 <div style={{fontSize:"0.72rem",fontWeight:700,color:"#d97706",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.5rem"}}>{sec.title}</div>
                 <div className="grid">
                   <KV label="Institution" value={sec.keys.school} />
                   {sec.keys.board && <KV label="Board / University" value={sec.keys.board} />}
-                  {sec.keys.degree && <KV label="Degree" value={sec.keys.degree} />}
-                  <KV label="Year" value={sec.keys.year} />
-                  <KV label="Percentage / CGPA" value={sec.keys.pct} />
+                  {sec.keys.degree && <KV label="Degree / Course" value={sec.keys.degree} />}
+                  <KV label="Year of Passing" value={sec.keys.year} />
+                  <KV label={sec.keys.rtype || "Result"} value={sec.keys.pct} />
                 </div>
               </div>
             ))}
 
-            {edu.hasPg === "yes" && (
+            {edu.postgraduate?.college && (
               <div style={{marginBottom:"0.9rem",paddingBottom:"0.9rem",borderBottom:"1px solid #f0eef8"}}>
                 <div style={{fontSize:"0.72rem",fontWeight:700,color:"#d97706",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.5rem"}}>Post Graduate</div>
                 <div className="grid">
-                  <KV label="College"    value={edu.pgCollege} />
-                  <KV label="University" value={edu.pgUniversity} />
-                  <KV label="Degree"     value={edu.pgDegree} />
-                  <KV label="Year"       value={edu.pgYear} />
-                  <KV label="Percentage" value={edu.pgPercent} />
+                  <KV label="College"    value={edu.postgraduate?.college} />
+                  <KV label="University" value={edu.postgraduate?.university} />
+                  <KV label="Degree"     value={edu.postgraduate?.course} />
+                  <KV label="Year"       value={edu.postgraduate?.yearOfPassing} />
+                  <KV label="Result"     value={edu.postgraduate?.resultValue} />
                 </div>
               </div>
             )}
 
-            {edu.hasDiploma === "yes" && (
+            {edu.diploma?.institute && (
               <div style={{marginBottom:"0.9rem"}}>
                 <div style={{fontSize:"0.72rem",fontWeight:700,color:"#d97706",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.5rem"}}>Diploma / Technical</div>
                 <div className="grid">
-                  <KV label="Institution" value={edu.diplomaInstitute} />
-                  <KV label="Course"      value={edu.diplomaCourse} />
-                  <KV label="Year"        value={edu.diplomaYear} />
+                  <KV label="Institution" value={edu.diploma?.institute} />
+                  <KV label="Course"      value={edu.diploma?.course} />
+                  <KV label="Year"        value={edu.diploma?.yearOfPassing} />
                 </div>
               </div>
             )}
 
-            {edu.hasCerts === "yes" && Array.isArray(edu.certs) && edu.certs.length > 0 && (
+            {Array.isArray(edu.certifications) && edu.certifications.length > 0 && (
               <div>
                 <div style={{fontSize:"0.72rem",fontWeight:700,color:"#d97706",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.5rem"}}>Certifications</div>
-                {edu.certs.map((c,i) => (
+                {edu.certifications.map((c,i) => (
                   <div key={i} className="kv" style={{marginBottom:"0.4rem"}}>
                     <span className={`kv-val${!c.name?" empty":""}`}>{c.name||"—"}</span>
                   </div>
@@ -527,10 +537,10 @@ export default function ReviewPage() {
                 <div className="grid">
                   <KV label="Company"     value={e.companyName} />
                   <KV label="Designation" value={e.designation} />
-                  <KV label="Start Date"  value={e.startDate} />
-                  <KV label="End Date"    value={e.endDate||"Present"} />
+                  <KV label="Department"  value={e.department} />
                   <KV label="Employment Type" value={e.employmentType} />
-                  {e.employmentType==="Contract" && <KV label="Vendor" value={e.vendorName} />}
+                  {e.employmentType==="Contract" && <KV label="Vendor" value={e.contractVendor?.company} />}
+                  <KV label="Work Email"  value={e.workEmail} />
                 </div>
               </div>
             ))}
@@ -541,7 +551,7 @@ export default function ReviewPage() {
             <SectionHead icon="🏦" title="UAN / EPFO" colorClass="cyn" onEdit={()=>router.push("/employee/uan")} />
             <div className="grid">
               <KV label="Has UAN"  value={d.hasUan==="yes"||d.hasUan===true?"Yes":"No"} />
-              {(d.hasUan==="yes"||d.hasUan===true) && <KV label="UAN Number" value={d.uan} />}
+              {(d.hasUan==="yes"||d.hasUan===true) && <KV label="UAN Number" value={d.uanNumber} />}
             </div>
           </div>
 
