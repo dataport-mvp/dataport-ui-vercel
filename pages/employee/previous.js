@@ -1,4 +1,4 @@
-// pages/employee/previous.js  — Page 3 of 4
+// pages/employee/previous.js  — Page 3 of 5
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "../../utils/AuthContext";
@@ -7,12 +7,11 @@ import FileUpload from "../../components/FileUpload";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
-// ─── Page 3 step accent: VIOLET ───────────────────────────────────────
-const STEP_COLOR   = "#7c3aed";
+// ─── Step accent colours ──────────────────────────────────────────────
+const ACCENTS    = { 1:"#4f46e5", 2:"#d97706", 3:"#7c3aed", 4:"#0891b2", 5:"#16a34a" };
 const STEP_DONE_BG = "#2a2460";
 const STEP_DONE_CK = "#a78bfa";
 const STEP_CONN    = "#a78bfa";
-const STEP_SHADOW  = "rgba(124,58,237,0.35)";
 
 const genId = () => typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)+Date.now().toString(36);
 const emptyEmployment = () => ({
@@ -142,29 +141,36 @@ function ExitAckModal({ onSaveAndExit, onExitWithout, onCancel }) {
   );
 }
 
+// ─── StepNav — 5 steps, free navigation ──────────────────────────────
 function StepNav({ current, onNavigate }) {
   const steps = [
-    {n:1,label:"Personal",icon:"👤",path:"/employee/personal"},
-    {n:2,label:"Education",icon:"🎓",path:"/employee/education"},
-    {n:3,label:"Employment",icon:"💼",path:"/employee/previous"},
-    {n:4,label:"Review",icon:"✅",path:"/employee/uan"},
+    { n:1, label:"Personal",   icon:"👤", path:"/employee/personal"  },
+    { n:2, label:"Education",  icon:"🎓", path:"/employee/education" },
+    { n:3, label:"Employment", icon:"💼", path:"/employee/previous"  },
+    { n:4, label:"UAN",        icon:"🏦", path:"/employee/uan"       },
+    { n:5, label:"Review",     icon:"📋", path:"/employee/review"    },
   ];
   return (
-    <div style={{background:"#fff",borderRadius:14,padding:"1.1rem 0.5rem",marginBottom:"1.6rem",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12)"}}>
-      {steps.map((s,i)=>(
-        <div key={s.n} style={{display:"flex",alignItems:"center"}}>
-          <button onClick={()=>onNavigate(s.path)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.3rem",background:"none",border:"none",cursor:"pointer",padding:"0.2rem 0.9rem"}}>
-            <div style={{width:40,height:40,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",transition:"all 0.25s",
-              background:current===s.n?STEP_COLOR:current>s.n?STEP_DONE_BG:"#f2f1f9",
-              border:current===s.n?`2px solid ${STEP_COLOR}`:current>s.n?`2px solid ${STEP_CONN}`:"2px solid #dddaf0",
-              boxShadow:current===s.n?`0 4px 12px ${STEP_SHADOW}`:"none"}}>
-              {current>s.n?<span style={{color:STEP_DONE_CK,fontWeight:800,fontSize:"0.9rem"}}>✓</span>:<span style={{fontSize:"1rem",filter:current===s.n?"brightness(0) invert(1)":"none"}}>{s.icon}</span>}
-            </div>
-            <span style={{fontSize:"0.67rem",fontWeight:700,letterSpacing:"0.6px",textTransform:"uppercase",color:current===s.n?STEP_COLOR:current>s.n?STEP_DONE_CK:"#8b88b0"}}>{s.label}</span>
-          </button>
-          {i<steps.length-1&&<div style={{width:52,height:2,background:current>s.n?STEP_CONN:"#c2d9c8",margin:"0 -0.25rem",marginBottom:"1.4rem",borderRadius:2}}/>}
-        </div>
-      ))}
+    <div style={{background:"#fff",borderRadius:14,padding:"1.1rem 0.5rem",marginBottom:"1.6rem",display:"flex",alignItems:"center",justifyContent:"center",overflowX:"auto",boxShadow:"0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12)"}}>
+      {steps.map((s,i)=>{
+        const isDone=current>s.n, isActive=current===s.n, col=ACCENTS[s.n];
+        return(
+          <div key={s.n} style={{display:"flex",alignItems:"center"}}>
+            <button onClick={()=>onNavigate(s.path)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.3rem",background:"none",border:"none",cursor:"pointer",padding:"0.2rem 0.75rem"}}>
+              <div style={{width:40,height:40,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",transition:"all 0.25s",
+                background:isActive?col:isDone?STEP_DONE_BG:"#f2f1f9",
+                border:isActive?`2px solid ${col}`:isDone?`2px solid ${STEP_CONN}`:"2px solid #e4e2ed",
+                boxShadow:isActive?`0 4px 12px ${col}55`:"none"}}>
+                {isDone?<span style={{color:STEP_DONE_CK,fontWeight:800,fontSize:"0.9rem"}}>✓</span>
+                  :<span style={{fontSize:"1rem",filter:isActive?"brightness(0) invert(1)":"none"}}>{s.icon}</span>}
+              </div>
+              <span style={{fontSize:"0.67rem",fontWeight:700,letterSpacing:"0.6px",textTransform:"uppercase",whiteSpace:"nowrap",
+                color:isActive?col:isDone?STEP_DONE_CK:"#8b88b0"}}>{s.label}</span>
+            </button>
+            {i<steps.length-1&&<div style={{width:38,height:2,background:current>s.n?STEP_CONN:"#c2d9c8",margin:"0 -0.25rem",marginBottom:"1.4rem",borderRadius:2,flexShrink:0}}/>}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -206,7 +212,12 @@ export default function PreviousCompany() {
   const [errors,setErrors]             = useState({});
   const isDirtyRef = useRef(false);
 
-  useEffect(()=>{if(!ready)return;if(!user){router.replace("/employee/login");return;}},[ready,user,router]);
+  // ─── ROLE GUARD ───────────────────────────────────────────────────
+  useEffect(()=>{
+    if(!ready)return;
+    if(!user){router.replace("/employee/login");return;}
+    if(user.role&&user.role!=="employee"){router.replace("/employee/login");return;}
+  },[ready,user,router]);
 
   useEffect(()=>{
     if(!ready||!user)return;
@@ -252,7 +263,6 @@ export default function PreviousCompany() {
   const removeEmployer=(i)=>{setEmployments(employments.filter((_,idx)=>idx!==i));isDirtyRef.current=true;};
   const fixErr=(key)=>setErrors(p=>({...p,[key]:false}));
 
-  // Validate all required fields across all employers
   const validate=()=>{
     const e={};
     employments.forEach((emp,i)=>{
@@ -276,11 +286,11 @@ export default function PreviousCompany() {
       if(!emp.reference.mobile) e[`${i}_refMobile`]=true;
       if(!emp.documents.payslipsKey) e[`${i}_payslips`]=true;
       if(!emp.documents.offerLetterKey) e[`${i}_offerLetter`]=true;
-      if(i===0&&!emp.documents.resignationKey) e[`${i}_resignation`]=true; // only required for current employer
+      if(i===0&&!emp.documents.resignationKey) e[`${i}_resignation`]=true;
       if(!emp.documents.experienceKey) e[`${i}_experience`]=true;
       if(emp.gap.hasGap==="Yes"&&!emp.gap.reason) e[`${i}_gapReason`]=true;
     });
-    [["business","Are you currently engaged in any other business?"],["dismissed","Have you ever been dismissed?"],["criminal","Criminal conviction?"],["civil","Civil judgment?"]].forEach(([k])=>{
+    [["business"],["dismissed"],["criminal"],["civil"]].forEach(([k])=>{
       if(!ack[k].val) e[`ack_${k}`]=true;
     });
     return e;
@@ -389,7 +399,6 @@ export default function PreviousCompany() {
                   <FileUpload label="Offer Letter" category="employment" subKey="offerLetter" companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.offerLetterKey} onChange={v=>{update(index,"documents.offerLetterKey",v);fixErr(`${index}_offerLetter`);}}/>
                 </div>
                 <div className="att-wrap">
-                  {/* Resignation * only required for current employer (index 0) */}
                   <span className="att-lbl">Resignation Acceptance{index===0&&<span style={{color:"#ef4444"}}> *</span>}</span>
                   {errors[`${index}_resignation`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
                   <FileUpload label="Resignation" category="employment" subKey="resignation" companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.resignationKey} onChange={v=>{update(index,"documents.resignationKey",v);fixErr(`${index}_resignation`);}}/>
