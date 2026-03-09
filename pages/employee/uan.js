@@ -7,7 +7,6 @@ import FileUpload from "../../components/FileUpload";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
-// ─── Page 4 step accent: GREEN ────────────────────────────────────────
 const STEP_COLOR   = "#16a34a";
 const STEP_DONE_BG = "#2a2460";
 const STEP_DONE_CK = "#a78bfa";
@@ -150,18 +149,18 @@ function Pill({ active, onClick, label, isErr }) {
 export default function UANPage() {
   const router = useRouter();
   const { user, apiFetch, logout, ready } = useAuth();
-  const [showSignout,setShowSignout]       = useState(false);
-  const [serverDraft,setServerDraft]       = useState(null);
-  const [epfoKey,setEpfoKey]               = useState("");
-  const [uanCardKey,setUanCardKey] = useState("");
-  const [errors,setErrors]                 = useState({});
-  const isDirtyRef = useRef(false);
-  const [form,setForm] = useState({ uanMaster:{uanNumber:"",nameAsPerUan:"",mobileLinked:"",isActive:""}, pfRecords:[emptyPfRecord()] });
-  const [hasUan,setHasUan]                 = useState(""); // "Yes" | "No" | "" fresher toggle
-  const [acks,setAcks] = useState({ truthful:false, notTampered:false, consent:false, liability:false, updates:false });
-  const [submitError,setSubmitError] = useState("");
-  const [loading,setLoading]         = useState(true);
-  const [submitted,setSubmitted]     = useState(false);
+  const [showSignout,setShowSignout]   = useState(false);
+  const [serverDraft,setServerDraft]   = useState(null);
+  const [epfoKey,setEpfoKey]           = useState("");
+  const [uanCardKey,setUanCardKey]     = useState("");
+  const [errors,setErrors]             = useState({});
+  const isDirtyRef                     = useRef(false);
+  const [form,setForm]                 = useState({ uanMaster:{uanNumber:"",nameAsPerUan:"",mobileLinked:"",isActive:""}, pfRecords:[emptyPfRecord()] });
+  const [hasUan,setHasUan]             = useState("");
+  const [acks,setAcks]                 = useState({ truthful:false, notTampered:false, consent:false, liability:false, updates:false });
+  const [submitError,setSubmitError]   = useState("");
+  const [loading,setLoading]           = useState(true);
+  const [submitted,setSubmitted]       = useState(false);
 
   useEffect(()=>{if(!ready)return;if(!user){router.replace("/employee/login");return;}},[ready,user,router]);
 
@@ -171,16 +170,42 @@ export default function UANPage() {
       try{
         const res=await apiFetch(`${API}/employee/draft`);
         if(res.ok){
-          const dr=await res.json();setServerDraft(dr);
-          if(dr.epfoKey)setEpfoKey(dr.epfoKey);
-          if(dr.hasUan)setHasUan(dr.hasUan);
+          const dr=await res.json();
+          setServerDraft(dr);
+          if(dr.epfoKey)   setEpfoKey(dr.epfoKey);
+          if(dr.hasUan)    setHasUan(dr.hasUan);
           if(dr.uanCardKey)setUanCardKey(dr.uanCardKey);
-          // Never pre-load acks — user must always re-confirm on each submission.
-          // Acks are intentional declarations and should not be silently carried over.
+
+          // FIX: Pre-load acks if previously saved.
+          // User only needs to re-confirm if they actually change something (markDirty clears them).
+          if(dr.acknowledgements_profile){
+            const a=dr.acknowledgements_profile;
+            setAcks({
+              truthful:    !!a.truthful,
+              notTampered: !!a.notTampered,
+              consent:     !!a.consent,
+              liability:   !!a.liability,
+              updates:     !!a.updates,
+            });
+          }
+
           if(dr.uanNumber||dr.nameAsPerUan||dr.mobileLinked||dr.isActive||dr.pfRecords){
             setForm({
-              uanMaster:{uanNumber:dr.uanNumber||"",nameAsPerUan:dr.nameAsPerUan||"",mobileLinked:dr.mobileLinked||"",isActive:dr.isActive||""},
-              pfRecords:dr.pfRecords&&dr.pfRecords.length>0?dr.pfRecords.map(r=>({companyName:r.companyName||"",pfMemberId:r.pfMemberId||"",dojEpfo:r.dojEpfo||"",doeEpfo:r.doeEpfo||"",pfTransferred:r.pfTransferred||""})):[emptyPfRecord()],
+              uanMaster:{
+                uanNumber:    dr.uanNumber||"",
+                nameAsPerUan: dr.nameAsPerUan||"",
+                mobileLinked: dr.mobileLinked||"",
+                isActive:     dr.isActive||"",
+              },
+              pfRecords: dr.pfRecords&&dr.pfRecords.length>0
+                ? dr.pfRecords.map(r=>({
+                    companyName:   r.companyName||"",
+                    pfMemberId:    r.pfMemberId||"",
+                    dojEpfo:       r.dojEpfo||"",
+                    doeEpfo:       r.doeEpfo||"",
+                    pfTransferred: r.pfTransferred||"",
+                  }))
+                : [emptyPfRecord()],
             });
           }
         }
@@ -190,17 +215,18 @@ export default function UANPage() {
     fetchDraft();
   },[ready,user,apiFetch]);
 
-  const updateUan=(field,value)=>{setForm(p=>({...p,uanMaster:{...p.uanMaster,[field]:value}}));markDirty();};
-  const updatePf=(i,field,value)=>{setForm(p=>({...p,pfRecords:p.pfRecords.map((r,idx)=>idx===i?{...r,[field]:value}:r)}));markDirty();};
-  const addPfRecord=()=>{setForm(p=>({...p,pfRecords:[...p.pfRecords,emptyPfRecord()]}));markDirty();};
-  const removePfRecord=(i)=>{if(i===0)return;setForm(p=>({...p,pfRecords:p.pfRecords.filter((_,idx)=>idx!==i)}));markDirty();};
-  // When user edits any field after a submitted profile, clear acks so they must re-confirm
+  // FIX: Clear acks on first edit — user changed data so must re-confirm.
   const markDirty=()=>{
-    if(isDirtyRef.current===false&&serverDraft?.status==="submitted"){
+    if(!isDirtyRef.current){
       setAcks({truthful:false,notTampered:false,consent:false,liability:false,updates:false});
     }
     isDirtyRef.current=true;
   };
+
+  const updateUan=(field,value)=>{setForm(p=>({...p,uanMaster:{...p.uanMaster,[field]:value}}));markDirty();};
+  const updatePf=(i,field,value)=>{setForm(p=>({...p,pfRecords:p.pfRecords.map((r,idx)=>idx===i?{...r,[field]:value}:r)}));markDirty();};
+  const addPfRecord=()=>{setForm(p=>({...p,pfRecords:[...p.pfRecords,emptyPfRecord()]}));markDirty();};
+  const removePfRecord=(i)=>{if(i===0)return;setForm(p=>({...p,pfRecords:p.pfRecords.filter((_,idx)=>idx!==i)}));markDirty();};
   const toggleAck=(id)=>setAcks(p=>({...p,[id]:!p[id]}));
   const allAcksChecked=Object.values(acks).every(Boolean);
   const fixErr=(key)=>setErrors(p=>({...p,[key]:false}));
@@ -208,16 +234,18 @@ export default function UANPage() {
   const validate=()=>{
     if(!hasUan) return {hasUan:true};
     const e={};
-    if(hasUan==="Yes"){if(!form.uanMaster.uanNumber) e.uanNumber=true;
-    if(!form.uanMaster.nameAsPerUan) e.nameAsPerUan=true;
-    if(!form.uanMaster.mobileLinked) e.mobileLinked=true;
-    if(!form.uanMaster.isActive) e.isActive=true;
-    if(!epfoKey) e.epfoKey=true;
-    if(!uanCardKey) e.uanCardKey=true;}
-    if(hasUan==="Yes") form.pfRecords.forEach((r,i)=>{
-      if(!r.companyName) e[`pf_${i}_company`]=true;
-      if(!r.pfMemberId) e[`pf_${i}_memberId`]=true;
-    });
+    if(hasUan==="Yes"){
+      if(!form.uanMaster.uanNumber)    e.uanNumber=true;
+      if(!form.uanMaster.nameAsPerUan) e.nameAsPerUan=true;
+      if(!form.uanMaster.mobileLinked) e.mobileLinked=true;
+      if(!form.uanMaster.isActive)     e.isActive=true;
+      if(!epfoKey)                     e.epfoKey=true;
+      if(!uanCardKey)                  e.uanCardKey=true;
+      form.pfRecords.forEach((r,i)=>{
+        if(!r.companyName) e[`pf_${i}_company`]=true;
+        if(!r.pfMemberId)  e[`pf_${i}_memberId`]=true;
+      });
+    }
     return e;
   };
 
@@ -231,7 +259,8 @@ export default function UANPage() {
   const handleSubmit=async()=>{
     const errs=validate();
     if(Object.keys(errs).length>0){
-      setErrors(errs);setSubmitError("Please fill all required fields before submitting.");
+      setErrors(errs);
+      setSubmitError("Please fill all required fields before submitting.");
       setTimeout(()=>{const el=document.querySelector(".in.err");if(el)el.scrollIntoView({behavior:"smooth",block:"center"});},60);
       return;
     }
@@ -241,16 +270,19 @@ export default function UANPage() {
     try{
       const dr=serverDraft;
       const empRes=await apiFetch(`${API}/employee`,{method:"POST",body:JSON.stringify({
-        employee_id:dr.employee_id,status:"submitted",
-        firstName:dr.firstName||"",lastName:dr.lastName||"",middleName:dr.middleName,
-        fatherName:dr.fatherName,fatherFirst:dr.fatherFirst,fatherMiddle:dr.fatherMiddle,fatherLast:dr.fatherLast,
-        dob:dr.dob,gender:dr.gender,nationality:dr.nationality,
-        mobile:dr.mobile||user?.phone||"",email:dr.email||user?.email||"",
-        passport:dr.passport,aadhaar:dr.aadhaar,pan:dr.pan,aadhaarKey:dr.aadhaarKey,panKey:dr.panKey,
-        currentAddress:dr.currentAddress,permanentAddress:dr.permanentAddress,education:dr.education,
-        uanNumber:form.uanMaster.uanNumber||"",nameAsPerUan:form.uanMaster.nameAsPerUan||"",
-        mobileLinked:form.uanMaster.mobileLinked||"",isActive:form.uanMaster.isActive||"",
-        pfRecords:form.pfRecords,epfoKey,uanCardKey,acknowledgements_profile:acks,submitted_at:Date.now(),
+        employee_id:dr.employee_id, status:"submitted",
+        firstName:dr.firstName||"", lastName:dr.lastName||"", middleName:dr.middleName,
+        fatherName:dr.fatherName, fatherFirst:dr.fatherFirst, fatherMiddle:dr.fatherMiddle, fatherLast:dr.fatherLast,
+        dob:dr.dob, gender:dr.gender, nationality:dr.nationality,
+        mobile:dr.mobile||user?.phone||"", email:dr.email||user?.email||"",
+        passport:dr.passport, aadhaar:dr.aadhaar, pan:dr.pan, aadhaarKey:dr.aadhaarKey, panKey:dr.panKey,
+        currentAddress:dr.currentAddress, permanentAddress:dr.permanentAddress, education:dr.education,
+        hasUan,
+        uanNumber:form.uanMaster.uanNumber||"", nameAsPerUan:form.uanMaster.nameAsPerUan||"",
+        mobileLinked:form.uanMaster.mobileLinked||"", isActive:form.uanMaster.isActive||"",
+        pfRecords:form.pfRecords, epfoKey, uanCardKey,
+        acknowledgements_profile:acks,
+        submitted_at:Date.now(),
       })});
       if(!empRes.ok) throw new Error(parseError(await empRes.json().catch(()=>({}))));
       setSubmitted(true);
@@ -258,7 +290,7 @@ export default function UANPage() {
     finally{setLoading(false);}
   };
 
-  if(!ready||!user)return null;
+  if(!ready||!user) return null;
 
   if(submitted){
     return(
@@ -281,7 +313,7 @@ export default function UANPage() {
     );
   }
 
-  if(loading)return(<div style={{minHeight:"100vh",background:"#cdd2ed",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#8b88b0",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:500}}>Loading UAN details…</p></div>);
+  if(loading) return(<div style={{minHeight:"100vh",background:"#cdd2ed",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#8b88b0",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:500}}>Loading UAN details…</p></div>);
 
   return(
     <>
@@ -300,91 +332,92 @@ export default function UANPage() {
         <div className="wrap">
           <StepNav current={4} onNavigate={(path)=>router.push(path)}/>
 
-          {/* ── Do you have a UAN? — hidden if previously answered ─────────────────────── */}
+          {/* UAN toggle — only shown if user hasn't answered yet */}
           {hasUan==="" && (
-          <div className="sc ind" style={{marginBottom:"1.2rem"}}>
-            <div className="sh"><div className="si ind">🏦</div><span className="st">UAN / PF Details</span></div>
-            <p style={{fontSize:"0.82rem",color:"#6b6894",marginBottom:"1rem"}}>
-              If you are a <strong>fresher</strong> or have never worked before, select <strong>No</strong>. You can skip UAN details and directly proceed to acknowledgements.
-            </p>
-            <div style={{display:"flex",alignItems:"center",gap:"0.75rem",flexWrap:"wrap"}}>
-              <span style={{fontSize:"0.8rem",fontWeight:700,color:"#1a1730",textTransform:"uppercase",letterSpacing:"0.5px"}}>Do you have a UAN?</span>
-              {errors.hasUan&&<span style={{fontSize:"0.7rem",color:"#ef4444",fontWeight:600}}>Please select an option</span>}
-              {["Yes","No"].map(opt=>(
-                <button key={opt} onClick={()=>{setHasUan(opt);setErrors({});markDirty();}}
-                  style={{padding:"0.45rem 1.4rem",borderRadius:999,fontWeight:700,fontSize:"0.82rem",cursor:"pointer",transition:"all 0.18s",
-                    background:hasUan===opt?"#4f46e5":"transparent",
-                    color:hasUan===opt?"#fff":"#4f46e5",
-                    border:`2px solid ${errors.hasUan?"#ef4444":"#4f46e5"}`,
-                    boxShadow:hasUan===opt?"0 2px 10px rgba(79,70,229,0.35)":"none"}}>
-                  {opt}
-                </button>
-              ))}
-            </div>
-          </div>
-          )}
-          {/* ── UAN fields — only if hasUan===Yes ──────── */}
-          {hasUan==="Yes" && <div className="sc ind">
-            <div className="sh"><div className="si ind">🏦</div><span className="st">UAN Details</span></div>
-            <div className="fr">
-              <F l="UAN Number" v={form.uanMaster.uanNumber} s={v=>updateUan("uanNumber",v.replace(/\D/g,""))} mx={12} errKey="uanNumber" errors={errors} onFix={fixErr}/>
-              <F l="Name as per UAN" v={form.uanMaster.nameAsPerUan} s={v=>updateUan("nameAsPerUan",v)} errKey="nameAsPerUan" errors={errors} onFix={fixErr}/>
-            </div>
-            <div className="fr">
-              <F l="Mobile Linked with UAN" v={form.uanMaster.mobileLinked} s={v=>updateUan("mobileLinked",v.replace(/\D/g,""))} mx={10} errKey="mobileLinked" errors={errors} onFix={fixErr}/>
-              <div className="fi">
-                <span className="fl">Is UAN Active? <span style={{color:"#ef4444"}}>*</span></span>
-                <div style={{display:"flex",gap:"0.6rem",marginTop:"0.3rem"}}>
-                  {["Yes","No"].map(v=><Pill key={v} label={v} active={form.uanMaster.isActive===v} isErr={!!errors.isActive} onClick={()=>{updateUan("isActive",v);fixErr("isActive");}}/>)}
-                </div>
-                {errors.isActive&&<span className="err-msg">Required</span>}
+            <div className="sc ind" style={{marginBottom:"1.2rem"}}>
+              <div className="sh"><div className="si ind">🏦</div><span className="st">UAN / PF Details</span></div>
+              <p style={{fontSize:"0.82rem",color:"#6b6894",marginBottom:"1rem"}}>
+                If you are a <strong>fresher</strong> or have never worked before, select <strong>No</strong>. You can skip UAN details and directly proceed to acknowledgements.
+              </p>
+              <div style={{display:"flex",alignItems:"center",gap:"0.75rem",flexWrap:"wrap"}}>
+                <span style={{fontSize:"0.8rem",fontWeight:700,color:"#1a1730",textTransform:"uppercase",letterSpacing:"0.5px"}}>Do you have a UAN?</span>
+                {errors.hasUan&&<span style={{fontSize:"0.7rem",color:"#ef4444",fontWeight:600}}>Please select an option</span>}
+                {["Yes","No"].map(opt=>(
+                  <button key={opt} onClick={()=>{setHasUan(opt);setErrors({});markDirty();}}
+                    style={{padding:"0.45rem 1.4rem",borderRadius:999,fontWeight:700,fontSize:"0.82rem",cursor:"pointer",transition:"all 0.18s",
+                      background:hasUan===opt?"#4f46e5":"transparent",
+                      color:hasUan===opt?"#fff":"#4f46e5",
+                      border:`2px solid ${errors.hasUan?"#ef4444":"#4f46e5"}`,
+                      boxShadow:hasUan===opt?"0 2px 10px rgba(79,70,229,0.35)":"none"}}>
+                    {opt}
+                  </button>
+                ))}
               </div>
             </div>
+          )}
 
-            {/* EPFO Service History */}
-            <div style={{marginTop:"0.85rem"}}>
-              <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>EPFO Service History Record <span style={{color:"#ef4444"}}>*</span></span>
-              {errors.epfoKey&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload is required</span>}
-              <FileUpload label="EPFO Service History" category="uan" subKey="epfo" apiFetch={apiFetch} value={epfoKey} onChange={v=>{setEpfoKey(v);markDirty();fixErr("epfoKey");}}/>
-              <p style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:4}}>Download from EPFO portal → Upload here</p>
-            </div>
-
-            {/* UAN Card */}
-            <div style={{marginTop:"0.85rem"}}>
-              <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>UAN Card <span style={{color:"#ef4444"}}>*</span></span>
-              {errors.uanCardKey&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload is required</span>}
-              <FileUpload label="UAN Card" category="uan" subKey="uanCard" apiFetch={apiFetch} value={uanCardKey} onChange={v=>{setUanCardKey(v);markDirty();fixErr("uanCardKey");}}/>
-              <p style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:4}}>Download from UAN portal → Download UAN Card → Upload here</p>
-            </div>
-          </div>} {/* end hasUan===Yes UAN Details card */}
-
-          {/* ── PF Details — only if hasUan===Yes ──────── */}
-          {hasUan==="Yes" && <div className="sc grn">
-            <div className="sh"><div className="si grn">📊</div><span className="st">PF Details (Per Previous Employer)</span></div>
-            {form.pfRecords.map((record,i)=>(
-              <div key={i} className="pf-box">
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.6rem"}}>
-                  <span style={{fontSize:"0.78rem",color:"#8b88b0",fontWeight:700}}>Company {i+1}</span>
-                  {i>0&&<button className="rm-btn" onClick={()=>removePfRecord(i)}>− Remove</button>}
-                </div>
-                <div className="fr">
-                  <F l="Company Name" v={record.companyName} s={v=>updatePf(i,"companyName",v)} errKey={`pf_${i}_company`} errors={errors} onFix={fixErr}/>
-                  <F l="PF Member ID" v={record.pfMemberId} s={v=>updatePf(i,"pfMemberId",v)} errKey={`pf_${i}_memberId`} errors={errors} onFix={fixErr}/>
-                </div>
-                <div className="fr">
-                  <F l="Date of Joining (EPFO)" v={record.dojEpfo} s={v=>updatePf(i,"dojEpfo",v)} t="date" r={false}/>
-                  <F l="Date of Exit (EPFO)" v={record.doeEpfo} s={v=>updatePf(i,"doeEpfo",v)} t="date" r={false}/>
-                </div>
-                <div>
-                  <span className="fl">Was PF Transferred? <span style={{color:"#ef4444"}}>*</span></span>
+          {/* UAN fields */}
+          {hasUan==="Yes" && (
+            <div className="sc ind">
+              <div className="sh"><div className="si ind">🏦</div><span className="st">UAN Details</span></div>
+              <div className="fr">
+                <F l="UAN Number" v={form.uanMaster.uanNumber} s={v=>updateUan("uanNumber",v.replace(/\D/g,""))} mx={12} errKey="uanNumber" errors={errors} onFix={fixErr}/>
+                <F l="Name as per UAN" v={form.uanMaster.nameAsPerUan} s={v=>updateUan("nameAsPerUan",v)} errKey="nameAsPerUan" errors={errors} onFix={fixErr}/>
+              </div>
+              <div className="fr">
+                <F l="Mobile Linked with UAN" v={form.uanMaster.mobileLinked} s={v=>updateUan("mobileLinked",v.replace(/\D/g,""))} mx={10} errKey="mobileLinked" errors={errors} onFix={fixErr}/>
+                <div className="fi">
+                  <span className="fl">Is UAN Active? <span style={{color:"#ef4444"}}>*</span></span>
                   <div style={{display:"flex",gap:"0.6rem",marginTop:"0.3rem"}}>
-                    {["Yes","No"].map(v=><Pill key={v} label={v} active={record.pfTransferred===v} onClick={()=>updatePf(i,"pfTransferred",v)}/>)}
+                    {["Yes","No"].map(v=><Pill key={v} label={v} active={form.uanMaster.isActive===v} isErr={!!errors.isActive} onClick={()=>{updateUan("isActive",v);fixErr("isActive");}}/>)}
+                  </div>
+                  {errors.isActive&&<span className="err-msg">Required</span>}
+                </div>
+              </div>
+              <div style={{marginTop:"0.85rem"}}>
+                <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>EPFO Service History Record <span style={{color:"#ef4444"}}>*</span></span>
+                {errors.epfoKey&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload is required</span>}
+                <FileUpload label="EPFO Service History" category="uan" subKey="epfo" apiFetch={apiFetch} value={epfoKey} onChange={v=>{setEpfoKey(v);markDirty();fixErr("epfoKey");}}/>
+                <p style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:4}}>Download from EPFO portal → Upload here</p>
+              </div>
+              <div style={{marginTop:"0.85rem"}}>
+                <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>UAN Card <span style={{color:"#ef4444"}}>*</span></span>
+                {errors.uanCardKey&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload is required</span>}
+                <FileUpload label="UAN Card" category="uan" subKey="uanCard" apiFetch={apiFetch} value={uanCardKey} onChange={v=>{setUanCardKey(v);markDirty();fixErr("uanCardKey");}}/>
+                <p style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:4}}>Download from UAN portal → Download UAN Card → Upload here</p>
+              </div>
+            </div>
+          )}
+
+          {/* PF Details */}
+          {hasUan==="Yes" && (
+            <div className="sc grn">
+              <div className="sh"><div className="si grn">📊</div><span className="st">PF Details (Per Previous Employer)</span></div>
+              {form.pfRecords.map((record,i)=>(
+                <div key={i} className="pf-box">
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.6rem"}}>
+                    <span style={{fontSize:"0.78rem",color:"#8b88b0",fontWeight:700}}>Company {i+1}</span>
+                    {i>0&&<button className="rm-btn" onClick={()=>removePfRecord(i)}>− Remove</button>}
+                  </div>
+                  <div className="fr">
+                    <F l="Company Name" v={record.companyName} s={v=>updatePf(i,"companyName",v)} errKey={`pf_${i}_company`} errors={errors} onFix={fixErr}/>
+                    <F l="PF Member ID" v={record.pfMemberId} s={v=>updatePf(i,"pfMemberId",v)} errKey={`pf_${i}_memberId`} errors={errors} onFix={fixErr}/>
+                  </div>
+                  <div className="fr">
+                    <F l="Date of Joining (EPFO)" v={record.dojEpfo} s={v=>updatePf(i,"dojEpfo",v)} t="date" r={false}/>
+                    <F l="Date of Exit (EPFO)" v={record.doeEpfo} s={v=>updatePf(i,"doeEpfo",v)} t="date" r={false}/>
+                  </div>
+                  <div>
+                    <span className="fl">Was PF Transferred? <span style={{color:"#ef4444"}}>*</span></span>
+                    <div style={{display:"flex",gap:"0.6rem",marginTop:"0.3rem"}}>
+                      {["Yes","No"].map(v=><Pill key={v} label={v} active={record.pfTransferred===v} onClick={()=>updatePf(i,"pfTransferred",v)}/>)}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-            <button className="add-btn" onClick={addPfRecord}>+ Add Another Company</button>
-          </div>} {/* end hasUan===Yes PF Details card */}
+              ))}
+              <button className="add-btn" onClick={addPfRecord}>+ Add Another Company</button>
+            </div>
+          )}
 
           {/* Declaration — always visible */}
           <div className="sc amb">
