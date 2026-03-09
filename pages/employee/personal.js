@@ -415,7 +415,9 @@ export default function PersonalDetails() {
               employee_id: empId,
               status: "draft",
               email: user?.email || "",
-              mobile: user?.phone || "",
+              mobile: user?.phone || "0000000000",
+              firstName: "_",
+              lastName: "_",
             }),
           });
           const rd = await createRes.json().catch(() => ({}));
