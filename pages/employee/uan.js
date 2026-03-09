@@ -69,6 +69,7 @@ const G = `
     border-radius: 10px; cursor: pointer; transition: all 0.15s; margin-bottom: 0.45rem;
     border: 1.5px solid #dddaf0; background: #f5f0e8; }
   .ack-item.checked { border-color: #16a34a; background: #f0fdf4; }
+  .ack-item.locked { cursor: default; opacity: 0.85; }
   .ack-check { width: 20px; height: 20px; border-radius: 5px; flex-shrink: 0; margin-top: 1px;
     border: 2px solid #dddaf0; background: #f2f1f9; display: flex; align-items: center;
     justify-content: center; transition: all 0.15s; }
@@ -439,14 +440,14 @@ export default function UANPage() {
             <div className="sh"><div className="si amb">✍️</div><span className="st">Declaration & Acknowledgement</span></div>
             <p style={{fontSize:"0.84rem",color:"#6b6894",marginBottom:"1rem",lineHeight:1.5}}>Please read and confirm each statement before submitting.</p>
             {ACKNOWLEDGEMENTS.map(({id,text})=>(
-              <div key={id} className={`ack-item${acks[id]?" checked":""}`} onClick={()=>toggleAck(id)}>
+              <div key={id} className={`ack-item${acks[id]?" checked":""}${!isDirtyRef.current?" locked":""}`} onClick={()=>{if(isDirtyRef.current)toggleAck(id);}}>
                 <div className={`ack-check${acks[id]?" on":""}`}>
                   {acks[id]&&<span style={{color:"#fff",fontSize:"0.75rem",fontWeight:800}}>✓</span>}
                 </div>
                 <span style={{fontSize:"0.875rem",color:acks[id]?"#15803d":"#1a1730",lineHeight:1.55,fontWeight:acks[id]?600:400}}>{text}</span>
               </div>
             ))}
-            {!allAcksChecked&&<p style={{fontSize:"0.78rem",color:"#d97706",marginTop:"0.75rem",fontWeight:600}}>⚠️ Please confirm all {ACKNOWLEDGEMENTS.length} statements to enable submission.</p>}
+            {!allAcksChecked&&isDirtyRef.current&&<p style={{fontSize:"0.78rem",color:"#d97706",marginTop:"0.75rem",fontWeight:600}}>⚠️ Please confirm all {ACKNOWLEDGEMENTS.length} statements to enable submission.</p>}
           </div>
 
           {submitError&&(
