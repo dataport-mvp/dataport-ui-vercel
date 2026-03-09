@@ -1,4 +1,4 @@
-// pages/employee/personal.js  — Page 1 of 4
+// pages/employee/personal.js  — Page 1 of 5
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "../../utils/AuthContext";
@@ -7,12 +7,11 @@ import FileUpload from "../../components/FileUpload";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
-// ─── Page 1 step accent: INDIGO ───────────────────────────────────────
-const STEP_COLOR   = "#4f46e5";
+// ─── Step accent colours ──────────────────────────────────────────────
+const ACCENTS = { 1:"#4f46e5", 2:"#d97706", 3:"#7c3aed", 4:"#0891b2", 5:"#16a34a" };
 const STEP_DONE_BG = "#2a2460";
 const STEP_DONE_CK = "#a78bfa";
 const STEP_CONN    = "#a78bfa";
-const STEP_SHADOW  = "rgba(79,70,229,0.35)";
 
 const G = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -155,35 +154,40 @@ function SignoutModal({ onConfirm, onCancel }) {
   );
 }
 
-// ─── StepNav — P1 active accent: INDIGO ──────────────────────────────
+// ─── StepNav — 5 steps, free navigation ──────────────────────────────
 function StepNav({ current, onNavigate }) {
   const steps = [
     { n:1, label:"Personal",   icon:"👤", path:"/employee/personal"  },
     { n:2, label:"Education",  icon:"🎓", path:"/employee/education" },
     { n:3, label:"Employment", icon:"💼", path:"/employee/previous"  },
-    { n:4, label:"Review",     icon:"✅", path:"/employee/uan"       },
+    { n:4, label:"UAN",        icon:"🏦", path:"/employee/uan"       },
+    { n:5, label:"Review",     icon:"📋", path:"/employee/review"    },
   ];
   return (
-    <div style={{background:"#fff",borderRadius:14,padding:"1.1rem 0.5rem",marginBottom:"1.6rem",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12)"}}>
-      {steps.map((s, i) => (
-        <div key={s.n} style={{display:"flex",alignItems:"center"}}>
-          <button onClick={() => onNavigate(s.path)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.3rem",background:"none",border:"none",cursor:"pointer",padding:"0.2rem 0.9rem"}}>
-            <div style={{width:40,height:40,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",transition:"all 0.25s",
-              background: current===s.n ? STEP_COLOR : current>s.n ? STEP_DONE_BG : "#f2f1f9",
-              border: current===s.n ? `2px solid ${STEP_COLOR}` : current>s.n ? `2px solid ${STEP_CONN}` : "2px solid #e4e2ed",
-              boxShadow: current===s.n ? `0 4px 12px ${STEP_SHADOW}` : "none"}}>
-              {current > s.n
-                ? <span style={{color:STEP_DONE_CK,fontWeight:800,fontSize:"0.9rem"}}>✓</span>
-                : <span style={{fontSize:"1rem",filter:current===s.n?"brightness(0) invert(1)":"none"}}>{s.icon}</span>}
-            </div>
-            <span style={{fontSize:"0.67rem",fontWeight:700,letterSpacing:"0.6px",textTransform:"uppercase",
-              color: current===s.n ? STEP_COLOR : current>s.n ? STEP_DONE_CK : "#8b88b0"}}>{s.label}</span>
-          </button>
-          {i < steps.length - 1 && (
-            <div style={{width:52,height:2,background:current>s.n ? STEP_CONN : "#ccc9e4",margin:"0 -0.25rem",marginBottom:"1.4rem",borderRadius:2}}/>
-          )}
-        </div>
-      ))}
+    <div style={{background:"#fff",borderRadius:14,padding:"1.1rem 0.5rem",marginBottom:"1.6rem",display:"flex",alignItems:"center",justifyContent:"center",overflowX:"auto",boxShadow:"0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12)"}}>
+      {steps.map((s, i) => {
+        const isDone = current > s.n, isActive = current === s.n;
+        const col = ACCENTS[s.n];
+        return (
+          <div key={s.n} style={{display:"flex",alignItems:"center"}}>
+            <button onClick={() => onNavigate(s.path)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.3rem",background:"none",border:"none",cursor:"pointer",padding:"0.2rem 0.75rem"}}>
+              <div style={{width:40,height:40,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",transition:"all 0.25s",
+                background:isActive?col:isDone?STEP_DONE_BG:"#f2f1f9",
+                border:isActive?`2px solid ${col}`:isDone?`2px solid ${STEP_CONN}`:"2px solid #e4e2ed",
+                boxShadow:isActive?`0 4px 12px ${col}55`:"none"}}>
+                {isDone
+                  ? <span style={{color:STEP_DONE_CK,fontWeight:800,fontSize:"0.9rem"}}>✓</span>
+                  : <span style={{fontSize:"1rem",filter:isActive?"brightness(0) invert(1)":"none"}}>{s.icon}</span>}
+              </div>
+              <span style={{fontSize:"0.67rem",fontWeight:700,letterSpacing:"0.6px",textTransform:"uppercase",whiteSpace:"nowrap",
+                color:isActive?col:isDone?STEP_DONE_CK:"#8b88b0"}}>{s.label}</span>
+            </button>
+            {i < steps.length - 1 && (
+              <div style={{width:38,height:2,background:current>s.n?STEP_CONN:"#ccc9e4",margin:"0 -0.25rem",marginBottom:"1.4rem",borderRadius:2,flexShrink:0}}/>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -193,6 +197,7 @@ function ConsentTab({ apiFetch }) {
   const [consents,setConsents]=useState([]);
   const [loading,setLoading]=useState(true);
   const [acting,setActing]=useState(null);
+  const [actionError,setActionError]=useState({});
   const load=useCallback(async()=>{
     try{const res=await apiFetch(`${API}/consent/my`);if(res.ok)setConsents(await res.json());}catch(_){}
     setLoading(false);
@@ -201,7 +206,22 @@ function ConsentTab({ apiFetch }) {
   useEffect(()=>{const id=setInterval(load,15000);return()=>clearInterval(id);},[load]);
   const respond=async(consentId,decision)=>{
     setActing(consentId);
-    try{const res=await apiFetch(`${API}/consent/respond`,{method:"POST",body:JSON.stringify({consent_id:consentId,status:decision==="approved"?"APPROVED":"DECLINED",responded_at:Date.now()})});if(res.ok)await load();}catch(_){}
+    setActionError(p=>({...p,[consentId]:""}));
+    try{
+      const res=await apiFetch(`${API}/consent/respond`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({consent_id:consentId,status:decision==="approved"?"APPROVED":"DECLINED",responded_at:Date.now()})
+      });
+      if(res.ok){
+        await load();
+      } else {
+        const errData = await res.json().catch(()=>({}));
+        setActionError(p=>({...p,[consentId]:errData.detail||errData.message||`Error ${res.status}`}));
+      }
+    }catch(e){
+      setActionError(p=>({...p,[consentId]:"Network error — please retry"}));
+    }
     setActing(null);
   };
   const norm=(c)=>({...c,status:String(c.status||"pending").toLowerCase()});
@@ -218,7 +238,7 @@ function ConsentTab({ apiFetch }) {
   const approved=all.filter(c=>c.status==="approved");
   const declined=all.filter(c=>c.status==="declined");
   const sColor={pending:"#f59e0b",approved:"#16a34a",declined:"#ef4444"};
-  const sBg={pending:"#2a2460",approved:"#2a2460",declined:"#fff5f5"};
+  const sBg={pending:"#fffbeb",approved:"#f0fdf4",declined:"#fff5f5"};
   const CC=({c})=>(
     <div style={{border:"1px solid #ebe9f5",borderRadius:12,padding:"1.1rem 1.25rem",marginBottom:"0.65rem",background:"#fff",boxShadow:"0 1px 5px rgba(79,70,229,0.05)"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
@@ -231,9 +251,10 @@ function ConsentTab({ apiFetch }) {
         </div>
         <span style={{padding:"0.18rem 0.7rem",borderRadius:999,fontSize:"0.7rem",fontWeight:700,color:sColor[c.status],background:sBg[c.status],whiteSpace:"nowrap",marginLeft:"0.75rem",border:`1px solid ${sColor[c.status]}33`}}>{c.status.charAt(0).toUpperCase()+c.status.slice(1)}</span>
       </div>
+      {actionError[c.consent_id]&&<p style={{fontSize:"0.75rem",color:"#ef4444",marginTop:"0.5rem",fontWeight:600}}>⚠️ {actionError[c.consent_id]}</p>}
       {c.status==="pending"&&<div style={{display:"flex",gap:"0.5rem",marginTop:"0.8rem"}}>
-        <button disabled={acting===c.consent_id} onClick={()=>respond(c.consent_id,"approved")} style={{flex:1,padding:"0.5rem",background:"#16a34a",color:"#fff",border:"none",borderRadius:8,fontWeight:700,cursor:"pointer",fontSize:"0.875rem",fontFamily:"inherit"}}>{acting===c.consent_id?"…":"Approve"}</button>
-        <button disabled={acting===c.consent_id} onClick={()=>respond(c.consent_id,"declined")} style={{flex:1,padding:"0.5rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:8,fontWeight:700,cursor:"pointer",fontSize:"0.875rem",fontFamily:"inherit"}}>{acting===c.consent_id?"…":"Decline"}</button>
+        <button disabled={acting===c.consent_id} onClick={()=>respond(c.consent_id,"approved")} style={{flex:1,padding:"0.5rem",background:"#16a34a",color:"#fff",border:"none",borderRadius:8,fontWeight:700,cursor:acting===c.consent_id?"not-allowed":"pointer",fontSize:"0.875rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Approve"}</button>
+        <button disabled={acting===c.consent_id} onClick={()=>respond(c.consent_id,"declined")} style={{flex:1,padding:"0.5rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:8,fontWeight:700,cursor:acting===c.consent_id?"not-allowed":"pointer",fontSize:"0.875rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Decline"}</button>
       </div>}
     </div>
   );
@@ -323,7 +344,12 @@ export default function PersonalDetails() {
 
   const dirty = (setter) => (val) => { setter(val); isDirtyRef.current = true; };
 
-  useEffect(() => { if (!ready) return; if (!user) { router.replace("/employee/login"); return; } }, [ready, user, router]);
+  // ─── ROLE GUARD ───────────────────────────────────────────────────
+  useEffect(() => {
+    if (!ready) return;
+    if (!user) { router.replace("/employee/login"); return; }
+    if (user.role && user.role !== "employee") { router.replace("/employee/login"); return; }
+  }, [ready, user, router]);
 
   useEffect(() => {
     if (!ready || !user) return;
@@ -377,8 +403,7 @@ export default function PersonalDetails() {
           if (perm.state)    setPermState(perm.state);
           if (perm.pin)      setPermPin(perm.pin);
         } else {
-          // No draft found — create a minimal employee record immediately so
-          // FileUpload can get a presigned URL before the user clicks Save.
+          // No draft found — create minimal employee record so FileUpload can get presigned URL
           const empId = `emp-${Date.now()}`;
           try {
             const createRes = await apiFetch(`${API}/employee`, {
@@ -427,7 +452,6 @@ export default function PersonalDetails() {
   };
 
   const handleSave = async () => {
-    // Validate required fields
     const e = {};
     if (!firstName)    e.firstName = true;
     if (!lastName)     e.lastName = true;
@@ -455,6 +479,7 @@ export default function PersonalDetails() {
     try { await saveDraft(); isDirtyRef.current = false; setSaveStatus("Saved ✓"); router.push("/employee/education"); }
     catch (err) { setSaveStatus(`Error: ${err.message || "Could not save"}`); }
   };
+
   const handleNavigate = async (path) => {
     if (isDirtyRef.current) { try { await saveDraft(); isDirtyRef.current = false; } catch (_) {} }
     router.push(path);
@@ -496,7 +521,7 @@ export default function PersonalDetails() {
             <>
               <StepNav current={1} onNavigate={handleNavigate} />
 
-              {/* Profile Photo — * required */}
+              {/* Profile Photo */}
               <div className="sc ind">
                 <div className="sh">
                   <div className="si ind">📸</div>
@@ -564,7 +589,7 @@ export default function PersonalDetails() {
                   <F l="Passport No." v={passport} s={dirty(setPassport)} r={false} />
                 </div>
                 <div className="fr">
-                  <FS l="Blood Group" v={bloodGroup} s={dirty(setBloodGroup)} o={["A+","A-","B+","B-","AB+","AB-","O+","O-"]} />
+                  <FS l="Blood Group" v={bloodGroup} s={dirty(setBloodGroup)} o={["A+","A-","B+","B-","AB+","AB-","O+","O-"]} r={false} />
                   <div className="fi" style={{flex:2}} />
                 </div>
               </div>
@@ -606,8 +631,8 @@ export default function PersonalDetails() {
                 </div>
                 <div className="fr"><F l="Door No. & Street" v={curDoor} s={dirty(setCurDoor)} /></div>
                 <div className="fr">
-                  <F l="Village / Area"           v={curVillage}  s={dirty(setCurVillage)} />
-                  <F l="Tehsil / Taluk / Mandal"  v={curLocality} s={dirty(setCurLocality)} />
+                  <F l="Village / Area"           v={curVillage}  s={dirty(setCurVillage)} r={false} />
+                  <F l="Tehsil / Taluk / Mandal"  v={curLocality} s={dirty(setCurLocality)} r={false} />
                 </div>
                 <div className="fr">
                   <F l="District" v={curDistrict} s={dirty(setCurDistrict)} />
@@ -620,18 +645,18 @@ export default function PersonalDetails() {
                 <div className="sh"><div className="si cyn">📍</div><span className="st">Permanent / Native Address</span></div>
                 <p style={{fontSize:"0.76rem",color:"#8b88b0",marginBottom:"0.9rem",fontWeight:500}}>If you don't have a permanent residence, enter your current address here.</p>
                 <div className="fr">
-                  <F l="Residing From" v={permFrom} s={dirty(setPermFrom)} t="date" />
+                  <F l="Residing From" v={permFrom} s={dirty(setPermFrom)} t="date" r={false} />
                   <div className="fi" />
                 </div>
-                <div className="fr"><F l="Door No. & Street" v={permDoor} s={dirty(setPermDoor)} /></div>
+                <div className="fr"><F l="Door No. & Street" v={permDoor} s={dirty(setPermDoor)} r={false} /></div>
                 <div className="fr">
-                  <F l="Village / Area"          v={permVillage}  s={dirty(setPermVillage)} />
-                  <F l="Tehsil / Taluk / Mandal" v={permLocality} s={dirty(setPermLocality)} />
+                  <F l="Village / Area"          v={permVillage}  s={dirty(setPermVillage)} r={false} />
+                  <F l="Tehsil / Taluk / Mandal" v={permLocality} s={dirty(setPermLocality)} r={false} />
                 </div>
                 <div className="fr">
-                  <F l="District" v={permDistrict} s={dirty(setPermDistrict)} />
-                  <F l="State"    v={permState}    s={dirty(setPermState)} />
-                  <F l="Pincode"  v={permPin}      s={(v) => dirty(setPermPin)(v.replace(/\D/g,"").slice(0,6))} />
+                  <F l="District" v={permDistrict} s={dirty(setPermDistrict)} r={false} />
+                  <F l="State"    v={permState}    s={dirty(setPermState)} r={false} />
+                  <F l="Pincode"  v={permPin}      s={(v) => dirty(setPermPin)(v.replace(/\D/g,"").slice(0,6))} r={false} />
                 </div>
               </div>
 
