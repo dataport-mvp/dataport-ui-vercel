@@ -173,10 +173,20 @@ export default function UANPage() {
           const dr=await res.json();
           setServerDraft(dr);
           if(dr.epfoKey)   setEpfoKey(dr.epfoKey);
-          if(dr.hasUan)    setHasUan(dr.hasUan);
           if(dr.uanCardKey)setUanCardKey(dr.uanCardKey);
 
-          // FIX: Pre-load acks if previously saved.
+          // Infer hasUan: use saved value if present, otherwise infer from data.
+          // Handles existing records saved before hasUan was included in the payload.
+          if(dr.hasUan){
+            setHasUan(dr.hasUan);
+          } else if(dr.uanNumber||dr.epfoKey||dr.uanCardKey){
+            setHasUan("Yes");
+          } else if(dr.status==="submitted"){
+            // Submitted but no UAN data — they answered No
+            setHasUan("No");
+          }
+
+          // Pre-load acks if previously saved.
           // User only needs to re-confirm if they actually change something (markDirty clears them).
           if(dr.acknowledgements_profile){
             const a=dr.acknowledgements_profile;
@@ -187,6 +197,11 @@ export default function UANPage() {
               liability:   !!a.liability,
               updates:     !!a.updates,
             });
+          } else if(dr.status==="submitted"){
+            // Profile was submitted with old code that didn't save acks separately.
+            // They already agreed once — pre-check all so they don't have to re-confirm
+            // just to view their profile. markDirty will clear these if they edit anything.
+            setAcks({truthful:true,notTampered:true,consent:true,liability:true,updates:true});
           }
 
           if(dr.uanNumber||dr.nameAsPerUan||dr.mobileLinked||dr.isActive||dr.pfRecords){
@@ -332,8 +347,8 @@ export default function UANPage() {
         <div className="wrap">
           <StepNav current={4} onNavigate={(path)=>router.push(path)}/>
 
-          {/* UAN toggle — only shown if user hasn't answered yet */}
-          {hasUan==="" && (
+          {/* UAN toggle — shown if unanswered OR if previously said No (they may have got one now) */}
+          {(hasUan===""||hasUan==="No") && (
             <div className="sc ind" style={{marginBottom:"1.2rem"}}>
               <div className="sh"><div className="si ind">🏦</div><span className="st">UAN / PF Details</span></div>
               <p style={{fontSize:"0.82rem",color:"#6b6894",marginBottom:"1rem"}}>
