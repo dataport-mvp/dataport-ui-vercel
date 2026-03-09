@@ -9,40 +9,40 @@ const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
 // ─── Page 1 step accent: INDIGO ───────────────────────────────────────
 const STEP_COLOR   = "#4f46e5";
-const STEP_DONE_BG = "#eef2ff";
-const STEP_DONE_CK = "#4f46e5";
-const STEP_CONN    = "#c7d2fe";
-const STEP_SHADOW  = "rgba(79,70,229,0.28)";
+const STEP_DONE_BG = "#2a2460";
+const STEP_DONE_CK = "#a78bfa";
+const STEP_CONN    = "#a78bfa";
+const STEP_SHADOW  = "rgba(79,70,229,0.35)";
 
 const G = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #f0eff9; font-family: 'Plus Jakarta Sans', sans-serif; }
-  .pg { min-height: 100vh; background: #f0eff9; padding-bottom: 3rem; }
+  body { background: #cdd2ed; font-family: 'Plus Jakarta Sans', sans-serif; }
+  .pg { min-height: 100vh; background: #cdd2ed; padding-bottom: 3rem; }
   .wrap { max-width: 860px; margin: auto; padding: 0 1.25rem; }
 
   /* Topbar */
-  .topbar { background: #fff; border-bottom: 1px solid #e8e5f0; padding: 0.85rem 1.75rem;
+  .topbar { background: #1e1a3e; border-bottom: 1px solid #2d2860; padding: 0.85rem 1.75rem;
     display: flex; justify-content: space-between; align-items: center;
     margin-bottom: 1.75rem; position: sticky; top: 0; z-index: 50;
-    box-shadow: 0 2px 8px rgba(79,70,229,0.06); }
-  .logo-text { font-size: 1.3rem; font-weight: 800; color: #4f46e5; letter-spacing: -0.5px; }
+    box-shadow: 0 4px 20px rgba(15,12,40,0.4); }
+  .logo-text { font-size: 1.3rem; font-weight: 800; color: #a78bfa; letter-spacing: -0.5px; }
   .topbar-right { display: flex; align-items: center; gap: 0.75rem; }
-  .user-name { font-size: 0.84rem; color: #64748b; font-weight: 500; }
-  .signout-btn { padding: 0.38rem 1rem; border: 1.5px solid #e2e8f0; border-radius: 8px;
-    background: #fff; color: #64748b; font-size: 0.82rem; cursor: pointer;
+  .user-name { font-size: 0.84rem; color: #9d9bc4; font-weight: 500; }
+  .signout-btn { padding: 0.38rem 1rem; border: 1.5px solid #2d2860; border-radius: 8px;
+    background: transparent; color: #9d9bc4; font-size: 0.82rem; cursor: pointer;
     font-weight: 600; font-family: inherit; transition: all 0.2s; }
-  .signout-btn:hover { border-color: #fca5a5; color: #ef4444; background: #fff8f8; }
+  .signout-btn:hover { border-color: #fca5a5; color: #ef4444; background: rgba(239,68,68,0.08); }
 
   /* Bell */
   .bell-btn { position: relative; width: 36px; height: 36px; border-radius: 9px;
-    border: 1.5px solid #e2e8f0; background: #fff; cursor: pointer;
+    border: 1.5px solid #2d2860; background: transparent; cursor: pointer;
     display: flex; align-items: center; justify-content: center; font-size: 1rem;
     transition: all 0.2s; }
-  .bell-btn:hover { border-color: #c7d2fe; background: #f5f3ff; }
+  .bell-btn:hover { border-color: #a78bfa; background: rgba(167,139,250,0.1); }
   .bell-badge { position: absolute; top: -5px; right: -5px; background: #ef4444; color: #fff;
     border-radius: 999px; font-size: 0.6rem; font-weight: 800; min-width: 16px; height: 16px;
-    display: flex; align-items: center; justify-content: center; padding: 0 3px; border: 2px solid #fff; }
+    display: flex; align-items: center; justify-content: center; padding: 0 3px; border: 2px solid #1e1a3e; }
 
   /* Tabs */
   .tab-row { display: flex; border-bottom: 2px solid #e8e5f0; margin-bottom: 1.75rem; }
@@ -53,11 +53,11 @@ const G = `
   .tab-btn:hover:not(.active) { color: #475569; }
 
   /* Cards */
-  .sc { background: #fff; border-radius: 14px; padding: 1.5rem 1.6rem;
-    margin-bottom: 1.1rem; box-shadow: 0 2px 12px rgba(79,70,229,0.07), 0 0 0 1px #ebe9f5;
+  .sc { background: #ffffff; border-radius: 16px; padding: 1.5rem 1.6rem;
+    margin-bottom: 1.1rem; box-shadow: 0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12); border: 1px solid rgba(255,255,255,0.85);
     position: relative; overflow: hidden; }
   .sc::before { content: ''; position: absolute; top: 0; left: 0; bottom: 0;
-    width: 4px; border-radius: 14px 0 0 14px; }
+    width: 4px; border-radius: 16px 0 0 16px; }
   .sc.ind::before { background: #4f46e5; }
   .sc.cyn::before { background: #0891b2; }
   .sc.amb::before { background: #d97706; }
@@ -77,12 +77,14 @@ const G = `
   .fr { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-bottom: 0.85rem; }
   .fr:last-child { margin-bottom: 0; }
   .fi { display: flex; flex-direction: column; gap: 0.28rem; flex: 1; min-width: 138px; }
-  .fl { font-size: 0.7rem; font-weight: 700; color: #64748b; letter-spacing: 0.55px; text-transform: uppercase; }
-  .in { padding: 0.65rem 0.875rem; background: #f8f9fc; border: 1.5px solid #e4e2ed;
+  .fl { font-size: 0.7rem; font-weight: 700; color: #8b88b0; letter-spacing: 0.55px; text-transform: uppercase; }
+  .in { padding: 0.65rem 0.875rem; background: #ececf9; border: 1.5px solid #b8b4d4;
     border-radius: 9px; font-family: inherit; font-size: 0.875rem; color: #1e293b;
     outline: none; width: 100%; transition: all 0.18s; }
-  .in:focus { border-color: #4f46e5; background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
-  .in:disabled { background: #f4f3f8; color: #a0aec0; cursor: not-allowed; }
+  .in:focus { border-color: #4f46e5; background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.13); }
+  .in:disabled { background: #ece9f5; color: #a0aec0; cursor: not-allowed; }
+  .in.err { border-color: #ef4444 !important; background: #fff8f8 !important; box-shadow: 0 0 0 3px rgba(239,68,68,0.10) !important; }
+  .err-msg { font-size: 0.68rem; color: #ef4444; font-weight: 600; margin-top: 0.2rem; display: block; }
   .fe { font-size: 0.7rem; color: #ef4444; margin-top: 2px; font-weight: 500; }
 
   /* Photo */
@@ -93,15 +95,15 @@ const G = `
 
   /* Save bar */
   .sbar { display: flex; justify-content: space-between; align-items: center;
-    margin-top: 1.5rem; padding: 1rem 1.5rem; background: #fff;
-    border-radius: 12px; box-shadow: 0 2px 12px rgba(79,70,229,0.07), 0 0 0 1px #ebe9f5; }
-  .ss { font-size: 0.84rem; color: #94a3b8; font-weight: 500; }
+    margin-top: 1.5rem; padding: 1rem 1.5rem; background: #1e1a3e;
+    border-radius: 12px; box-shadow: 0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12); border: 1px solid rgba(255,255,255,0.85); }
+  .ss { font-size: 0.84rem; color: #9d9bc4; font-weight: 500; }
   .ss.ok { color: #16a34a; } .ss.err { color: #ef4444; }
   .pbtn { padding: 0.72rem 1.9rem; background: #4f46e5; color: #fff; border: none;
     border-radius: 10px; font-family: inherit; font-size: 0.875rem; font-weight: 700;
     cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 14px rgba(79,70,229,0.28); }
   .pbtn:hover { background: #4338ca; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(79,70,229,0.35); }
-  .sbtn { padding: 0.72rem 1.5rem; background: #fff; color: #475569; border: 1.5px solid #e4e2ed;
+  .sbtn { padding: 0.72rem 1.5rem; background: transparent; color: #9d9bc4; border: 1.5px solid #2d2860;
     border-radius: 10px; font-family: inherit; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
   .sbtn:hover { background: #f5f4f0; }
 
@@ -139,13 +141,13 @@ function ConsentBell({ apiFetch, router }) {
 // ─── Modals ───────────────────────────────────────────────────────────
 function SignoutModal({ onConfirm, onCancel }) {
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.35)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,backdropFilter:"blur(3px)"}}>
-      <div style={{background:"#fff",borderRadius:16,padding:"2rem",maxWidth:340,width:"90%",textAlign:"center",boxShadow:"0 20px 60px rgba(79,70,229,0.15)",border:"1px solid #e8e5f0"}}>
+    <div style={{position:"fixed",inset:0,background:"rgba(15,12,40,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,backdropFilter:"blur(3px)"}}>
+      <div style={{background:"#fff",borderRadius:18,padding:"2rem",maxWidth:340,width:"90%",textAlign:"center",boxShadow:"0 24px 60px rgba(15,12,40,0.3)"}}>
         <div style={{fontSize:34,marginBottom:"0.75rem"}}>👋</div>
-        <h3 style={{margin:"0 0 0.4rem",color:"#1e293b",fontWeight:800,fontSize:"1.05rem"}}>Sign out?</h3>
-        <p style={{color:"#64748b",fontSize:"0.875rem",marginBottom:"1.5rem",lineHeight:1.55}}>Your progress is saved. You can continue anytime.</p>
+        <h3 style={{margin:"0 0 0.4rem",color:"#1a1730",fontWeight:800,fontSize:"1.05rem"}}>Sign out?</h3>
+        <p style={{color:"#6b6894",fontSize:"0.875rem",marginBottom:"1.5rem",lineHeight:1.55}}>Your progress is saved. You can continue anytime.</p>
         <div style={{display:"flex",gap:"0.75rem"}}>
-          <button onClick={onCancel} style={{flex:1,padding:"0.7rem",borderRadius:9,border:"1.5px solid #e4e2ed",background:"#f8f9fc",cursor:"pointer",fontWeight:600,color:"#475569",fontFamily:"inherit",fontSize:"0.875rem"}}>Stay</button>
+          <button onClick={onCancel} style={{flex:1,padding:"0.7rem",borderRadius:9,border:"1.5px solid #dddaf0",background:"inherit",cursor:"pointer",fontWeight:600,color:"#6b6894",fontFamily:"inherit",fontSize:"0.875rem"}}>Stay</button>
           <button onClick={onConfirm} style={{flex:1,padding:"0.7rem",borderRadius:9,border:"none",background:"#ef4444",color:"#fff",cursor:"pointer",fontWeight:700,fontFamily:"inherit",fontSize:"0.875rem"}}>Sign out</button>
         </div>
       </div>
@@ -162,12 +164,12 @@ function StepNav({ current, onNavigate }) {
     { n:4, label:"Review",     icon:"✅", path:"/employee/uan"       },
   ];
   return (
-    <div style={{background:"#fff",borderRadius:14,padding:"1.1rem 0.5rem",marginBottom:"1.6rem",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 2px 12px rgba(79,70,229,0.07)",border:"1px solid #ebe9f5"}}>
+    <div style={{background:"#fff",borderRadius:14,padding:"1.1rem 0.5rem",marginBottom:"1.6rem",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12)"}}>
       {steps.map((s, i) => (
         <div key={s.n} style={{display:"flex",alignItems:"center"}}>
           <button onClick={() => onNavigate(s.path)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.3rem",background:"none",border:"none",cursor:"pointer",padding:"0.2rem 0.9rem"}}>
             <div style={{width:40,height:40,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",transition:"all 0.25s",
-              background: current===s.n ? STEP_COLOR : current>s.n ? STEP_DONE_BG : "#f8f9fc",
+              background: current===s.n ? STEP_COLOR : current>s.n ? STEP_DONE_BG : "#f2f1f9",
               border: current===s.n ? `2px solid ${STEP_COLOR}` : current>s.n ? `2px solid ${STEP_CONN}` : "2px solid #e4e2ed",
               boxShadow: current===s.n ? `0 4px 12px ${STEP_SHADOW}` : "none"}}>
               {current > s.n
@@ -175,10 +177,10 @@ function StepNav({ current, onNavigate }) {
                 : <span style={{fontSize:"1rem",filter:current===s.n?"brightness(0) invert(1)":"none"}}>{s.icon}</span>}
             </div>
             <span style={{fontSize:"0.67rem",fontWeight:700,letterSpacing:"0.6px",textTransform:"uppercase",
-              color: current===s.n ? STEP_COLOR : current>s.n ? STEP_DONE_CK : "#94a3b8"}}>{s.label}</span>
+              color: current===s.n ? STEP_COLOR : current>s.n ? STEP_DONE_CK : "#8b88b0"}}>{s.label}</span>
           </button>
           {i < steps.length - 1 && (
-            <div style={{width:52,height:2,background:current>s.n ? STEP_CONN : "#e8e5f0",margin:"0 -0.25rem",marginBottom:"1.4rem",borderRadius:2}}/>
+            <div style={{width:52,height:2,background:current>s.n ? STEP_CONN : "#ccc9e4",margin:"0 -0.25rem",marginBottom:"1.4rem",borderRadius:2}}/>
           )}
         </div>
       ))}
@@ -203,12 +205,12 @@ function ConsentTab({ apiFetch }) {
     setActing(null);
   };
   const norm=(c)=>({...c,status:String(c.status||"pending").toLowerCase()});
-  if(loading)return <p style={{color:"#94a3b8",padding:"1rem 0",fontSize:"0.875rem"}}>Loading consents…</p>;
+  if(loading)return <p style={{color:"#8b88b0",padding:"1rem 0",fontSize:"0.875rem"}}>Loading consents…</p>;
   if(!consents.length)return(
-    <div style={{textAlign:"center",padding:"3rem",background:"#fff",borderRadius:14,boxShadow:"0 2px 12px rgba(79,70,229,0.07)",border:"1px solid #ebe9f5"}}>
+    <div style={{textAlign:"center",padding:"3rem",background:"#fff",borderRadius:14,boxShadow:"0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12)"}}>
       <div style={{fontSize:38,marginBottom:10}}>📋</div>
-      <p style={{color:"#334155",margin:0,fontWeight:700}}>No consent requests yet</p>
-      <p style={{fontSize:"0.82rem",color:"#94a3b8",marginTop:6}}>Employers will appear here when they request your data</p>
+      <p style={{color:"#1a1730",margin:0,fontWeight:700}}>No consent requests yet</p>
+      <p style={{fontSize:"0.82rem",color:"#8b88b0",marginTop:6}}>Employers will appear here when they request your data</p>
     </div>
   );
   const all=consents.map(norm);
@@ -216,15 +218,15 @@ function ConsentTab({ apiFetch }) {
   const approved=all.filter(c=>c.status==="approved");
   const declined=all.filter(c=>c.status==="declined");
   const sColor={pending:"#f59e0b",approved:"#16a34a",declined:"#ef4444"};
-  const sBg={pending:"#fffbeb",approved:"#f0fdf4",declined:"#fff5f5"};
+  const sBg={pending:"#2a2460",approved:"#2a2460",declined:"#fff5f5"};
   const CC=({c})=>(
     <div style={{border:"1px solid #ebe9f5",borderRadius:12,padding:"1.1rem 1.25rem",marginBottom:"0.65rem",background:"#fff",boxShadow:"0 1px 5px rgba(79,70,229,0.05)"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
         <div style={{flex:1}}>
-          <div style={{fontWeight:700,color:"#1e293b",fontSize:"0.93rem"}}>{c.requestor_name||c.employer_name||c.requestor_email||c.employer_email}</div>
+          <div style={{fontWeight:700,color:"#1a1730",fontSize:"0.93rem"}}>{c.requestor_name||c.employer_name||c.requestor_email||c.employer_email}</div>
           {c.message&&<div style={{marginTop:"0.5rem",padding:"0.5rem 0.75rem",background:"#f5f3ff",border:"1px solid #ddd6fe",borderRadius:8}}>
             <div style={{fontSize:"0.67rem",fontWeight:700,color:"#4f46e5",textTransform:"uppercase",letterSpacing:0.5,marginBottom:3}}>Message</div>
-            <div style={{fontSize:"0.84rem",color:"#475569",lineHeight:1.5}}>{c.message}</div>
+            <div style={{fontSize:"0.84rem",color:"#6b6894",lineHeight:1.5}}>{c.message}</div>
           </div>}
         </div>
         <span style={{padding:"0.18rem 0.7rem",borderRadius:999,fontSize:"0.7rem",fontWeight:700,color:sColor[c.status],background:sBg[c.status],whiteSpace:"nowrap",marginLeft:"0.75rem",border:`1px solid ${sColor[c.status]}33`}}>{c.status.charAt(0).toUpperCase()+c.status.slice(1)}</span>
@@ -235,7 +237,7 @@ function ConsentTab({ apiFetch }) {
       </div>}
     </div>
   );
-  const SL=({text,count})=><div style={{fontSize:"0.68rem",fontWeight:700,color:"#94a3b8",textTransform:"uppercase",letterSpacing:1,margin:"1.1rem 0 0.5rem"}}>{text}{count!==undefined&&` (${count})`}</div>;
+  const SL=({text,count})=><div style={{fontSize:"0.68rem",fontWeight:700,color:"#8b88b0",textTransform:"uppercase",letterSpacing:1,margin:"1.1rem 0 0.5rem"}}>{text}{count!==undefined&&` (${count})`}</div>;
   return(<div>{pending.length>0&&<><SL text="Pending" count={pending.length}/>{pending.map(c=><CC key={c.consent_id} c={c}/>)}</>}{approved.length>0&&<><SL text="Approved"/>{approved.map(c=><CC key={c.consent_id} c={c}/>)}</>}{declined.length>0&&<><SL text="Declined"/>{declined.map(c=><CC key={c.consent_id} c={c}/>)}</>}</div>);
 }
 
@@ -252,7 +254,7 @@ function FS({ l, v, s, o, r = true }) {
   return (
     <div className="fi">
       <span className="fl">{l}{r && <span style={{color:"#ef4444",marginLeft:2}}>*</span>}</span>
-      <select className="in" value={v} onChange={e => s(e.target.value)} style={{background:"#f8f9fc",color:v?"#1e293b":"#94a3b8"}}>
+      <select className="in" value={v} onChange={e => s(e.target.value)} style={{background:"inherit",color:v?"#1a1730":"#8b88b0",appearance:"auto"}}>
         <option value="">Select</option>
         {o.map(x => <option key={x} value={x}>{x}</option>)}
       </select>
@@ -270,7 +272,9 @@ export default function PersonalDetails() {
   const [loading,setLoading]           = useState(true);
   const [employeeId,setEmployeeId]     = useState("");
   const [photoPreview,setPhotoPreview] = useState(null);
+  const [errors,setErrors]             = useState({});
   const isDirtyRef = useRef(false);
+  const fixErr = (key) => setErrors(p => ({ ...p, [key]: false }));
 
   // handle ?tab=consents from bell click
   useEffect(() => {
@@ -372,6 +376,25 @@ export default function PersonalDetails() {
           if (perm.district) setPermDistrict(perm.district);
           if (perm.state)    setPermState(perm.state);
           if (perm.pin)      setPermPin(perm.pin);
+        } else {
+          // No draft found — create a minimal employee record immediately so
+          // FileUpload can get a presigned URL before the user clicks Save.
+          const empId = `emp-${Date.now()}`;
+          try {
+            const createRes = await apiFetch(`${API}/employee`, {
+              method: "POST",
+              body: JSON.stringify({
+                employee_id: empId,
+                status: "draft",
+                email: user?.email || "",
+                mobile: user?.phone || "",
+              }),
+            });
+            if (createRes.ok) {
+              const rd = await createRes.json().catch(() => ({}));
+              setEmployeeId(rd.employee_id || empId);
+            }
+          } catch (_) {}
         }
       } catch (_) {}
       setLoading(false);
@@ -404,6 +427,30 @@ export default function PersonalDetails() {
   };
 
   const handleSave = async () => {
+    // Validate required fields
+    const e = {};
+    if (!firstName)    e.firstName = true;
+    if (!lastName)     e.lastName = true;
+    if (!dob)          e.dob = true;
+    if (!gender)       e.gender = true;
+    if (!nationality)  e.nationality = true;
+    if (!mobile)       e.mobile = true;
+    if (!aadhar)       e.aadhar = true;
+    if (!pan)          e.pan = true;
+    if (!curDoor)      e.curDoor = true;
+    if (!curDistrict)  e.curDistrict = true;
+    if (!curState)     e.curState = true;
+    if (!curPin)       e.curPin = true;
+    if (!aadhaarKey)   e.aadhaarKey = true;
+    if (!panKey)       e.panKey = true;
+    if (!photoKey)     e.photoKey = true;
+    if (Object.keys(e).length > 0) {
+      setErrors(e);
+      setSaveStatus("Please fill all required fields ↑");
+      setTimeout(() => { const el = document.querySelector(".in.err"); if (el) el.scrollIntoView({ behavior:"smooth", block:"center" }); }, 60);
+      return;
+    }
+    setErrors({});
     setSaveStatus("Saving...");
     try { await saveDraft(); isDirtyRef.current = false; setSaveStatus("Saved ✓"); router.push("/employee/education"); }
     catch (err) { setSaveStatus(`Error: ${err.message || "Could not save"}`); }
@@ -419,8 +466,8 @@ export default function PersonalDetails() {
 
   if (!ready || !user) return null;
   if (loading) return (
-    <div style={{minHeight:"100vh",background:"#f0eff9",display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <p style={{color:"#94a3b8",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:500}}>Loading your profile…</p>
+    <div style={{minHeight:"100vh",background:"#cdd2ed",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <p style={{color:"#8b88b0",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:500}}>Loading your profile…</p>
     </div>
   );
 
@@ -459,11 +506,11 @@ export default function PersonalDetails() {
                   <div className="photo-wrap">
                     {photoPreview
                       ? <img src={photoPreview} alt="profile" />
-                      : <span style={{color:"#94a3b8",fontSize:"0.7rem",fontWeight:600,textAlign:"center",padding:"0 0.5rem"}}>No photo</span>}
+                      : <span style={{color:"#8b88b0",fontSize:"0.7rem",fontWeight:600,textAlign:"center",padding:"0 0.5rem"}}>No photo</span>}
                   </div>
                   <div style={{flex:1}}>
                     <FileUpload label="Upload Profile Photo" category="personal" subKey="photo" apiFetch={apiFetch} value={photoKey} onChange={(k) => { setPhotoKey(k); isDirtyRef.current = true; }} accept="image/*" />
-                    <p style={{fontSize:"0.7rem",color:"#94a3b8",marginTop:4}}>JPG or PNG · max 5MB</p>
+                    <p style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:4}}>JPG or PNG · max 5MB</p>
                   </div>
                 </div>
               </div>
@@ -472,7 +519,7 @@ export default function PersonalDetails() {
                 <div className="sh"><div className="si cyn">✏️</div><span className="st">Full Name</span></div>
                 <div className="fr">
                   <F l="First Name"  v={firstName}  s={dirty(setFirstName)} />
-                  <F l="Middle Name" v={middleName} s={dirty(setMiddleName)} />
+                  <F l="Middle Name" v={middleName} s={dirty(setMiddleName)} r={false} />
                   <F l="Last Name"   v={lastName}   s={dirty(setLastName)} />
                 </div>
               </div>
@@ -481,7 +528,7 @@ export default function PersonalDetails() {
                 <div className="sh"><div className="si vio">👨</div><span className="st">Father's Name</span></div>
                 <div className="fr">
                   <F l="First Name"  v={fatherFirst}  s={dirty(setFatherFirst)} />
-                  <F l="Middle Name" v={fatherMiddle} s={dirty(setFatherMiddle)} />
+                  <F l="Middle Name" v={fatherMiddle} s={dirty(setFatherMiddle)} r={false} />
                   <F l="Last Name"   v={fatherLast}   s={dirty(setFatherLast)} />
                 </div>
               </div>
@@ -490,7 +537,7 @@ export default function PersonalDetails() {
                 <div className="sh"><div className="si ros">👩</div><span className="st">Mother's Name</span></div>
                 <div className="fr">
                   <F l="First Name"  v={motherFirst}  s={dirty(setMotherFirst)} />
-                  <F l="Middle Name" v={motherMiddle} s={dirty(setMotherMiddle)} />
+                  <F l="Middle Name" v={motherMiddle} s={dirty(setMotherMiddle)} r={false} />
                   <F l="Last Name"   v={motherLast}   s={dirty(setMotherLast)} />
                 </div>
               </div>
@@ -571,7 +618,7 @@ export default function PersonalDetails() {
 
               <div className="sc cyn">
                 <div className="sh"><div className="si cyn">📍</div><span className="st">Permanent / Native Address</span></div>
-                <p style={{fontSize:"0.76rem",color:"#94a3b8",marginBottom:"0.9rem",fontWeight:500}}>If you don't have a permanent residence, enter your current address here.</p>
+                <p style={{fontSize:"0.76rem",color:"#8b88b0",marginBottom:"0.9rem",fontWeight:500}}>If you don't have a permanent residence, enter your current address here.</p>
                 <div className="fr">
                   <F l="Residing From" v={permFrom} s={dirty(setPermFrom)} t="date" />
                   <div className="fi" />
