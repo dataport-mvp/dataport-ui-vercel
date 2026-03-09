@@ -275,9 +275,14 @@ export default function ReviewPage() {
         const d = await dRes.json();
         setDraft(d);
         // Pre-fill acks if previously saved
-        if (d.acknowledgements_profile && Array.isArray(d.acknowledgements_profile)) {
+        if (d.acknowledgements_profile) {
           const saved = d.acknowledgements_profile;
-          setAcks(ACK_STATEMENTS.map((_, i) => !!saved[i]));
+          // Handle both array (legacy) and dict (current) format
+          if (Array.isArray(saved)) {
+            setAcks(ACK_STATEMENTS.map((_, i) => !!saved[i]));
+          } else if (typeof saved === "object") {
+            setAcks(ACK_STATEMENTS.map((_, i) => !!saved[String(i)]));
+          }
         }
         // Fetch employment history using employee_id (same as previous.js)
         if (d.employee_id) {
@@ -330,17 +335,33 @@ export default function ReviewPage() {
     }
     setSubmitting(true);
     setSaveStatus("Submitting…");
+    // Convert acks [true,false,...] → {"0":true,"1":false,...} — Pydantic expects dict not array
+    const acksDict = Object.fromEntries(acks.map((v, i) => [String(i), v]));
+    // Sanitize pfRecords: Pydantic PFRecord has all required fields — strip incomplete entries
+    const safePfRecords = (Array.isArray(draft?.pfRecords) ? draft.pfRecords : [])
+      .filter(r => r.companyName && r.pfMemberId && r.dojEpfo && r.doeEpfo && r.pfTransferred != null);
     try {
       const res = await apiFetch(`${API}/employee`, {
         method: "POST",
         body: JSON.stringify({
           ...draft,
+          pfRecords: safePfRecords,
           status: "submitted",
           submitted_at: Date.now(),
-          acknowledgements_profile: acks,
+          acknowledgements_profile: acksDict,
         }),
       });
-      if (!res.ok) throw new Error("Submission failed");
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        const detail = errBody?.detail;
+        let msg = "Submission failed";
+        if (Array.isArray(detail)) {
+          msg = detail.map(e => `${e.loc?.slice(-1)[0] || "field"}: ${e.msg}`).join(", ");
+        } else if (typeof detail === "string") {
+          msg = detail;
+        }
+        throw new Error(msg);
+      }
       setSaveStatus("Submitted ✓");
       // Brief pause then show success state
       setTimeout(() => router.push("/employee/submitted"), 1200);
