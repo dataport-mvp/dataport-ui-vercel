@@ -194,7 +194,7 @@ export default function UanDetails() {
   useEffect(() => {
     if (!ready) return;
     if (!user) { router.replace("/employee/login"); return; }
-    if (user.role && user.role !== "employee") { router.replace("/employee/login"); return; }
+    if (user.role !== "employee") { router.replace("/employee/login"); return; }
   }, [ready, user, router]);
 
   useEffect(() => {
