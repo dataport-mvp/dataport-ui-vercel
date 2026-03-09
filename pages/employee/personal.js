@@ -534,7 +534,9 @@ export default function PersonalDetails() {
                       : <span style={{color:"#8b88b0",fontSize:"0.7rem",fontWeight:600,textAlign:"center",padding:"0 0.5rem"}}>No photo</span>}
                   </div>
                   <div style={{flex:1}}>
-                    <FileUpload label="Upload Profile Photo" category="personal" subKey="photo" apiFetch={apiFetch} value={photoKey} onChange={(k) => { setPhotoKey(k); isDirtyRef.current = true; }} accept="image/*" />
+                    {employeeId
+                      ? <FileUpload label="Upload Profile Photo" category="personal" subKey="photo" employeeId={employeeId} apiFetch={apiFetch} value={photoKey} onChange={(k) => { setPhotoKey(k); isDirtyRef.current = true; }} accept="image/*" />
+                      : <p style={{fontSize:"0.78rem",color:"#8b88b0",fontWeight:500,padding:"0.6rem 0"}}>Initialising upload…</p>}
                     <p style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:4}}>JPG or PNG · max 5MB</p>
                   </div>
                 </div>
@@ -610,14 +612,18 @@ export default function PersonalDetails() {
                     <F l="Aadhaar Number" v={aadhar} s={(v) => { const d = v.replace(/\D/g,""); if (d.length <= 12) dirty(setAadhar)(d); }} />
                     {aadhar && aadhar.length !== 12 && <span className="fe">Must be 12 digits</span>}
                     <div style={{marginTop:"0.7rem"}}>
-                      <FileUpload label="Upload Aadhaar Card" category="personal" subKey="aadhaar" apiFetch={apiFetch} value={aadhaarKey} onChange={(k) => { setAadhaarKey(k); isDirtyRef.current = true; }} />
+                      {employeeId
+                        ? <FileUpload label="Upload Aadhaar Card" category="personal" subKey="aadhaar" employeeId={employeeId} apiFetch={apiFetch} value={aadhaarKey} onChange={(k) => { setAadhaarKey(k); isDirtyRef.current = true; }} />
+                        : <p style={{fontSize:"0.78rem",color:"#8b88b0",fontWeight:500,padding:"0.4rem 0"}}>Initialising upload…</p>}
                     </div>
                   </div>
                   <div className="fi">
                     <F l="PAN Number" v={pan} s={(v) => { let val = v.toUpperCase(); if (val.length<=5) val=val.replace(/[^A-Z]/g,""); else if (val.length<=9) val=val.slice(0,5)+val.slice(5).replace(/[^0-9]/g,""); else if (val.length<=10) val=val.slice(0,5)+val.slice(5,9)+val.slice(9).replace(/[^A-Z]/g,""); dirty(setPan)(val); }} />
                     {pan && pan.length !== 10 && <span className="fe">Format: AAAAA9999A</span>}
                     <div style={{marginTop:"0.7rem"}}>
-                      <FileUpload label="Upload PAN Card" category="personal" subKey="pan" apiFetch={apiFetch} value={panKey} onChange={(k) => { setPanKey(k); isDirtyRef.current = true; }} />
+                      {employeeId
+                        ? <FileUpload label="Upload PAN Card" category="personal" subKey="pan" employeeId={employeeId} apiFetch={apiFetch} value={panKey} onChange={(k) => { setPanKey(k); isDirtyRef.current = true; }} />
+                        : <p style={{fontSize:"0.78rem",color:"#8b88b0",fontWeight:500,padding:"0.4rem 0"}}>Initialising upload…</p>}
                     </div>
                   </div>
                 </div>
