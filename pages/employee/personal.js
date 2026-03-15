@@ -106,6 +106,27 @@ const G = `
     border-radius: 10px; font-family: inherit; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
   .sbtn:hover { background: #f5f4f0; }
 
+  /* Custom date picker */
+  .date-wrap { position: relative; }
+  .date-input { padding: 0.65rem 0.875rem; background: #ececf9; border: 1.5px solid #b8b4d4;
+    border-radius: 9px; font-family: inherit; font-size: 0.875rem; color: #1e293b;
+    outline: none; width: 100%; cursor: pointer; transition: all 0.18s; }
+  .date-input:focus { border-color: #4f46e5; background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.13); }
+  .date-input::placeholder { color: #b8b4d4; }
+
+  /* Save mid-page button */
+  .mid-save { display: flex; justify-content: flex-end; margin: 0.5rem 0 1rem; }
+  .mid-save-btn { padding: 0.45rem 1.1rem; background: transparent; color: #4f46e5;
+    border: 1.5px solid #c7d2fe; border-radius: 8px; font-family: inherit;
+    font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+  .mid-save-btn:hover { background: #eef2ff; border-color: #4f46e5; }
+
+  /* Consent message textarea */
+  .cmsg { padding: 0.6rem 0.875rem; background: #ececf9; border: 1.5px solid #b8b4d4;
+    border-radius: 9px; font-family: inherit; font-size: 0.84rem; color: #1e293b;
+    outline: none; width: 100%; resize: vertical; min-height: 72px; transition: all 0.18s; }
+  .cmsg:focus { border-color: #4f46e5; background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.13); }
+
   @media (max-width: 640px) {
     .fr { flex-direction: column; } .fi { min-width: 100%; }
     .topbar { flex-direction: column; gap: 0.6rem; align-items: flex-start; position: relative; }
@@ -198,6 +219,7 @@ function ConsentTab({ apiFetch, profileStatus }) {
   const [loading,setLoading]=useState(true);
   const [acting,setActing]=useState(null);
   const [actionError,setActionError]=useState({});
+  const [replyMsg,setReplyMsg]=useState({});
   const load=useCallback(async()=>{
     try{const res=await apiFetch(`${API}/consent/my`);if(res.ok)setConsents(await res.json());}catch(_){}
     setLoading(false);
@@ -212,7 +234,7 @@ function ConsentTab({ apiFetch, profileStatus }) {
       const res=await apiFetch(`${API}/consent/respond`,{
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({consent_id:consentId,status:decision==="approved"?"APPROVED":"DECLINED",responded_at:Date.now()})
+        body:JSON.stringify({consent_id:consentId,status:decision==="approved"?"APPROVED":"DECLINED",responded_at:Date.now(),reply_message:replyMsg[consentId]||""})
       });
       if(res.ok){
         await load();
@@ -273,7 +295,6 @@ function ConsentTab({ apiFetch, profileStatus }) {
         <span style={{padding:"0.18rem 0.7rem",borderRadius:999,fontSize:"0.7rem",fontWeight:700,color:sColor[c.status]||"#64748b",background:sBg[c.status]||"#f8fafc",whiteSpace:"nowrap",marginLeft:"0.75rem",border:`1px solid ${(sColor[c.status]||"#94a3b8")}33`}}>{c.status.charAt(0).toUpperCase()+c.status.slice(1)}</span>
       </div>
       {actionError[c.consent_id]&&<p style={{fontSize:"0.75rem",color:"#ef4444",marginTop:"0.5rem",fontWeight:600}}>⚠️ {actionError[c.consent_id]}</p>}
-      {/* Pending — show approve/decline, but warn if profile not submitted */}
       {c.status==="pending"&&(
         <div style={{marginTop:"0.8rem"}}>
           {profileNotSubmitted&&(
@@ -281,6 +302,13 @@ function ConsentTab({ apiFetch, profileStatus }) {
               ⚠️ Complete and submit your profile before approving consent requests.
             </div>
           )}
+          <textarea
+            className="cmsg"
+            placeholder="Optional message to employer… (e.g. 'Happy to proceed' or 'Please contact me first')"
+            value={replyMsg[c.consent_id]||""}
+            onChange={e=>setReplyMsg(p=>({...p,[c.consent_id]:e.target.value}))}
+            style={{marginBottom:"0.5rem"}}
+          />
           <div style={{display:"flex",gap:"0.5rem"}}>
             <button disabled={acting===c.consent_id||profileNotSubmitted} onClick={()=>respond(c.consent_id,"approved")} style={{flex:1,padding:"0.5rem",background:profileNotSubmitted?"#e5e7eb":"#16a34a",color:profileNotSubmitted?"#9ca3af":"#fff",border:"none",borderRadius:8,fontWeight:700,cursor:(acting===c.consent_id||profileNotSubmitted)?"not-allowed":"pointer",fontSize:"0.875rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Approve"}</button>
             <button disabled={acting===c.consent_id} onClick={()=>respond(c.consent_id,"declined")} style={{flex:1,padding:"0.5rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:8,fontWeight:700,cursor:acting===c.consent_id?"not-allowed":"pointer",fontSize:"0.875rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Decline"}</button>
@@ -321,13 +349,70 @@ function FS({ l, v, s, o, r = true }) {
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────
+// ─── Date field — clean DD/MM/YYYY input ─────────────────────────────
+// Stores as YYYY-MM-DD internally (same as before), displays as DD/MM/YYYY
+function DateField({ l, v, s, r = true }) {
+  const [raw, setRaw] = useState(() => {
+    // Convert YYYY-MM-DD → DD/MM/YYYY for display
+    if (v && v.includes("-")) {
+      const [y, mo, d] = v.split("-");
+      return `${d}/${mo}/${y}`;
+    }
+    return v || "";
+  });
+  const [focused, setFocused] = useState(false);
+
+  // Sync if parent value changes externally
+  useEffect(() => {
+    if (!focused) {
+      if (v && v.includes("-")) {
+        const [y, mo, d] = v.split("-");
+        setRaw(`${d}/${mo}/${y}`);
+      } else {
+        setRaw(v || "");
+      }
+    }
+  }, [v, focused]);
+
+  const handleChange = (e) => {
+    let val = e.target.value.replace(/[^0-9/]/g, "");
+    // Auto-insert slashes
+    if (val.length === 2 && raw.length === 1) val = val + "/";
+    if (val.length === 5 && raw.length === 4) val = val + "/";
+    if (val.length > 10) return;
+    setRaw(val);
+    // Parse to YYYY-MM-DD when complete
+    if (val.length === 10) {
+      const [d, mo, y] = val.split("/");
+      if (d && mo && y && y.length === 4) s(`${y}-${mo}-${d}`);
+    } else {
+      s(""); // incomplete — clear parent value
+    }
+  };
+
+  return (
+    <div className="fi">
+      <span className="fl">{l}{r && <span style={{color:"#ef4444",marginLeft:2}}>*</span>}</span>
+      <input
+        className="date-input"
+        value={raw}
+        placeholder="DD/MM/YYYY"
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        onChange={handleChange}
+        maxLength={10}
+        inputMode="numeric"
+      />
+    </div>
+  );
+}
 export default function PersonalDetails() {
   const router = useRouter();
   const { user, apiFetch, logout, ready } = useAuth();
   const [activeTab,setActiveTab]       = useState("profile");
   const [showSignout,setShowSignout]   = useState(false);
   const [saveStatus,setSaveStatus]     = useState("");
+  const [midSaveStatus,setMidSaveStatus] = useState("");
   const [loading,setLoading]           = useState(true);
   const [employeeId,setEmployeeId]     = useState("");
   const [profileStatus,setProfileStatus] = useState("");
@@ -550,6 +635,17 @@ export default function PersonalDetails() {
     catch (err) { setSaveStatus(`Error: ${err.message || "Could not save"}`); }
   };
 
+  const handleMidSave = async () => {
+    setMidSaveStatus("Saving…");
+    try { await saveDraft(); isDirtyRef.current = false; setMidSaveStatus("Saved ✓"); setTimeout(() => setMidSaveStatus(""), 2000); }
+    catch (_) { setMidSaveStatus("Error saving"); setTimeout(() => setMidSaveStatus(""), 2500); }
+  };
+
+  const handleSaveSignout = async () => {
+    try { await saveDraft(); isDirtyRef.current = false; } catch (_) {}
+    logout();
+  };
+
   const handleNavigate = async (path) => {
     if (isDirtyRef.current) { try { await saveDraft(); isDirtyRef.current = false; } catch (_) {} }
     router.push(path);
@@ -647,7 +743,7 @@ export default function PersonalDetails() {
               <div className="sc amb">
                 <div className="sh"><div className="si amb">🪪</div><span className="st">Personal Information</span></div>
                 <div className="fr">
-                  <F l="Date of Birth" v={dob}         s={dirty(setDob)}         t="date" />
+                  <DateField l="Date of Birth" v={dob} s={dirty(setDob)} />
                   <FS l="Gender"       v={gender}       s={dirty(setGender)}       o={["Male","Female","Other"]} />
                   <F l="Nationality"   v={nationality}  s={dirty(setNationality)} />
                 </div>
@@ -701,14 +797,14 @@ export default function PersonalDetails() {
                       <span className="fe">Must be exactly 12 digits ({aadhar.length}/12)</span>
                     )}
                     <div style={{marginTop:"0.7rem"}}>
-                      <FileUpload label="Upload Aadhaar Card" category="personal" subKey="aadhaar" employeeId={employeeId} apiFetch={apiFetch} value={aadhaarKey} onChange={(k) => { setAadhaarKey(k); isDirtyRef.current = true; }} />
+                      <FileUpload label="Upload Aadhaar Card *" category="personal" subKey="aadhaar" employeeId={employeeId} apiFetch={apiFetch} value={aadhaarKey} onChange={(k) => { setAadhaarKey(k); isDirtyRef.current = true; }} />
                     </div>
                   </div>
                   <div className="fi">
                     <F l="PAN Number" v={pan} s={(v) => { let val = v.toUpperCase(); if (val.length<=5) val=val.replace(/[^A-Z]/g,""); else if (val.length<=9) val=val.slice(0,5)+val.slice(5).replace(/[^0-9]/g,""); else if (val.length<=10) val=val.slice(0,5)+val.slice(5,9)+val.slice(9).replace(/[^A-Z]/g,""); dirty(setPan)(val); }} />
                     {pan && pan.length !== 10 && <span className="fe">Format: AAAAA9999A</span>}
                     <div style={{marginTop:"0.7rem"}}>
-                      <FileUpload label="Upload PAN Card" category="personal" subKey="pan" employeeId={employeeId} apiFetch={apiFetch} value={panKey} onChange={(k) => { setPanKey(k); isDirtyRef.current = true; }} />
+                      <FileUpload label="Upload PAN Card *" category="personal" subKey="pan" employeeId={employeeId} apiFetch={apiFetch} value={panKey} onChange={(k) => { setPanKey(k); isDirtyRef.current = true; }} />
                     </div>
                   </div>
                 </div>
@@ -717,8 +813,8 @@ export default function PersonalDetails() {
               <div className="sc ind">
                 <div className="sh"><div className="si ind">🏠</div><span className="st">Current Address</span></div>
                 <div className="fr">
-                  <F l="Residing From" v={curFrom} s={dirty(setCurFrom)} t="date" />
-                  <F l="Residing To"   v={curTo}   s={dirty(setCurTo)}   t="date" />
+                  <DateField l="Residing From" v={curFrom} s={dirty(setCurFrom)} r={false} />
+                  <DateField l="Residing To"   v={curTo}   s={dirty(setCurTo)}   r={false} />
                 </div>
                 <div className="fr"><F l="Door No. & Street" v={curDoor} s={dirty(setCurDoor)} /></div>
                 <div className="fr">
@@ -736,7 +832,7 @@ export default function PersonalDetails() {
                 <div className="sh"><div className="si cyn">📍</div><span className="st">Permanent / Native Address</span></div>
                 <p style={{fontSize:"0.76rem",color:"#8b88b0",marginBottom:"0.9rem",fontWeight:500}}>If you don't have a permanent residence, enter your current address here.</p>
                 <div className="fr">
-                  <F l="Residing From" v={permFrom} s={dirty(setPermFrom)} t="date" r={false} />
+                  <DateField l="Residing From" v={permFrom} s={dirty(setPermFrom)} r={false} />
                   <div className="fi" />
                 </div>
                 <div className="fr"><F l="Door No. & Street" v={permDoor} s={dirty(setPermDoor)} r={false} /></div>
@@ -753,7 +849,15 @@ export default function PersonalDetails() {
 
               <div className="sbar">
                 <span className={`ss${saveStatus==="Saved ✓"?" ok":saveStatus.startsWith("Error")?" err":""}`}>{saveStatus}</span>
-                <button className="pbtn" onClick={handleSave}>Save & Continue →</button>
+                <div style={{display:"flex",gap:"0.65rem",alignItems:"center"}}>
+                  <button className="sbtn" onClick={handleMidSave} style={{fontSize:"0.8rem"}}>
+                    {midSaveStatus || "Save draft"}
+                  </button>
+                  <button className="sbtn" onClick={handleSaveSignout} style={{fontSize:"0.8rem",color:"#ef4444",borderColor:"#fca5a5"}}>
+                    Save & Sign out
+                  </button>
+                  <button className="pbtn" onClick={handleSave}>Save & Continue →</button>
+                </div>
               </div>
             </>
           )}

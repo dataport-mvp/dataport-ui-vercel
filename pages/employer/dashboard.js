@@ -306,7 +306,9 @@ export default function EmployerDashboard() {
   const router = useRouter();
 
   const [showSignout,     setShowSignout]     = useState(false);
-  const [termsAccepted,   setTermsAccepted]   = useState(false);
+  const [termsAccepted,   setTermsAccepted]   = useState(
+    () => typeof window !== "undefined" && localStorage.getItem("dg_employer_terms") === "1"
+  );
   const [consents,        setConsents]        = useState([]);
   const [selected,        setSelected]        = useState(null);
   const [profileData,     setProfileData]     = useState(null);
@@ -326,15 +328,9 @@ export default function EmployerDashboard() {
   const [loading,         setLoading]         = useState(true);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && localStorage.getItem("dg_employer_terms") === "1") {
-      setTermsAccepted(true);
-    }
-  }, []);
-
-  useEffect(() => {
     if (!ready) return;
     if (!user) { router.replace("/employer/login"); return; }
-    if (user.role !== "employer") { router.replace("/employee/login"); return; }
+    if (user.role !== "employer") { router.replace("/employer/login"); return; }
   }, [ready, user, router]);
 
   const normalizeStatus = (status) => {

@@ -62,14 +62,29 @@ export function AuthProvider({ children }) {
       try {
         const rt = localStorage.getItem("dg_refresh_token");
         const u  = localStorage.getItem("dg_user");
-        if (rt && rt !== "undefined" && rt !== "null") {
+        if (rt && rt !== "undefined" && rt !== "null" && u && u !== "undefined" && u !== "null") {
           const newToken = await doRefresh();
-          if (newToken && u && u !== "undefined" && u !== "null") {
+          if (newToken) {
+            // Refresh succeeded — full session restore
             setUser(JSON.parse(u));
             resetInactivityTimer();
           } else {
-            localStorage.removeItem("dg_refresh_token");
-            localStorage.removeItem("dg_user");
+            // Refresh failed — Lambda cold start or network error
+            // Restore user from cache so role guards work correctly
+            // The next real API call will 401 and trigger proper re-auth if token is expired
+            try {
+              const cached = JSON.parse(u);
+              if (cached?.email && cached?.role) {
+                setUser(cached);
+                resetInactivityTimer();
+              } else {
+                localStorage.removeItem("dg_refresh_token");
+                localStorage.removeItem("dg_user");
+              }
+            } catch (_) {
+              localStorage.removeItem("dg_refresh_token");
+              localStorage.removeItem("dg_user");
+            }
           }
         }
       } catch (_) {}
@@ -128,7 +143,9 @@ export function AuthProvider({ children }) {
   }, [resetInactivityTimer]);
 
   const logoutFull = useCallback(async (reason = "explicit") => {
-    const role = user?.role;
+    // Read role from state OR localStorage — state may be null if refresh failed on load
+    const storedUser = localStorage.getItem("dg_user");
+    const role = user?.role || (storedUser ? JSON.parse(storedUser)?.role : null);
     const rt   = localStorage.getItem("dg_refresh_token");
     if (rt) {
       fetch(`${API}/auth/logout`, {
