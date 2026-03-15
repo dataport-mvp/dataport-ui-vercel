@@ -693,7 +693,7 @@ export default function PersonalDetails() {
           <div className="topbar-right">
             <span className="user-name">👤 {user.name || user.email}</span>
             <ConsentBell apiFetch={apiFetch} router={router} />
-            <button className="signout-btn" onClick={() => setShowSignout(true)}>Sign out</button>
+            <button className="signout-btn" onClick={handleSaveSignout} style={{borderColor:"#ef4444",color:"#ef4444"}}>Save & Sign out</button>
           </div>
         </div>
 
