@@ -775,8 +775,8 @@ export default function PersonalDetails() {
                   <F l="Passport No." v={passport} s={dirty(setPassport)} r={false} />
                 </div>
                 <div className="fr">
-                  <FS l="Blood Group"     v={bloodGroup}     s={dirty(setBloodGroup)}     o={["A+","A-","B+","B-","AB+","AB-","O+","O-"]} r={false} />
-                  <FS l="Marital Status" v={maritalStatus} s={dirty(setMaritalStatus)} o={["Single","Married","Divorced","Widowed"]} r={false} />
+                  <FS l="Blood Group"    v={bloodGroup}    s={dirty(setBloodGroup)}    o={["A+","A-","B+","B-","AB+","AB-","O+","O-"]} />
+                  <FS l="Marital Status" v={maritalStatus} s={dirty(setMaritalStatus)} o={["Single","Married","Divorced","Widowed"]} />
                   <div className="fi" />
                 </div>
               </div>
@@ -886,9 +886,6 @@ export default function PersonalDetails() {
                 <div style={{display:"flex",gap:"0.65rem",alignItems:"center"}}>
                   <button className="sbtn" onClick={handleMidSave} style={{fontSize:"0.8rem"}}>
                     {midSaveStatus || "Save draft"}
-                  </button>
-                  <button className="sbtn" onClick={handleSaveSignout} style={{fontSize:"0.8rem",color:"#ef4444",borderColor:"#fca5a5"}}>
-                    Save & Sign out
                   </button>
                   <button className="pbtn" onClick={handleSave}>Save & Continue →</button>
                 </div>
