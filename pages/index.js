@@ -294,8 +294,8 @@ export default function Home() {
             Employees build a verified profile once and share it with any employer — with full consent and control. Employers get structured, reliable data instantly, without chasing documents.
           </p>
           <div className="hero-btns">
-            <Link href="/employer/login" className="btn-p">Get started as Employer</Link>
-            <Link href="/employee/login" className="btn-o">Employee Sign Up</Link>
+            <Link href="/employee/login" className="btn-p">Get started as Employee</Link>
+            <Link href="/employer/login" className="btn-o">Employer Login</Link>
           </div>
         </section>
 

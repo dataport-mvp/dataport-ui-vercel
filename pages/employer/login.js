@@ -194,10 +194,10 @@ export default function EmployerLogin() {
         .tgb:hover{text-decoration:underline}
 
         .cft{display:flex;justify-content:center;gap:1.25rem;padding-top:.15rem}
-        .cft a{font-size:.69rem;color:#cbd5e1;text-decoration:none;transition:color .15s}
+        .cft a{font-size:.69rem;color:#94a3b8;text-decoration:none;transition:color .15s}
         .cft a:hover{color:#2563eb;text-decoration:underline}
 
-        @media(max-width:768px){
+        @media(max-width:900px){
           .pg{grid-template-columns:1fr}
           .lft{display:none}
           .rgt{padding:2.5rem 1.5rem}

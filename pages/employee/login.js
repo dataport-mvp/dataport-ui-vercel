@@ -214,10 +214,10 @@ export default function EmployeeLogin() {
         .tgb:hover{text-decoration:underline}
 
         .cft{display:flex;justify-content:center;padding-top:.15rem}
-        .cft a{font-size:.69rem;color:#ccc;text-decoration:none;transition:color .15s}
+        .cft a{font-size:.69rem;color:#888;text-decoration:none;transition:color .15s}
         .cft a:hover{color:#16a34a;text-decoration:underline}
 
-        @media(max-width:768px){
+        @media(max-width:900px){
           .pg{grid-template-columns:1fr}
           .lft{display:none}
           .rgt{padding:2.5rem 1.5rem}
