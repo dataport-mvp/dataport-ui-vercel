@@ -491,6 +491,8 @@ export default function PersonalDetails() {
     };
     loadPreview();
   }, [employeeId, photoKey]);
+
+  const buildPayload = (empId) => ({
     employee_id: empId, status: "draft",
     firstName, middleName, lastName,
     fatherFirst, fatherMiddle, fatherLast,
