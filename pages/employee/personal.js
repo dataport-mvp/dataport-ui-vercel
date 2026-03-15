@@ -616,6 +616,8 @@ export default function PersonalDetails() {
     if (!aadhar)                                    e.aadhar = true; // empty
     if (aadhar && aadhar.length !== 12 && aadhar.length !== 4) e.aadhar = true; // not 12 digits and not already masked 4
     if (!pan)          e.pan = true;
+    if (!bloodGroup)   e.bloodGroup = true;
+    if (!maritalStatus) e.maritalStatus = true;
     if (!curDoor)      e.curDoor = true;
     if (!curDistrict)  e.curDistrict = true;
     if (!curState)     e.curState = true;
@@ -680,7 +682,7 @@ export default function PersonalDetails() {
           <div className="topbar-right">
             <span className="user-name">👤 {user.name || user.email}</span>
             <ConsentBell apiFetch={apiFetch} router={router} />
-            <button className="signout-btn" onClick={handleSaveSignout} style={{borderColor:"#fca5a5",color:"#ef4444"}}>Save & Sign out</button>
+            <button className="signout-btn" onClick={handleSaveSignout} style={{borderColor:"#ef4444",color:"#ef4444"}}>Save & Sign out</button>
           </div>
         </div>
 
@@ -762,8 +764,8 @@ export default function PersonalDetails() {
                   <F l="Passport No." v={passport} s={dirty(setPassport)} r={false} />
                 </div>
                 <div className="fr">
-                  <FS l="Blood Group"     v={bloodGroup}     s={dirty(setBloodGroup)}     o={["A+","A-","B+","B-","AB+","AB-","O+","O-"]} r={false} />
-                  <FS l="Marital Status" v={maritalStatus} s={dirty(setMaritalStatus)} o={["Single","Married","Divorced","Widowed"]} r={false} />
+                  <FS l="Blood Group"    v={bloodGroup}    s={dirty(setBloodGroup)}    o={["A+","A-","B+","B-","AB+","AB-","O+","O-"]} />
+                  <FS l="Marital Status" v={maritalStatus} s={dirty(setMaritalStatus)} o={["Single","Married","Divorced","Widowed"]} />
                   <div className="fi" />
                 </div>
               </div>
