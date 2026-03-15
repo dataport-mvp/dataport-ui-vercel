@@ -1,6 +1,6 @@
 // pages/employer/terms.js — Employer Data Access & Sharing Agreement
 // Public page — no auth required
-import { useRouter } from "next/router";
+import Link from "next/link";
 
 const G = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -27,13 +27,12 @@ const G = `
 `;
 
 export default function EmployerTerms() {
-  const router = useRouter();
   return (
     <>
       <style>{G}</style>
       <div className="topbar">
         <a href="/" className="logo">Datagate</a>
-        <button onClick={() => router.back()} className="back" style={{background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:"inherit"}}>← Back</button>
+        <Link href="/" className="back">← Back to home</Link>
       </div>
       <div className="wrap">
         <div className="badge">Last updated: March 2026</div>
