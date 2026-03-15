@@ -58,6 +58,16 @@ const G = `
     border: 1.5px solid #e2e8f0; background: #f8fafc; color: #64748b; }
   .gap-pill:hover { border-color: #f59e0b; background: #fffbeb; color: #92400e; }
   .gap-pill.on { border-color: #f59e0b; background: #fffbeb; color: #92400e; }
+  .guide-banner { background: #eef2ff; border: 1.5px solid #c7d2fe; border-radius: 12px;
+    padding: 0.9rem 1.1rem; margin-bottom: 1.1rem; display: flex; gap: 0.75rem; align-items: flex-start; }
+  .guide-steps { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.4rem; }
+  .guide-step { font-size: 0.72rem; font-weight: 700; color: #4f46e5; background: #e0e7ff;
+    padding: 0.2rem 0.55rem; border-radius: 999px; white-space: nowrap; }
+  .guide-arrow { font-size: 0.7rem; color: #94a3b8; }
+  .exp-card { background: #ffffff; border-radius: 16px; padding: 1.5rem 1.6rem; margin-bottom: 1.1rem;
+    box-shadow: 0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12);
+    border: 1px solid rgba(255,255,255,0.85); position: relative; overflow: hidden; }
+  .exp-card::before { content:''; position:absolute; top:0; left:0; bottom:0; width:4px; border-radius:16px 0 0 16px; background:#7c3aed; }
   .gap-reason-box { background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 10px;
     padding: 0.9rem 1rem; margin-top: 0.7rem; margin-bottom: 0.1rem; }
   .resume-card { background: #ffffff; border-radius: 16px; padding: 1.5rem 1.6rem; margin-bottom: 1.1rem;
@@ -220,6 +230,7 @@ export default function PreviousCompany() {
   const [loading,setLoading]           = useState(true);
   const [employeeId,setEmployeeId]     = useState("");
   const [resumeKey,setResumeKey]       = useState("");
+  const [hasExperience,setHasExperience] = useState("");
   const [employments,setEmployments]   = useState([emptyEmployment()]);
   const [ack,setAck]                   = useState({business:emptyAck(),dismissed:emptyAck(),criminal:emptyAck(),civil:emptyAck()});
   const [errors,setErrors]             = useState({});
@@ -241,6 +252,7 @@ export default function PreviousCompany() {
         if(!draft.employee_id){setLoading(false);return;}
         setEmployeeId(draft.employee_id);
         if(draft.resumeKey) setResumeKey(draft.resumeKey);
+        if(draft.hasExperience) setHasExperience(draft.hasExperience);
         const histRes=await apiFetch(`${API}/employee/employment-history/${draft.employee_id}`);
         if(histRes.ok){
           const data=await histRes.json();
@@ -279,7 +291,10 @@ export default function PreviousCompany() {
   const validate=()=>{
     const e={};
     if(!resumeKey) e.resumeKey=true;
-    employments.forEach((emp,i)=>{
+    if(!hasExperience) e.hasExperience=true;
+    // Only validate employer fields if experienced
+    if(hasExperience==="Yes"){
+      employments.forEach((emp,i)=>{
       if(!emp.companyName) e[`${i}_companyName`]=true;
       if(!emp.officeAddress) e[`${i}_officeAddress`]=true;
       if(!emp.employeeId) e[`${i}_employeeId`]=true;
@@ -304,6 +319,7 @@ export default function PreviousCompany() {
       if(!emp.documents.experienceKey) e[`${i}_experience`]=true;
       if(emp.gap.hasGap==="Yes"&&!emp.gap.reason) e[`${i}_gapReason`]=true;
     });
+    } // end hasExperience==="Yes"
     [["business"],["dismissed"],["criminal"],["civil"]].forEach(([k])=>{
       if(!ack[k].val) e[`ack_${k}`]=true;
     });
@@ -312,10 +328,10 @@ export default function PreviousCompany() {
 
   const saveHistory=async()=>{
     if(!employeeId) throw new Error("Please complete and save Page 1 first");
-    // Save resumeKey to employee record
-    if(resumeKey){
+    // Save resumeKey and hasExperience to employee record
+    if(resumeKey||hasExperience){
       await apiFetch(`${API}/employee`,{method:"POST",body:JSON.stringify({
-        employee_id:employeeId,status:"draft",resumeKey,
+        employee_id:employeeId,status:"draft",resumeKey,hasExperience,
         firstName:"_",lastName:"_",mobile:"0000000000",email:user?.email||"",
       })});
     }
@@ -369,6 +385,45 @@ export default function PreviousCompany() {
         <div className="wrap">
           <StepNav current={3} onNavigate={handleNavigate}/>
 
+          {/* ── Chronological guide ───────────────────────────────────── */}
+          <div className="guide-banner">
+            <div style={{fontSize:"1.2rem",flexShrink:0}}>💡</div>
+            <div>
+              <div style={{fontSize:"0.82rem",fontWeight:700,color:"#3730a3",marginBottom:"0.3rem"}}>Fill from most recent to oldest employer</div>
+              <div style={{fontSize:"0.72rem",color:"#6b6894",marginBottom:"0.45rem",lineHeight:1.5}}>Start with where you work now (or left most recently), and add backwards in time.</div>
+              <div className="guide-steps">
+                {["Experian (current)","TCS","Talent Formula","Wipro","Infosys (first job)"].map((s,i,arr)=>(
+                  <span key={i} style={{display:"inline-flex",alignItems:"center",gap:"0.4rem"}}>
+                    <span className="guide-step">{s}</span>
+                    {i<arr.length-1&&<span className="guide-arrow">→</span>}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Experience toggle ─────────────────────────────────────── */}
+          <div className="exp-card">
+            <div style={{display:"flex",alignItems:"center",gap:"0.6rem",marginBottom:"0.85rem"}}>
+              <div style={{width:32,height:32,borderRadius:8,background:"#f5f3ff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.95rem",flexShrink:0}}>💼</div>
+              <span style={{fontSize:"0.93rem",fontWeight:700,color:"#1a1730"}}>Work Experience</span>
+            </div>
+            <p style={{fontSize:"0.82rem",color:"#4b5563",marginBottom:"0.85rem",fontWeight:500,lineHeight:1.55}}>
+              Do you have prior work experience? Freshers joining directly from college can select No and skip to the next step.
+            </p>
+            <div style={{display:"flex",gap:"0.65rem"}}>
+              {["Yes","No"].map(v=>(
+                <button key={v} onClick={()=>{setHasExperience(v);isDirtyRef.current=true;fixErr("hasExperience");}} style={{padding:"0.45rem 1.6rem",borderRadius:999,border:hasExperience===v?"2px solid #7c3aed":"1.5px solid #dddaf0",background:hasExperience===v?"#7c3aed":"#f2f1f9",color:hasExperience===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.875rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
+              ))}
+            </div>
+            {errors.hasExperience&&<span className="err-msg" style={{marginTop:"0.4rem",display:"block"}}>Please select Yes or No</span>}
+            {hasExperience==="No"&&(
+              <div style={{marginTop:"0.85rem",padding:"0.7rem 0.9rem",background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:9,fontSize:"0.78rem",color:"#15803d",fontWeight:500}}>
+                ✓ No problem — upload your resume above and continue to the next step.
+              </div>
+            )}
+          </div>
+
           {/* ── Resume Upload ─────────────────────────────────────────── */}
           <div className="resume-card">
             <div style={{display:"flex",alignItems:"center",gap:"0.6rem",marginBottom:"0.9rem"}}>
@@ -389,8 +444,17 @@ export default function PreviousCompany() {
             />
           </div>
 
-          {/* ── Employer cards ────────────────────────────────────────── */}
-          {employments.map((emp,index)=>(
+          {/* ── Employer cards — only if experienced ─────────────────── */}
+          {hasExperience==="Yes"&&(<>
+          {employments.map((emp,index)=>{
+            const isLastCard = index === employments.length - 1;
+            const gapLabel = isLastCard
+              ? (emp.gap.hasGap==="Yes" ? "Gap after education: Yes" : "Gap after education?")
+              : (emp.gap.hasGap==="Yes" ? "Gap before joining: Yes" : "Gap before joining?");
+            const gapHint = isLastCard
+              ? "Between finishing education and joining this company"
+              : "Between leaving previous company and joining this one";
+            return (
             <div key={index} className="emp-card">
 
               {/* Header row — title + gap pill + remove */}
@@ -404,7 +468,7 @@ export default function PreviousCompany() {
                     className={`gap-pill${emp.gap.hasGap==="Yes"?" on":""}`}
                     onClick={()=>update(index,"gap.hasGap",emp.gap.hasGap==="Yes"?"":"Yes")}
                   >
-                    ⏱ {emp.gap.hasGap==="Yes"?"Gap before joining: Yes":"Gap before joining?"}
+                    ⏱ {gapLabel}
                   </button>
                   {index!==0&&<button className="rm-btn" onClick={()=>removeEmployer(index)}>− Remove</button>}
                 </div>
@@ -417,7 +481,7 @@ export default function PreviousCompany() {
                     Reason for Gap <span style={{color:"#ef4444"}}>*</span>
                   </span>
                   <p style={{fontSize:"0.71rem",color:"#92400e",marginBottom:"0.5rem",fontWeight:500,lineHeight:1.4}}>
-                    e.g. Between relieving from previous company and joining this one
+                    {gapHint}
                   </p>
                   <textarea
                     className={`ta${errors[`${index}_gapReason`]?" err":""}`}
@@ -502,9 +566,11 @@ export default function PreviousCompany() {
               </div>
 
             </div>
-          ))}
+            );
+          })}
 
           <button className="add-btn" onClick={addEmployer}>+ Add Another Employer</button>
+          </>)}
 
           <div className="decl-card">
             <div style={{display:"flex",alignItems:"center",gap:"0.6rem",marginBottom:"1.1rem"}}>
