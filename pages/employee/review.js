@@ -412,7 +412,10 @@ export default function ReviewPage() {
         <div className="wrap">
           <StepNav current={5} onNavigate={handleNavigate} />
 
-          {/* ── Missing fields banner ── */}
+          {/* ── Self-attested notice ── */}
+          <div style={{background:"#f0f9ff",border:"1.5px solid #bae6fd",borderRadius:12,padding:"0.85rem 1.1rem",marginBottom:"1.1rem",fontSize:"0.78rem",color:"#0c4a6e",lineHeight:1.6}}>
+            ℹ️ <strong>Self-reported profile.</strong> All information you submit is your own declaration. Please ensure everything is accurate — false or misleading information may result in rejection of your application or termination of employment.
+          </div>
           {missingIssues.length > 0 && (
             <div className="missing-banner">
               <h4>⚠️ {missingIssues.reduce((a,p)=>a+p.fields.length,0)} field{missingIssues.reduce((a,p)=>a+p.fields.length,0)>1?"s":""} still required across {missingIssues.length} page{missingIssues.length>1?"s":""}</h4>

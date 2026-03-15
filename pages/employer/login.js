@@ -34,7 +34,6 @@ export default function EmployerLogin() {
   const handle = async () => {
     setError(""); setLoading(true);
     const endpoint = isSignup ? "/auth/register" : "/auth/login";
-    // API expects "name" field — send companyName as name, phone as empty string for employer
     const body = isSignup
       ? { email, password, name: companyName, phone: "0000000000", role: "employer" }
       : { email, password };
@@ -101,15 +100,6 @@ export default function EmployerLogin() {
           -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
         .left-desc { font-size: 0.95rem; color: #475569; line-height: 1.7; max-width: 360px; }
-        .left-stats { margin-top: 2.5rem; display: flex; gap: 2rem; }
-        .stat-item {}
-        .stat-num {
-          font-family: 'Syne', sans-serif;
-          font-size: 1.75rem; font-weight: 800;
-          background: linear-gradient(135deg, #a78bfa, #7c3aed);
-          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-        .stat-label { font-size: 0.78rem; color: #475569; margin-top: 2px; }
         .left-features { margin-top: 2.5rem; display: flex; flex-direction: column; gap: 0.85rem; }
         .feat-row { display: flex; align-items: center; gap: 0.75rem; font-size: 0.875rem; color: #64748b; }
         .feat-check {
@@ -118,7 +108,18 @@ export default function EmployerLogin() {
           display: flex; align-items: center; justify-content: center;
           color: #a78bfa; font-size: 0.65rem; flex-shrink: 0;
         }
-        .left-footer { font-size: 0.78rem; color: #1e1040; }
+
+        /* ── Footer with links ── */
+        .left-footer {
+          display: flex; flex-direction: column; gap: 0.4rem;
+        }
+        .left-footer-copy { font-size: 0.78rem; color: #1e1040; }
+        .left-footer-links { display: flex; gap: 1rem; }
+        .left-footer-links a {
+          font-size: 0.72rem; color: #1e1040; text-decoration: none;
+          transition: color 0.2s;
+        }
+        .left-footer-links a:hover { color: #a78bfa; }
 
         .auth-right {
           background: #070f1e;
@@ -183,10 +184,22 @@ export default function EmployerLogin() {
         .toggle-btn { color: #a78bfa; cursor: pointer; font-weight: 600; background: none; border: none; font-family: inherit; font-size: inherit; }
         .toggle-btn:hover { text-decoration: underline; }
 
+        /* ── Card footer links ── */
+        .card-footer-links {
+          display: flex; justify-content: center; gap: 1.25rem;
+          padding-top: 0.25rem;
+        }
+        .card-footer-links a {
+          font-size: 0.72rem; color: #1e3a5f; text-decoration: none;
+          transition: color 0.2s;
+        }
+        .card-footer-links a:hover { color: #a78bfa; text-decoration: underline; }
+
         @media (max-width: 768px) {
           .auth-page { grid-template-columns: 1fr; }
           .auth-left { display: none; }
           .auth-right { padding: 2rem 1.5rem; }
+          .card-footer-links { flex-wrap: wrap; }
         }
       `}</style>
 
@@ -205,7 +218,14 @@ export default function EmployerLogin() {
               <div className="feat-row"><div className="feat-check">✓</div>Fully compliant — employee-approved data only</div>
             </div>
           </div>
-          <div className="left-footer">© 2026 Datagate</div>
+          {/* Footer with links */}
+          <div className="left-footer">
+            <div className="left-footer-copy">© 2026 Datagate</div>
+            <div className="left-footer-links">
+              <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+              <a href="/employer/terms" target="_blank" rel="noopener noreferrer">Employer Terms</a>
+            </div>
+          </div>
         </div>
 
         {/* Right */}
@@ -253,6 +273,12 @@ export default function EmployerLogin() {
               <button className="toggle-btn" onClick={() => { setIsSignup(v => !v); setError(""); setShowPwd(false); }}>
                 {isSignup ? "Sign in" : "Sign up"}
               </button>
+            </div>
+
+            {/* Privacy + Terms links — bottom of card */}
+            <div className="card-footer-links">
+              <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+              <a href="/employer/terms" target="_blank" rel="noopener noreferrer">Employer Terms</a>
             </div>
           </div>
         </div>

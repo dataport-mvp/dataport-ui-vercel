@@ -33,7 +33,6 @@ export default function EmployeeLogin() {
   const router = useRouter();
 
   const handlePhone = (val) => {
-    // Restrict to digits only, max 10
     const digits = val.replace(/\D/g, "").slice(0, 10);
     setPhone(digits);
   };
@@ -70,7 +69,6 @@ export default function EmployeeLogin() {
           font-family: 'DM Sans', sans-serif;
         }
 
-        /* Left panel */
         .auth-left {
           background: linear-gradient(160deg, #0f1f3d 0%, #050d1a 60%);
           display: flex; flex-direction: column;
@@ -110,9 +108,7 @@ export default function EmployeeLogin() {
         }
         .left-desc { font-size: 0.95rem; color: #475569; line-height: 1.7; max-width: 360px; }
         .left-steps { margin-top: 2.5rem; display: flex; flex-direction: column; gap: 1rem; }
-        .step {
-          display: flex; align-items: flex-start; gap: 1rem;
-        }
+        .step { display: flex; align-items: flex-start; gap: 1rem; }
         .step-num {
           width: 30px; height: 30px; border-radius: 50%;
           background: rgba(37,99,235,0.2);
@@ -123,9 +119,19 @@ export default function EmployeeLogin() {
         }
         .step-text { font-size: 0.875rem; color: #64748b; line-height: 1.5; }
         .step-text strong { color: #94a3b8; display: block; margin-bottom: 2px; }
-        .left-footer { font-size: 0.78rem; color: #1e3a5f; }
 
-        /* Right panel */
+        /* ── Footer with links ── */
+        .left-footer {
+          display: flex; flex-direction: column; gap: 0.4rem;
+        }
+        .left-footer-copy { font-size: 0.78rem; color: #1e3a5f; }
+        .left-footer-links { display: flex; gap: 1rem; }
+        .left-footer-links a {
+          font-size: 0.72rem; color: #1e3a5f; text-decoration: none;
+          transition: color 0.2s;
+        }
+        .left-footer-links a:hover { color: #38bdf8; }
+
         .auth-right {
           background: #070f1e;
           display: flex; align-items: center; justify-content: center;
@@ -164,7 +170,7 @@ export default function EmployeeLogin() {
         .eye-btn:hover { color: #64748b; }
 
         .error-msg { font-size: 0.82rem; color: #f87171; padding: 0.7rem 1rem; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 8px; }
-        
+
         .submit-btn {
           padding: 0.9rem;
           background: linear-gradient(135deg, #2563eb, #1d4ed8);
@@ -190,6 +196,17 @@ export default function EmployeeLogin() {
         .toggle-btn:hover { text-decoration: underline; }
 
         .phone-hint { font-size: 0.72rem; color: #1e3a5f; margin-top: 2px; }
+
+        /* ── Card footer links ── */
+        .card-footer-links {
+          display: flex; justify-content: center; gap: 1.25rem;
+          padding-top: 0.25rem;
+        }
+        .card-footer-links a {
+          font-size: 0.72rem; color: #1e3a5f; text-decoration: none;
+          transition: color 0.2s;
+        }
+        .card-footer-links a:hover { color: #38bdf8; text-decoration: underline; }
 
         @media (max-width: 768px) {
           .auth-page { grid-template-columns: 1fr; }
@@ -221,7 +238,13 @@ export default function EmployeeLogin() {
               </div>
             </div>
           </div>
-          <div className="left-footer">© 2026 Datagate</div>
+          {/* Footer with privacy link */}
+          <div className="left-footer">
+            <div className="left-footer-copy">© 2026 Datagate</div>
+            <div className="left-footer-links">
+              <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+            </div>
+          </div>
         </div>
 
         {/* Right */}
@@ -276,6 +299,11 @@ export default function EmployeeLogin() {
               <button className="toggle-btn" onClick={() => { setIsSignup(v => !v); setError(""); setShowPwd(false); }}>
                 {isSignup ? "Sign in" : "Sign up"}
               </button>
+            </div>
+
+            {/* Privacy link — bottom of card */}
+            <div className="card-footer-links">
+              <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
             </div>
           </div>
         </div>

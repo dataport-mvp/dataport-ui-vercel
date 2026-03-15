@@ -32,12 +32,18 @@ export function AuthProvider({ children }) {
   const doRefresh = useCallback(async () => {
     const rt = localStorage.getItem("dg_refresh_token");
     if (!rt) return null;
+    // AbortController timeout — prevents Lambda cold start from hanging indefinitely
+    // and force-clearing localStorage (which caused the relogin-on-reload bug)
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10000); // 10s timeout
     try {
       const res = await fetch(`${API}/auth/refresh`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ refresh_token: rt }),
+        signal:  controller.signal,
       });
+      clearTimeout(timer);
       if (!res.ok) return null;
       const data     = await res.json();
       const newToken = data.access_token;
@@ -45,6 +51,7 @@ export function AuthProvider({ children }) {
       accessTokenRef.current = newToken;
       return newToken;
     } catch {
+      clearTimeout(timer);
       return null;
     }
   }, []);
