@@ -467,7 +467,8 @@ export default function PersonalDetails() {
     if (!gender)       e.gender = true;
     if (!nationality)  e.nationality = true;
     if (!mobile)       e.mobile = true;
-    if (!aadhar)       e.aadhar = true;
+    if (!aadhar)                                    e.aadhar = true; // empty
+    if (aadhar && aadhar.length !== 12 && aadhar.length !== 4) e.aadhar = true; // not 12 digits and not already masked 4
     if (!pan)          e.pan = true;
     if (!curDoor)      e.curDoor = true;
     if (!curDistrict)  e.curDistrict = true;
@@ -634,6 +635,9 @@ export default function PersonalDetails() {
                         if (raw.length <= 12) dirty(setAadhar)(raw);
                       }}
                     />
+                    {aadhar && aadhar.length !== 12 && aadhar.length !== 4 && (
+                      <span className="fe">Must be exactly 12 digits ({aadhar.length}/12)</span>
+                    )}
                     <div style={{marginTop:"0.7rem"}}>
                       <FileUpload label="Upload Aadhaar Card" category="personal" subKey="aadhaar" employeeId={employeeId} apiFetch={apiFetch} value={aadhaarKey} onChange={(k) => { setAadhaarKey(k); isDirtyRef.current = true; }} />
                     </div>
