@@ -101,7 +101,9 @@ export default function FileUpload({ label, category, subKey, companyId, apiFetc
 
   return (
     <div style={{ marginBottom: "0.75rem" }}>
-      <label style={fs.label}>{label}</label>
+      <label style={fs.label}>
+        {label.endsWith(" *") ? <>{label.slice(0,-2)} <span style={{color:"#ef4444"}}>*</span></> : label}
+      </label>
       <div style={{
         ...fs.box,
         borderColor: error || status === "error" ? "#ef4444"

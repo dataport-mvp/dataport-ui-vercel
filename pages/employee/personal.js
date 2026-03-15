@@ -680,7 +680,7 @@ export default function PersonalDetails() {
           <div className="topbar-right">
             <span className="user-name">👤 {user.name || user.email}</span>
             <ConsentBell apiFetch={apiFetch} router={router} />
-            <button className="signout-btn" onClick={() => setShowSignout(true)}>Sign out</button>
+            <button className="signout-btn" onClick={handleSaveSignout} style={{borderColor:"#fca5a5",color:"#ef4444"}}>Save & Sign out</button>
           </div>
         </div>
 
@@ -852,9 +852,6 @@ export default function PersonalDetails() {
                 <div style={{display:"flex",gap:"0.65rem",alignItems:"center"}}>
                   <button className="sbtn" onClick={handleMidSave} style={{fontSize:"0.8rem"}}>
                     {midSaveStatus || "Save draft"}
-                  </button>
-                  <button className="sbtn" onClick={handleSaveSignout} style={{fontSize:"0.8rem",color:"#ef4444",borderColor:"#fca5a5"}}>
-                    Save & Sign out
                   </button>
                   <button className="pbtn" onClick={handleSave}>Save & Continue →</button>
                 </div>
