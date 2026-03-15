@@ -453,8 +453,9 @@ export default function ReviewPage() {
               <KV label="Email"       value={d.email} />
               <KV label="Aadhaar"     value={maskAadhaar(d.aadhaar||d.aadhar)} />
               <KV label="PAN"         value={d.pan} />
-              <KV label="Passport"    value={d.passport} />
-              <KV label="Blood Group" value={d.bloodGroup} />
+              <KV label="Passport"       value={d.passport} />
+              <KV label="Blood Group"    value={d.bloodGroup} />
+              <KV label="Marital Status" value={d.maritalStatus} />
             </div>
             {(d.fatherFirst||d.fatherLast) && (
               <div style={{marginTop:"0.9rem",paddingTop:"0.9rem",borderTop:"1px solid #f0eef8"}}>

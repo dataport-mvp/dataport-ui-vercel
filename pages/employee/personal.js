@@ -193,7 +193,7 @@ function StepNav({ current, onNavigate }) {
 }
 
 // ─── Consent Tab ──────────────────────────────────────────────────────
-function ConsentTab({ apiFetch }) {
+function ConsentTab({ apiFetch, profileStatus }) {
   const [consents,setConsents]=useState([]);
   const [loading,setLoading]=useState(true);
   const [acting,setActing]=useState(null);
@@ -204,6 +204,7 @@ function ConsentTab({ apiFetch }) {
   },[apiFetch]);
   useEffect(()=>{load();},[load]);
   useEffect(()=>{const id=setInterval(load,15000);return()=>clearInterval(id);},[load]);
+
   const respond=async(consentId,decision)=>{
     setActing(consentId);
     setActionError(p=>({...p,[consentId]:""}));
@@ -224,6 +225,24 @@ function ConsentTab({ apiFetch }) {
     }
     setActing(null);
   };
+
+  const withdraw=async(consentId)=>{
+    setActing(consentId);
+    setActionError(p=>({...p,[consentId]:""}));
+    try{
+      const res=await apiFetch(`${API}/consent/withdraw?consent_id=${consentId}`,{method:"POST"});
+      if(res.ok){
+        await load();
+      } else {
+        const errData = await res.json().catch(()=>({}));
+        setActionError(p=>({...p,[consentId]:errData.detail||errData.message||`Error ${res.status}`}));
+      }
+    }catch(e){
+      setActionError(p=>({...p,[consentId]:"Network error — please retry"}));
+    }
+    setActing(null);
+  };
+
   const norm=(c)=>({...c,status:String(c.status||"pending").toLowerCase()});
   if(loading)return <p style={{color:"#8b88b0",padding:"1rem 0",fontSize:"0.875rem"}}>Loading consents…</p>;
   if(!consents.length)return(
@@ -237,8 +256,10 @@ function ConsentTab({ apiFetch }) {
   const pending=all.filter(c=>c.status==="pending");
   const approved=all.filter(c=>c.status==="approved");
   const declined=all.filter(c=>c.status==="declined");
-  const sColor={pending:"#f59e0b",approved:"#16a34a",declined:"#ef4444"};
-  const sBg={pending:"#fffbeb",approved:"#f0fdf4",declined:"#fff5f5"};
+  const revoked=all.filter(c=>c.status==="revoked");
+  const sColor={pending:"#f59e0b",approved:"#16a34a",declined:"#ef4444",revoked:"#94a3b8"};
+  const sBg={pending:"#fffbeb",approved:"#f0fdf4",declined:"#fff5f5",revoked:"#f8fafc"};
+  const profileNotSubmitted = profileStatus !== "submitted";
   const CC=({c})=>(
     <div style={{border:"1px solid #ebe9f5",borderRadius:12,padding:"1.1rem 1.25rem",marginBottom:"0.65rem",background:"#fff",boxShadow:"0 1px 5px rgba(79,70,229,0.05)"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
@@ -249,17 +270,34 @@ function ConsentTab({ apiFetch }) {
             <div style={{fontSize:"0.84rem",color:"#6b6894",lineHeight:1.5}}>{c.message}</div>
           </div>}
         </div>
-        <span style={{padding:"0.18rem 0.7rem",borderRadius:999,fontSize:"0.7rem",fontWeight:700,color:sColor[c.status],background:sBg[c.status],whiteSpace:"nowrap",marginLeft:"0.75rem",border:`1px solid ${sColor[c.status]}33`}}>{c.status.charAt(0).toUpperCase()+c.status.slice(1)}</span>
+        <span style={{padding:"0.18rem 0.7rem",borderRadius:999,fontSize:"0.7rem",fontWeight:700,color:sColor[c.status]||"#64748b",background:sBg[c.status]||"#f8fafc",whiteSpace:"nowrap",marginLeft:"0.75rem",border:`1px solid ${(sColor[c.status]||"#94a3b8")}33`}}>{c.status.charAt(0).toUpperCase()+c.status.slice(1)}</span>
       </div>
       {actionError[c.consent_id]&&<p style={{fontSize:"0.75rem",color:"#ef4444",marginTop:"0.5rem",fontWeight:600}}>⚠️ {actionError[c.consent_id]}</p>}
-      {c.status==="pending"&&<div style={{display:"flex",gap:"0.5rem",marginTop:"0.8rem"}}>
-        <button disabled={acting===c.consent_id} onClick={()=>respond(c.consent_id,"approved")} style={{flex:1,padding:"0.5rem",background:"#16a34a",color:"#fff",border:"none",borderRadius:8,fontWeight:700,cursor:acting===c.consent_id?"not-allowed":"pointer",fontSize:"0.875rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Approve"}</button>
-        <button disabled={acting===c.consent_id} onClick={()=>respond(c.consent_id,"declined")} style={{flex:1,padding:"0.5rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:8,fontWeight:700,cursor:acting===c.consent_id?"not-allowed":"pointer",fontSize:"0.875rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Decline"}</button>
-      </div>}
+      {/* Pending — show approve/decline, but warn if profile not submitted */}
+      {c.status==="pending"&&(
+        <div style={{marginTop:"0.8rem"}}>
+          {profileNotSubmitted&&(
+            <div style={{fontSize:"0.75rem",color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:"0.5rem 0.75rem",marginBottom:"0.6rem"}}>
+              ⚠️ Complete and submit your profile before approving consent requests.
+            </div>
+          )}
+          <div style={{display:"flex",gap:"0.5rem"}}>
+            <button disabled={acting===c.consent_id||profileNotSubmitted} onClick={()=>respond(c.consent_id,"approved")} style={{flex:1,padding:"0.5rem",background:profileNotSubmitted?"#e5e7eb":"#16a34a",color:profileNotSubmitted?"#9ca3af":"#fff",border:"none",borderRadius:8,fontWeight:700,cursor:(acting===c.consent_id||profileNotSubmitted)?"not-allowed":"pointer",fontSize:"0.875rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Approve"}</button>
+            <button disabled={acting===c.consent_id} onClick={()=>respond(c.consent_id,"declined")} style={{flex:1,padding:"0.5rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:8,fontWeight:700,cursor:acting===c.consent_id?"not-allowed":"pointer",fontSize:"0.875rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Decline"}</button>
+          </div>
+        </div>
+      )}
+      {/* Approved — show withdraw button */}
+      {c.status==="approved"&&(
+        <div style={{marginTop:"0.8rem"}}>
+          <button disabled={acting===c.consent_id} onClick={()=>withdraw(c.consent_id)} style={{padding:"0.45rem 1rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:8,fontWeight:600,cursor:acting===c.consent_id?"not-allowed":"pointer",fontSize:"0.8rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Withdraw consent"}</button>
+          <span style={{fontSize:"0.7rem",color:"#94a3b8",marginLeft:"0.6rem"}}>Employer will immediately lose access</span>
+        </div>
+      )}
     </div>
   );
   const SL=({text,count})=><div style={{fontSize:"0.68rem",fontWeight:700,color:"#8b88b0",textTransform:"uppercase",letterSpacing:1,margin:"1.1rem 0 0.5rem"}}>{text}{count!==undefined&&` (${count})`}</div>;
-  return(<div>{pending.length>0&&<><SL text="Pending" count={pending.length}/>{pending.map(c=><CC key={c.consent_id} c={c}/>)}</>}{approved.length>0&&<><SL text="Approved"/>{approved.map(c=><CC key={c.consent_id} c={c}/>)}</>}{declined.length>0&&<><SL text="Declined"/>{declined.map(c=><CC key={c.consent_id} c={c}/>)}</>}</div>);
+  return(<div>{pending.length>0&&<><SL text="Pending" count={pending.length}/>{pending.map(c=><CC key={c.consent_id} c={c}/>)}</>}{approved.length>0&&<><SL text="Approved"/>{approved.map(c=><CC key={c.consent_id} c={c}/>)}</>}{declined.length>0&&<><SL text="Declined"/>{declined.map(c=><CC key={c.consent_id} c={c}/>)}</>}{revoked.length>0&&<><SL text="Withdrawn"/>{revoked.map(c=><CC key={c.consent_id} c={c}/>)}</>}</div>);
 }
 
 // ─── Field helpers ────────────────────────────────────────────────────
@@ -292,6 +330,7 @@ export default function PersonalDetails() {
   const [saveStatus,setSaveStatus]     = useState("");
   const [loading,setLoading]           = useState(true);
   const [employeeId,setEmployeeId]     = useState("");
+  const [profileStatus,setProfileStatus] = useState("");
   const [photoPreview,setPhotoPreview] = useState(null);
   const [errors,setErrors]             = useState({});
   const isDirtyRef = useRef(false);
@@ -320,6 +359,7 @@ export default function PersonalDetails() {
   const [pan,setPan]                 = useState("");
   const [passport,setPassport]       = useState("");
   const [bloodGroup,setBloodGroup]   = useState("");
+  const [maritalStatus,setMaritalStatus] = useState("");
   const [emergName,setEmergName]     = useState("");
   const [emergRel,setEmergRel]       = useState("");
   const [emergPhone,setEmergPhone]   = useState("");
@@ -361,7 +401,7 @@ export default function PersonalDetails() {
         const res = await apiFetch(`${API}/employee/draft`);
         if (res.ok) {
           const d = await res.json();
-          if (d.employee_id) setEmployeeId(d.employee_id);
+          if (d.employee_id) { setEmployeeId(d.employee_id); setProfileStatus(d.status || "draft"); }
           if (d.firstName)    setFirstName(d.firstName);
           if (d.middleName)   setMiddleName(d.middleName);
           if (d.lastName)     setLastName(d.lastName);
@@ -386,12 +426,20 @@ export default function PersonalDetails() {
           if (d.pan)          setPan(d.pan);
           if (d.passport)     setPassport(d.passport);
           if (d.bloodGroup)   setBloodGroup(d.bloodGroup);
+          if (d.maritalStatus) setMaritalStatus(d.maritalStatus);
           if (d.emergName)    setEmergName(d.emergName);
           if (d.emergRel)     setEmergRel(d.emergRel);
           if (d.emergPhone)   setEmergPhone(d.emergPhone);
           if (d.aadhaarKey)   setAadhaarKey(d.aadhaarKey);
           if (d.panKey)       setPanKey(d.panKey);
-          if (d.photoKey)     setPhotoKey(d.photoKey);
+          if (d.photoKey) {
+            setPhotoKey(d.photoKey);
+            // Fetch presigned URL for preview
+            try {
+              const pRes = await apiFetch(`${API}/upload/view-url?key=${encodeURIComponent(d.photoKey)}`);
+              if (pRes.ok) { const pd = await pRes.json(); setPhotoPreview(pd.url || pd.presigned_url || pd.signed_url); }
+            } catch (_) {}
+          }
           const cur  = d.currentAddress   || {};
           const perm = d.permanentAddress || {};
           if (cur.from)     setCurFrom(cur.from);
@@ -443,7 +491,7 @@ export default function PersonalDetails() {
     // aadhar state holds raw digits (up to 12) — take last 4
     // If already 4 digits (loaded from DynamoDB masked) — store as-is
     aadhaar: aadhar.length <= 4 ? aadhar : aadhar.slice(-4),
-    pan, passport, bloodGroup,
+    pan, passport, bloodGroup, maritalStatus,
     emergName, emergRel, emergPhone,
     aadhaarKey, panKey, photoKey,
     currentAddress:   { from:curFrom,  to:curTo,  door:curDoor,  village:curVillage,  locality:curLocality,  district:curDistrict,  state:curState,  pin:curPin  },
@@ -533,7 +581,7 @@ export default function PersonalDetails() {
             <button className={`tab-btn${activeTab==="consents"?" active":""}`} onClick={() => setActiveTab("consents")}>Consent Requests</button>
           </div>
 
-          {activeTab === "consents" ? <ConsentTab apiFetch={apiFetch} /> : (
+          {activeTab === "consents" ? <ConsentTab apiFetch={apiFetch} profileStatus={profileStatus} /> : (
             <>
               <StepNav current={1} onNavigate={handleNavigate} />
 
@@ -550,7 +598,7 @@ export default function PersonalDetails() {
                       : <span style={{color:"#8b88b0",fontSize:"0.7rem",fontWeight:600,textAlign:"center",padding:"0 0.5rem"}}>No photo</span>}
                   </div>
                   <div style={{flex:1}}>
-                    <FileUpload label="Upload Profile Photo" category="personal" subKey="photo" employeeId={employeeId} apiFetch={apiFetch} value={photoKey} onChange={(k) => { setPhotoKey(k); isDirtyRef.current = true; }} accept="image/*" />
+                    <FileUpload label="Upload Profile Photo" category="personal" subKey="photo" employeeId={employeeId} apiFetch={apiFetch} value={photoKey} onChange={(k, url) => { setPhotoKey(k); if (url) setPhotoPreview(url); isDirtyRef.current = true; }} accept="image/*" />
                     <p style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:4}}>JPG or PNG · max 5MB</p>
                   </div>
                 </div>
@@ -605,8 +653,9 @@ export default function PersonalDetails() {
                   <F l="Passport No." v={passport} s={dirty(setPassport)} r={false} />
                 </div>
                 <div className="fr">
-                  <FS l="Blood Group" v={bloodGroup} s={dirty(setBloodGroup)} o={["A+","A-","B+","B-","AB+","AB-","O+","O-"]} r={false} />
-                  <div className="fi" style={{flex:2}} />
+                  <FS l="Blood Group"     v={bloodGroup}     s={dirty(setBloodGroup)}     o={["A+","A-","B+","B-","AB+","AB-","O+","O-"]} r={false} />
+                  <FS l="Marital Status" v={maritalStatus} s={dirty(setMaritalStatus)} o={["Single","Married","Divorced","Widowed"]} r={false} />
+                  <div className="fi" />
                 </div>
               </div>
 

@@ -629,7 +629,7 @@ function PersonalTab({ data }) {
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
       <SCard title="Name & Identity">
-        <KVGrid fields={[["First Name", data.firstName], ["Middle Name", data.middleName], ["Last Name", data.lastName], ["Father's Name", data.fatherName || [data.fatherFirst, data.fatherMiddle, data.fatherLast].filter(Boolean).join(" ")], ["Date of Birth", data.dob], ["Gender", data.gender], ["Nationality", data.nationality], ["Passport", data.passport]]} />
+        <KVGrid fields={[["First Name", data.firstName], ["Middle Name", data.middleName], ["Last Name", data.lastName], ["Father's Name", data.fatherName || [data.fatherFirst, data.fatherMiddle, data.fatherLast].filter(Boolean).join(" ")], ["Date of Birth", data.dob], ["Gender", data.gender], ["Nationality", data.nationality], ["Passport", data.passport], ["Blood Group", data.bloodGroup], ["Marital Status", data.maritalStatus]]} />
       </SCard>
       <SCard title="Contact & Documents">
         <KVGrid fields={[["Email", data.email], ["Mobile", data.mobile], ["Aadhaar", maskAadhaar(data.aadhaar || data.aadhar)], ["PAN", data.pan]]} />
