@@ -1,443 +1,437 @@
 import Link from "next/link";
 
+/* ── Animated Logo ─────────────────────────────────────────────────
+   Shield + gate cutout. Green dot pulses continuously.
+   Data particles flow down through the gate.
+   accentColor: the dot + particle color
+   shieldFill: shield body color
+   gateFill: gate cutout color
+   wordColor: wordmark color
+──────────────────────────────────────────────────────────────────── */
+function DGLogo({ accentColor = "#16a34a", shieldFill = "#1a1a1a", gateFill = "#fff", wordColor = "#1a1a1a", showSub = false }) {
+  const id = accentColor.replace("#", "");
+  return (
+    <svg width="156" height="40" viewBox="0 0 156 40" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display:"block", flexShrink:0 }}>
+      <defs>
+        <style>{`
+          @keyframes dg-pulse-${id}{0%{r:4.5;opacity:.6}100%{r:13;opacity:0}}
+          @keyframes dg-dot-${id}{0%,100%{r:3.5}50%{r:2.6}}
+          @keyframes dg-p-${id}{0%{transform:translateY(0);opacity:0}12%{opacity:1}85%{opacity:1}100%{transform:translateY(20px);opacity:0}}
+          .dpr-${id}{animation:dg-pulse-${id} 1.8s ease-out infinite;fill:none;stroke:${accentColor};stroke-width:1.3}
+          .ddt-${id}{animation:dg-dot-${id} 1.8s ease-in-out infinite;fill:${accentColor}}
+          .dp1-${id}{animation:dg-p-${id} 2.2s ease-in-out infinite}
+          .dp2-${id}{animation:dg-p-${id} 2.2s ease-in-out infinite .74s}
+          .dp3-${id}{animation:dg-p-${id} 2.2s ease-in-out infinite 1.47s}
+        `}</style>
+      </defs>
+      {/* Shield body */}
+      <path d="M15 1.5 L28 7 L28 23 Q28 35 15 40 Q2 35 2 23 L2 7 Z" fill={shieldFill}/>
+      {/* Gate — left pillar */}
+      <rect x="7.5" y="18.5" width="4.5" height="13.5" rx="1.6" fill={gateFill}/>
+      {/* Gate — right pillar */}
+      <rect x="17.5" y="18.5" width="4.5" height="13.5" rx="1.6" fill={gateFill}/>
+      {/* Gate — arch */}
+      <path d="M9.75 18.5 Q15 11 19.75 18.5" fill="none" stroke={gateFill} strokeWidth="3.8" strokeLinecap="round"/>
+      {/* Data particles */}
+      <circle cx="15" cy="11.5" r="1.8" fill={accentColor} opacity="0" className={`dp1-${id}`}/>
+      <circle cx="15" cy="11.5" r="1.8" fill={accentColor} opacity="0" className={`dp2-${id}`}/>
+      <circle cx="15" cy="11.5" r="1.8" fill={accentColor} opacity="0" className={`dp3-${id}`}/>
+      {/* Live dot */}
+      <circle cx="23.5" cy="6.5" className={`ddt-${id}`}/>
+      <circle cx="23.5" cy="6.5" className={`dpr-${id}`}/>
+      {/* Wordmark */}
+      <text x="36" y="23" fontFamily="'DM Sans',sans-serif" fontSize="15" fontWeight="700" fill={wordColor} letterSpacing="-0.2">Datagate</text>
+      {showSub && <text x="37" y="33" fontFamily="'DM Sans',sans-serif" fontSize="7" fontWeight="600" fill={wordColor === "#fff" ? "rgba(255,255,255,0.35)" : "#bbb"} letterSpacing="1.1">VERIFIED EMPLOYMENT</text>}
+    </svg>
+  );
+}
+
 export default function Home() {
   return (
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;600;700&display=swap');
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body { height: 100%; }
-        body { background: #f7f6f3; color: #1a1a1a; font-family: 'DM Sans', sans-serif; }
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        html,body{height:100%}
+        body{background:#fafaf9;color:#1a1a1a;font-family:'DM Sans',sans-serif}
 
         /* ── Nav ── */
-        nav {
-          position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 1.1rem 3rem;
-          background: rgba(247,246,243,0.92);
-          backdrop-filter: blur(12px);
-          border-bottom: 1px solid #e8e4dc;
+        nav{
+          position:fixed;top:0;left:0;right:0;z-index:100;
+          display:flex;align-items:center;justify-content:space-between;
+          padding:.85rem 3rem;
+          background:rgba(250,250,249,0.96);
+          backdrop-filter:blur(12px);
+          border-bottom:1px solid #ebebeb;
         }
-        .nav-logo {
-          font-family: 'DM Sans', sans-serif;
-          font-size: 1.15rem; font-weight: 700;
-          color: #1a1a1a; letter-spacing: -0.3px;
-          display: flex; align-items: center; gap: 0.5rem;
+        .nav-r{display:flex;align-items:center;gap:.6rem}
+        .nb{
+          padding:.44rem 1.05rem;border-radius:6px;
+          font-size:.8rem;font-weight:600;cursor:pointer;text-decoration:none;transition:all .15s;
         }
-        .nav-logo-dot {
-          width: 7px; height: 7px; border-radius: 50%;
-          background: #1a1a1a; flex-shrink: 0;
-        }
-        .nav-links { display: flex; align-items: center; gap: 0.75rem; }
-        .nav-btn {
-          padding: 0.5rem 1.25rem; border-radius: 6px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 0.84rem; font-weight: 600;
-          cursor: pointer; text-decoration: none;
-          transition: all 0.18s;
-        }
-        .nav-ghost {
-          background: transparent; border: 1.5px solid #d4d0c8; color: #4a4a4a;
-        }
-        .nav-ghost:hover { border-color: #1a1a1a; color: #1a1a1a; }
-        .nav-solid {
-          background: #1a1a1a; border: 1.5px solid #1a1a1a; color: #f7f6f3;
-        }
-        .nav-solid:hover { background: #333; }
+        .nb-g{background:transparent;border:1.5px solid #e0ddd7;color:#555}
+        .nb-g:hover{border-color:#1a1a1a;color:#1a1a1a}
+        .nb-s{background:#1a1a1a;border:1.5px solid #1a1a1a;color:#fafaf9}
+        .nb-s:hover{background:#2d2d2d}
 
         /* ── Hero ── */
-        .hero {
-          min-height: 100vh;
-          display: flex; flex-direction: column;
-          align-items: center; justify-content: center;
-          text-align: center;
-          padding: 9rem 2rem 5rem;
-          position: relative;
+        .hero{
+          padding:9rem 3rem 5rem;
+          max-width:860px;margin:0 auto;
+          text-align:center;
         }
-        .hero-eyebrow {
-          display: inline-flex; align-items: center; gap: 0.6rem;
-          font-size: 0.72rem; font-weight: 700; letter-spacing: 1.5px;
-          text-transform: uppercase; color: #666;
-          margin-bottom: 2rem;
-          padding: 0.35rem 1rem;
-          border: 1px solid #d4d0c8; border-radius: 100px;
-          background: #fff;
+        .eyebrow{
+          display:inline-flex;align-items:center;gap:.55rem;
+          font-size:.68rem;font-weight:700;letter-spacing:1.4px;
+          text-transform:uppercase;color:#888;
+          margin-bottom:2rem;
+          padding:.32rem .9rem;
+          background:#fff;border:1px solid #e8e4dc;border-radius:100px;
         }
-        .eyebrow-pip {
-          width: 6px; height: 6px; border-radius: 50%;
-          background: #16a34a;
+        .eyebrow-dot{width:5px;height:5px;border-radius:50%;background:#16a34a;flex-shrink:0}
+        .hero-h{
+          font-family:'Instrument Serif',serif;
+          font-size:clamp(3rem,5.5vw,5rem);
+          font-weight:400;line-height:1.12;
+          color:#1a1a1a;letter-spacing:-1px;
+          margin-bottom:1.75rem;
         }
-        .hero-title {
-          font-family: 'Instrument Serif', serif;
-          font-size: clamp(3rem, 6vw, 5.5rem);
-          font-weight: 400; line-height: 1.1;
-          color: #1a1a1a;
-          margin-bottom: 1.75rem;
-          max-width: 780px;
-          letter-spacing: -1px;
+        .hero-h em{font-style:italic;color:#888}
+        .hero-p{
+          font-size:1rem;color:#777;line-height:1.8;
+          max-width:540px;margin:0 auto 3rem;
         }
-        .hero-title em {
-          font-style: italic;
-          color: #555;
+        .hero-btns{display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap}
+        .btn-p{
+          padding:.8rem 2rem;background:#1a1a1a;color:#fafaf9;
+          border:none;border-radius:7px;font-size:.875rem;font-weight:600;
+          cursor:pointer;text-decoration:none;transition:background .15s;
         }
-        .hero-sub {
-          font-size: 1.05rem; color: #666;
-          max-width: 520px; line-height: 1.75;
-          margin-bottom: 3.5rem;
-          font-weight: 400;
+        .btn-p:hover{background:#2d2d2d}
+        .btn-o{
+          padding:.8rem 2rem;background:transparent;color:#1a1a1a;
+          border:1.5px solid #e0ddd7;border-radius:7px;
+          font-size:.875rem;font-weight:600;
+          cursor:pointer;text-decoration:none;transition:border-color .15s;
         }
+        .btn-o:hover{border-color:#1a1a1a}
 
         /* ── Portal cards ── */
-        .portal-row {
-          display: flex; gap: 1.25rem;
-          flex-wrap: wrap; justify-content: center;
-          margin-bottom: 1.5rem;
+        .portals{
+          padding:0 3rem 5rem;
+          max-width:860px;margin:0 auto;
+          display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;
         }
-        .portal-card {
-          background: #fff;
-          border: 1.5px solid #e8e4dc;
-          border-radius: 16px;
-          padding: 2.25rem 2rem;
-          width: 268px;
-          text-align: left;
-          text-decoration: none;
-          transition: all 0.22s;
-          position: relative;
+        .pcard{
+          background:#fff;border:1.5px solid #ebebeb;
+          border-radius:16px;padding:2rem 2.1rem;
+          text-decoration:none;display:block;
+          transition:border-color .2s,box-shadow .2s;
         }
-        .portal-card:hover {
-          border-color: #1a1a1a;
-          transform: translateY(-3px);
-          box-shadow: 0 16px 40px rgba(0,0,0,0.1);
+        .pcard:hover{border-color:#1a1a1a;box-shadow:0 10px 32px rgba(0,0,0,0.07)}
+        .pcard-head{display:flex;align-items:center;gap:.75rem;margin-bottom:1rem}
+        .pcard-icon{
+          width:38px;height:38px;border-radius:10px;
+          background:#f5f4f1;display:flex;align-items:center;
+          justify-content:center;font-size:1rem;flex-shrink:0;
         }
-        .portal-icon {
-          width: 44px; height: 44px; border-radius: 10px;
-          background: #f0ede6; display: flex; align-items: center;
-          justify-content: center; font-size: 1.25rem;
-          margin-bottom: 1.1rem;
+        .pcard-lbl{font-size:.63rem;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px}
+        .pcard-title{font-size:1rem;font-weight:700;color:#1a1a1a;margin-bottom:.5rem}
+        .pcard-desc{font-size:.8rem;color:#888;line-height:1.7;margin-bottom:1.25rem}
+        .pcard-cta{
+          display:inline-flex;align-items:center;gap:.35rem;
+          font-size:.78rem;font-weight:700;color:#1a1a1a;
         }
-        .portal-tag {
-          font-size: 0.65rem; font-weight: 700; letter-spacing: 1px;
-          text-transform: uppercase; color: #999;
-          margin-bottom: 0.4rem;
-        }
-        .portal-title {
-          font-family: 'DM Sans', sans-serif;
-          font-size: 1.1rem; font-weight: 700;
-          color: #1a1a1a; margin-bottom: 0.55rem;
-        }
-        .portal-desc {
-          font-size: 0.82rem; color: #777;
-          line-height: 1.65; margin-bottom: 1.5rem;
-        }
-        .portal-cta {
-          display: inline-flex; align-items: center; gap: 0.4rem;
-          font-size: 0.82rem; font-weight: 700;
-          color: #1a1a1a;
-        }
-        .portal-cta svg { transition: transform 0.18s; }
-        .portal-card:hover .portal-cta svg { transform: translateX(3px); }
+        .pcard-cta svg{transition:transform .15s}
+        .pcard:hover .pcard-cta svg{transform:translateX(3px)}
 
-        /* ── Trust bar ── */
-        .trust-bar {
-          display: flex; align-items: center; gap: 1.5rem;
-          flex-wrap: wrap; justify-content: center;
-          margin-top: 1rem;
+        /* ── Trust ── */
+        .trust{
+          border-top:1px solid #ebebeb;border-bottom:1px solid #ebebeb;
+          background:#fff;padding:1rem 2rem;
+          display:flex;justify-content:center;
+          align-items:center;gap:3rem;flex-wrap:wrap;
         }
-        .trust-item {
-          display: flex; align-items: center; gap: 0.4rem;
-          font-size: 0.75rem; color: #999; font-weight: 500;
+        .ti{display:flex;align-items:center;gap:.4rem;font-size:.73rem;font-weight:600;color:#999}
+        .tck{
+          width:15px;height:15px;border-radius:50%;
+          background:#f0fdf4;border:1px solid #bbf7d0;
+          display:flex;align-items:center;justify-content:center;flex-shrink:0;
         }
-        .trust-item svg { color: #16a34a; flex-shrink: 0; }
-        .trust-sep { width: 1px; height: 14px; background: #d4d0c8; }
-
-        /* ── Divider ── */
-        .section-divider {
-          width: 100%; max-width: 900px; margin: 0 auto;
-          border: none; border-top: 1px solid #e8e4dc;
-        }
+        .tck svg{color:#16a34a}
 
         /* ── How it works ── */
-        .how {
-          padding: 6rem 2rem;
-          max-width: 960px; margin: 0 auto;
+        .section{padding:6rem 3rem;max-width:1100px;margin:0 auto}
+        .sec-label{font-size:.66rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#aaa;margin-bottom:.6rem}
+        .sec-title{
+          font-family:'Instrument Serif',serif;
+          font-size:clamp(1.6rem,2.5vw,2.2rem);
+          font-weight:400;color:#1a1a1a;
+          margin-bottom:3rem;letter-spacing:-.3px;
         }
-        .section-label {
-          font-size: 0.68rem; font-weight: 700; letter-spacing: 1.5px;
-          text-transform: uppercase; color: #999;
-          margin-bottom: 0.75rem;
+        .steps{
+          display:grid;grid-template-columns:repeat(3,1fr);
+          gap:1px;background:#ebebeb;
+          border:1px solid #ebebeb;border-radius:14px;overflow:hidden;
         }
-        .section-title {
-          font-family: 'Instrument Serif', serif;
-          font-size: clamp(1.75rem, 3vw, 2.5rem);
-          font-weight: 400; color: #1a1a1a;
-          margin-bottom: 3.5rem; letter-spacing: -0.5px;
+        .sc{background:#fff;padding:2rem 1.75rem;transition:background .15s}
+        .sc:hover{background:#fafaf9}
+        .sn{
+          font-family:'Instrument Serif',serif;
+          font-size:2.2rem;font-weight:400;color:#e8e5de;
+          margin-bottom:1rem;line-height:1;
         }
-        .steps-grid {
-          display: grid; grid-template-columns: repeat(3, 1fr);
-          gap: 2rem;
-        }
-        .step-item { position: relative; }
-        .step-num {
-          font-family: 'Instrument Serif', serif;
-          font-size: 3rem; font-weight: 400; color: #e8e4dc;
-          line-height: 1; margin-bottom: 1rem;
-        }
-        .step-title {
-          font-size: 0.93rem; font-weight: 700; color: #1a1a1a;
-          margin-bottom: 0.4rem;
-        }
-        .step-desc { font-size: 0.82rem; color: #777; line-height: 1.65; }
+        .st{font-size:.88rem;font-weight:700;color:#1a1a1a;margin-bottom:.35rem}
+        .sd{font-size:.79rem;color:#888;line-height:1.7}
 
-        /* ── Features ── */
-        .features {
-          background: #1a1a1a;
-          padding: 6rem 2rem;
+        /* ── Features dark ── */
+        .feat-s{background:#111;padding:6rem 3rem}
+        .feat-i{max-width:1100px;margin:0 auto}
+        .feat-i .sec-label{color:#3a3a3a}
+        .feat-i .sec-title{color:#f0ede6}
+        .feat-g{
+          display:grid;grid-template-columns:repeat(3,1fr);
+          gap:1px;background:#1d1d1d;
+          border:1px solid #1d1d1d;border-radius:14px;overflow:hidden;
         }
-        .features-inner { max-width: 960px; margin: 0 auto; }
-        .features-inner .section-label { color: #666; }
-        .features-inner .section-title { color: #f7f6f3; }
-        .features-grid {
-          display: grid; grid-template-columns: repeat(3, 1fr);
-          gap: 1px; background: #2a2a2a; border: 1px solid #2a2a2a;
-          border-radius: 12px; overflow: hidden;
-        }
-        .feature-cell {
-          background: #1a1a1a; padding: 2rem 1.75rem;
-          transition: background 0.18s;
-        }
-        .feature-cell:hover { background: #222; }
-        .feature-icon { font-size: 1.35rem; margin-bottom: 0.85rem; }
-        .feature-title {
-          font-size: 0.9rem; font-weight: 700; color: #e2e8f0;
-          margin-bottom: 0.4rem;
-        }
-        .feature-desc { font-size: 0.8rem; color: #555; line-height: 1.65; }
+        .fc{background:#111;padding:2rem 1.75rem;transition:background .15s}
+        .fc:hover{background:#141414}
+        .fi{font-size:1.2rem;margin-bottom:.8rem}
+        .ft{font-size:.87rem;font-weight:700;color:#e2e8f0;margin-bottom:.35rem}
+        .fd{font-size:.78rem;color:#3f3f3f;line-height:1.7}
 
-        /* ── CTA ── */
-        .cta-section {
-          padding: 7rem 2rem;
-          text-align: center;
-          max-width: 680px; margin: 0 auto;
+        /* ── For who ── */
+        .for-s{padding:6rem 3rem;max-width:1100px;margin:0 auto}
+        .for-g{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+        .for-c{
+          border:1.5px solid #ebebeb;border-radius:16px;
+          padding:2.5rem;background:#fff;
+          transition:border-color .2s,box-shadow .2s;
         }
-        .cta-title {
-          font-family: 'Instrument Serif', serif;
-          font-size: clamp(2rem, 4vw, 3rem);
-          font-weight: 400; color: #1a1a1a;
-          margin-bottom: 1rem; letter-spacing: -0.5px;
+        .for-c:hover{border-color:#1a1a1a;box-shadow:0 8px 28px rgba(0,0,0,0.06)}
+        .for-tag{
+          font-size:.63rem;font-weight:700;letter-spacing:1px;
+          text-transform:uppercase;color:#aaa;
+          display:flex;align-items:center;gap:.4rem;margin-bottom:.85rem;
         }
-        .cta-sub {
-          font-size: 0.95rem; color: #777; line-height: 1.7;
-          margin-bottom: 2.5rem;
+        .for-dot{width:4px;height:4px;border-radius:50%;background:#ccc}
+        .for-title{
+          font-family:'Instrument Serif',serif;
+          font-size:1.35rem;font-weight:400;color:#1a1a1a;
+          margin-bottom:.8rem;letter-spacing:-.2px;line-height:1.3;
         }
-        .cta-btns { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
-        .cta-btn-primary {
-          padding: 0.85rem 2.25rem; background: #1a1a1a; color: #f7f6f3;
-          border: none; border-radius: 8px; font-family: 'DM Sans', sans-serif;
-          font-size: 0.9rem; font-weight: 600; cursor: pointer;
-          text-decoration: none; transition: all 0.18s;
+        .for-desc{font-size:.83rem;color:#777;line-height:1.75;margin-bottom:1.5rem}
+        .for-pts{display:flex;flex-direction:column;gap:.55rem;margin-bottom:2rem}
+        .for-pt{display:flex;align-items:flex-start;gap:.5rem;font-size:.8rem;color:#555;line-height:1.5}
+        .ptck{
+          width:15px;height:15px;border-radius:4px;
+          background:#f0fdf4;border:1px solid #bbf7d0;
+          display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;
         }
-        .cta-btn-primary:hover { background: #333; }
-        .cta-btn-secondary {
-          padding: 0.85rem 2.25rem; background: transparent; color: #1a1a1a;
-          border: 1.5px solid #d4d0c8; border-radius: 8px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 0.9rem; font-weight: 600; cursor: pointer;
-          text-decoration: none; transition: all 0.18s;
+        .ptck svg{color:#16a34a}
+        .for-btn{
+          display:inline-flex;align-items:center;gap:.4rem;
+          padding:.68rem 1.4rem;background:#1a1a1a;color:#fafaf9;
+          border-radius:7px;font-size:.8rem;font-weight:600;
+          text-decoration:none;transition:background .15s;
         }
-        .cta-btn-secondary:hover { border-color: #1a1a1a; }
+        .for-btn:hover{background:#2d2d2d}
+        .for-btn svg{transition:transform .15s}
+        .for-c:hover .for-btn svg{transform:translateX(3px)}
 
         /* ── Footer ── */
-        footer {
-          border-top: 1px solid #e8e4dc;
-          padding: 2.5rem 3rem;
-          display: flex; align-items: center;
-          justify-content: space-between; flex-wrap: wrap; gap: 1rem;
-          background: #f7f6f3;
+        footer{
+          border-top:1px solid #ebebeb;padding:2rem 3rem;
+          display:flex;align-items:center;
+          justify-content:space-between;flex-wrap:wrap;gap:1rem;
+          background:#fafaf9;
         }
-        .footer-left {
-          display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;
-        }
-        .footer-logo {
-          font-size: 0.9rem; font-weight: 700; color: #1a1a1a;
-        }
-        .footer-copy { font-size: 0.78rem; color: #999; }
-        .footer-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
-        .footer-link {
-          font-size: 0.78rem; color: #666; text-decoration: none;
-          font-weight: 500; transition: color 0.15s;
-        }
-        .footer-link:hover { color: #1a1a1a; text-decoration: underline; }
+        .f-l{display:flex;align-items:center;gap:1.75rem;flex-wrap:wrap}
+        .f-copy{font-size:.73rem;color:#bbb}
+        .f-links{display:flex;gap:1.75rem;flex-wrap:wrap}
+        .f-link{font-size:.73rem;color:#888;text-decoration:none;font-weight:500;transition:color .15s}
+        .f-link:hover{color:#1a1a1a}
 
-        @media (max-width: 768px) {
-          nav { padding: 1rem 1.25rem; }
-          .steps-grid { grid-template-columns: 1fr; gap: 2.5rem; }
-          .features-grid { grid-template-columns: 1fr; }
-          footer { flex-direction: column; align-items: flex-start; padding: 2rem 1.5rem; }
-          .footer-left { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+        @media(max-width:900px){
+          .portals{grid-template-columns:1fr;padding:0 1.5rem 4rem}
+          .hero{padding:8rem 1.5rem 3rem}
+          .section,.for-s{padding:4rem 1.5rem}
+          .feat-s{padding:4rem 1.5rem}
+          .steps{grid-template-columns:1fr}
+          .feat-g{grid-template-columns:1fr}
+          .for-g{grid-template-columns:1fr}
+          footer{flex-direction:column;align-items:flex-start;padding:2rem 1.5rem}
+          .f-l{flex-direction:column;align-items:flex-start;gap:.3rem}
+          nav{padding:.85rem 1.25rem}
         }
-        @media (max-width: 640px) {
-          .portal-card { width: 100%; max-width: 340px; }
-        }
+        @media(max-width:640px){.trust{gap:1.25rem}}
       `}</style>
 
       <div>
         {/* ── Nav ── */}
         <nav>
-          <div className="nav-logo">
-            <div className="nav-logo-dot" />
-            Datagate
-          </div>
-          <div className="nav-links">
-            <Link href="/employee/login" className="nav-btn nav-ghost">Employee Login</Link>
-            <Link href="/employer/login" className="nav-btn nav-solid">Employer Login</Link>
+          <Link href="/" style={{ textDecoration:"none" }}>
+            <DGLogo accentColor="#16a34a" shieldFill="#1a1a1a" gateFill="#fafaf9" wordColor="#1a1a1a" />
+          </Link>
+          <div className="nav-r">
+            <Link href="/employee/login" className="nb nb-g">Employee</Link>
+            <Link href="/employer/login" className="nb nb-s">Employer Login</Link>
           </div>
         </nav>
 
-        {/* ── Hero ── */}
+        {/* ── Hero — full width, centred, breathing room ── */}
         <section className="hero">
-          <div className="hero-eyebrow">
-            <span className="eyebrow-pip" />
+          <div className="eyebrow">
+            <span className="eyebrow-dot"/>
             Consent-Based Employment Verification
           </div>
-
-          <h1 className="hero-title">
-            The verified employment<br />
-            profile that works<br />
-            <em>everywhere you do.</em>
+          <h1 className="hero-h">
+            Your employment record,<br/>
+            verified once.<br/>
+            <em>Trusted everywhere.</em>
           </h1>
-
-          <p className="hero-sub">
-            Build your employment profile once. Share it securely with any employer — 
-            with your consent. No more filling the same forms for every company.
+          <p className="hero-p">
+            Employees build a verified profile once and share it with any employer — with full consent and control. Employers get structured, reliable data instantly, without chasing documents.
           </p>
-
-          <div className="portal-row">
-            <Link href="/employee/login" className="portal-card">
-              <div className="portal-icon">👤</div>
-              <div className="portal-tag">For Individuals</div>
-              <div className="portal-title">Employee Portal</div>
-              <div className="portal-desc">Build your verified profile once. Control who sees your data.</div>
-              <span className="portal-cta">
-                Get started
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-              </span>
-            </Link>
-
-            <Link href="/employer/login" className="portal-card">
-              <div className="portal-icon">🏢</div>
-              <div className="portal-tag">For Organisations</div>
-              <div className="portal-title">Employer Portal</div>
-              <div className="portal-desc">Request verified records with consent. Onboard in minutes, not weeks.</div>
-              <span className="portal-cta">
-                Access portal
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-              </span>
-            </Link>
-          </div>
-
-          <div className="trust-bar">
-            <div className="trust-item">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              DPDP Act 2023 Compliant
-            </div>
-            <div className="trust-sep" />
-            <div className="trust-item">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              Data stored in India (AWS Mumbai)
-            </div>
-            <div className="trust-sep" />
-            <div className="trust-item">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              Employee consent on every share
-            </div>
+          <div className="hero-btns">
+            <Link href="/employer/login" className="btn-p">Get started as Employer</Link>
+            <Link href="/employee/login" className="btn-o">Employee Sign Up</Link>
           </div>
         </section>
 
-        <hr className="section-divider" />
+        {/* ── Portal cards — clear separation from hero ── */}
+        <div className="portals">
+          <Link href="/employee/login" className="pcard">
+            <div className="pcard-head">
+              <div className="pcard-icon">👤</div>
+              <div className="pcard-lbl">For Employees</div>
+            </div>
+            <div className="pcard-title">One profile. Every employer.</div>
+            <div className="pcard-desc">Fill your details once — personal, education, employment, documents. Share with any employer in one click, with your explicit consent.</div>
+            <span className="pcard-cta">
+              Create your profile
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </span>
+          </Link>
+          <Link href="/employer/login" className="pcard">
+            <div className="pcard-head">
+              <div className="pcard-icon">🏢</div>
+              <div className="pcard-lbl">For Employers</div>
+            </div>
+            <div className="pcard-title">Verified data. Zero paperwork.</div>
+            <div className="pcard-desc">Request access to a candidate's verified profile. Receive structured BGV and onboarding data the moment they approve.</div>
+            <span className="pcard-cta">
+              Access employer portal
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </span>
+          </Link>
+        </div>
+
+        {/* ── Trust strip ── */}
+        <div className="trust">
+          {["DPDP Act 2023 Compliant","Employee consent on every share","End-to-end encrypted storage","Data hosted in India"].map(t => (
+            <div className="ti" key={t}>
+              <div className="tck"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+              {t}
+            </div>
+          ))}
+        </div>
 
         {/* ── How it works ── */}
-        <section className="how">
-          <div className="section-label">How it works</div>
-          <div className="section-title">Three steps to a verified profile</div>
-          <div className="steps-grid">
-            <div className="step-item">
-              <div className="step-num">01</div>
-              <div className="step-title">Create your profile</div>
-              <div className="step-desc">Fill in your personal, education, and employment details once. Upload your documents securely.</div>
-            </div>
-            <div className="step-item">
-              <div className="step-num">02</div>
-              <div className="step-title">Employer requests access</div>
-              <div className="step-desc">When a company wants your background data, you receive a consent notification. You decide.</div>
-            </div>
-            <div className="step-item">
-              <div className="step-num">03</div>
-              <div className="step-title">One click, done</div>
-              <div className="step-desc">Approve once. Your verified profile goes to the employer instantly. No forms, no delays.</div>
-            </div>
+        <div className="section">
+          <div className="sec-label">How it works</div>
+          <div className="sec-title">Three steps to a verified profile</div>
+          <div className="steps">
+            {[
+              { n:"01", t:"Build your profile",      d:"Fill in personal details, education, employment history, and upload your documents — once, on Datagate." },
+              { n:"02", t:"Employer requests access", d:"When a company wants your background data, you receive a consent request. You review it and decide." },
+              { n:"03", t:"Approve and done",         d:"One click and your verified data reaches the employer instantly. No forms, no delays, no duplicated effort." },
+            ].map(s => (
+              <div className="sc" key={s.n}>
+                <div className="sn">{s.n}</div>
+                <div className="st">{s.t}</div>
+                <div className="sd">{s.d}</div>
+              </div>
+            ))}
           </div>
-        </section>
+        </div>
 
         {/* ── Features ── */}
-        <section className="features">
-          <div className="features-inner">
-            <div className="section-label">Platform capabilities</div>
-            <div className="section-title">Everything BGV requires, nothing it doesn't</div>
-            <div className="features-grid">
-              <div className="feature-cell">
-                <div className="feature-icon">🔐</div>
-                <div className="feature-title">Consent-driven access</div>
-                <div className="feature-desc">Employees control who sees their data. Employers only access what's approved.</div>
-              </div>
-              <div className="feature-cell">
-                <div className="feature-icon">📋</div>
-                <div className="feature-title">Complete BGV coverage</div>
-                <div className="feature-desc">Aadhaar, PAN, education, employment history, UAN — structured and ready.</div>
-              </div>
-              <div className="feature-cell">
-                <div className="feature-icon">⚡</div>
-                <div className="feature-title">Instant for returning users</div>
-                <div className="feature-desc">Pre-collected profiles mean BGV and onboarding data is ready the moment it's needed.</div>
-              </div>
-              <div className="feature-cell">
-                <div className="feature-icon">🛡️</div>
-                <div className="feature-title">Bank-grade security</div>
-                <div className="feature-desc">End-to-end encrypted. Documents never exposed without explicit employee approval.</div>
-              </div>
-              <div className="feature-cell">
-                <div className="feature-icon">🏦</div>
-                <div className="feature-title">EPFO integration</div>
-                <div className="feature-desc">UAN and PF records pulled directly. Employment history confirmed from source.</div>
-              </div>
-              <div className="feature-cell">
-                <div className="feature-icon">📱</div>
-                <div className="feature-title">Works on any device</div>
-                <div className="feature-desc">Mobile-first. Employees complete verification from phone, tablet, or desktop.</div>
-              </div>
+        <div className="feat-s">
+          <div className="feat-i">
+            <div className="sec-label">Platform capabilities</div>
+            <div className="sec-title">Everything background verification needs</div>
+            <div className="feat-g">
+              {[
+                { i:"🔐", t:"Consent on every share",      d:"No employer sees your data without your explicit approval. Every share is logged and timestamped." },
+                { i:"📋", t:"Complete BGV coverage",        d:"Aadhaar, PAN, education records, employment history, UAN and PF — all structured and ready." },
+                { i:"⚡", t:"Instant for returning users",  d:"Once your profile is built, every future employer gets your data instantly on approval." },
+                { i:"🛡️", t:"Secure document storage",     d:"All uploaded documents are encrypted at rest and in transit. Access is controlled and time-limited." },
+                { i:"🏦", t:"EPFO connected",               d:"UAN and PF records captured directly, giving employers independently-sourced employment history." },
+                { i:"📱", t:"Mobile first",                 d:"Employees complete their full verification from any device. No app download required." },
+              ].map(f => (
+                <div className="fc" key={f.t}>
+                  <div className="fi">{f.i}</div>
+                  <div className="ft">{f.t}</div>
+                  <div className="fd">{f.d}</div>
+                </div>
+              ))}
             </div>
           </div>
-        </section>
+        </div>
 
-        {/* ── CTA ── */}
-        <section className="cta-section">
-          <div className="cta-title">Ready to simplify your hiring?</div>
-          <p className="cta-sub">Join the platform that eliminates paperwork, reduces BGV delays, and puts employees in control of their own data.</p>
-          <div className="cta-btns">
-            <Link href="/employer/login" className="cta-btn-primary">Get started as Employer</Link>
-            <Link href="/employee/login" className="cta-btn-secondary">Employee sign up</Link>
+        {/* ── For who ── */}
+        <div className="for-s">
+          <div className="sec-label">Who it's for</div>
+          <div className="sec-title" style={{ marginBottom:"2.5rem" }}>Built for both sides of hiring</div>
+          <div className="for-g">
+            <div className="for-c">
+              <div className="for-tag"><span className="for-dot"/>For Individuals</div>
+              <div className="for-title">Tired of filling the same forms for every job?</div>
+              <div className="for-desc">Build your verified employment profile once and share it with any company — you're always in control of who sees what.</div>
+              <div className="for-pts">
+                {["Fill personal, education, and employment details once","Approve or decline every employer request","See exactly who accessed your data and when"].map(p => (
+                  <div className="for-pt" key={p}>
+                    <div className="ptck"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    {p}
+                  </div>
+                ))}
+              </div>
+              <Link href="/employee/login" className="for-btn">
+                Create your profile
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </Link>
+            </div>
+            <div className="for-c">
+              <div className="for-tag"><span className="for-dot"/>For Organisations</div>
+              <div className="for-title">Want verified candidate data without the wait?</div>
+              <div className="for-desc">Stop chasing candidates for documents. Request access to a pre-built verified profile and receive structured data the moment they approve.</div>
+              <div className="for-pts">
+                {["Send a consent request in one click","Receive structured BGV and onboarding data instantly","Full consent audit trail for every data access"].map(p => (
+                  <div className="for-pt" key={p}>
+                    <div className="ptck"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    {p}
+                  </div>
+                ))}
+              </div>
+              <Link href="/employer/login" className="for-btn">
+                Access employer portal
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </Link>
+            </div>
           </div>
-        </section>
+        </div>
 
         {/* ── Footer ── */}
         <footer>
-          <div className="footer-left">
-            <span className="footer-logo">Datagate</span>
-            <span className="footer-copy">© 2026 Datagate Technologies. All rights reserved.</span>
+          <div className="f-l">
+            <DGLogo accentColor="#16a34a" shieldFill="#1a1a1a" gateFill="#fafaf9" wordColor="#1a1a1a" />
+            <span className="f-copy">© 2026 Datagate Technologies. All rights reserved.</span>
           </div>
-          <div className="footer-links">
-            <a href="/privacy" className="footer-link" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
-            <a href="/employer/terms" className="footer-link" target="_blank" rel="noopener noreferrer">Employer Terms</a>
-            <a href="mailto:support@datagate.co.in" className="footer-link">Contact</a>
+          <div className="f-links">
+            <a href="/privacy" className="f-link">Privacy Policy</a>
+            <a href="/employer/terms" className="f-link">Employer Terms</a>
+            <a href="mailto:support@datagate.co.in" className="f-link">Contact</a>
           </div>
         </footer>
       </div>
