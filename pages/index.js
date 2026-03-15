@@ -329,7 +329,7 @@ export default function Home() {
 
         {/* ── Trust strip ── */}
         <div className="trust">
-          {["DPDP Act 2023 Compliant","Employee consent on every share","End-to-end encrypted storage","Data hosted in India"].map(t => (
+          {["DPDP Act 2023 Compliant","Employee consent on every share","End-to-end encrypted storage","No data shared without approval"].map(t => (
             <div className="ti" key={t}>
               <div className="tck"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg></div>
               {t}
