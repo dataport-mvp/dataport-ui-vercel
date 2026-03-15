@@ -7,11 +7,8 @@ import FileUpload from "../../components/FileUpload";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
-// ─── Step accent colours ──────────────────────────────────────────────
 const ACCENTS    = { 1:"#4f46e5", 2:"#d97706", 3:"#7c3aed", 4:"#0891b2", 5:"#16a34a" };
-const STEP_DONE_BG = "#2a2460";
-const STEP_DONE_CK = "#a78bfa";
-const STEP_CONN    = "#a78bfa";
+const STEP_DONE_BG = "#2a2460"; const STEP_DONE_CK = "#a78bfa"; const STEP_CONN = "#a78bfa";
 
 const genId = () => typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)+Date.now().toString(36);
 const emptyEmployment = () => ({
@@ -49,14 +46,29 @@ const G = `
     border-radius: 999px; font-size: 0.6rem; font-weight: 800; min-width: 16px; height: 16px;
     display: flex; align-items: center; justify-content: center; padding: 0 3px; border: 2px solid #1e1a3e; }
   .emp-card { background: #ffffff; border-radius: 16px; padding: 1.5rem 1.6rem; margin-bottom: 1.1rem;
-    box-shadow: 0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12); border: 1px solid rgba(255,255,255,0.85); position: relative; overflow: hidden; }
+    box-shadow: 0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12);
+    border: 1px solid rgba(255,255,255,0.85); position: relative; overflow: hidden; }
   .emp-card::before { content:''; position:absolute; top:0; left:0; bottom:0; width:4px; border-radius:16px 0 0 16px; background:#4f46e5; }
-  .emp-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.1rem; }
+  .emp-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.1rem; flex-wrap: wrap; gap: 0.5rem; }
   .emp-title { font-size: 0.93rem; font-weight: 700; color: #1a1730; }
+  .emp-hdr-right { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+  .gap-pill { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.26rem 0.8rem;
+    border-radius: 999px; font-size: 0.72rem; font-weight: 700; cursor: pointer;
+    font-family: inherit; transition: all 0.18s;
+    border: 1.5px solid #e2e8f0; background: #f8fafc; color: #64748b; }
+  .gap-pill:hover { border-color: #f59e0b; background: #fffbeb; color: #92400e; }
+  .gap-pill.on { border-color: #f59e0b; background: #fffbeb; color: #92400e; }
+  .gap-reason-box { background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 10px;
+    padding: 0.9rem 1rem; margin-top: 0.7rem; margin-bottom: 0.1rem; }
+  .resume-card { background: #ffffff; border-radius: 16px; padding: 1.5rem 1.6rem; margin-bottom: 1.1rem;
+    box-shadow: 0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12);
+    border: 1px solid rgba(255,255,255,0.85); position: relative; overflow: hidden; }
+  .resume-card::before { content:''; position:absolute; top:0; left:0; bottom:0; width:4px; border-radius:16px 0 0 16px; background:#16a34a; }
   .subsec { background: #f0effe; border: 1px solid #dddaf0; border-radius: 10px; padding: 1rem 1.1rem; margin-top: 0.85rem; }
   .sub-lbl { font-size: 0.68rem; font-weight: 800; color: #8b88b0; text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 0.75rem; }
   .decl-card { background: #ffffff; border-radius: 16px; padding: 1.5rem 1.6rem; margin-bottom: 1.1rem;
-    box-shadow: 0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12); border: 1px solid rgba(255,255,255,0.85); position: relative; overflow: hidden; }
+    box-shadow: 0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12);
+    border: 1px solid rgba(255,255,255,0.85); position: relative; overflow: hidden; }
   .decl-card::before { content:''; position:absolute; top:0; left:0; bottom:0; width:4px; border-radius:16px 0 0 16px; background:#7c3aed; }
   .decl-q { font-size: 0.875rem; color: #1a1730; margin-bottom: 0.5rem; font-weight: 500; line-height: 1.5; }
   .decl-item { padding: 0.9rem 1rem; background: #f0effe; border-radius: 10px; border: 1px solid #dddaf0; margin-bottom: 0.75rem; }
@@ -141,7 +153,6 @@ function ExitAckModal({ onSaveAndExit, onExitWithout, onCancel }) {
   );
 }
 
-// ─── StepNav — 5 steps, free navigation ──────────────────────────────
 function StepNav({ current, onNavigate }) {
   const steps = [
     { n:1, label:"Personal",   icon:"👤", path:"/employee/personal"  },
@@ -205,14 +216,15 @@ export default function PreviousCompany() {
   const [exitTarget,setExitTarget]     = useState(null);
   const [exitAction,setExitAction]     = useState(null);
   const [saveStatus,setSaveStatus]     = useState("");
+  const [midSaveStatus,setMidSaveStatus] = useState("");
   const [loading,setLoading]           = useState(true);
   const [employeeId,setEmployeeId]     = useState("");
+  const [resumeKey,setResumeKey]       = useState("");
   const [employments,setEmployments]   = useState([emptyEmployment()]);
   const [ack,setAck]                   = useState({business:emptyAck(),dismissed:emptyAck(),criminal:emptyAck(),civil:emptyAck()});
   const [errors,setErrors]             = useState({});
   const isDirtyRef = useRef(false);
 
-  // ─── ROLE GUARD ───────────────────────────────────────────────────
   useEffect(()=>{
     if(!ready)return;
     if(!user){router.replace("/employee/login");return;}
@@ -228,6 +240,7 @@ export default function PreviousCompany() {
         const draft=await draftRes.json();
         if(!draft.employee_id){setLoading(false);return;}
         setEmployeeId(draft.employee_id);
+        if(draft.resumeKey) setResumeKey(draft.resumeKey);
         const histRes=await apiFetch(`${API}/employee/employment-history/${draft.employee_id}`);
         if(histRes.ok){
           const data=await histRes.json();
@@ -265,6 +278,7 @@ export default function PreviousCompany() {
 
   const validate=()=>{
     const e={};
+    if(!resumeKey) e.resumeKey=true;
     employments.forEach((emp,i)=>{
       if(!emp.companyName) e[`${i}_companyName`]=true;
       if(!emp.officeAddress) e[`${i}_officeAddress`]=true;
@@ -298,11 +312,24 @@ export default function PreviousCompany() {
 
   const saveHistory=async()=>{
     if(!employeeId) throw new Error("Please complete and save Page 1 first");
+    // Save resumeKey to employee record
+    if(resumeKey){
+      await apiFetch(`${API}/employee`,{method:"POST",body:JSON.stringify({
+        employee_id:employeeId,status:"draft",resumeKey,
+        firstName:"_",lastName:"_",mobile:"0000000000",email:user?.email||"",
+      })});
+    }
     const res=await apiFetch(`${API}/employee/employment-history`,{method:"POST",body:JSON.stringify({employments,acknowledgements:ack})});
     if(!res.ok) throw new Error(parseError(await res.json().catch(()=>({}))));
     isDirtyRef.current=false;
   };
 
+  const handleSaveSignout=async()=>{try{await saveHistory();}catch(_){}logout();};
+  const handleMidSave=async()=>{
+    setMidSaveStatus("Saving\u2026");
+    try{await saveHistory();setMidSaveStatus("Saved \u2713");setTimeout(()=>setMidSaveStatus(""),2000);}
+    catch(_){setMidSaveStatus("Error");setTimeout(()=>setMidSaveStatus(""),2500);}
+  };
   const handleNavigate=async(path)=>{if(isDirtyRef.current){setExitTarget(path);setExitAction("nav");setShowExitAck(true);return;}router.push(path);};
   const handleSignout=()=>{if(isDirtyRef.current){setExitAction("signout");setShowExitAck(true);return;}logout();};
   const onSaveAndExit=async()=>{try{await saveHistory();}catch(_){}setShowExitAck(false);if(exitAction==="signout")logout();else if(exitTarget)router.push(exitTarget);};
@@ -311,17 +338,17 @@ export default function PreviousCompany() {
   const handleNext=async()=>{
     const errs=validate();
     if(Object.keys(errs).length>0){
-      setErrors(errs);setSaveStatus("Please fill all required fields ↑");
+      setErrors(errs);setSaveStatus("Please fill all required fields \u2191");
       setTimeout(()=>{const el=document.querySelector(".in.err,.ta.err");if(el)el.scrollIntoView({behavior:"smooth",block:"center"});},60);
       return;
     }
     setSaveStatus("Saving...");
-    try{await saveHistory();setSaveStatus("Saved ✓");router.push("/employee/uan");}
+    try{await saveHistory();setSaveStatus("Saved \u2713");router.push("/employee/uan");}
     catch(err){setSaveStatus(`Error: ${err.message||"Could not save"}`);}
   };
 
   if(!ready||!user)return null;
-  if(loading)return(<div style={{minHeight:"100vh",background:"#cdd2ed",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#8b88b0",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:500}}>Loading employment history…</p></div>);
+  if(loading)return(<div style={{minHeight:"100vh",background:"#cdd2ed",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#8b88b0",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:500}}>Loading employment history\u2026</p></div>);
 
   return (
     <>
@@ -335,19 +362,75 @@ export default function PreviousCompany() {
           <div className="topbar-right">
             <span className="user-name">👤 {user.name||user.email}</span>
             <ConsentBell apiFetch={apiFetch} router={router}/>
-            <button className="signout-btn" onClick={handleSignout}>Sign out</button>
+            <button className="signout-btn" onClick={handleSaveSignout} style={{borderColor:"#ef4444",color:"#ef4444"}}>Save & Sign out</button>
           </div>
         </div>
 
         <div className="wrap">
           <StepNav current={3} onNavigate={handleNavigate}/>
 
+          {/* ── Resume Upload ─────────────────────────────────────────── */}
+          <div className="resume-card">
+            <div style={{display:"flex",alignItems:"center",gap:"0.6rem",marginBottom:"0.9rem"}}>
+              <div style={{width:32,height:32,borderRadius:8,background:"#f0fdf4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.95rem",flexShrink:0}}>📄</div>
+              <span style={{fontSize:"0.93rem",fontWeight:700,color:"#1a1730"}}>
+                Latest Resume / CV <span style={{color:"#ef4444",fontSize:"0.82rem"}}>*</span>
+              </span>
+            </div>
+            <p style={{fontSize:"0.76rem",color:"#8b88b0",marginBottom:"0.85rem",fontWeight:500}}>Upload your most recent resume. PDF only · max 5MB.</p>
+            {errors.resumeKey&&<span className="err-msg" style={{marginBottom:"0.5rem",display:"block"}}>Resume upload is required</span>}
+            <FileUpload
+              label="Upload Resume / CV *"
+              category="employment"
+              subKey="resume"
+              apiFetch={apiFetch}
+              value={resumeKey}
+              onChange={(k)=>{setResumeKey(k);isDirtyRef.current=true;fixErr("resumeKey");}}
+            />
+          </div>
+
+          {/* ── Employer cards ────────────────────────────────────────── */}
           {employments.map((emp,index)=>(
             <div key={index} className="emp-card">
+
+              {/* Header row — title + gap pill + remove */}
               <div className="emp-hdr">
-                <span className="emp-title">{index===0?"Current / Most Recent Employer":`Previous Employer ${index}`}</span>
-                {index!==0&&<button className="rm-btn" onClick={()=>removeEmployer(index)}>− Remove</button>}
+                <span className="emp-title">
+                  {index===0?"Current / Most Recent Employer":`Previous Employer ${index}`}
+                </span>
+                <div className="emp-hdr-right">
+                  {/* Gap toggle pill — inline in header */}
+                  <button
+                    className={`gap-pill${emp.gap.hasGap==="Yes"?" on":""}`}
+                    onClick={()=>update(index,"gap.hasGap",emp.gap.hasGap==="Yes"?"":"Yes")}
+                  >
+                    ⏱ {emp.gap.hasGap==="Yes"?"Gap before joining: Yes":"Gap before joining?"}
+                  </button>
+                  {index!==0&&<button className="rm-btn" onClick={()=>removeEmployer(index)}>− Remove</button>}
+                </div>
               </div>
+
+              {/* Gap reason box — expands below header when Yes */}
+              {emp.gap.hasGap==="Yes"&&(
+                <div className="gap-reason-box">
+                  <span className="fl" style={{display:"block",marginBottom:"0.35rem"}}>
+                    Reason for Gap <span style={{color:"#ef4444"}}>*</span>
+                  </span>
+                  <p style={{fontSize:"0.71rem",color:"#92400e",marginBottom:"0.5rem",fontWeight:500,lineHeight:1.4}}>
+                    e.g. Between relieving from previous company and joining this one
+                  </p>
+                  <textarea
+                    className={`ta${errors[`${index}_gapReason`]?" err":""}`}
+                    value={emp.gap.reason||""}
+                    placeholder="Describe the gap period and reason…"
+                    style={{background:"#fffbeb",borderColor:errors[`${index}_gapReason`]?"#ef4444":"#fde68a"}}
+                    onChange={e=>{update(index,"gap.reason",e.target.value);fixErr(`${index}_gapReason`);}}
+                  />
+                  {errors[`${index}_gapReason`]&&<span className="err-msg">Required</span>}
+                </div>
+              )}
+
+              {/* Fields */}
               <div className="fr">
                 <F l="Company Name" v={emp.companyName} s={v=>update(index,"companyName",v)} errKey={`${index}_companyName`} errors={errors} onFix={fixErr}/>
                 <F l="Office Address" v={emp.officeAddress} s={v=>update(index,"officeAddress",v)} errKey={`${index}_officeAddress`} errors={errors} onFix={fixErr}/>
@@ -367,7 +450,11 @@ export default function PreviousCompany() {
               {emp.employmentType==="Contract"&&(
                 <div className="subsec">
                   <div className="sub-lbl">Vendor / Third-Party Details</div>
-                  <div className="fr"><F l="Vendor Company" v={emp.contractVendor.company} s={v=>update(index,"contractVendor.company",v)} r={true} errKey={`${index}_vendorCompany`} errors={errors} onFix={fixErr}/><F l="Vendor Email" v={emp.contractVendor.email} s={v=>update(index,"contractVendor.email",v)} r={true} errKey={`${index}_vendorEmail`} errors={errors} onFix={fixErr}/><F l="Vendor Mobile" v={emp.contractVendor.mobile} s={v=>/^\d*$/.test(v)&&update(index,"contractVendor.mobile",v)} mx={10} r={true} errKey={`${index}_vendorMobile`} errors={errors} onFix={fixErr}/></div>
+                  <div className="fr">
+                    <F l="Vendor Company" v={emp.contractVendor.company} s={v=>update(index,"contractVendor.company",v)} r={true} errKey={`${index}_vendorCompany`} errors={errors} onFix={fixErr}/>
+                    <F l="Vendor Email" v={emp.contractVendor.email} s={v=>update(index,"contractVendor.email",v)} r={true} errKey={`${index}_vendorEmail`} errors={errors} onFix={fixErr}/>
+                    <F l="Vendor Mobile" v={emp.contractVendor.mobile} s={v=>/^\d*$/.test(v)&&update(index,"contractVendor.mobile",v)} mx={10} r={true} errKey={`${index}_vendorMobile`} errors={errors} onFix={fixErr}/>
+                  </div>
                 </div>
               )}
               <div style={{marginTop:"0.75rem"}}>
@@ -414,12 +501,6 @@ export default function PreviousCompany() {
                 </div>
               </div>
 
-              <div className="subsec">
-                <div className="sub-lbl">Employment Gap</div>
-                <span className="fl">Was there a gap before joining this company?</span>
-                <YN val={emp.gap.hasGap} onY={()=>update(index,"gap.hasGap","Yes")} onN={()=>update(index,"gap.hasGap","No")}/>
-                {emp.gap.hasGap==="Yes"&&<div style={{marginTop:"0.75rem"}}><TA l="Reason for Gap" v={emp.gap.reason} s={v=>update(index,"gap.reason",v)} errKey={`${index}_gapReason`} errors={errors} onFix={fixErr}/></div>}
-              </div>
             </div>
           ))}
 
@@ -446,8 +527,11 @@ export default function PreviousCompany() {
 
           <div className="sbar">
             <button className="sbtn" onClick={()=>handleNavigate("/employee/education")}>← Previous</button>
-            <span className={`ss${saveStatus==="Saved ✓"?" ok":saveStatus.startsWith("Error")||saveStatus.includes("required")?" err":""}`}>{saveStatus}</span>
-            <button className="pbtn" onClick={handleNext}>Save & Continue →</button>
+            <span className={`ss${saveStatus==="Saved \u2713"?" ok":saveStatus.startsWith("Error")||saveStatus.includes("required")?" err":""}`}>{saveStatus}</span>
+            <div style={{display:"flex",gap:"0.65rem",alignItems:"center"}}>
+              <button className="sbtn" onClick={handleMidSave} style={{fontSize:"0.8rem"}}>{midSaveStatus||"Save draft"}</button>
+              <button className="pbtn" onClick={handleNext}>Save & Continue →</button>
+            </div>
           </div>
         </div>
       </div>
