@@ -458,6 +458,7 @@ export default function PersonalDetails() {
   const [curPin,setCurPin]           = useState("");
   const [permFrom,setPermFrom]       = useState("");
   const [permDoor,setPermDoor]       = useState("");
+  const [sameAsCurrent,setSameAsCurrent] = useState(false);
   const [permVillage,setPermVillage] = useState("");
   const [permLocality,setPermLocality] = useState("");
   const [permDistrict,setPermDistrict] = useState("");
@@ -534,6 +535,7 @@ export default function PersonalDetails() {
           if (cur.pin)      setCurPin(cur.pin);
           if (perm.from)     setPermFrom(perm.from);
           if (perm.door)     setPermDoor(perm.door);
+          if (d.sameAsCurrent) setSameAsCurrent(true);
           if (perm.village)  setPermVillage(perm.village);
           if (perm.locality) setPermLocality(perm.locality);
           if (perm.district) setPermDistrict(perm.district);
@@ -592,8 +594,17 @@ export default function PersonalDetails() {
     pan, passport, bloodGroup, maritalStatus,
     emergName, emergRel, emergPhone,
     aadhaarKey, panKey, photoKey,
-    currentAddress:   { from:curFrom,  to:curTo,  door:curDoor,  village:curVillage,  locality:curLocality,  district:curDistrict,  state:curState,  pin:curPin  },
-    permanentAddress: { from:permFrom,             door:permDoor, village:permVillage, locality:permLocality, district:permDistrict, state:permState, pin:permPin },
+    sameAsCurrent,
+    currentAddress:   { from:curFrom, door:curDoor, village:curVillage, locality:curLocality, district:curDistrict, state:curState, pin:curPin },
+    permanentAddress: {
+      from:     sameAsCurrent ? curFrom     : permFrom,
+      door:     sameAsCurrent ? curDoor     : permDoor,
+      village:  sameAsCurrent ? curVillage  : permVillage,
+      locality: sameAsCurrent ? curLocality : permLocality,
+      district: sameAsCurrent ? curDistrict : permDistrict,
+      state:    sameAsCurrent ? curState    : permState,
+      pin:      sameAsCurrent ? curPin      : permPin,
+    },
   });
 
   const saveDraft = async () => {
@@ -682,7 +693,7 @@ export default function PersonalDetails() {
           <div className="topbar-right">
             <span className="user-name">👤 {user.name || user.email}</span>
             <ConsentBell apiFetch={apiFetch} router={router} />
-            <button className="signout-btn" onClick={handleSaveSignout} style={{borderColor:"#ef4444",color:"#ef4444"}}>Save & Sign out</button>
+            <button className="signout-btn" onClick={() => setShowSignout(true)}>Sign out</button>
           </div>
         </div>
 
@@ -764,8 +775,8 @@ export default function PersonalDetails() {
                   <F l="Passport No." v={passport} s={dirty(setPassport)} r={false} />
                 </div>
                 <div className="fr">
-                  <FS l="Blood Group"    v={bloodGroup}    s={dirty(setBloodGroup)}    o={["A+","A-","B+","B-","AB+","AB-","O+","O-"]} />
-                  <FS l="Marital Status" v={maritalStatus} s={dirty(setMaritalStatus)} o={["Single","Married","Divorced","Widowed"]} />
+                  <FS l="Blood Group"     v={bloodGroup}     s={dirty(setBloodGroup)}     o={["A+","A-","B+","B-","AB+","AB-","O+","O-"]} r={false} />
+                  <FS l="Marital Status" v={maritalStatus} s={dirty(setMaritalStatus)} o={["Single","Married","Divorced","Widowed"]} r={false} />
                   <div className="fi" />
                 </div>
               </div>
@@ -816,7 +827,7 @@ export default function PersonalDetails() {
                 <div className="sh"><div className="si ind">🏠</div><span className="st">Current Address</span></div>
                 <div className="fr">
                   <DateField l="Residing From" v={curFrom} s={dirty(setCurFrom)} r={false} />
-                  <DateField l="Residing To"   v={curTo}   s={dirty(setCurTo)}   r={false} />
+                  <div className="fi" />
                 </div>
                 <div className="fr"><F l="Door No. & Street" v={curDoor} s={dirty(setCurDoor)} /></div>
                 <div className="fr">
@@ -832,21 +843,42 @@ export default function PersonalDetails() {
 
               <div className="sc cyn">
                 <div className="sh"><div className="si cyn">📍</div><span className="st">Permanent / Native Address</span></div>
-                <p style={{fontSize:"0.76rem",color:"#8b88b0",marginBottom:"0.9rem",fontWeight:500}}>If you don't have a permanent residence, enter your current address here.</p>
-                <div className="fr">
-                  <DateField l="Residing From" v={permFrom} s={dirty(setPermFrom)} r={false} />
-                  <div className="fi" />
+
+                {/* Same as current address checkbox */}
+                <div
+                  style={{display:"flex",alignItems:"center",gap:"0.6rem",marginBottom:"1rem",padding:"0.65rem 0.875rem",background:"#f0f9ff",border:`1.5px solid ${sameAsCurrent?"#0891b2":"#bae6fd"}`,borderRadius:9,cursor:"pointer",transition:"all 0.15s"}}
+                  onClick={() => { const v = !sameAsCurrent; setSameAsCurrent(v); isDirtyRef.current = true; }}
+                >
+                  <div style={{width:18,height:18,borderRadius:5,border:`2px solid ${sameAsCurrent?"#0891b2":"#b8b4d4"}`,background:sameAsCurrent?"#0891b2":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.15s"}}>
+                    {sameAsCurrent && <span style={{color:"#fff",fontWeight:800,fontSize:"0.7rem"}}>✓</span>}
+                  </div>
+                  <span style={{fontSize:"0.84rem",fontWeight:600,color:"#0c4a6e"}}>Same as current address</span>
                 </div>
-                <div className="fr"><F l="Door No. & Street" v={permDoor} s={dirty(setPermDoor)} r={false} /></div>
-                <div className="fr">
-                  <F l="Village / Area"          v={permVillage}  s={dirty(setPermVillage)} r={false} />
-                  <F l="Tehsil / Taluk / Mandal" v={permLocality} s={dirty(setPermLocality)} r={false} />
-                </div>
-                <div className="fr">
-                  <F l="District" v={permDistrict} s={dirty(setPermDistrict)} r={false} />
-                  <F l="State"    v={permState}    s={dirty(setPermState)} r={false} />
-                  <F l="Pincode"  v={permPin}      s={(v) => dirty(setPermPin)(v.replace(/\D/g,"").slice(0,6))} r={false} />
-                </div>
+
+                {/* Show fields only when NOT same as current */}
+                {!sameAsCurrent && (<>
+                  <div className="fr">
+                    <DateField l="Residing From" v={permFrom} s={dirty(setPermFrom)} r={false} />
+                    <div className="fi" />
+                  </div>
+                  <div className="fr"><F l="Door No. & Street" v={permDoor} s={dirty(setPermDoor)} r={false} /></div>
+                  <div className="fr">
+                    <F l="Village / Area"          v={permVillage}  s={dirty(setPermVillage)} r={false} />
+                    <F l="Tehsil / Taluk / Mandal" v={permLocality} s={dirty(setPermLocality)} r={false} />
+                  </div>
+                  <div className="fr">
+                    <F l="District" v={permDistrict} s={dirty(setPermDistrict)} r={false} />
+                    <F l="State"    v={permState}    s={dirty(setPermState)} r={false} />
+                    <F l="Pincode"  v={permPin}      s={(v) => dirty(setPermPin)(v.replace(/\D/g,"").slice(0,6))} r={false} />
+                  </div>
+                </>)}
+
+                {/* Summary when same as current */}
+                {sameAsCurrent && (
+                  <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:9,padding:"0.75rem 1rem",fontSize:"0.8rem",color:"#15803d",fontWeight:500}}>
+                    ✓ Same as current address — {[curDoor,curVillage,curDistrict,curState,curPin].filter(Boolean).join(", ") || "fill your current address above first"}
+                  </div>
+                )}
               </div>
 
               <div className="sbar">
@@ -854,6 +886,9 @@ export default function PersonalDetails() {
                 <div style={{display:"flex",gap:"0.65rem",alignItems:"center"}}>
                   <button className="sbtn" onClick={handleMidSave} style={{fontSize:"0.8rem"}}>
                     {midSaveStatus || "Save draft"}
+                  </button>
+                  <button className="sbtn" onClick={handleSaveSignout} style={{fontSize:"0.8rem",color:"#ef4444",borderColor:"#fca5a5"}}>
+                    Save & Sign out
                   </button>
                   <button className="pbtn" onClick={handleSave}>Save & Continue →</button>
                 </div>
