@@ -25,6 +25,10 @@ export default function FileUpload({ label, category, subKey, companyId, apiFetc
 
     setError(""); setStatus("uploading"); setProgress(15);
 
+    // Create a local object URL for immediate preview (images only)
+    // This allows the photo circle to show instantly without waiting for S3
+    const localPreviewUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : null;
+
     try {
       const ext            = ALLOWED_EXTS[file.type] || "pdf";
       const stableFilename = `${subKey}.${ext}`;
@@ -57,11 +61,15 @@ export default function FileUpload({ label, category, subKey, companyId, apiFetc
 
       setProgress(100);
       setStatus("done");
-      onChange(s3_key); // notify parent — parent saves s3_key to DynamoDB on page save
+      // Pass s3_key as first arg, localPreviewUrl as second arg
+      // personal.js uses the second arg to set photoPreview immediately
+      onChange(s3_key, localPreviewUrl);
     } catch (err) {
       setStatus("error");
       setError(typeof err.message==="string"?err.message:"Upload failed");
       setProgress(0);
+      // Revoke the object URL if upload failed
+      if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
     }
   };
 
@@ -71,7 +79,6 @@ export default function FileUpload({ label, category, subKey, companyId, apiFetc
 
     try {
       // DELETE /upload?s3_key=... — physically removes the file from S3
-      // Sensitive documents (Aadhaar, PAN etc.) must not be left in storage unreferenced
       const res = await apiFetch(`${API}/upload?s3_key=${encodeURIComponent(value)}`, {
         method: "DELETE",
       });
@@ -82,7 +89,7 @@ export default function FileUpload({ label, category, subKey, companyId, apiFetc
       }
 
       setStatus("");
-      onChange(""); // clear s3_key in parent — DynamoDB updated on next page save
+      onChange("", null); // clear s3_key and preview in parent
     } catch (err) {
       setStatus("error");
       setError(typeof err.message==="string"?err.message:"Delete failed");

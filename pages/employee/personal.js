@@ -434,11 +434,8 @@ export default function PersonalDetails() {
           if (d.panKey)       setPanKey(d.panKey);
           if (d.photoKey) {
             setPhotoKey(d.photoKey);
-            // Fetch presigned URL for preview
-            try {
-              const pRes = await apiFetch(`${API}/upload/view-url?key=${encodeURIComponent(d.photoKey)}`);
-              if (pRes.ok) { const pd = await pRes.json(); setPhotoPreview(pd.url || pd.presigned_url || pd.signed_url); }
-            } catch (_) {}
+            // Fetch photo preview URL using documents endpoint after employeeId is set
+            // Will be loaded in a separate effect once employeeId is available
           }
           const cur  = d.currentAddress   || {};
           const perm = d.permanentAddress || {};
@@ -479,7 +476,21 @@ export default function PersonalDetails() {
     init();
   }, [ready, user, apiFetch]);
 
-  const buildPayload = (empId) => ({
+  // ── Load photo preview from documents endpoint on re-login ──
+  useEffect(() => {
+    if (!employeeId || !photoKey || photoPreview) return;
+    const loadPreview = async () => {
+      try {
+        const res = await apiFetch(`${API}/documents/${employeeId}`);
+        if (res.ok) {
+          const data = await res.json();
+          const photoUrl = data?.documents?.personal?.photo?.url;
+          if (photoUrl) setPhotoPreview(photoUrl);
+        }
+      } catch (_) {}
+    };
+    loadPreview();
+  }, [employeeId, photoKey]);
     employee_id: empId, status: "draft",
     firstName, middleName, lastName,
     fatherFirst, fatherMiddle, fatherLast,
@@ -598,7 +609,7 @@ export default function PersonalDetails() {
                       : <span style={{color:"#8b88b0",fontSize:"0.7rem",fontWeight:600,textAlign:"center",padding:"0 0.5rem"}}>No photo</span>}
                   </div>
                   <div style={{flex:1}}>
-                    <FileUpload label="Upload Profile Photo" category="personal" subKey="photo" employeeId={employeeId} apiFetch={apiFetch} value={photoKey} onChange={(k, url) => { setPhotoKey(k); if (url) setPhotoPreview(url); isDirtyRef.current = true; }} accept="image/*" />
+                    <FileUpload label="Upload Profile Photo" category="personal" subKey="photo" employeeId={employeeId} apiFetch={apiFetch} value={photoKey} onChange={(k, url) => { setPhotoKey(k); if (url) setPhotoPreview(url); else if (!k) setPhotoPreview(null); isDirtyRef.current = true; }} accept="image/*" />
                     <p style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:4}}>JPG or PNG · max 5MB</p>
                   </div>
                 </div>
