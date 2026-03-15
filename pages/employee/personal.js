@@ -316,6 +316,7 @@ export default function PersonalDetails() {
   const [mobile,setMobile]           = useState("");
   const [email,setEmail]             = useState("");
   const [aadhar,setAadhar]           = useState("");
+  const [aadhaarEditing,setAadhaarEditing] = useState(false); // true when user is actively editing
   const [pan,setPan]                 = useState("");
   const [passport,setPassport]       = useState("");
   const [bloodGroup,setBloodGroup]   = useState("");
@@ -438,10 +439,10 @@ export default function PersonalDetails() {
     fatherName: `${fatherFirst} ${fatherMiddle} ${fatherLast}`.trim(),
     motherName: `${motherFirst} ${motherMiddle} ${motherLast}`.trim(),
     dob, gender, nationality, mobile, email,
-    // ── AADHAAR MASKING: store only last 4 digits (UIDAI / DPDP compliance) ──
-    // If employee types 12 digits → save last 4 only
-    // If already stored as 4 digits (re-login) → save as-is
-    aadhaar: aadhar.length === 12 ? aadhar.slice(-4) : aadhar,
+    // AADHAAR: store only last 4 digits (UIDAI / DPDP compliance)
+    // aadhar state holds raw digits (up to 12) — take last 4
+    // If already 4 digits (loaded from DynamoDB masked) — store as-is
+    aadhaar: aadhar.length <= 4 ? aadhar : aadhar.slice(-4),
     pan, passport, bloodGroup,
     emergName, emergRel, emergPhone,
     aadhaarKey, panKey, photoKey,
@@ -496,10 +497,12 @@ export default function PersonalDetails() {
     logout();
   };
 
-  // ── Aadhaar is already masked if stored as 4 digits ──
-  const aadhaarAlreadyMasked = aadhar.length === 4;
-  const aadhaarFullyTyped   = aadhar.length === 12;
-  const aadhaarInvalid      = aadhar.length > 0 && !aadhaarAlreadyMasked && !aadhaarFullyTyped;
+  // ── Aadhaar display ──
+  // Normal view: XXXX XXXX 7878 (masked)
+  // Editing mode: show raw digits so user can type freely
+  const aadhaarDisplay = aadhaarEditing
+    ? aadhar
+    : (aadhar.length >= 4 ? `XXXX XXXX ${aadhar.slice(-4)}` : aadhar);
 
   if (!ready || !user) return null;
   if (loading) return (
@@ -622,27 +625,15 @@ export default function PersonalDetails() {
                     <span className="fl">Aadhaar Number <span style={{color:"#ef4444"}}>*</span></span>
                     <input
                       className="in"
-                      value={aadhar}
-                      placeholder={aadhaarAlreadyMasked ? "XXXX XXXX ****" : "Enter 12-digit Aadhaar"}
+                      value={aadhaarDisplay}
+                      placeholder="Enter 12-digit Aadhaar"
+                      onFocus={() => setAadhaarEditing(true)}
+                      onBlur={() => setAadhaarEditing(false)}
                       onChange={(e) => {
-                        const d = e.target.value.replace(/\D/g,"");
-                        if (d.length <= 12) dirty(setAadhar)(d);
+                        const raw = e.target.value.replace(/[^0-9]/g, "");
+                        if (raw.length <= 12) dirty(setAadhar)(raw);
                       }}
                     />
-                    {/* Status hints below Aadhaar input */}
-                    {aadhaarAlreadyMasked && (
-                      <span style={{fontSize:"0.68rem",color:"#16a34a",fontWeight:600,marginTop:3,display:"block"}}>
-                        🔒 Saved securely — only last 4 digits stored (DPDP compliant)
-                      </span>
-                    )}
-                    {aadhaarFullyTyped && (
-                      <span style={{fontSize:"0.68rem",color:"#8b88b0",fontWeight:500,marginTop:3,display:"block"}}>
-                        First 8 digits will be masked on save
-                      </span>
-                    )}
-                    {aadhaarInvalid && (
-                      <span className="fe">Must be 12 digits</span>
-                    )}
                     <div style={{marginTop:"0.7rem"}}>
                       <FileUpload label="Upload Aadhaar Card" category="personal" subKey="aadhaar" employeeId={employeeId} apiFetch={apiFetch} value={aadhaarKey} onChange={(k) => { setAadhaarKey(k); isDirtyRef.current = true; }} />
                     </div>
