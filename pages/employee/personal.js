@@ -297,7 +297,6 @@ export default function PersonalDetails() {
   const isDirtyRef = useRef(false);
   const fixErr = (key) => setErrors(p => ({ ...p, [key]: false }));
 
-  // handle ?tab=consents from bell click
   useEffect(() => {
     if (router.query.tab === "consents") setActiveTab("consents");
   }, [router.query.tab]);
@@ -358,10 +357,8 @@ export default function PersonalDetails() {
     const init = async () => {
       if (!user || user.role !== "employee") return;
       try {
-        // Step 1: Try to fetch existing draft
         const res = await apiFetch(`${API}/employee/draft`);
         if (res.ok) {
-          // Existing user — populate all fields from saved draft
           const d = await res.json();
           if (d.employee_id) setEmployeeId(d.employee_id);
           if (d.firstName)    setFirstName(d.firstName);
@@ -378,7 +375,13 @@ export default function PersonalDetails() {
           if (d.nationality)  setNationality(d.nationality);
           if (d.mobile)       setMobile(d.mobile);
           if (d.email)        setEmail(d.email);
-          if (d.aadhaar || d.aadhar) setAadhar(d.aadhaar || d.aadhar);
+          // ── AADHAAR: stored as last 4 digits only after first save ──
+          if (d.aadhaar || d.aadhar) {
+            const stored = d.aadhaar || d.aadhar;
+            // If stored value is 4 digits it's already masked — load as-is
+            // Employee sees 4-digit value with a green hint below the field
+            setAadhar(stored);
+          }
           if (d.pan)          setPan(d.pan);
           if (d.passport)     setPassport(d.passport);
           if (d.bloodGroup)   setBloodGroup(d.bloodGroup);
@@ -406,8 +409,6 @@ export default function PersonalDetails() {
           if (perm.state)    setPermState(perm.state);
           if (perm.pin)      setPermPin(perm.pin);
         } else {
-          // Step 2: New user — immediately create employee record so uploads work right away
-          // This must happen before the page renders so FileUpload can get presigned URLs
           const empId = `emp-${Date.now()}`;
           const createRes = await apiFetch(`${API}/employee`, {
             method: "POST",
@@ -437,7 +438,11 @@ export default function PersonalDetails() {
     fatherName: `${fatherFirst} ${fatherMiddle} ${fatherLast}`.trim(),
     motherName: `${motherFirst} ${motherMiddle} ${motherLast}`.trim(),
     dob, gender, nationality, mobile, email,
-    aadhaar: aadhar, pan, passport, bloodGroup,
+    // ── AADHAAR MASKING: store only last 4 digits (UIDAI / DPDP compliance) ──
+    // If employee types 12 digits → save last 4 only
+    // If already stored as 4 digits (re-login) → save as-is
+    aadhaar: aadhar.length === 12 ? aadhar.slice(-4) : aadhar,
+    pan, passport, bloodGroup,
     emergName, emergRel, emergPhone,
     aadhaarKey, panKey, photoKey,
     currentAddress:   { from:curFrom,  to:curTo,  door:curDoor,  village:curVillage,  locality:curLocality,  district:curDistrict,  state:curState,  pin:curPin  },
@@ -490,6 +495,11 @@ export default function PersonalDetails() {
     if (isDirtyRef.current) { try { await saveDraft(); } catch (_) {} }
     logout();
   };
+
+  // ── Aadhaar is already masked if stored as 4 digits ──
+  const aadhaarAlreadyMasked = aadhar.length === 4;
+  const aadhaarFullyTyped   = aadhar.length === 12;
+  const aadhaarInvalid      = aadhar.length > 0 && !aadhaarAlreadyMasked && !aadhaarFullyTyped;
 
   if (!ready || !user) return null;
   if (loading) return (
@@ -609,8 +619,30 @@ export default function PersonalDetails() {
                 <div className="sh"><div className="si grn">📄</div><span className="st">Identity Documents</span></div>
                 <div className="fr">
                   <div className="fi">
-                    <F l="Aadhaar Number" v={aadhar} s={(v) => { const d = v.replace(/\D/g,""); if (d.length <= 12) dirty(setAadhar)(d); }} />
-                    {aadhar && aadhar.length !== 12 && <span className="fe">Must be 12 digits</span>}
+                    <span className="fl">Aadhaar Number <span style={{color:"#ef4444"}}>*</span></span>
+                    <input
+                      className="in"
+                      value={aadhar}
+                      placeholder={aadhaarAlreadyMasked ? "XXXX XXXX ****" : "Enter 12-digit Aadhaar"}
+                      onChange={(e) => {
+                        const d = e.target.value.replace(/\D/g,"");
+                        if (d.length <= 12) dirty(setAadhar)(d);
+                      }}
+                    />
+                    {/* Status hints below Aadhaar input */}
+                    {aadhaarAlreadyMasked && (
+                      <span style={{fontSize:"0.68rem",color:"#16a34a",fontWeight:600,marginTop:3,display:"block"}}>
+                        🔒 Saved securely — only last 4 digits stored (DPDP compliant)
+                      </span>
+                    )}
+                    {aadhaarFullyTyped && (
+                      <span style={{fontSize:"0.68rem",color:"#8b88b0",fontWeight:500,marginTop:3,display:"block"}}>
+                        First 8 digits will be masked on save
+                      </span>
+                    )}
+                    {aadhaarInvalid && (
+                      <span className="fe">Must be 12 digits</span>
+                    )}
                     <div style={{marginTop:"0.7rem"}}>
                       <FileUpload label="Upload Aadhaar Card" category="personal" subKey="aadhaar" employeeId={employeeId} apiFetch={apiFetch} value={aadhaarKey} onChange={(k) => { setAadhaarKey(k); isDirtyRef.current = true; }} />
                     </div>

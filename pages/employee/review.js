@@ -143,6 +143,15 @@ function StepNav({ current, onNavigate }) {
   );
 }
 
+// ─── Aadhaar masking for display ──────────────────────────────────
+function maskAadhaar(a) {
+  if (!a) return "—";
+  const d = String(a).replace(/\D/g, "");
+  if (d.length === 4) return `XXXX XXXX ${d}`;          // already stored masked
+  if (d.length === 12) return `XXXX XXXX ${d.slice(-4)}`; // full number still in state
+  return `XXXX XXXX ${d}`;                               // fallback
+}
+
 // ─── KV display ────────────────────────────────────────────────────
 function KV({ label, value }) {
   return (
@@ -442,7 +451,7 @@ export default function ReviewPage() {
               <KV label="Nationality" value={d.nationality} />
               <KV label="Mobile"      value={d.mobile} />
               <KV label="Email"       value={d.email} />
-              <KV label="Aadhaar"     value={d.aadhaar||d.aadhar} />
+              <KV label="Aadhaar"     value={maskAadhaar(d.aadhaar||d.aadhar)} />
               <KV label="PAN"         value={d.pan} />
               <KV label="Passport"    value={d.passport} />
               <KV label="Blood Group" value={d.bloodGroup} />
