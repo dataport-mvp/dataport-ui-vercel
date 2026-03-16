@@ -7,11 +7,67 @@ import FileUpload from "../../components/FileUpload";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
-// ─── Step accent colours ──────────────────────────────────────────────
 const ACCENTS = { 1:"#4f46e5", 2:"#d97706", 3:"#7c3aed", 4:"#0891b2", 5:"#16a34a" };
 const STEP_DONE_BG = "#2a2460";
 const STEP_DONE_CK = "#a78bfa";
 const STEP_CONN    = "#a78bfa";
+
+// ── Gender options — inclusive list ──────────────────────────────────
+const GENDER_OPTIONS = [
+  "Male",
+  "Female",
+  "Non-binary",
+  "Genderqueer",
+  "Genderfluid",
+  "Agender",
+  "Bigender",
+  "Two-Spirit",
+  "Transgender Male",
+  "Transgender Female",
+  "Intersex",
+  "Prefer not to say",
+  "Other",
+];
+
+// ── Bank logos (emoji fallback) ───────────────────────────────────────
+const BANK_LIST = [
+  "State Bank of India (SBI)",
+  "HDFC Bank",
+  "ICICI Bank",
+  "Axis Bank",
+  "Kotak Mahindra Bank",
+  "Punjab National Bank (PNB)",
+  "Bank of Baroda",
+  "Canara Bank",
+  "Union Bank of India",
+  "Bank of India",
+  "Indian Bank",
+  "Central Bank of India",
+  "Indian Overseas Bank",
+  "UCO Bank",
+  "Bank of Maharashtra",
+  "Punjab & Sind Bank",
+  "Yes Bank",
+  "IDFC First Bank",
+  "IndusInd Bank",
+  "Federal Bank",
+  "South Indian Bank",
+  "Karnataka Bank",
+  "Karur Vysya Bank",
+  "City Union Bank",
+  "Dhanlaxmi Bank",
+  "Nainital Bank",
+  "RBL Bank",
+  "DCB Bank",
+  "Bandhan Bank",
+  "AU Small Finance Bank",
+  "Ujjivan Small Finance Bank",
+  "Jana Small Finance Bank",
+  "Equitas Small Finance Bank",
+  "ESAF Small Finance Bank",
+  "Suryoday Small Finance Bank",
+  "Other",
+];
 
 const G = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -20,7 +76,6 @@ const G = `
   .pg { min-height: 100vh; background: #cdd2ed; padding-bottom: 3rem; }
   .wrap { max-width: 860px; margin: auto; padding: 0 1.25rem; }
 
-  /* Topbar */
   .topbar { background: #1e1a3e; border-bottom: 1px solid #2d2860; padding: 0.85rem 1.75rem;
     display: flex; justify-content: space-between; align-items: center;
     margin-bottom: 1.75rem; position: sticky; top: 0; z-index: 50;
@@ -33,7 +88,6 @@ const G = `
     font-weight: 600; font-family: inherit; transition: all 0.2s; }
   .signout-btn:hover { border-color: #fca5a5; color: #ef4444; background: rgba(239,68,68,0.08); }
 
-  /* Bell */
   .bell-btn { position: relative; width: 36px; height: 36px; border-radius: 9px;
     border: 1.5px solid #2d2860; background: transparent; cursor: pointer;
     display: flex; align-items: center; justify-content: center; font-size: 1rem;
@@ -43,7 +97,6 @@ const G = `
     border-radius: 999px; font-size: 0.6rem; font-weight: 800; min-width: 16px; height: 16px;
     display: flex; align-items: center; justify-content: center; padding: 0 3px; border: 2px solid #1e1a3e; }
 
-  /* Tabs */
   .tab-row { display: flex; border-bottom: 2px solid #e8e5f0; margin-bottom: 1.75rem; }
   .tab-btn { padding: 0.6rem 1.4rem; border: none; background: none; font-family: inherit;
     font-size: 0.875rem; color: #94a3b8; cursor: pointer; border-bottom: 2.5px solid transparent;
@@ -51,10 +104,9 @@ const G = `
   .tab-btn.active { color: #4f46e5; border-bottom-color: #4f46e5; }
   .tab-btn:hover:not(.active) { color: #475569; }
 
-  /* Cards */
   .sc { background: #ffffff; border-radius: 16px; padding: 1.5rem 1.6rem;
-    margin-bottom: 1.1rem; box-shadow: 0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12); border: 1px solid rgba(255,255,255,0.85);
-    position: relative; overflow: hidden; }
+    margin-bottom: 1.1rem; box-shadow: 0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12);
+    border: 1px solid rgba(255,255,255,0.85); position: relative; overflow: hidden; }
   .sc::before { content: ''; position: absolute; top: 0; left: 0; bottom: 0;
     width: 4px; border-radius: 16px 0 0 16px; }
   .sc.ind::before { background: #4f46e5; }
@@ -63,6 +115,7 @@ const G = `
   .sc.ros::before { background: #e11d48; }
   .sc.vio::before { background: #7c3aed; }
   .sc.grn::before { background: #16a34a; }
+  .sc.teal::before { background: #0d9488; }
 
   .sh { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1.15rem; }
   .si { width: 32px; height: 32px; border-radius: 8px; display: flex;
@@ -70,9 +123,9 @@ const G = `
   .si.ind { background: #eef2ff; } .si.cyn { background: #ecfeff; }
   .si.amb { background: #fffbeb; } .si.ros { background: #fff1f2; }
   .si.vio { background: #f5f3ff; } .si.grn { background: #f0fdf4; }
+  .si.teal { background: #f0fdfa; }
   .st { font-size: 0.93rem; font-weight: 700; color: #1e293b; }
 
-  /* Fields */
   .fr { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-bottom: 0.85rem; }
   .fr:last-child { margin-bottom: 0; }
   .fi { display: flex; flex-direction: column; gap: 0.28rem; flex: 1; min-width: 138px; }
@@ -86,46 +139,44 @@ const G = `
   .err-msg { font-size: 0.68rem; color: #ef4444; font-weight: 600; margin-top: 0.2rem; display: block; }
   .fe { font-size: 0.7rem; color: #ef4444; margin-top: 2px; font-weight: 500; }
 
-  /* Photo */
   .photo-wrap { width: 90px; height: 90px; border-radius: 50%; background: #eef2ff;
     border: 2.5px solid #c7d2fe; display: flex; align-items: center;
     justify-content: center; overflow: hidden; flex-shrink: 0; }
   .photo-wrap img { width: 100%; height: 100%; object-fit: cover; }
 
-  /* Save bar */
   .sbar { display: flex; justify-content: space-between; align-items: center;
     margin-top: 1.5rem; padding: 1rem 1.5rem; background: #1e1a3e;
-    border-radius: 12px; box-shadow: 0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12); border: 1px solid rgba(255,255,255,0.85); }
+    border-radius: 12px; box-shadow: 0 6px 28px rgba(30,26,62,0.22); border: 1px solid rgba(255,255,255,0.85); }
   .ss { font-size: 0.84rem; color: #9d9bc4; font-weight: 500; }
   .ss.ok { color: #16a34a; } .ss.err { color: #ef4444; }
   .pbtn { padding: 0.72rem 1.9rem; background: #4f46e5; color: #fff; border: none;
     border-radius: 10px; font-family: inherit; font-size: 0.875rem; font-weight: 700;
     cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 14px rgba(79,70,229,0.28); }
-  .pbtn:hover { background: #4338ca; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(79,70,229,0.35); }
+  .pbtn:hover { background: #4338ca; transform: translateY(-1px); }
   .sbtn { padding: 0.72rem 1.5rem; background: transparent; color: #9d9bc4; border: 1.5px solid #2d2860;
     border-radius: 10px; font-family: inherit; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
   .sbtn:hover { background: #f5f4f0; }
 
-  /* Custom date picker */
-  .date-wrap { position: relative; }
   .date-input { padding: 0.65rem 0.875rem; background: #ececf9; border: 1.5px solid #b8b4d4;
     border-radius: 9px; font-family: inherit; font-size: 0.875rem; color: #1e293b;
     outline: none; width: 100%; cursor: pointer; transition: all 0.18s; }
   .date-input:focus { border-color: #4f46e5; background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.13); }
   .date-input::placeholder { color: #b8b4d4; }
 
-  /* Save mid-page button */
   .mid-save { display: flex; justify-content: flex-end; margin: 0.5rem 0 1rem; }
   .mid-save-btn { padding: 0.45rem 1.1rem; background: transparent; color: #4f46e5;
     border: 1.5px solid #c7d2fe; border-radius: 8px; font-family: inherit;
     font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
   .mid-save-btn:hover { background: #eef2ff; border-color: #4f46e5; }
 
-  /* Consent message textarea */
   .cmsg { padding: 0.6rem 0.875rem; background: #ececf9; border: 1.5px solid #b8b4d4;
     border-radius: 9px; font-family: inherit; font-size: 0.84rem; color: #1e293b;
     outline: none; width: 100%; resize: vertical; min-height: 72px; transition: all 0.18s; }
   .cmsg:focus { border-color: #4f46e5; background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.13); }
+
+  /* Bank section divider */
+  .bank-note { font-size: 0.72rem; color: #0d9488; background: #f0fdfa; border: 1px solid #99f6e4;
+    border-radius: 8px; padding: 0.5rem 0.75rem; margin-bottom: 0.85rem; font-weight: 500; line-height: 1.5; }
 
   @media (max-width: 640px) {
     .fr { flex-direction: column; } .fi { min-width: 100%; }
@@ -133,7 +184,6 @@ const G = `
   }
 `;
 
-// ─── Consent Bell ─────────────────────────────────────────────────────
 function ConsentBell({ apiFetch, router }) {
   const [count, setCount] = useState(0);
   useEffect(() => {
@@ -158,7 +208,6 @@ function ConsentBell({ apiFetch, router }) {
   );
 }
 
-// ─── Modals ───────────────────────────────────────────────────────────
 function SignoutModal({ onConfirm, onCancel }) {
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(15,12,40,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,backdropFilter:"blur(3px)"}}>
@@ -175,7 +224,6 @@ function SignoutModal({ onConfirm, onCancel }) {
   );
 }
 
-// ─── StepNav — 5 steps, free navigation ──────────────────────────────
 function StepNav({ current, onNavigate }) {
   const steps = [
     { n:1, label:"Personal",   icon:"👤", path:"/employee/personal"  },
@@ -213,7 +261,6 @@ function StepNav({ current, onNavigate }) {
   );
 }
 
-// ─── Consent Tab ──────────────────────────────────────────────────────
 function ConsentTab({ apiFetch, profileStatus }) {
   const [consents,setConsents]=useState([]);
   const [loading,setLoading]=useState(true);
@@ -226,109 +273,64 @@ function ConsentTab({ apiFetch, profileStatus }) {
   },[apiFetch]);
   useEffect(()=>{load();},[load]);
   useEffect(()=>{const id=setInterval(load,15000);return()=>clearInterval(id);},[load]);
-
   const respond=async(consentId,decision)=>{
-    setActing(consentId);
-    setActionError(p=>({...p,[consentId]:""}));
+    setActing(consentId);setActionError(p=>({...p,[consentId]:""}));
     try{
-      const res=await apiFetch(`${API}/consent/respond`,{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({consent_id:consentId,status:decision==="approved"?"APPROVED":"DECLINED",responded_at:Date.now(),reply_message:replyMsg[consentId]||""})
-      });
-      if(res.ok){
-        await load();
-      } else {
-        const errData = await res.json().catch(()=>({}));
-        setActionError(p=>({...p,[consentId]:errData.detail||errData.message||`Error ${res.status}`}));
-      }
-    }catch(e){
-      setActionError(p=>({...p,[consentId]:"Network error — please retry"}));
-    }
+      const res=await apiFetch(`${API}/consent/respond`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({consent_id:consentId,status:decision==="approved"?"APPROVED":"DECLINED",responded_at:Date.now(),reply_message:replyMsg[consentId]||""})});
+      if(res.ok){await load();}else{const errData=await res.json().catch(()=>({}));setActionError(p=>({...p,[consentId]:errData.detail||errData.message||`Error ${res.status}`}));}
+    }catch(e){setActionError(p=>({...p,[consentId]:"Network error — please retry"}));}
     setActing(null);
   };
-
   const withdraw=async(consentId)=>{
-    setActing(consentId);
-    setActionError(p=>({...p,[consentId]:""}));
+    setActing(consentId);setActionError(p=>({...p,[consentId]:""}));
     try{
       const res=await apiFetch(`${API}/consent/withdraw?consent_id=${consentId}`,{method:"POST"});
-      if(res.ok){
-        await load();
-      } else {
-        const errData = await res.json().catch(()=>({}));
-        setActionError(p=>({...p,[consentId]:errData.detail||errData.message||`Error ${res.status}`}));
-      }
-    }catch(e){
-      setActionError(p=>({...p,[consentId]:"Network error — please retry"}));
-    }
+      if(res.ok){await load();}else{const errData=await res.json().catch(()=>({}));setActionError(p=>({...p,[consentId]:errData.detail||errData.message||`Error ${res.status}`}));}
+    }catch(e){setActionError(p=>({...p,[consentId]:"Network error — please retry"}));}
     setActing(null);
   };
-
   const norm=(c)=>({...c,status:String(c.status||"pending").toLowerCase()});
   if(loading)return <p style={{color:"#8b88b0",padding:"1rem 0",fontSize:"0.875rem"}}>Loading consents…</p>;
-  if(!consents.length)return(
-    <div style={{textAlign:"center",padding:"3rem",background:"#fff",borderRadius:14,boxShadow:"0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12)"}}>
-      <div style={{fontSize:38,marginBottom:10}}>📋</div>
-      <p style={{color:"#1a1730",margin:0,fontWeight:700}}>No consent requests yet</p>
-      <p style={{fontSize:"0.82rem",color:"#8b88b0",marginTop:6}}>Employers will appear here when they request your data</p>
-    </div>
-  );
+  if(!consents.length)return(<div style={{textAlign:"center",padding:"3rem",background:"#fff",borderRadius:14,boxShadow:"0 6px 28px rgba(30,26,62,0.22)"}}>
+    <div style={{fontSize:38,marginBottom:10}}>📋</div>
+    <p style={{color:"#1a1730",margin:0,fontWeight:700}}>No consent requests yet</p>
+    <p style={{fontSize:"0.82rem",color:"#8b88b0",marginTop:6}}>Employers will appear here when they request your data</p>
+  </div>);
   const all=consents.map(norm);
-  const pending=all.filter(c=>c.status==="pending");
-  const approved=all.filter(c=>c.status==="approved");
-  const declined=all.filter(c=>c.status==="declined");
-  const revoked=all.filter(c=>c.status==="revoked");
+  const pending=all.filter(c=>c.status==="pending");const approved=all.filter(c=>c.status==="approved");
+  const declined=all.filter(c=>c.status==="declined");const revoked=all.filter(c=>c.status==="revoked");
   const sColor={pending:"#f59e0b",approved:"#16a34a",declined:"#ef4444",revoked:"#94a3b8"};
   const sBg={pending:"#fffbeb",approved:"#f0fdf4",declined:"#fff5f5",revoked:"#f8fafc"};
-  const profileNotSubmitted = profileStatus !== "submitted";
-  const CC=({c})=>(
-    <div style={{border:"1px solid #ebe9f5",borderRadius:12,padding:"1.1rem 1.25rem",marginBottom:"0.65rem",background:"#fff",boxShadow:"0 1px 5px rgba(79,70,229,0.05)"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-        <div style={{flex:1}}>
-          <div style={{fontWeight:700,color:"#1a1730",fontSize:"0.93rem"}}>{c.requestor_name||c.employer_name||c.requestor_email||c.employer_email}</div>
-          {c.message&&<div style={{marginTop:"0.5rem",padding:"0.5rem 0.75rem",background:"#f5f3ff",border:"1px solid #ddd6fe",borderRadius:8}}>
-            <div style={{fontSize:"0.67rem",fontWeight:700,color:"#4f46e5",textTransform:"uppercase",letterSpacing:0.5,marginBottom:3}}>Message</div>
-            <div style={{fontSize:"0.84rem",color:"#6b6894",lineHeight:1.5}}>{c.message}</div>
-          </div>}
-        </div>
-        <span style={{padding:"0.18rem 0.7rem",borderRadius:999,fontSize:"0.7rem",fontWeight:700,color:sColor[c.status]||"#64748b",background:sBg[c.status]||"#f8fafc",whiteSpace:"nowrap",marginLeft:"0.75rem",border:`1px solid ${(sColor[c.status]||"#94a3b8")}33`}}>{c.status.charAt(0).toUpperCase()+c.status.slice(1)}</span>
+  const profileNotSubmitted=profileStatus!=="submitted";
+  const CC=({c})=>(<div style={{border:"1px solid #ebe9f5",borderRadius:12,padding:"1.1rem 1.25rem",marginBottom:"0.65rem",background:"#fff",boxShadow:"0 1px 5px rgba(79,70,229,0.05)"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+      <div style={{flex:1}}>
+        <div style={{fontWeight:700,color:"#1a1730",fontSize:"0.93rem"}}>{c.requestor_name||c.employer_name||c.requestor_email||c.employer_email}</div>
+        {c.message&&<div style={{marginTop:"0.5rem",padding:"0.5rem 0.75rem",background:"#f5f3ff",border:"1px solid #ddd6fe",borderRadius:8}}>
+          <div style={{fontSize:"0.67rem",fontWeight:700,color:"#4f46e5",textTransform:"uppercase",letterSpacing:0.5,marginBottom:3}}>Message</div>
+          <div style={{fontSize:"0.84rem",color:"#6b6894",lineHeight:1.5}}>{c.message}</div>
+        </div>}
       </div>
-      {actionError[c.consent_id]&&<p style={{fontSize:"0.75rem",color:"#ef4444",marginTop:"0.5rem",fontWeight:600}}>⚠️ {actionError[c.consent_id]}</p>}
-      {c.status==="pending"&&(
-        <div style={{marginTop:"0.8rem"}}>
-          {profileNotSubmitted&&(
-            <div style={{fontSize:"0.75rem",color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:"0.5rem 0.75rem",marginBottom:"0.6rem"}}>
-              ⚠️ Complete and submit your profile before approving consent requests.
-            </div>
-          )}
-          <textarea
-            className="cmsg"
-            placeholder="Optional message to employer… (e.g. 'Happy to proceed' or 'Please contact me first')"
-            value={replyMsg[c.consent_id]||""}
-            onChange={e=>setReplyMsg(p=>({...p,[c.consent_id]:e.target.value}))}
-            style={{marginBottom:"0.5rem"}}
-          />
-          <div style={{display:"flex",gap:"0.5rem"}}>
-            <button disabled={acting===c.consent_id||profileNotSubmitted} onClick={()=>respond(c.consent_id,"approved")} style={{flex:1,padding:"0.5rem",background:profileNotSubmitted?"#e5e7eb":"#16a34a",color:profileNotSubmitted?"#9ca3af":"#fff",border:"none",borderRadius:8,fontWeight:700,cursor:(acting===c.consent_id||profileNotSubmitted)?"not-allowed":"pointer",fontSize:"0.875rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Approve"}</button>
-            <button disabled={acting===c.consent_id} onClick={()=>respond(c.consent_id,"declined")} style={{flex:1,padding:"0.5rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:8,fontWeight:700,cursor:acting===c.consent_id?"not-allowed":"pointer",fontSize:"0.875rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Decline"}</button>
-          </div>
-        </div>
-      )}
-      {/* Approved — show withdraw button */}
-      {c.status==="approved"&&(
-        <div style={{marginTop:"0.8rem"}}>
-          <button disabled={acting===c.consent_id} onClick={()=>withdraw(c.consent_id)} style={{padding:"0.45rem 1rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:8,fontWeight:600,cursor:acting===c.consent_id?"not-allowed":"pointer",fontSize:"0.8rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Withdraw consent"}</button>
-          <span style={{fontSize:"0.7rem",color:"#94a3b8",marginLeft:"0.6rem"}}>Employer will immediately lose access</span>
-        </div>
-      )}
+      <span style={{padding:"0.18rem 0.7rem",borderRadius:999,fontSize:"0.7rem",fontWeight:700,color:sColor[c.status]||"#64748b",background:sBg[c.status]||"#f8fafc",whiteSpace:"nowrap",marginLeft:"0.75rem",border:`1px solid ${(sColor[c.status]||"#94a3b8")}33`}}>{c.status.charAt(0).toUpperCase()+c.status.slice(1)}</span>
     </div>
-  );
+    {actionError[c.consent_id]&&<p style={{fontSize:"0.75rem",color:"#ef4444",marginTop:"0.5rem",fontWeight:600}}>⚠️ {actionError[c.consent_id]}</p>}
+    {c.status==="pending"&&(<div style={{marginTop:"0.8rem"}}>
+      {profileNotSubmitted&&<div style={{fontSize:"0.75rem",color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:"0.5rem 0.75rem",marginBottom:"0.6rem"}}>⚠️ Complete and submit your profile before approving consent requests.</div>}
+      <textarea className="cmsg" placeholder="Optional message to employer…" value={replyMsg[c.consent_id]||""} onChange={e=>setReplyMsg(p=>({...p,[c.consent_id]:e.target.value}))} style={{marginBottom:"0.5rem"}}/>
+      <div style={{display:"flex",gap:"0.5rem"}}>
+        <button disabled={acting===c.consent_id||profileNotSubmitted} onClick={()=>respond(c.consent_id,"approved")} style={{flex:1,padding:"0.5rem",background:profileNotSubmitted?"#e5e7eb":"#16a34a",color:profileNotSubmitted?"#9ca3af":"#fff",border:"none",borderRadius:8,fontWeight:700,cursor:(acting===c.consent_id||profileNotSubmitted)?"not-allowed":"pointer",fontSize:"0.875rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Approve"}</button>
+        <button disabled={acting===c.consent_id} onClick={()=>respond(c.consent_id,"declined")} style={{flex:1,padding:"0.5rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:8,fontWeight:700,cursor:acting===c.consent_id?"not-allowed":"pointer",fontSize:"0.875rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Decline"}</button>
+      </div>
+    </div>)}
+    {c.status==="approved"&&(<div style={{marginTop:"0.8rem"}}>
+      <button disabled={acting===c.consent_id} onClick={()=>withdraw(c.consent_id)} style={{padding:"0.45rem 1rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:8,fontWeight:600,cursor:acting===c.consent_id?"not-allowed":"pointer",fontSize:"0.8rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Withdraw consent"}</button>
+      <span style={{fontSize:"0.7rem",color:"#94a3b8",marginLeft:"0.6rem"}}>Employer will immediately lose access</span>
+    </div>)}
+  </div>);
   const SL=({text,count})=><div style={{fontSize:"0.68rem",fontWeight:700,color:"#8b88b0",textTransform:"uppercase",letterSpacing:1,margin:"1.1rem 0 0.5rem"}}>{text}{count!==undefined&&` (${count})`}</div>;
   return(<div>{pending.length>0&&<><SL text="Pending" count={pending.length}/>{pending.map(c=><CC key={c.consent_id} c={c}/>)}</>}{approved.length>0&&<><SL text="Approved"/>{approved.map(c=><CC key={c.consent_id} c={c}/>)}</>}{declined.length>0&&<><SL text="Declined"/>{declined.map(c=><CC key={c.consent_id} c={c}/>)}</>}{revoked.length>0&&<><SL text="Withdrawn"/>{revoked.map(c=><CC key={c.consent_id} c={c}/>)}</>}</div>);
 }
 
-// ─── Field helpers ────────────────────────────────────────────────────
 function F({ l, v, s, t = "text", r = true }) {
   return (
     <div className="fi">
@@ -349,128 +351,109 @@ function FS({ l, v, s, o, r = true }) {
   );
 }
 
-// ─── Date field — clean DD/MM/YYYY input ─────────────────────────────
-// Stores as YYYY-MM-DD internally (same as before), displays as DD/MM/YYYY
 function DateField({ l, v, s, r = true }) {
   const [raw, setRaw] = useState(() => {
-    // Convert YYYY-MM-DD → DD/MM/YYYY for display
-    if (v && v.includes("-")) {
-      const [y, mo, d] = v.split("-");
-      return `${d}/${mo}/${y}`;
-    }
+    if (v && v.includes("-")) { const [y, mo, d] = v.split("-"); return `${d}/${mo}/${y}`; }
     return v || "";
   });
   const [focused, setFocused] = useState(false);
-
-  // Sync if parent value changes externally
   useEffect(() => {
     if (!focused) {
-      if (v && v.includes("-")) {
-        const [y, mo, d] = v.split("-");
-        setRaw(`${d}/${mo}/${y}`);
-      } else {
-        setRaw(v || "");
-      }
+      if (v && v.includes("-")) { const [y, mo, d] = v.split("-"); setRaw(`${d}/${mo}/${y}`); }
+      else setRaw(v || "");
     }
   }, [v, focused]);
-
   const handleChange = (e) => {
     let val = e.target.value.replace(/[^0-9/]/g, "");
-    // Auto-insert slashes
     if (val.length === 2 && raw.length === 1) val = val + "/";
     if (val.length === 5 && raw.length === 4) val = val + "/";
     if (val.length > 10) return;
     setRaw(val);
-    // Parse to YYYY-MM-DD when complete
-    if (val.length === 10) {
-      const [d, mo, y] = val.split("/");
-      if (d && mo && y && y.length === 4) s(`${y}-${mo}-${d}`);
-    } else {
-      s(""); // incomplete — clear parent value
-    }
+    if (val.length === 10) { const [d, mo, y] = val.split("/"); if (d && mo && y && y.length === 4) s(`${y}-${mo}-${d}`); }
+    else s("");
   };
-
   return (
     <div className="fi">
       <span className="fl">{l}{r && <span style={{color:"#ef4444",marginLeft:2}}>*</span>}</span>
-      <input
-        className="date-input"
-        value={raw}
-        placeholder="DD/MM/YYYY"
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        onChange={handleChange}
-        maxLength={10}
-        inputMode="numeric"
-      />
+      <input className="date-input" value={raw} placeholder="DD/MM/YYYY" onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} onChange={handleChange} maxLength={10} inputMode="numeric"/>
     </div>
   );
 }
+
 export default function PersonalDetails() {
   const router = useRouter();
   const { user, apiFetch, logout, ready } = useAuth();
-  const [activeTab,setActiveTab]       = useState("profile");
-  const [showSignout,setShowSignout]   = useState(false);
-  const [saveStatus,setSaveStatus]     = useState("");
+  const [activeTab,setActiveTab]         = useState("profile");
+  const [showSignout,setShowSignout]     = useState(false);
+  const [saveStatus,setSaveStatus]       = useState("");
   const [midSaveStatus,setMidSaveStatus] = useState("");
-  const [loading,setLoading]           = useState(true);
-  const [employeeId,setEmployeeId]     = useState("");
+  const [loading,setLoading]             = useState(true);
+  const [employeeId,setEmployeeId]       = useState("");
   const [profileStatus,setProfileStatus] = useState("");
-  const [photoPreview,setPhotoPreview] = useState(null);
-  const [errors,setErrors]             = useState({});
+  const [photoPreview,setPhotoPreview]   = useState(null);
+  const [errors,setErrors]               = useState({});
   const isDirtyRef = useRef(false);
   const fixErr = (key) => setErrors(p => ({ ...p, [key]: false }));
 
-  useEffect(() => {
-    if (router.query.tab === "consents") setActiveTab("consents");
-  }, [router.query.tab]);
+  useEffect(() => { if (router.query.tab === "consents") setActiveTab("consents"); }, [router.query.tab]);
 
-  const [firstName,setFirstName]     = useState("");
-  const [middleName,setMiddleName]   = useState("");
-  const [lastName,setLastName]       = useState("");
-  const [fatherFirst,setFatherFirst] = useState("");
-  const [fatherMiddle,setFatherMiddle] = useState("");
-  const [fatherLast,setFatherLast]   = useState("");
-  const [motherFirst,setMotherFirst] = useState("");
-  const [motherMiddle,setMotherMiddle] = useState("");
-  const [motherLast,setMotherLast]   = useState("");
-  const [dob,setDob]                 = useState("");
-  const [gender,setGender]           = useState("");
-  const [nationality,setNationality] = useState("");
-  const [mobile,setMobile]           = useState("");
-  const [email,setEmail]             = useState("");
-  const [aadhar,setAadhar]           = useState("");
-  const [aadhaarEditing,setAadhaarEditing] = useState(false); // true when user is actively editing
-  const [pan,setPan]                 = useState("");
-  const [passport,setPassport]       = useState("");
-  const [bloodGroup,setBloodGroup]   = useState("");
+  // ── Personal fields ─────────────────────────────────────────────────
+  const [firstName,setFirstName]         = useState("");
+  const [middleName,setMiddleName]       = useState("");
+  const [lastName,setLastName]           = useState("");
+  const [fatherFirst,setFatherFirst]     = useState("");
+  const [fatherMiddle,setFatherMiddle]   = useState("");
+  const [fatherLast,setFatherLast]       = useState("");
+  const [motherFirst,setMotherFirst]     = useState("");
+  const [motherMiddle,setMotherMiddle]   = useState("");
+  const [motherLast,setMotherLast]       = useState("");
+  const [dob,setDob]                     = useState("");
+  const [gender,setGender]               = useState("");
+  const [nationality,setNationality]     = useState("");
+  const [mobile,setMobile]               = useState("");
+  const [email,setEmail]                 = useState("");
+  const [aadhar,setAadhar]               = useState("");
+  const [aadhaarEditing,setAadhaarEditing] = useState(false);
+  const [nameAsPerAadhaar,setNameAsPerAadhaar] = useState("");
+  const [pan,setPan]                     = useState("");
+  const [nameAsPerPan,setNameAsPerPan]   = useState("");
+  const [passport,setPassport]           = useState("");
+  const [bloodGroup,setBloodGroup]       = useState("");
   const [maritalStatus,setMaritalStatus] = useState("");
-  const [emergName,setEmergName]     = useState("");
-  const [emergRel,setEmergRel]       = useState("");
-  const [emergPhone,setEmergPhone]   = useState("");
-  const [curFrom,setCurFrom]         = useState("");
-  const [curTo,setCurTo]             = useState("");
-  const [curDoor,setCurDoor]         = useState("");
-  const [curVillage,setCurVillage]   = useState("");
-  const [curLocality,setCurLocality] = useState("");
-  const [curDistrict,setCurDistrict] = useState("");
-  const [curState,setCurState]       = useState("");
-  const [curPin,setCurPin]           = useState("");
-  const [permFrom,setPermFrom]       = useState("");
-  const [permDoor,setPermDoor]       = useState("");
+  const [emergName,setEmergName]         = useState("");
+  const [emergRel,setEmergRel]           = useState("");
+  const [emergPhone,setEmergPhone]       = useState("");
+  const [curFrom,setCurFrom]             = useState("");
+  const [curDoor,setCurDoor]             = useState("");
+  const [curVillage,setCurVillage]       = useState("");
+  const [curLocality,setCurLocality]     = useState("");
+  const [curDistrict,setCurDistrict]     = useState("");
+  const [curState,setCurState]           = useState("");
+  const [curPin,setCurPin]               = useState("");
+  const [permFrom,setPermFrom]           = useState("");
+  const [permDoor,setPermDoor]           = useState("");
   const [sameAsCurrent,setSameAsCurrent] = useState(false);
-  const [permVillage,setPermVillage] = useState("");
-  const [permLocality,setPermLocality] = useState("");
-  const [permDistrict,setPermDistrict] = useState("");
-  const [permState,setPermState]     = useState("");
-  const [permPin,setPermPin]         = useState("");
-  const [aadhaarKey,setAadhaarKey]   = useState("");
-  const [panKey,setPanKey]           = useState("");
-  const [photoKey,setPhotoKey]       = useState("");
+  const [permVillage,setPermVillage]     = useState("");
+  const [permLocality,setPermLocality]   = useState("");
+  const [permDistrict,setPermDistrict]   = useState("");
+  const [permState,setPermState]         = useState("");
+  const [permPin,setPermPin]             = useState("");
+  const [aadhaarKey,setAadhaarKey]       = useState("");
+  const [panKey,setPanKey]               = useState("");
+  const [photoKey,setPhotoKey]           = useState("");
+
+  // ── Bank details ─────────────────────────────────────────────────────
+  const [bankName,setBankName]           = useState("");
+  const [bankAccountName,setBankAccountName] = useState("");
+  const [ifsc,setIfsc]                   = useState("");
+  const [branch,setBranch]               = useState("");
+  const [accountNo,setAccountNo]         = useState("");         // raw entry (cleared after save)
+  const [accountNoConfirm,setAccountNoConfirm] = useState("");   // confirm field
+  const [accountType,setAccountType]     = useState("");
+  const [accountLast4,setAccountLast4]   = useState("");         // stored/loaded last 4 digits
 
   const dirty = (setter) => (val) => { setter(val); isDirtyRef.current = true; };
 
-  // ─── ROLE GUARD ───────────────────────────────────────────────────
   useEffect(() => {
     if (!ready) return;
     if (!user) { router.replace("/employee/login"); return; }
@@ -502,14 +485,10 @@ export default function PersonalDetails() {
           if (d.nationality)  setNationality(d.nationality);
           if (d.mobile)       setMobile(d.mobile);
           if (d.email)        setEmail(d.email);
-          // ── AADHAAR: stored as last 4 digits only after first save ──
-          if (d.aadhaar || d.aadhar) {
-            const stored = d.aadhaar || d.aadhar;
-            // If stored value is 4 digits it's already masked — load as-is
-            // Employee sees 4-digit value with a green hint below the field
-            setAadhar(stored);
-          }
+          if (d.aadhaar || d.aadhar) setAadhar(d.aadhaar || d.aadhar);
+          if (d.nameAsPerAadhaar) setNameAsPerAadhaar(d.nameAsPerAadhaar);
           if (d.pan)          setPan(d.pan);
+          if (d.nameAsPerPan) setNameAsPerPan(d.nameAsPerPan);
           if (d.passport)     setPassport(d.passport);
           if (d.bloodGroup)   setBloodGroup(d.bloodGroup);
           if (d.maritalStatus) setMaritalStatus(d.maritalStatus);
@@ -518,15 +497,17 @@ export default function PersonalDetails() {
           if (d.emergPhone)   setEmergPhone(d.emergPhone);
           if (d.aadhaarKey)   setAadhaarKey(d.aadhaarKey);
           if (d.panKey)       setPanKey(d.panKey);
-          if (d.photoKey) {
-            setPhotoKey(d.photoKey);
-            // Fetch photo preview URL using documents endpoint after employeeId is set
-            // Will be loaded in a separate effect once employeeId is available
-          }
+          if (d.photoKey)     setPhotoKey(d.photoKey);
+          // Bank
+          if (d.bankName)        setBankName(d.bankName);
+          if (d.bankAccountName) setBankAccountName(d.bankAccountName);
+          if (d.ifsc)            setIfsc(d.ifsc);
+          if (d.branch)          setBranch(d.branch);
+          if (d.accountLast4)    setAccountLast4(d.accountLast4);
+          if (d.accountType)     setAccountType(d.accountType);
           const cur  = d.currentAddress   || {};
           const perm = d.permanentAddress || {};
           if (cur.from)     setCurFrom(cur.from);
-          if (cur.to)       setCurTo(cur.to);
           if (cur.door)     setCurDoor(cur.door);
           if (cur.village)  setCurVillage(cur.village);
           if (cur.locality) setCurLocality(cur.locality);
@@ -543,17 +524,7 @@ export default function PersonalDetails() {
           if (perm.pin)      setPermPin(perm.pin);
         } else {
           const empId = `emp-${Date.now()}`;
-          const createRes = await apiFetch(`${API}/employee`, {
-            method: "POST",
-            body: JSON.stringify({
-              employee_id: empId,
-              status: "draft",
-              email: user?.email || "",
-              mobile: user?.phone || "0000000000",
-              firstName: "_",
-              lastName: "_",
-            }),
-          });
+          const createRes = await apiFetch(`${API}/employee`, { method:"POST", body:JSON.stringify({ employee_id:empId, status:"draft", email:user?.email||"", mobile:user?.phone||"0000000000", firstName:"_", lastName:"_" }) });
           const rd = await createRes.json().catch(() => ({}));
           setEmployeeId(rd.employee_id || empId);
         }
@@ -563,17 +534,13 @@ export default function PersonalDetails() {
     init();
   }, [ready, user, apiFetch]);
 
-  // ── Load photo preview from documents endpoint on re-login ──
+  // Load photo preview
   useEffect(() => {
     if (!employeeId || !photoKey || photoPreview) return;
     const loadPreview = async () => {
       try {
         const res = await apiFetch(`${API}/documents/${employeeId}`);
-        if (res.ok) {
-          const data = await res.json();
-          const photoUrl = data?.documents?.personal?.photo?.url;
-          if (photoUrl) setPhotoPreview(photoUrl);
-        }
+        if (res.ok) { const data = await res.json(); const url = data?.documents?.personal?.photo?.url; if (url) setPhotoPreview(url); }
       } catch (_) {}
     };
     loadPreview();
@@ -587,14 +554,18 @@ export default function PersonalDetails() {
     fatherName: `${fatherFirst} ${fatherMiddle} ${fatherLast}`.trim(),
     motherName: `${motherFirst} ${motherMiddle} ${motherLast}`.trim(),
     dob, gender, nationality, mobile, email,
-    // AADHAAR: store only last 4 digits (UIDAI / DPDP compliance)
-    // aadhar state holds raw digits (up to 12) — take last 4
-    // If already 4 digits (loaded from DynamoDB masked) — store as-is
     aadhaar: aadhar.length <= 4 ? aadhar : aadhar.slice(-4),
-    pan, passport, bloodGroup, maritalStatus,
+    nameAsPerAadhaar,
+    pan, nameAsPerPan,
+    passport, bloodGroup, maritalStatus,
     emergName, emergRel, emergPhone,
     aadhaarKey, panKey, photoKey,
     sameAsCurrent,
+    // Bank — store only last 4 digits of account number (DPDP compliance)
+    bankName, bankAccountName, ifsc, branch, accountType,
+    accountLast4: accountNo.length >= 4
+      ? accountNo.slice(-4)
+      : (accountLast4 || ""),
     currentAddress:   { from:curFrom, door:curDoor, village:curVillage, locality:curLocality, district:curDistrict, state:curState, pin:curPin },
     permanentAddress: {
       from:     sameAsCurrent ? curFrom     : permFrom,
@@ -614,6 +585,8 @@ export default function PersonalDetails() {
     if (!res.ok) throw new Error(parseError(await res.json().catch(() => ({}))));
     const rd = await res.json().catch(() => ({}));
     if (rd.employee_id) setEmployeeId(rd.employee_id);
+    // After saving, update accountLast4 and clear raw fields
+    if (accountNo.length >= 4) { setAccountLast4(accountNo.slice(-4)); setAccountNo(""); setAccountNoConfirm(""); }
   };
 
   const handleSave = async () => {
@@ -624,18 +597,29 @@ export default function PersonalDetails() {
     if (!gender)       e.gender = true;
     if (!nationality)  e.nationality = true;
     if (!mobile)       e.mobile = true;
-    if (!aadhar)                                    e.aadhar = true; // empty
-    if (aadhar && aadhar.length !== 12 && aadhar.length !== 4) e.aadhar = true; // not 12 digits and not already masked 4
-    if (!pan)          e.pan = true;
-    if (!bloodGroup)   e.bloodGroup = true;
+    if (!aadhar)                                      e.aadhar = true;
+    if (aadhar && aadhar.length !== 12 && aadhar.length !== 4) e.aadhar = true;
+    if (!nameAsPerAadhaar)  e.nameAsPerAadhaar = true;
+    if (!pan)           e.pan = true;
+    if (!nameAsPerPan)  e.nameAsPerPan = true;
+    if (!bloodGroup)    e.bloodGroup = true;
     if (!maritalStatus) e.maritalStatus = true;
-    if (!curDoor)      e.curDoor = true;
-    if (!curDistrict)  e.curDistrict = true;
-    if (!curState)     e.curState = true;
-    if (!curPin)       e.curPin = true;
-    if (!aadhaarKey)   e.aadhaarKey = true;
-    if (!panKey)       e.panKey = true;
-    if (!photoKey)     e.photoKey = true;
+    if (!curDoor)       e.curDoor = true;
+    if (!curDistrict)   e.curDistrict = true;
+    if (!curState)      e.curState = true;
+    if (!curPin)        e.curPin = true;
+    if (!aadhaarKey)    e.aadhaarKey = true;
+    if (!panKey)        e.panKey = true;
+    if (!photoKey)      e.photoKey = true;
+    // Bank — required
+    if (!bankName)         e.bankName = true;
+    if (!bankAccountName)  e.bankAccountName = true;
+    if (!ifsc)             e.ifsc = true;
+    if (!branch)           e.branch = true;
+    if (!accountType)      e.accountType = true;
+    // Account number: required if not yet saved (accountLast4 empty) and accountNo not filled
+    if (!accountLast4 && !accountNo) e.accountNo = true;
+    if (accountNo && accountNo !== accountNoConfirm) e.accountNoConfirm = true;
     if (Object.keys(e).length > 0) {
       setErrors(e);
       setSaveStatus("Please fill all required fields ↑");
@@ -654,33 +638,16 @@ export default function PersonalDetails() {
     catch (_) { setMidSaveStatus("Error saving"); setTimeout(() => setMidSaveStatus(""), 2500); }
   };
 
-  const handleSaveSignout = async () => {
-    try { await saveDraft(); isDirtyRef.current = false; } catch (_) {}
-    logout();
-  };
+  const handleSaveSignout = async () => { try { await saveDraft(); isDirtyRef.current = false; } catch (_) {} logout(); };
+  const handleNavigate = async (path) => { if (isDirtyRef.current) { try { await saveDraft(); isDirtyRef.current = false; } catch (_) {} } router.push(path); };
+  const handleSignout  = async () => { if (isDirtyRef.current) { try { await saveDraft(); } catch (_) {} } logout(); };
 
-  const handleNavigate = async (path) => {
-    if (isDirtyRef.current) { try { await saveDraft(); isDirtyRef.current = false; } catch (_) {} }
-    router.push(path);
-  };
-  const handleSignout = async () => {
-    if (isDirtyRef.current) { try { await saveDraft(); } catch (_) {} }
-    logout();
-  };
-
-  // ── Aadhaar display ──
-  // Normal view: XXXX XXXX 7878 (masked)
-  // Editing mode: show raw digits so user can type freely
   const aadhaarDisplay = aadhaarEditing
     ? aadhar
     : (aadhar.length >= 4 ? `XXXX XXXX ${aadhar.slice(-4)}` : aadhar);
 
   if (!ready || !user) return null;
-  if (loading) return (
-    <div style={{minHeight:"100vh",background:"#cdd2ed",display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <p style={{color:"#8b88b0",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:500}}>Loading your profile…</p>
-    </div>
-  );
+  if (loading) return (<div style={{minHeight:"100vh",background:"#cdd2ed",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#8b88b0",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:500}}>Loading your profile…</p></div>);
 
   return (
     <>
@@ -709,23 +676,19 @@ export default function PersonalDetails() {
 
               {/* Profile Photo */}
               <div className="sc ind">
-                <div className="sh">
-                  <div className="si ind">📸</div>
-                  <span className="st">Profile Photo <span style={{color:"#ef4444",fontSize:"0.8rem"}}>*</span></span>
-                </div>
+                <div className="sh"><div className="si ind">📸</div><span className="st">Profile Photo <span style={{color:"#ef4444",fontSize:"0.8rem"}}>*</span></span></div>
                 <div style={{display:"flex",alignItems:"center",gap:"1.25rem",flexWrap:"wrap"}}>
                   <div className="photo-wrap">
-                    {photoPreview
-                      ? <img src={photoPreview} alt="profile" />
-                      : <span style={{color:"#8b88b0",fontSize:"0.7rem",fontWeight:600,textAlign:"center",padding:"0 0.5rem"}}>No photo</span>}
+                    {photoPreview ? <img src={photoPreview} alt="profile"/> : <span style={{color:"#8b88b0",fontSize:"0.7rem",fontWeight:600,textAlign:"center",padding:"0 0.5rem"}}>No photo</span>}
                   </div>
                   <div style={{flex:1}}>
-                    <FileUpload label="Upload Profile Photo" category="personal" subKey="photo" employeeId={employeeId} apiFetch={apiFetch} value={photoKey} onChange={(k, url) => { setPhotoKey(k); if (url) setPhotoPreview(url); else if (!k) setPhotoPreview(null); isDirtyRef.current = true; }} accept="image/*" />
+                    <FileUpload label="Upload Profile Photo" category="personal" subKey="photo" employeeId={employeeId} apiFetch={apiFetch} value={photoKey} onChange={(k, url) => { setPhotoKey(k); if (url) setPhotoPreview(url); else if (!k) setPhotoPreview(null); isDirtyRef.current = true; }} accept="image/*"/>
                     <p style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:4}}>JPG or PNG · max 5MB</p>
                   </div>
                 </div>
               </div>
 
+              {/* Full Name */}
               <div className="sc cyn">
                 <div className="sh"><div className="si cyn">✏️</div><span className="st">Full Name</span></div>
                 <div className="fr">
@@ -735,6 +698,7 @@ export default function PersonalDetails() {
                 </div>
               </div>
 
+              {/* Father's Name */}
               <div className="sc vio">
                 <div className="sh"><div className="si vio">👨</div><span className="st">Father's Name</span></div>
                 <div className="fr">
@@ -744,6 +708,7 @@ export default function PersonalDetails() {
                 </div>
               </div>
 
+              {/* Mother's Name */}
               <div className="sc ros">
                 <div className="sh"><div className="si ros">👩</div><span className="st">Mother's Name</span></div>
                 <div className="fr">
@@ -753,12 +718,14 @@ export default function PersonalDetails() {
                 </div>
               </div>
 
+              {/* Personal Info */}
               <div className="sc amb">
                 <div className="sh"><div className="si amb">🪪</div><span className="st">Personal Information</span></div>
                 <div className="fr">
                   <DateField l="Date of Birth" v={dob} s={dirty(setDob)} />
-                  <FS l="Gender"       v={gender}       s={dirty(setGender)}       o={["Male","Female","Other"]} />
-                  <F l="Nationality"   v={nationality}  s={dirty(setNationality)} />
+                  {/* ── Expanded gender dropdown ── */}
+                  <FS l="Gender" v={gender} s={dirty(setGender)} o={GENDER_OPTIONS} />
+                  <F l="Nationality" v={nationality} s={dirty(setNationality)} />
                 </div>
                 <div className="fr">
                   <div className="fi">
@@ -776,11 +743,12 @@ export default function PersonalDetails() {
                 </div>
                 <div className="fr">
                   <FS l="Blood Group"    v={bloodGroup}    s={dirty(setBloodGroup)}    o={["A+","A-","B+","B-","AB+","AB-","O+","O-"]} />
-                  <FS l="Marital Status" v={maritalStatus} s={dirty(setMaritalStatus)} o={["Single","Married","Divorced","Widowed"]} />
+                  <FS l="Marital Status" v={maritalStatus} s={dirty(setMaritalStatus)} o={["Single","Married","Divorced","Widowed","Separated"]} />
                   <div className="fi" />
                 </div>
               </div>
 
+              {/* Emergency Contact */}
               <div className="sc ros">
                 <div className="sh"><div className="si ros">🚨</div><span className="st">Emergency Contact</span></div>
                 <div className="fr">
@@ -790,39 +758,151 @@ export default function PersonalDetails() {
                 </div>
               </div>
 
+              {/* Identity Documents */}
               <div className="sc grn">
                 <div className="sh"><div className="si grn">📄</div><span className="st">Identity Documents</span></div>
                 <div className="fr">
+                  {/* Aadhaar */}
                   <div className="fi">
                     <span className="fl">Aadhaar Number <span style={{color:"#ef4444"}}>*</span></span>
                     <input
-                      className="in"
+                      className={`in${errors.aadhar?" err":""}`}
                       value={aadhaarDisplay}
                       placeholder="Enter 12-digit Aadhaar"
                       onFocus={() => setAadhaarEditing(true)}
                       onBlur={() => setAadhaarEditing(false)}
-                      onChange={(e) => {
-                        const raw = e.target.value.replace(/[^0-9]/g, "");
-                        if (raw.length <= 12) dirty(setAadhar)(raw);
-                      }}
+                      onChange={(e) => { const raw = e.target.value.replace(/[^0-9]/g, ""); if (raw.length <= 12) dirty(setAadhar)(raw); }}
                     />
-                    {aadhar && aadhar.length !== 12 && aadhar.length !== 4 && (
-                      <span className="fe">Must be exactly 12 digits ({aadhar.length}/12)</span>
-                    )}
-                    <div style={{marginTop:"0.7rem"}}>
+                    {aadhar && aadhar.length !== 12 && aadhar.length !== 4 && <span className="fe">Must be exactly 12 digits ({aadhar.length}/12)</span>}
+                    <p style={{fontSize:"0.68rem",color:"#8b88b0",marginTop:3,fontWeight:500}}>🔒 Only the last 4 digits are stored (DPDP compliance)</p>
+                    {/* Name as per Aadhaar */}
+                    <div style={{marginTop:"0.75rem"}}>
+                      <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Name as per Aadhaar <span style={{color:"#ef4444"}}>*</span></span>
+                      <input className={`in${errors.nameAsPerAadhaar?" err":""}`} value={nameAsPerAadhaar} placeholder="Exactly as printed on Aadhaar card" onChange={e=>{dirty(setNameAsPerAadhaar)(e.target.value);fixErr("nameAsPerAadhaar");}}/>
+                      {errors.nameAsPerAadhaar && <span className="err-msg">Required</span>}
+                    </div>
+                    <div style={{marginTop:"0.75rem"}}>
                       <FileUpload label="Upload Aadhaar Card *" category="personal" subKey="aadhaar" employeeId={employeeId} apiFetch={apiFetch} value={aadhaarKey} onChange={(k) => { setAadhaarKey(k); isDirtyRef.current = true; }} />
                     </div>
                   </div>
+                  {/* PAN */}
                   <div className="fi">
                     <F l="PAN Number" v={pan} s={(v) => { let val = v.toUpperCase(); if (val.length<=5) val=val.replace(/[^A-Z]/g,""); else if (val.length<=9) val=val.slice(0,5)+val.slice(5).replace(/[^0-9]/g,""); else if (val.length<=10) val=val.slice(0,5)+val.slice(5,9)+val.slice(9).replace(/[^A-Z]/g,""); dirty(setPan)(val); }} />
                     {pan && pan.length !== 10 && <span className="fe">Format: AAAAA9999A</span>}
-                    <div style={{marginTop:"0.7rem"}}>
+                    {/* Name as per PAN */}
+                    <div style={{marginTop:"0.75rem"}}>
+                      <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Name as per PAN <span style={{color:"#ef4444"}}>*</span></span>
+                      <input className={`in${errors.nameAsPerPan?" err":""}`} value={nameAsPerPan} placeholder="Exactly as printed on PAN card" onChange={e=>{dirty(setNameAsPerPan)(e.target.value);fixErr("nameAsPerPan");}}/>
+                      {errors.nameAsPerPan && <span className="err-msg">Required</span>}
+                    </div>
+                    <div style={{marginTop:"0.75rem"}}>
                       <FileUpload label="Upload PAN Card *" category="personal" subKey="pan" employeeId={employeeId} apiFetch={apiFetch} value={panKey} onChange={(k) => { setPanKey(k); isDirtyRef.current = true; }} />
                     </div>
                   </div>
                 </div>
               </div>
 
+              {/* ── Bank Details ─────────────────────────────────────── */}
+              <div className="sc teal">
+                <div className="sh">
+                  <div className="si teal">🏦</div>
+                  <span className="st">Bank Account Details</span>
+                </div>
+                <div className="bank-note">
+                  🔒 Only the last 4 digits of your account number are stored (DPDP compliance). Please verify your details carefully — this will be used for salary processing.
+                </div>
+                <div className="fr">
+                  {/* Bank name with dropdown */}
+                  <div className="fi">
+                    <span className="fl">Bank Name <span style={{color:"#ef4444"}}>*</span></span>
+                    <select className={`in${errors.bankName?" err":""}`} value={bankName} onChange={e=>{dirty(setBankName)(e.target.value);fixErr("bankName");}} style={{background:bankName?"#fff":"#f2f1f9",color:bankName?"#1a1730":"#8b88b0",appearance:"auto"}}>
+                      <option value="">Select your bank</option>
+                      {BANK_LIST.map(b=><option key={b} value={b}>{b}</option>)}
+                    </select>
+                    {errors.bankName && <span className="err-msg">Required</span>}
+                  </div>
+                  <div className="fi">
+                    <span className="fl">Name as per Bank Account <span style={{color:"#ef4444"}}>*</span></span>
+                    <input className={`in${errors.bankAccountName?" err":""}`} value={bankAccountName} placeholder="Full name as per bank records" onChange={e=>{dirty(setBankAccountName)(e.target.value);fixErr("bankAccountName");}}/>
+                    {errors.bankAccountName && <span className="err-msg">Required</span>}
+                  </div>
+                </div>
+                <div className="fr">
+                  <div className="fi">
+                    <span className="fl">IFSC Code <span style={{color:"#ef4444"}}>*</span></span>
+                    <input className={`in${errors.ifsc?" err":""}`} value={ifsc} placeholder="e.g. SBIN0001234" maxLength={11} onChange={e=>{dirty(setIfsc)(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,""));fixErr("ifsc");}}/>
+                    {errors.ifsc && <span className="err-msg">Required</span>}
+                    {ifsc && ifsc.length !== 11 && <span className="fe">IFSC must be 11 characters</span>}
+                  </div>
+                  <div className="fi">
+                    <span className="fl">Branch Name <span style={{color:"#ef4444"}}>*</span></span>
+                    <input className={`in${errors.branch?" err":""}`} value={branch} placeholder="e.g. Hyderabad Main Branch" onChange={e=>{dirty(setBranch)(e.target.value);fixErr("branch");}}/>
+                    {errors.branch && <span className="err-msg">Required</span>}
+                  </div>
+                  <div className="fi">
+                    <span className="fl">Account Type <span style={{color:"#ef4444"}}>*</span></span>
+                    <select className={`in${errors.accountType?" err":""}`} value={accountType} onChange={e=>{dirty(setAccountType)(e.target.value);fixErr("accountType");}} style={{background:accountType?"#fff":"#f2f1f9",color:accountType?"#1a1730":"#8b88b0",appearance:"auto"}}>
+                      <option value="">Select</option>
+                      <option value="Savings">Savings</option>
+                      <option value="Current">Current</option>
+                      <option value="Salary">Salary</option>
+                      <option value="NRE">NRE</option>
+                      <option value="NRO">NRO</option>
+                    </select>
+                    {errors.accountType && <span className="err-msg">Required</span>}
+                  </div>
+                </div>
+                <div className="fr">
+                  <div className="fi">
+                    <span className="fl">
+                      Account Number <span style={{color:"#ef4444"}}>*</span>
+                    </span>
+                    {/* If already saved, show masked + option to update */}
+                    {accountLast4 && !accountNo ? (
+                      <div>
+                        <input className="in" value={`XXXX XXXX XXXX ${accountLast4}`} disabled style={{letterSpacing:"0.05em"}}/>
+                        <button type="button" onClick={()=>{setAccountLast4("");isDirtyRef.current=true;}} style={{marginTop:"0.3rem",fontSize:"0.68rem",color:"#4f46e5",background:"none",border:"none",cursor:"pointer",fontWeight:600,padding:0}}>Update account number</button>
+                      </div>
+                    ) : (
+                      <input
+                        className={`in${errors.accountNo?" err":""}`}
+                        value={accountNo}
+                        placeholder="Enter full account number"
+                        inputMode="numeric"
+                        onChange={e=>{dirty(setAccountNo)(e.target.value.replace(/\D/g,""));fixErr("accountNo");if(accountNoConfirm)fixErr("accountNoConfirm");}}
+                      />
+                    )}
+                    {errors.accountNo && <span className="err-msg">Account number is required</span>}
+                    {!accountLast4 && <span style={{fontSize:"0.68rem",color:"#8b88b0",marginTop:3,display:"block",fontWeight:500}}>🔒 Only last 4 digits will be stored</span>}
+                  </div>
+                  <div className="fi">
+                    <span className="fl">
+                      Re-enter Account Number <span style={{color:"#ef4444"}}>*</span>
+                    </span>
+                    {accountLast4 && !accountNo ? (
+                      <input className="in" value={`XXXX XXXX XXXX ${accountLast4}`} disabled style={{letterSpacing:"0.05em"}}/>
+                    ) : (
+                      <input
+                        className={`in${errors.accountNoConfirm?" err":""}`}
+                        value={accountNoConfirm}
+                        placeholder="Re-enter to confirm"
+                        inputMode="numeric"
+                        onPaste={e=>e.preventDefault()}
+                        onChange={e=>{setAccountNoConfirm(e.target.value.replace(/\D/g,""));isDirtyRef.current=true;fixErr("accountNoConfirm");}}
+                      />
+                    )}
+                    {errors.accountNoConfirm && <span className="err-msg">Account numbers do not match</span>}
+                    {accountNoConfirm && accountNo && accountNo !== accountNoConfirm && !errors.accountNoConfirm && (
+                      <span className="fe">Numbers don't match yet</span>
+                    )}
+                    {accountNoConfirm && accountNo && accountNo === accountNoConfirm && (
+                      <span style={{fontSize:"0.68rem",color:"#16a34a",marginTop:3,display:"block",fontWeight:600}}>✓ Account numbers match</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Current Address */}
               <div className="sc ind">
                 <div className="sh"><div className="si ind">🏠</div><span className="st">Current Address</span></div>
                 <div className="fr">
@@ -831,8 +911,8 @@ export default function PersonalDetails() {
                 </div>
                 <div className="fr"><F l="Door No. & Street" v={curDoor} s={dirty(setCurDoor)} /></div>
                 <div className="fr">
-                  <F l="Village / Area"           v={curVillage}  s={dirty(setCurVillage)} r={false} />
-                  <F l="Tehsil / Taluk / Mandal"  v={curLocality} s={dirty(setCurLocality)} r={false} />
+                  <F l="Village / Area"          v={curVillage}  s={dirty(setCurVillage)}  r={false} />
+                  <F l="Tehsil / Taluk / Mandal" v={curLocality} s={dirty(setCurLocality)} r={false} />
                 </div>
                 <div className="fr">
                   <F l="District" v={curDistrict} s={dirty(setCurDistrict)} />
@@ -841,21 +921,16 @@ export default function PersonalDetails() {
                 </div>
               </div>
 
+              {/* Permanent Address */}
               <div className="sc cyn">
                 <div className="sh"><div className="si cyn">📍</div><span className="st">Permanent / Native Address</span></div>
-
-                {/* Same as current address checkbox */}
-                <div
-                  style={{display:"flex",alignItems:"center",gap:"0.6rem",marginBottom:"1rem",padding:"0.65rem 0.875rem",background:"#f0f9ff",border:`1.5px solid ${sameAsCurrent?"#0891b2":"#bae6fd"}`,borderRadius:9,cursor:"pointer",transition:"all 0.15s"}}
-                  onClick={() => { const v = !sameAsCurrent; setSameAsCurrent(v); isDirtyRef.current = true; }}
-                >
+                <div style={{display:"flex",alignItems:"center",gap:"0.6rem",marginBottom:"1rem",padding:"0.65rem 0.875rem",background:"#f0f9ff",border:`1.5px solid ${sameAsCurrent?"#0891b2":"#bae6fd"}`,borderRadius:9,cursor:"pointer",transition:"all 0.15s"}}
+                  onClick={() => { const v = !sameAsCurrent; setSameAsCurrent(v); isDirtyRef.current = true; }}>
                   <div style={{width:18,height:18,borderRadius:5,border:`2px solid ${sameAsCurrent?"#0891b2":"#b8b4d4"}`,background:sameAsCurrent?"#0891b2":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.15s"}}>
                     {sameAsCurrent && <span style={{color:"#fff",fontWeight:800,fontSize:"0.7rem"}}>✓</span>}
                   </div>
                   <span style={{fontSize:"0.84rem",fontWeight:600,color:"#0c4a6e"}}>Same as current address</span>
                 </div>
-
-                {/* Show fields only when NOT same as current */}
                 {!sameAsCurrent && (<>
                   <div className="fr">
                     <DateField l="Residing From" v={permFrom} s={dirty(setPermFrom)} r={false} />
@@ -868,12 +943,10 @@ export default function PersonalDetails() {
                   </div>
                   <div className="fr">
                     <F l="District" v={permDistrict} s={dirty(setPermDistrict)} r={false} />
-                    <F l="State"    v={permState}    s={dirty(setPermState)} r={false} />
+                    <F l="State"    v={permState}    s={dirty(setPermState)}    r={false} />
                     <F l="Pincode"  v={permPin}      s={(v) => dirty(setPermPin)(v.replace(/\D/g,"").slice(0,6))} r={false} />
                   </div>
                 </>)}
-
-                {/* Summary when same as current */}
                 {sameAsCurrent && (
                   <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:9,padding:"0.75rem 1rem",fontSize:"0.8rem",color:"#15803d",fontWeight:500}}>
                     ✓ Same as current address — {[curDoor,curVillage,curDistrict,curState,curPin].filter(Boolean).join(", ") || "fill your current address above first"}
@@ -884,9 +957,7 @@ export default function PersonalDetails() {
               <div className="sbar">
                 <span className={`ss${saveStatus==="Saved ✓"?" ok":saveStatus.startsWith("Error")?" err":""}`}>{saveStatus}</span>
                 <div style={{display:"flex",gap:"0.65rem",alignItems:"center"}}>
-                  <button className="sbtn" onClick={handleMidSave} style={{fontSize:"0.8rem"}}>
-                    {midSaveStatus || "Save draft"}
-                  </button>
+                  <button className="sbtn" onClick={handleMidSave} style={{fontSize:"0.8rem"}}>{midSaveStatus || "Save draft"}</button>
                   <button className="pbtn" onClick={handleSave}>Save & Continue →</button>
                 </div>
               </div>
