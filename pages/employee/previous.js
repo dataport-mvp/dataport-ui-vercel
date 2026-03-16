@@ -148,6 +148,15 @@ const ACK_DEFS = [
   },
 ];
 
+// Generic guide steps — illustrative only, not real company names
+const GUIDE_STEPS = [
+  { label: "Current Company", sub: "most recent" },
+  { label: "Company 2",       sub: "before that"  },
+  { label: "Company 3",       sub: ""             },
+  { label: "Company 4",       sub: ""             },
+  { label: "First Job",       sub: "oldest"       },
+];
+
 function ConsentBell({ apiFetch, router }) {
   const [count, setCount] = useState(0);
   useEffect(() => {
@@ -332,13 +341,16 @@ export default function PreviousCompany() {
         if(!emp.reference.name) e[`${i}_refName`]=true;
         if(!emp.reference.email) e[`${i}_refEmail`]=true;
         if(!emp.reference.mobile) e[`${i}_refMobile`]=true;
-        if(!emp.documents.payslipsKey) e[`${i}_payslips`]=true;
+        // Payslips: mandatory only for index 0 (current employer)
+        if(i===0&&!emp.documents.payslipsKey) e[`${i}_payslips`]=true;
+        // Offer letter: mandatory for all
         if(!emp.documents.offerLetterKey) e[`${i}_offerLetter`]=true;
-        // Resignation acceptance: mandatory ONLY for index 0 (current/most recent employer)
+        // Resignation acceptance: mandatory only for index 0 (current employer)
         if(i===0&&!emp.documents.resignationKey) e[`${i}_resignation`]=true;
+        // Experience / relieving letter: mandatory for all
         if(!emp.documents.experienceKey) e[`${i}_experience`]=true;
-        // Gap reason required only for non-current employers (index > 0) when gap toggled on
-        if(i>0&&emp.gap.hasGap==="Yes"&&!emp.gap.reason) e[`${i}_gapReason`]=true;
+        // Gap reason: required for any employer (any index) when gap is toggled on
+        if(emp.gap.hasGap==="Yes"&&!emp.gap.reason) e[`${i}_gapReason`]=true;
       });
     }
     ACK_DEFS.forEach(({key})=>{
@@ -405,16 +417,21 @@ export default function PreviousCompany() {
         <div className="wrap">
           <StepNav current={3} onNavigate={handleNavigate}/>
 
-          {/* ── Chronological guide ───────────────────────────────────── */}
+          {/* ── Chronological guide — generic placeholders ────────────── */}
           <div className="guide-banner">
             <div style={{fontSize:"1.2rem",flexShrink:0}}>💡</div>
-            <div>
-              <div style={{fontSize:"0.82rem",fontWeight:700,color:"#3730a3",marginBottom:"0.3rem"}}>Fill from most recent to oldest employer</div>
-              <div style={{fontSize:"0.72rem",color:"#6b6894",marginBottom:"0.45rem",lineHeight:1.5}}>Start with where you work now (or left most recently), and add backwards in time.</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:"0.82rem",fontWeight:700,color:"#3730a3",marginBottom:"0.25rem"}}>Always start with your current or most recent company</div>
+              <div style={{fontSize:"0.72rem",color:"#6b6894",marginBottom:"0.5rem",lineHeight:1.5}}>
+                Add each employer in reverse chronological order — most recent first, working backwards to your very first job.
+              </div>
               <div className="guide-steps">
-                {["Experian (current)","TCS","Talent Formula","Wipro","Infosys (first job)"].map((s,i,arr)=>(
+                {GUIDE_STEPS.map((s,i,arr)=>(
                   <span key={i} style={{display:"inline-flex",alignItems:"center",gap:"0.4rem"}}>
-                    <span className="guide-step">{s}</span>
+                    <span className="guide-step" style={{display:"inline-flex",flexDirection:"column",alignItems:"center",gap:"1px"}}>
+                      <span>{s.label}</span>
+                      {s.sub&&<span style={{fontSize:"0.6rem",fontWeight:500,color:"#818cf8",letterSpacing:0,textTransform:"none"}}>{s.sub}</span>}
+                    </span>
                     {i<arr.length-1&&<span className="guide-arrow">→</span>}
                   </span>
                 ))}
@@ -467,36 +484,48 @@ export default function PreviousCompany() {
           {/* ── Employer cards — only if experienced ─────────────────── */}
           {hasExperience==="Yes"&&(<>
           {employments.map((emp,index)=>{
-            // Gap toggle: only shown for previous employers (index > 0), NOT for current/most-recent (index 0)
-            // Gap after education is handled on the Education page
-            const showGapToggle = index > 0;
-            const gapLabel = emp.gap.hasGap==="Yes" ? "Gap before joining: Yes" : "Gap before joining?";
-            const gapHint = "Describe the gap period between leaving your previous company and joining this one.";
+            const total = employments.length;
+
+            // Gap pill label and hint — contextual per position
+            // index 0 = current/most-recent: gap is between previous company and THIS current one
+            // index N (last card) = oldest job: gap is between finishing education and joining this company
+            // index N (middle) = gap between leaving the company below (older) and joining this one
+            const isLastCard = index === total - 1;
+            const gapPillLabel = emp.gap.hasGap === "Yes"
+              ? (index === 0 ? "Gap before joining: Yes" : "Gap before this job: Yes")
+              : (index === 0 ? "Gap before joining?" : "Gap before this job?");
+            const gapHint = index === 0
+              ? "Any gap between leaving your previous company and joining this (current) one."
+              : isLastCard && total > 1
+                ? "Any gap between finishing your education and joining this company."
+                : `Any gap between leaving the company below (${
+                    employments[index + 1]?.companyName
+                      ? `"${employments[index + 1].companyName}"`
+                      : "the next older employer"
+                  }) and joining this one.`;
 
             return (
             <div key={index} className="emp-card">
 
-              {/* Header row — title + gap pill (only for non-current) + remove */}
+              {/* Header row */}
               <div className="emp-hdr">
                 <span className="emp-title">
                   {index===0?"Current / Most Recent Employer":`Previous Employer ${index}`}
                 </span>
                 <div className="emp-hdr-right">
-                  {/* Gap toggle pill — only for employers after the most recent */}
-                  {showGapToggle&&(
-                    <button
-                      className={`gap-pill${emp.gap.hasGap==="Yes"?" on":""}`}
-                      onClick={()=>update(index,"gap.hasGap",emp.gap.hasGap==="Yes"?"":"Yes")}
-                    >
-                      ⏱ {gapLabel}
-                    </button>
-                  )}
+                  {/* Gap toggle — shown on ALL employer cards */}
+                  <button
+                    className={`gap-pill${emp.gap.hasGap==="Yes"?" on":""}`}
+                    onClick={()=>update(index,"gap.hasGap",emp.gap.hasGap==="Yes"?"":"Yes")}
+                  >
+                    ⏱ {gapPillLabel}
+                  </button>
                   {index!==0&&<button className="rm-btn" onClick={()=>removeEmployer(index)}>− Remove</button>}
                 </div>
               </div>
 
-              {/* Gap reason box — only for non-current employers */}
-              {showGapToggle&&emp.gap.hasGap==="Yes"&&(
+              {/* Gap reason box */}
+              {emp.gap.hasGap==="Yes"&&(
                 <div className="gap-reason-box">
                   <span className="fl" style={{display:"block",marginBottom:"0.35rem"}}>
                     Reason for Gap <span style={{color:"#ef4444"}}>*</span>
@@ -560,30 +589,40 @@ export default function PreviousCompany() {
 
               <div className="subsec">
                 <div className="sub-lbl">Attachments</div>
+
+                {/* Payslips — mandatory for index 0 only */}
                 <div className="att-wrap">
-                  <span className="att-lbl">Payslips (Last 3 Months) <span style={{color:"#ef4444"}}>*</span></span>
+                  <span className="att-lbl">
+                    Payslips (Last 3 Months){index===0&&<span style={{color:"#ef4444"}}> *</span>}
+                  </span>
                   {errors[`${index}_payslips`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
                   <FileUpload label="Payslips" category="employment" subKey="payslips" companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.payslipsKey} onChange={v=>{update(index,"documents.payslipsKey",v);fixErr(`${index}_payslips`);}}/>
                 </div>
+
+                {/* Offer letter — mandatory for all */}
                 <div className="att-wrap">
                   <span className="att-lbl">Offer Letter <span style={{color:"#ef4444"}}>*</span></span>
                   {errors[`${index}_offerLetter`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
                   <FileUpload label="Offer Letter" category="employment" subKey="offerLetter" companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.offerLetterKey} onChange={v=>{update(index,"documents.offerLetterKey",v);fixErr(`${index}_offerLetter`);}}/>
                 </div>
+
+                {/* Resignation acceptance — mandatory for index 0 only */}
                 <div className="att-wrap">
-                  {/* Resignation Acceptance: mandatory (*) only for index 0, optional for all others */}
                   <span className="att-lbl">
                     Resignation Acceptance{index===0&&<span style={{color:"#ef4444"}}> *</span>}
-                    {index>0&&<span style={{fontSize:"0.62rem",color:"#94a3b8",fontWeight:500,marginLeft:"0.4rem",textTransform:"none",letterSpacing:0}}>(optional)</span>}
                   </span>
                   {errors[`${index}_resignation`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
                   <FileUpload label="Resignation" category="employment" subKey="resignation" companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.resignationKey} onChange={v=>{update(index,"documents.resignationKey",v);fixErr(`${index}_resignation`);}}/>
                 </div>
+
+                {/* Experience / relieving letter — mandatory for all */}
                 <div className="att-wrap">
                   <span className="att-lbl">Experience / Relieving Letter <span style={{color:"#ef4444"}}>*</span></span>
                   {errors[`${index}_experience`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
                   <FileUpload label="Experience Letter" category="employment" subKey="experience" companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.experienceKey} onChange={v=>{update(index,"documents.experienceKey",v);fixErr(`${index}_experience`);}}/>
                 </div>
+
+                {/* Company ID card — optional for all */}
                 <div className="att-wrap">
                   <span className="att-lbl">Company ID Card</span>
                   <FileUpload label="ID Card" category="employment" subKey="idCard" companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.idCardKey} onChange={v=>update(index,"documents.idCardKey",v)}/>
@@ -609,13 +648,9 @@ export default function PreviousCompany() {
 
             {ACK_DEFS.map(({key,title,question,detail})=>(
               <div key={key} className="decl-item">
-                {/* Section title */}
                 <p style={{fontSize:"0.68rem",fontWeight:800,color:"#7c3aed",textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:"0.35rem"}}>{title}</p>
-                {/* Full question */}
                 <p className="decl-q">{question}</p>
-                {/* Explanatory detail */}
                 <p className="decl-sub">{detail}</p>
-                {/* Yes / No */}
                 <div style={{display:"flex",gap:"0.65rem",marginBottom:ack[key].val==="Yes"?"0.75rem":"0"}}>
                   {["Yes","No"].map(v=>(
                     <button key={v} onClick={()=>{setAck({...ack,[key]:{...ack[key],val:v}});fixErr(`ack_${key}`);}} style={{padding:"0.3rem 1.1rem",borderRadius:999,border:ack[key].val===v?"2px solid #4f46e5":"1.5px solid #dddaf0",background:ack[key].val===v?"#4f46e5":"#f2f1f9",color:ack[key].val===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
