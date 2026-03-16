@@ -341,8 +341,8 @@ export default function PreviousCompany() {
         if(!emp.reference.name) e[`${i}_refName`]=true;
         if(!emp.reference.email) e[`${i}_refEmail`]=true;
         if(!emp.reference.mobile) e[`${i}_refMobile`]=true;
-        // Payslips: mandatory only for index 0 (current employer)
-        if(i===0&&!emp.documents.payslipsKey) e[`${i}_payslips`]=true;
+        // Payslips: mandatory for all employers
+        if(!emp.documents.payslipsKey) e[`${i}_payslips`]=true;
         // Offer letter: mandatory for all
         if(!emp.documents.offerLetterKey) e[`${i}_offerLetter`]=true;
         // Resignation acceptance: mandatory only for index 0 (current employer)
@@ -490,19 +490,19 @@ export default function PreviousCompany() {
             // index 0 = current/most-recent: gap is between previous company and THIS current one
             // index N (last card) = oldest job: gap is between finishing education and joining this company
             // index N (middle) = gap between leaving the company below (older) and joining this one
-            const isLastCard = index === total - 1;
             const gapPillLabel = emp.gap.hasGap === "Yes"
               ? (index === 0 ? "Gap before joining: Yes" : "Gap before this job: Yes")
               : (index === 0 ? "Gap before joining?" : "Gap before this job?");
+            // Gap hint: index 0 = gap between previous company and this current one
+            // index > 0 = gap between the older company below and joining this one
+            // (gap after education is captured on the Education page — not repeated here)
             const gapHint = index === 0
               ? "Any gap between leaving your previous company and joining this (current) one."
-              : isLastCard && total > 1
-                ? "Any gap between finishing your education and joining this company."
-                : `Any gap between leaving the company below (${
-                    employments[index + 1]?.companyName
-                      ? `"${employments[index + 1].companyName}"`
-                      : "the next older employer"
-                  }) and joining this one.`;
+              : `Any gap between leaving the company below (${
+                  employments[index + 1]?.companyName
+                    ? `"${employments[index + 1].companyName}"`
+                    : "the next older employer"
+                }) and joining this one.`;
 
             return (
             <div key={index} className="emp-card">
@@ -590,10 +590,10 @@ export default function PreviousCompany() {
               <div className="subsec">
                 <div className="sub-lbl">Attachments</div>
 
-                {/* Payslips — mandatory for index 0 only */}
+                {/* Payslips — mandatory for all employers */}
                 <div className="att-wrap">
                   <span className="att-lbl">
-                    Payslips (Last 3 Months){index===0&&<span style={{color:"#ef4444"}}> *</span>}
+                    Payslips (Last 3 Months) <span style={{color:"#ef4444"}}>*</span>
                   </span>
                   {errors[`${index}_payslips`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
                   <FileUpload label="Payslips" category="employment" subKey="payslips" companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.payslipsKey} onChange={v=>{update(index,"documents.payslipsKey",v);fixErr(`${index}_payslips`);}}/>
