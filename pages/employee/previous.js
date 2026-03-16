@@ -80,8 +80,9 @@ const G = `
     box-shadow: 0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12);
     border: 1px solid rgba(255,255,255,0.85); position: relative; overflow: hidden; }
   .decl-card::before { content:''; position:absolute; top:0; left:0; bottom:0; width:4px; border-radius:16px 0 0 16px; background:#7c3aed; }
-  .decl-q { font-size: 0.875rem; color: #1a1730; margin-bottom: 0.5rem; font-weight: 500; line-height: 1.5; }
-  .decl-item { padding: 0.9rem 1rem; background: #f0effe; border-radius: 10px; border: 1px solid #dddaf0; margin-bottom: 0.75rem; }
+  .decl-q { font-size: 0.875rem; color: #1a1730; margin-bottom: 0.3rem; font-weight: 600; line-height: 1.5; }
+  .decl-sub { font-size: 0.78rem; color: #6b6894; line-height: 1.55; margin-bottom: 0.6rem; font-weight: 400; }
+  .decl-item { padding: 1rem 1.1rem; background: #f0effe; border-radius: 10px; border: 1px solid #dddaf0; margin-bottom: 0.75rem; }
   .fr { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-bottom: 0.85rem; }
   .fr:last-child { margin-bottom: 0; }
   .fi { display: flex; flex-direction: column; gap: 0.28rem; flex: 1; min-width: 138px; }
@@ -118,6 +119,34 @@ const G = `
   .sbtn:hover { border-color: #a78bfa; color: #a78bfa; }
   @media (max-width:640px){ .fr{flex-direction:column;} .fi{min-width:100%;} .topbar{flex-direction:column;gap:0.6rem;position:relative;} }
 `;
+
+// ── Acknowledgement definitions — full sentences, answered once globally ──────
+const ACK_DEFS = [
+  {
+    key: "business",
+    title: "Other Business or Employment",
+    question: "Are you currently engaged in any other business, employment, or professional activity outside of this role?",
+    detail: "This includes part-time employment, freelance or consulting work, directorships, partnerships, or any activity that generates income or could create a conflict of interest with your employment here. Disclosure is required even if such engagement is outside regular working hours.",
+  },
+  {
+    key: "dismissed",
+    title: "Dismissal or Termination for Cause",
+    question: "Have you ever been dismissed, discharged, or asked to resign from any position of employment for reasons of misconduct, performance, or any disciplinary action?",
+    detail: "This includes termination with cause, constructive dismissal where you resigned under pressure, or any exit that followed a formal disciplinary process. It does not include voluntary resignations or role eliminations due to redundancy or organisational restructuring.",
+  },
+  {
+    key: "criminal",
+    title: "Criminal Conviction or Pending Proceedings",
+    question: "Have you ever been convicted of a criminal offence, or do you currently have any criminal proceedings pending against you in any court of law?",
+    detail: "This includes convictions resulting in fines, community service, probation, imprisonment, or any other sentence. It also includes matters where a charge has been framed and the case is currently sub judice. You are not required to disclose offences for which you have received a statutory pardon or that are otherwise spent under applicable law.",
+  },
+  {
+    key: "civil",
+    title: "Civil Judgments or Regulatory Actions",
+    question: "Have you ever had a civil judgment entered against you, or been subject to a regulatory finding, ban, or sanction by any court, tribunal, or regulatory authority?",
+    detail: "This includes money decrees, injunctions, adverse orders in consumer or labour disputes, and findings by bodies such as SEBI, RBI, IRDAI, or equivalent regulators. It does not include ongoing disputes where no judgment or final order has yet been passed.",
+  },
+];
 
 function ConsentBell({ apiFetch, router }) {
   const [count, setCount] = useState(0);
@@ -208,15 +237,6 @@ function TA({ l, v, s, r=true, errKey, errors, onFix }) {
   const hasErr = errKey&&errors&&errors[errKey];
   return (<div style={{width:"100%",marginBottom:"0.75rem"}}><span className="fl">{l}{r&&<span style={{color:"#ef4444",marginLeft:2}}>*</span>}</span><textarea className={`ta${hasErr?" err":""}`} value={v||""} onChange={e=>{s(e.target.value);if(onFix&&hasErr)onFix(errKey);}}/>{hasErr&&<span className="err-msg">Required</span>}</div>);
 }
-function YN({ val, onY, onN }) {
-  return (
-    <div style={{display:"flex",gap:"0.65rem",marginTop:"0.45rem"}}>
-      {["Yes","No"].map(v=>(
-        <button key={v} onClick={v==="Yes"?onY:onN} style={{padding:"0.3rem 1.1rem",borderRadius:999,border:(val===v)?"2px solid #4f46e5":"1.5px solid #dddaf0",background:(val===v)?"#4f46e5":"#f2f1f9",color:(val===v)?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
-      ))}
-    </div>
-  );
-}
 
 export default function PreviousCompany() {
   const router = useRouter();
@@ -292,43 +312,43 @@ export default function PreviousCompany() {
     const e={};
     if(!resumeKey) e.resumeKey=true;
     if(!hasExperience) e.hasExperience=true;
-    // Only validate employer fields if experienced
     if(hasExperience==="Yes"){
       employments.forEach((emp,i)=>{
-      if(!emp.companyName) e[`${i}_companyName`]=true;
-      if(!emp.officeAddress) e[`${i}_officeAddress`]=true;
-      if(!emp.employeeId) e[`${i}_employeeId`]=true;
-      if(!emp.workEmail) e[`${i}_workEmail`]=true;
-      if(!emp.designation) e[`${i}_designation`]=true;
-      if(!emp.department) e[`${i}_department`]=true;
-      if(!emp.duties) e[`${i}_duties`]=true;
-      if(!emp.employmentType) e[`${i}_employmentType`]=true;
-      if(emp.employmentType==="Contract"){
-        if(!emp.contractVendor.company) e[`${i}_vendorCompany`]=true;
-        if(!emp.contractVendor.email) e[`${i}_vendorEmail`]=true;
-        if(!emp.contractVendor.mobile) e[`${i}_vendorMobile`]=true;
-      }
-      if(!emp.reasonForRelieving) e[`${i}_reasonForRelieving`]=true;
-      if(!emp.reference.role) e[`${i}_refRole`]=true;
-      if(!emp.reference.name) e[`${i}_refName`]=true;
-      if(!emp.reference.email) e[`${i}_refEmail`]=true;
-      if(!emp.reference.mobile) e[`${i}_refMobile`]=true;
-      if(!emp.documents.payslipsKey) e[`${i}_payslips`]=true;
-      if(!emp.documents.offerLetterKey) e[`${i}_offerLetter`]=true;
-      if(i===0&&!emp.documents.resignationKey) e[`${i}_resignation`]=true;
-      if(!emp.documents.experienceKey) e[`${i}_experience`]=true;
-      if(emp.gap.hasGap==="Yes"&&!emp.gap.reason) e[`${i}_gapReason`]=true;
-    });
-    } // end hasExperience==="Yes"
-    [["business"],["dismissed"],["criminal"],["civil"]].forEach(([k])=>{
-      if(!ack[k].val) e[`ack_${k}`]=true;
+        if(!emp.companyName) e[`${i}_companyName`]=true;
+        if(!emp.officeAddress) e[`${i}_officeAddress`]=true;
+        if(!emp.employeeId) e[`${i}_employeeId`]=true;
+        if(!emp.workEmail) e[`${i}_workEmail`]=true;
+        if(!emp.designation) e[`${i}_designation`]=true;
+        if(!emp.department) e[`${i}_department`]=true;
+        if(!emp.duties) e[`${i}_duties`]=true;
+        if(!emp.employmentType) e[`${i}_employmentType`]=true;
+        if(emp.employmentType==="Contract"){
+          if(!emp.contractVendor.company) e[`${i}_vendorCompany`]=true;
+          if(!emp.contractVendor.email) e[`${i}_vendorEmail`]=true;
+          if(!emp.contractVendor.mobile) e[`${i}_vendorMobile`]=true;
+        }
+        if(!emp.reasonForRelieving) e[`${i}_reasonForRelieving`]=true;
+        if(!emp.reference.role) e[`${i}_refRole`]=true;
+        if(!emp.reference.name) e[`${i}_refName`]=true;
+        if(!emp.reference.email) e[`${i}_refEmail`]=true;
+        if(!emp.reference.mobile) e[`${i}_refMobile`]=true;
+        if(!emp.documents.payslipsKey) e[`${i}_payslips`]=true;
+        if(!emp.documents.offerLetterKey) e[`${i}_offerLetter`]=true;
+        // Resignation acceptance: mandatory ONLY for index 0 (current/most recent employer)
+        if(i===0&&!emp.documents.resignationKey) e[`${i}_resignation`]=true;
+        if(!emp.documents.experienceKey) e[`${i}_experience`]=true;
+        // Gap reason required only for non-current employers (index > 0) when gap toggled on
+        if(i>0&&emp.gap.hasGap==="Yes"&&!emp.gap.reason) e[`${i}_gapReason`]=true;
+      });
+    }
+    ACK_DEFS.forEach(({key})=>{
+      if(!ack[key].val) e[`ack_${key}`]=true;
     });
     return e;
   };
 
   const saveHistory=async()=>{
     if(!employeeId) throw new Error("Please complete and save Page 1 first");
-    // Save resumeKey and hasExperience to employee record
     if(resumeKey||hasExperience){
       await apiFetch(`${API}/employee`,{method:"POST",body:JSON.stringify({
         employee_id:employeeId,status:"draft",resumeKey,hasExperience,
@@ -447,35 +467,36 @@ export default function PreviousCompany() {
           {/* ── Employer cards — only if experienced ─────────────────── */}
           {hasExperience==="Yes"&&(<>
           {employments.map((emp,index)=>{
-            const isLastCard = index === employments.length - 1;
-            const gapLabel = isLastCard
-              ? (emp.gap.hasGap==="Yes" ? "Gap after education: Yes" : "Gap after education?")
-              : (emp.gap.hasGap==="Yes" ? "Gap before joining: Yes" : "Gap before joining?");
-            const gapHint = isLastCard
-              ? "Between finishing education and joining this company"
-              : "Between leaving previous company and joining this one";
+            // Gap toggle: only shown for previous employers (index > 0), NOT for current/most-recent (index 0)
+            // Gap after education is handled on the Education page
+            const showGapToggle = index > 0;
+            const gapLabel = emp.gap.hasGap==="Yes" ? "Gap before joining: Yes" : "Gap before joining?";
+            const gapHint = "Describe the gap period between leaving your previous company and joining this one.";
+
             return (
             <div key={index} className="emp-card">
 
-              {/* Header row — title + gap pill + remove */}
+              {/* Header row — title + gap pill (only for non-current) + remove */}
               <div className="emp-hdr">
                 <span className="emp-title">
                   {index===0?"Current / Most Recent Employer":`Previous Employer ${index}`}
                 </span>
                 <div className="emp-hdr-right">
-                  {/* Gap toggle pill — inline in header */}
-                  <button
-                    className={`gap-pill${emp.gap.hasGap==="Yes"?" on":""}`}
-                    onClick={()=>update(index,"gap.hasGap",emp.gap.hasGap==="Yes"?"":"Yes")}
-                  >
-                    ⏱ {gapLabel}
-                  </button>
+                  {/* Gap toggle pill — only for employers after the most recent */}
+                  {showGapToggle&&(
+                    <button
+                      className={`gap-pill${emp.gap.hasGap==="Yes"?" on":""}`}
+                      onClick={()=>update(index,"gap.hasGap",emp.gap.hasGap==="Yes"?"":"Yes")}
+                    >
+                      ⏱ {gapLabel}
+                    </button>
+                  )}
                   {index!==0&&<button className="rm-btn" onClick={()=>removeEmployer(index)}>− Remove</button>}
                 </div>
               </div>
 
-              {/* Gap reason box — expands below header when Yes */}
-              {emp.gap.hasGap==="Yes"&&(
+              {/* Gap reason box — only for non-current employers */}
+              {showGapToggle&&emp.gap.hasGap==="Yes"&&(
                 <div className="gap-reason-box">
                   <span className="fl" style={{display:"block",marginBottom:"0.35rem"}}>
                     Reason for Gap <span style={{color:"#ef4444"}}>*</span>
@@ -550,7 +571,11 @@ export default function PreviousCompany() {
                   <FileUpload label="Offer Letter" category="employment" subKey="offerLetter" companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.offerLetterKey} onChange={v=>{update(index,"documents.offerLetterKey",v);fixErr(`${index}_offerLetter`);}}/>
                 </div>
                 <div className="att-wrap">
-                  <span className="att-lbl">Resignation Acceptance{index===0&&<span style={{color:"#ef4444"}}> *</span>}</span>
+                  {/* Resignation Acceptance: mandatory (*) only for index 0, optional for all others */}
+                  <span className="att-lbl">
+                    Resignation Acceptance{index===0&&<span style={{color:"#ef4444"}}> *</span>}
+                    {index>0&&<span style={{fontSize:"0.62rem",color:"#94a3b8",fontWeight:500,marginLeft:"0.4rem",textTransform:"none",letterSpacing:0}}>(optional)</span>}
+                  </span>
                   {errors[`${index}_resignation`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
                   <FileUpload label="Resignation" category="employment" subKey="resignation" companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.resignationKey} onChange={v=>{update(index,"documents.resignationKey",v);fixErr(`${index}_resignation`);}}/>
                 </div>
@@ -572,21 +597,36 @@ export default function PreviousCompany() {
           <button className="add-btn" onClick={addEmployer}>+ Add Another Employer</button>
           </>)}
 
+          {/* ── Other Declarations — answered once, full-sentence context ── */}
           <div className="decl-card">
-            <div style={{display:"flex",alignItems:"center",gap:"0.6rem",marginBottom:"1.1rem"}}>
+            <div style={{display:"flex",alignItems:"center",gap:"0.6rem",marginBottom:"0.5rem"}}>
               <div style={{width:32,height:32,borderRadius:8,background:"#f5f3ff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.95rem"}}>📋</div>
               <span style={{fontSize:"0.93rem",fontWeight:700,color:"#1a1730"}}>Other Declarations</span>
             </div>
-            {[["business","Are you currently engaged in any other business or employment?"],["dismissed","Have you ever been dismissed from any employer?"],["criminal","Have you ever been convicted in a court of law?"],["civil","Have you ever had any civil judgment against you?"]].map(([k,q])=>(
-              <div key={k} className="decl-item">
-                <p className="decl-q">{q}</p>
-                <div style={{display:"flex",gap:"0.65rem"}}>
+            <p style={{fontSize:"0.78rem",color:"#6b6894",lineHeight:1.6,marginBottom:"1.1rem",fontWeight:400}}>
+              Please read each declaration carefully and respond accurately. These questions apply to your entire career history and are answered once. If you select Yes to any item, you will be prompted to provide further details.
+            </p>
+
+            {ACK_DEFS.map(({key,title,question,detail})=>(
+              <div key={key} className="decl-item">
+                {/* Section title */}
+                <p style={{fontSize:"0.68rem",fontWeight:800,color:"#7c3aed",textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:"0.35rem"}}>{title}</p>
+                {/* Full question */}
+                <p className="decl-q">{question}</p>
+                {/* Explanatory detail */}
+                <p className="decl-sub">{detail}</p>
+                {/* Yes / No */}
+                <div style={{display:"flex",gap:"0.65rem",marginBottom:ack[key].val==="Yes"?"0.75rem":"0"}}>
                   {["Yes","No"].map(v=>(
-                    <button key={v} onClick={()=>{setAck({...ack,[k]:{...ack[k],val:v}});fixErr(`ack_${k}`);}} style={{padding:"0.3rem 1.1rem",borderRadius:999,border:ack[k].val===v?"2px solid #4f46e5":"1.5px solid #dddaf0",background:ack[k].val===v?"#4f46e5":"#f2f1f9",color:ack[k].val===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
+                    <button key={v} onClick={()=>{setAck({...ack,[key]:{...ack[key],val:v}});fixErr(`ack_${key}`);}} style={{padding:"0.3rem 1.1rem",borderRadius:999,border:ack[key].val===v?"2px solid #4f46e5":"1.5px solid #dddaf0",background:ack[key].val===v?"#4f46e5":"#f2f1f9",color:ack[key].val===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
                   ))}
                 </div>
-                {errors[`ack_${k}`]&&<span className="err-msg" style={{marginTop:"0.4rem"}}>Please answer this question</span>}
-                {ack[k].val==="Yes"&&<div style={{marginTop:"0.6rem"}}><TA l="Details" v={ack[k].note} s={v=>setAck({...ack,[k]:{...ack[k],note:v}})} r={false}/></div>}
+                {errors[`ack_${key}`]&&<span className="err-msg" style={{marginTop:"0.4rem",display:"block"}}>Please answer this question</span>}
+                {ack[key].val==="Yes"&&(
+                  <div style={{marginTop:"0.6rem"}}>
+                    <TA l="Please provide details" v={ack[key].note} s={v=>setAck({...ack,[key]:{...ack[key],note:v}})} r={false}/>
+                  </div>
+                )}
               </div>
             ))}
           </div>
