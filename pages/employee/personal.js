@@ -536,7 +536,7 @@ export default function PersonalDetails() {
           if (perm.pin)      setPermPin(perm.pin);
         } else {
           const empId = `emp-${Date.now()}`;
-          const createRes = await apiFetch(`${API}/employee`, { method:"POST", body:JSON.stringify({ employee_id:empId, status:"draft", email:user?.email||"", mobile:user?.phone||"0000000000", firstName:"_", lastName:"_" }) });
+          const createRes = await apiFetch(`${API}/employee`, { method:"POST", body:JSON.stringify({ employee_id:empId, status:"draft", email:user?.email||"", mobile:user?.phone||"" }) });
           const rd = await createRes.json().catch(() => ({}));
           setEmployeeId(rd.employee_id || empId);
         }
