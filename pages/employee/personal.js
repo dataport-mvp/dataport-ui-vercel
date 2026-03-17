@@ -417,7 +417,10 @@ export default function PersonalDetails() {
   const [nameAsPerAadhaar,setNameAsPerAadhaar] = useState("");
   const [pan,setPan]                     = useState("");
   const [nameAsPerPan,setNameAsPerPan]   = useState("");
+  const [hasPassport,setHasPassport]     = useState("");   // "Yes" | "No" | ""
   const [passport,setPassport]           = useState("");
+  const [passportIssue,setPassportIssue] = useState("");   // YYYY-MM-DD
+  const [passportExpiry,setPassportExpiry] = useState(""); // YYYY-MM-DD
   const [bloodGroup,setBloodGroup]       = useState("");
   const [maritalStatus,setMaritalStatus] = useState("");
   const [emergName,setEmergName]         = useState("");
@@ -444,6 +447,7 @@ export default function PersonalDetails() {
 
   // ── Bank details ─────────────────────────────────────────────────────
   const [bankName,setBankName]           = useState("");
+  const [bankOther,setBankOther]         = useState("");   // custom bank name when "Other" selected
   const [bankAccountName,setBankAccountName] = useState("");
   const [ifsc,setIfsc]                   = useState("");
   const [branch,setBranch]               = useState("");
@@ -489,7 +493,10 @@ export default function PersonalDetails() {
           if (d.nameAsPerAadhaar) setNameAsPerAadhaar(d.nameAsPerAadhaar);
           if (d.pan)          setPan(d.pan);
           if (d.nameAsPerPan) setNameAsPerPan(d.nameAsPerPan);
-          if (d.passport)     setPassport(d.passport);
+          if (d.hasPassport)     setHasPassport(d.hasPassport);
+          if (d.passport)       setPassport(d.passport);
+          if (d.passportIssue)  setPassportIssue(d.passportIssue);
+          if (d.passportExpiry) setPassportExpiry(d.passportExpiry);
           if (d.bloodGroup)   setBloodGroup(d.bloodGroup);
           if (d.maritalStatus) setMaritalStatus(d.maritalStatus);
           if (d.emergName)    setEmergName(d.emergName);
@@ -500,6 +507,7 @@ export default function PersonalDetails() {
           if (d.photoKey)     setPhotoKey(d.photoKey);
           // Bank
           if (d.bankName)        setBankName(d.bankName);
+          if (d.bankOther)       setBankOther(d.bankOther);
           if (d.bankAccountName) setBankAccountName(d.bankAccountName);
           if (d.ifsc)            setIfsc(d.ifsc);
           if (d.branch)          setBranch(d.branch);
@@ -557,12 +565,14 @@ export default function PersonalDetails() {
     aadhaar: aadhar.length <= 4 ? aadhar : aadhar.slice(-4),
     nameAsPerAadhaar,
     pan, nameAsPerPan,
-    passport, bloodGroup, maritalStatus,
+    hasPassport, passport, passportIssue, passportExpiry, bloodGroup, maritalStatus,
     emergName, emergRel, emergPhone,
     aadhaarKey, panKey, photoKey,
     sameAsCurrent,
     // Bank — store only last 4 digits of account number (DPDP compliance)
-    bankName, bankAccountName, ifsc, branch, accountType,
+    bankName: bankName === "Other" ? (bankOther || bankName) : bankName,
+    bankOther,
+    bankAccountName, ifsc, branch, accountType,
     accountLast4: accountNo.length >= 4
       ? accountNo.slice(-4)
       : (accountLast4 || ""),
@@ -739,8 +749,36 @@ export default function PersonalDetails() {
                       <input className="in" value={mobile} disabled style={{flex:1}} />
                     </div>
                   </div>
-                  <F l="Passport No." v={passport} s={dirty(setPassport)} r={false} />
                 </div>
+                {/* ── Passport toggle ── */}
+                <div className="fr">
+                  <div className="fi">
+                    <span className="fl">Do you have a Passport? <span style={{color:"#ef4444"}}>*</span></span>
+                    <div style={{display:"flex",gap:"0.55rem",marginTop:"0.15rem"}}>
+                      {["Yes","No"].map(v=>(
+                        <button key={v} type="button" onClick={()=>{dirty(setHasPassport)(v);if(v==="No"){setPassport("");setPassportIssue("");setPassportExpiry("");}}} style={{flex:1,padding:"0.62rem 0",borderRadius:9,border:hasPassport===v?"2px solid #4f46e5":"1.5px solid #b8b4d4",background:hasPassport===v?"#4f46e5":"#ececf9",color:hasPassport===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}>{v}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="fi"/>
+                  <div className="fi"/>
+                </div>
+                {hasPassport==="Yes"&&(
+                  <div className="fr">
+                    <div className="fi">
+                      <span className="fl">Passport Number <span style={{color:"#ef4444"}}>*</span></span>
+                      <input className="in" value={passport} placeholder="e.g. A1234567" maxLength={8} onChange={e=>dirty(setPassport)(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,""))}/>
+                    </div>
+                    <div className="fi">
+                      <span className="fl">Issue Date <span style={{color:"#ef4444"}}>*</span></span>
+                      <input className="in" type="date" value={passportIssue} max={new Date().toISOString().split("T")[0]} onChange={e=>dirty(setPassportIssue)(e.target.value)} style={{colorScheme:"light"}}/>
+                    </div>
+                    <div className="fi">
+                      <span className="fl">Expiry Date <span style={{color:"#ef4444"}}>*</span></span>
+                      <input className="in" type="date" value={passportExpiry} min={new Date().toISOString().split("T")[0]} onChange={e=>dirty(setPassportExpiry)(e.target.value)} style={{colorScheme:"light"}}/>
+                    </div>
+                  </div>
+                )}
                 <div className="fr">
                   <FS l="Blood Group"    v={bloodGroup}    s={dirty(setBloodGroup)}    o={["A+","A-","B+","B-","AB+","AB-","O+","O-"]} />
                   <FS l="Marital Status" v={maritalStatus} s={dirty(setMaritalStatus)} o={["Single","Married","Divorced","Widowed","Separated"]} />
@@ -815,10 +853,13 @@ export default function PersonalDetails() {
                   {/* Bank name with dropdown */}
                   <div className="fi">
                     <span className="fl">Bank Name <span style={{color:"#ef4444"}}>*</span></span>
-                    <select className={`in${errors.bankName?" err":""}`} value={bankName} onChange={e=>{dirty(setBankName)(e.target.value);fixErr("bankName");}} style={{background:bankName?"#fff":"#f2f1f9",color:bankName?"#1a1730":"#8b88b0",appearance:"auto"}}>
+                    <select className={`in${errors.bankName?" err":""}`} value={bankName} onChange={e=>{dirty(setBankName)(e.target.value);if(e.target.value!=="Other")setBankOther("");fixErr("bankName");}} style={{background:bankName?"#fff":"#f2f1f9",color:bankName?"#1a1730":"#8b88b0",appearance:"auto"}}>
                       <option value="">Select your bank</option>
                       {BANK_LIST.map(b=><option key={b} value={b}>{b}</option>)}
                     </select>
+                    {bankName==="Other"&&(
+                      <input className="in" style={{marginTop:"0.4rem"}} value={bankOther} placeholder="Enter your bank name" onChange={e=>{dirty(setBankOther)(e.target.value);}}/>
+                    )}
                     {errors.bankName && <span className="err-msg">Required</span>}
                   </div>
                   <div className="fi">
