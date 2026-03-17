@@ -550,7 +550,8 @@ export default function ReviewPage() {
 
             {[
               { title:"Class X",        data:edu.classX,        subKey:"classX"       },
-              { title:"Intermediate",   data:edu.intermediate,  subKey:"intermediate" },
+              ...((edu.afterTenth==="Intermediate"||edu.afterTenth==="Both"||edu.intermediate?.college) ? [{ title:"Intermediate",   data:edu.intermediate,  subKey:"intermediate" }] : []),
+              ...((edu.afterTenth==="Diploma"||edu.afterTenth==="Both") ? [{ title:"Diploma (after 10th)", data:edu.diploma, subKey:"diploma" }] : []),
               { title:"Under Graduate", data:edu.undergraduate, subKey:"ug_provisional" },
             ].map(sec => {
               const s = sec.data || {};
