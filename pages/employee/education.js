@@ -26,10 +26,10 @@ const G = `
   .bell-badge{position:absolute;top:-5px;right:-5px;background:#ef4444;color:#fff;border-radius:999px;font-size:0.6rem;font-weight:800;min-width:16px;height:16px;display:flex;align-items:center;justify-content:center;padding:0 3px;border:2px solid #1e1a3e;}
   .sc{background:#fff;border-radius:16px;padding:1.5rem 1.6rem;margin-bottom:1.1rem;box-shadow:0 6px 28px rgba(30,26,62,0.22),0 2px 8px rgba(30,26,62,0.12);border:1px solid rgba(255,255,255,0.85);position:relative;overflow:hidden;}
   .sc::before{content:'';position:absolute;top:0;left:0;bottom:0;width:4px;border-radius:16px 0 0 16px;}
-  .sc.ind::before{background:#4f46e5;}.sc.cyn::before{background:#0891b2;}.sc.amb::before{background:#d97706;}.sc.ros::before{background:#e11d48;}.sc.vio::before{background:#7c3aed;}.sc.grn::before{background:#16a34a;}.sc.slt::before{background:#475569;}
+  .sc.ind::before{background:#4f46e5;}.sc.cyn::before{background:#0891b2;}.sc.amb::before{background:#d97706;}.sc.ros::before{background:#e11d48;}.sc.vio::before{background:#7c3aed;}.sc.grn::before{background:#16a34a;}.sc.slt::before{background:#475569;}.sc.ora::before{background:#ea580c;}
   .sh{display:flex;align-items:center;gap:0.6rem;margin-bottom:1.15rem;}
   .si{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.95rem;flex-shrink:0;}
-  .si.ind{background:#eef2ff;}.si.cyn{background:#ecfeff;}.si.amb{background:#fffbeb;}.si.ros{background:#fff1f2;}.si.vio{background:#f5f3ff;}.si.grn{background:#f0fdf4;}.si.slt{background:#f1f5f9;}
+  .si.ind{background:#eef2ff;}.si.cyn{background:#ecfeff;}.si.amb{background:#fffbeb;}.si.ros{background:#fff1f2;}.si.vio{background:#f5f3ff;}.si.grn{background:#f0fdf4;}.si.slt{background:#f1f5f9;}.si.ora{background:#fff7ed;}
   .st{font-size:0.93rem;font-weight:700;color:#1a1730;}
   .fr{display:flex;gap:0.9rem;flex-wrap:wrap;margin-bottom:0.85rem;}.fr:last-child{margin-bottom:0;}
   .fi{display:flex;flex-direction:column;gap:0.28rem;flex:1;min-width:138px;}
@@ -193,34 +193,60 @@ export default function EducationDetails() {
   const d=(fn)=>(val)=>{fn(val);isDirtyRef.current=true;};
   const fixErr=(key)=>setErrors(p=>({...p,[key]:false}));
 
+  // ── Qualification toggles ─────────────────────────────────────────
   const [hasUG,setHasUG]=useState("");
-  const [hasPG,setHasPG]=useState("");const [hasDip,setHasDip]=useState("");const [hasCerts,setHasCerts]=useState("");
+  const [hasPG,setHasPG]=useState("");
+  const [hasDip,setHasDip]=useState("");
+  const [hasCerts,setHasCerts]=useState("");
   const [hasProfQual,setHasProfQual]=useState("");
+  const [hasArticleship,setHasArticleship]=useState(""); // NEW
 
+  // ── Class X ──────────────────────────────────────────────────────
   const [xSchool,setXSchool]=useState("");const [xBoard,setXBoard]=useState("");const [xHall,setXHall]=useState("");
   const [xFrom,setXFrom]=useState("");const [xTo,setXTo]=useState("");const [xAddress,setXAddress]=useState("");
   const [xYear,setXYear]=useState("");const [xResultType,setXResultType]=useState("");const [xResultValue,setXResultValue]=useState("");const [xMedium,setXMedium]=useState("");const [xCertKey,setXCertKey]=useState("");
 
+  // ── Intermediate ─────────────────────────────────────────────────
   const [iCollege,setICollege]=useState("");const [iBoard,setIBoard]=useState("");const [iHall,setIHall]=useState("");
   const [iFrom,setIFrom]=useState("");const [iTo,setITo]=useState("");const [iAddress,setIAddress]=useState("");const [iMode,setIMode]=useState("");
   const [iYear,setIYear]=useState("");const [iResultType,setIResultType]=useState("");const [iResultValue,setIResultValue]=useState("");const [iMedium,setIMedium]=useState("");const [iCertKey,setICertKey]=useState("");
 
+  // ── UG ───────────────────────────────────────────────────────────
   const [ugCollege,setUgCollege]=useState("");const [ugUniversity,setUgUniversity]=useState("");const [ugCourse,setUgCourse]=useState("");
+  const [ugSpecialization,setUgSpecialization]=useState(""); // NEW — for MBBS/BDS/LLB/BArch/B.Pharm etc.
   const [ugHall,setUgHall]=useState("");const [ugFrom,setUgFrom]=useState("");const [ugTo,setUgTo]=useState("");const [ugAddress,setUgAddress]=useState("");const [ugMode,setUgMode]=useState("");
   const [ugYear,setUgYear]=useState("");const [ugResultType,setUgResultType]=useState("");const [ugResultValue,setUgResultValue]=useState("");const [ugBacklogs,setUgBacklogs]=useState("");const [ugMedium,setUgMedium]=useState("");
   const [ugProvKey,setUgProvKey]=useState("");const [ugConvoKey,setUgConvoKey]=useState("");
 
+  // ── PG ───────────────────────────────────────────────────────────
   const [pgCollege,setPgCollege]=useState("");const [pgUniversity,setPgUniversity]=useState("");const [pgCourse,setPgCourse]=useState("");
+  const [pgSpecialization,setPgSpecialization]=useState(""); // NEW — for MD/MS/MBA specialization
   const [pgHall,setPgHall]=useState("");const [pgFrom,setPgFrom]=useState("");const [pgTo,setPgTo]=useState("");const [pgAddress,setPgAddress]=useState("");const [pgMode,setPgMode]=useState("");
   const [pgYear,setPgYear]=useState("");const [pgResultType,setPgResultType]=useState("");const [pgResultValue,setPgResultValue]=useState("");const [pgBacklogs,setPgBacklogs]=useState("");const [pgMedium,setPgMedium]=useState("");
   const [pgProvKey,setPgProvKey]=useState("");const [pgConvoKey,setPgConvoKey]=useState("");
 
+  // ── Diploma ──────────────────────────────────────────────────────
   const [dipInstitute,setDipInstitute]=useState("");const [dipBoard,setDipBoard]=useState("");const [dipCourse,setDipCourse]=useState("");
   const [dipFrom,setDipFrom]=useState("");const [dipTo,setDipTo]=useState("");const [dipYear,setDipYear]=useState("");
   const [dipResultType,setDipResultType]=useState("");const [dipResultValue,setDipResultValue]=useState("");const [dipMode,setDipMode]=useState("");const [dipCertKey,setDipCertKey]=useState("");
 
+  // ── Certifications & Professional Qualifications ─────────────────
   const [certs,setCerts]=useState([{name:"",certKey:""}]);
   const [profQuals,setProfQuals]=useState([{type:"",level:"",year:"",certKey:""}]);
+
+  // ── Articleship / Practical Training (CA/CS/CMA) ─────────────────
+  // NEW section
+  const [articleships,setArticleships]=useState([{
+    firm:"", city:"", principalName:"", regNo:"",
+    from:"", to:"", isOngoing:"",
+    type:"",  // "CA Articleship" | "CS Training" | "CMA Training" | "Internship" | "Other"
+    certKey:"",
+  }]);
+
+  // ── Education gap ────────────────────────────────────────────────
+  // NEW — gap between last education and first job
+  const [hasEduGap,setHasEduGap]=useState("");  // "Yes" | "No" | ""
+  const [eduGapReason,setEduGapReason]=useState("");
 
   useEffect(()=>{
     if(!ready)return;
@@ -235,28 +261,43 @@ export default function EducationDetails() {
         const res=await apiFetch(`${API}/employee/draft`);
         if(res.ok){
           const dr=await res.json();setServerDraft(dr);
-          const edu=dr.education||{};const x=edu.classX||{};const i=edu.intermediate||{};const ug=edu.undergraduate||{};
-          const pg=edu.postgraduate||{};const dip=edu.diploma||{};const certsData=edu.certifications||[];
-          const profData=edu.professionalQualifications||[];
+          const edu=dr.education||{};
+          const x=edu.classX||{};const i=edu.intermediate||{};const ug=edu.undergraduate||{};
+          const pg=edu.postgraduate||{};const dip=edu.diploma||{};
+          const certsData=edu.certifications||[];const profData=edu.professionalQualifications||[];
+          const artData=edu.articleships||[];
+
           if(x.school)setXSchool(x.school);if(x.board)setXBoard(x.board);if(x.hallTicket)setXHall(x.hallTicket);
           if(x.from)setXFrom(x.from);if(x.to)setXTo(x.to);if(x.address)setXAddress(x.address);
           if(x.yearOfPassing)setXYear(x.yearOfPassing);if(x.resultType)setXResultType(x.resultType);if(x.resultValue)setXResultValue(x.resultValue);if(x.medium)setXMedium(x.medium);if(x.certKey)setXCertKey(x.certKey);
+
           if(i.college)setICollege(i.college);if(i.board)setIBoard(i.board);if(i.hallTicket)setIHall(i.hallTicket);
           if(i.from)setIFrom(i.from);if(i.to)setITo(i.to);if(i.address)setIAddress(i.address);if(i.mode)setIMode(i.mode);
           if(i.yearOfPassing)setIYear(i.yearOfPassing);if(i.resultType)setIResultType(i.resultType);if(i.resultValue)setIResultValue(i.resultValue);if(i.medium)setIMedium(i.medium);if(i.certKey)setICertKey(i.certKey);
+
           if(ug.college){setHasUG("Yes");setUgCollege(ug.college);}if(ug.university)setUgUniversity(ug.university);if(ug.course)setUgCourse(ug.course);
+          if(ug.specialization)setUgSpecialization(ug.specialization);
           if(ug.hallTicket)setUgHall(ug.hallTicket);if(ug.from)setUgFrom(ug.from);if(ug.to)setUgTo(ug.to);if(ug.address)setUgAddress(ug.address);if(ug.mode)setUgMode(ug.mode);
           if(ug.yearOfPassing)setUgYear(ug.yearOfPassing);if(ug.resultType)setUgResultType(ug.resultType);if(ug.resultValue)setUgResultValue(ug.resultValue);if(ug.backlogs)setUgBacklogs(ug.backlogs);if(ug.medium)setUgMedium(ug.medium);
           if(ug.provKey)setUgProvKey(ug.provKey);if(ug.convoKey)setUgConvoKey(ug.convoKey);if(!ug.provKey&&ug.certKey)setUgProvKey(ug.certKey);
+
           if(pg.college){setHasPG("Yes");setPgCollege(pg.college);}if(pg.university)setPgUniversity(pg.university);if(pg.course)setPgCourse(pg.course);
+          if(pg.specialization)setPgSpecialization(pg.specialization);
           if(pg.hallTicket)setPgHall(pg.hallTicket);if(pg.from)setPgFrom(pg.from);if(pg.to)setPgTo(pg.to);if(pg.address)setPgAddress(pg.address);if(pg.mode)setPgMode(pg.mode);
           if(pg.yearOfPassing)setPgYear(pg.yearOfPassing);if(pg.resultType)setPgResultType(pg.resultType);if(pg.resultValue)setPgResultValue(pg.resultValue);if(pg.backlogs)setPgBacklogs(pg.backlogs);if(pg.medium)setPgMedium(pg.medium);
           if(pg.provKey)setPgProvKey(pg.provKey);if(pg.convoKey)setPgConvoKey(pg.convoKey);if(!pg.provKey&&pg.certKey)setPgProvKey(pg.certKey);
+
           if(dip.institute){setHasDip("Yes");setDipInstitute(dip.institute);}if(dip.board)setDipBoard(dip.board);if(dip.course)setDipCourse(dip.course);
           if(dip.from)setDipFrom(dip.from);if(dip.to)setDipTo(dip.to);if(dip.yearOfPassing)setDipYear(dip.yearOfPassing);
           if(dip.resultType)setDipResultType(dip.resultType);if(dip.resultValue)setDipResultValue(dip.resultValue);if(dip.mode)setDipMode(dip.mode);if(dip.certKey)setDipCertKey(dip.certKey);
+
           if(certsData.length>0){setHasCerts("Yes");setCerts(certsData.map(c=>({name:typeof c.name==="string"?c.name:"",certKey:typeof c.certKey==="string"?c.certKey:""})));}
           if(profData.length>0){setHasProfQual("Yes");setProfQuals(profData);}
+          if(artData.length>0){setHasArticleship("Yes");setArticleships(artData);}
+
+          // Education gap
+          if(edu.hasEduGap)setHasEduGap(edu.hasEduGap);
+          if(edu.eduGapReason)setEduGapReason(edu.eduGapReason);
         }
       }catch(_){}
       setLoading(false);
@@ -281,17 +322,23 @@ export default function EducationDetails() {
     if(hasDip==="Yes"){if(!dipInstitute)e.dipInstitute=true;if(!dipBoard)e.dipBoard=true;if(!dipCourse)e.dipCourse=true;if(!dipFrom)e.dipFrom=true;if(!dipTo)e.dipTo=true;if(!dipYear)e.dipYear=true;if(!dipResultType)e.dipResultType=true;if(!dipResultValue)e.dipResultValue=true;if(!dipMode)e.dipMode=true;if(!dipCertKey)e.dipCertKey=true;}
     if(hasCerts==="Yes"){certs.forEach((c,idx)=>{if(!c.name)e[`cert_name_${idx}`]=true;if(!c.certKey)e[`cert_key_${idx}`]=true;});}
     if(hasProfQual==="Yes"){profQuals.forEach((q,idx)=>{if(!q.type)e[`pq_type_${idx}`]=true;if(!q.level)e[`pq_level_${idx}`]=true;if(!q.year)e[`pq_year_${idx}`]=true;});}
+    if(hasArticleship==="Yes"){articleships.forEach((a,idx)=>{if(!a.firm)e[`art_firm_${idx}`]=true;if(!a.from)e[`art_from_${idx}`]=true;if(!a.type)e[`art_type_${idx}`]=true;});}
+    if(!hasEduGap) e.hasEduGap=true;
+    if(hasEduGap==="Yes"&&!eduGapReason) e.eduGapReason=true;
     return e;
   };
 
   const buildEducation=()=>({
     classX:{school:xSchool,board:xBoard,hallTicket:xHall,from:xFrom,to:xTo,address:xAddress,yearOfPassing:xYear,resultType:xResultType,resultValue:xResultValue,medium:xMedium,certKey:xCertKey},
     intermediate:{college:iCollege,board:iBoard,hallTicket:iHall,from:iFrom,to:iTo,address:iAddress,mode:iMode,yearOfPassing:iYear,resultType:iResultType,resultValue:iResultValue,medium:iMedium,certKey:iCertKey},
-    undergraduate:hasUG==="Yes"?{college:ugCollege,university:ugUniversity,course:ugCourse,hallTicket:ugHall,from:ugFrom,to:ugTo,address:ugAddress,mode:ugMode,yearOfPassing:ugYear,resultType:ugResultType,resultValue:ugResultValue,backlogs:ugBacklogs,medium:ugMedium,provKey:ugProvKey,convoKey:ugConvoKey}:{},
-    postgraduate:hasPG==="Yes"?{college:pgCollege,university:pgUniversity,course:pgCourse,hallTicket:pgHall,from:pgFrom,to:pgTo,address:pgAddress,mode:pgMode,yearOfPassing:pgYear,resultType:pgResultType,resultValue:pgResultValue,backlogs:pgBacklogs,medium:pgMedium,provKey:pgProvKey,convoKey:pgConvoKey}:{},
+    undergraduate:hasUG==="Yes"?{college:ugCollege,university:ugUniversity,course:ugCourse,specialization:ugSpecialization,hallTicket:ugHall,from:ugFrom,to:ugTo,address:ugAddress,mode:ugMode,yearOfPassing:ugYear,resultType:ugResultType,resultValue:ugResultValue,backlogs:ugBacklogs,medium:ugMedium,provKey:ugProvKey,convoKey:ugConvoKey}:{},
+    postgraduate:hasPG==="Yes"?{college:pgCollege,university:pgUniversity,course:pgCourse,specialization:pgSpecialization,hallTicket:pgHall,from:pgFrom,to:pgTo,address:pgAddress,mode:pgMode,yearOfPassing:pgYear,resultType:pgResultType,resultValue:pgResultValue,backlogs:pgBacklogs,medium:pgMedium,provKey:pgProvKey,convoKey:pgConvoKey}:{},
     diploma:hasDip==="Yes"?{institute:dipInstitute,board:dipBoard,course:dipCourse,from:dipFrom,to:dipTo,yearOfPassing:dipYear,resultType:dipResultType,resultValue:dipResultValue,mode:dipMode,certKey:dipCertKey}:{},
     certifications:hasCerts==="Yes"?certs:[],
     professionalQualifications:hasProfQual==="Yes"?profQuals:[],
+    articleships:hasArticleship==="Yes"?articleships:[],
+    hasEduGap,
+    eduGapReason: hasEduGap==="Yes"?eduGapReason:"",
   });
 
   const saveDraft=async()=>{
@@ -302,8 +349,10 @@ export default function EducationDetails() {
       firstName:dr.firstName||"",lastName:dr.lastName||"",middleName:dr.middleName,
       fatherName:dr.fatherName,fatherFirst:dr.fatherFirst,fatherMiddle:dr.fatherMiddle,fatherLast:dr.fatherLast,
       dob:dr.dob,gender:dr.gender,nationality:dr.nationality,mobile:dr.mobile||"",email:dr.email,
-      aadhaar:dr.aadhaar,pan:dr.pan,passport:dr.passport,aadhaarKey:dr.aadhaarKey,panKey:dr.panKey,
+      aadhaar:dr.aadhaar,pan:dr.pan,hasPassport:dr.hasPassport,passport:dr.passport,passportIssue:dr.passportIssue,passportExpiry:dr.passportExpiry,
+      aadhaarKey:dr.aadhaarKey,panKey:dr.panKey,
       currentAddress:dr.currentAddress,permanentAddress:dr.permanentAddress,
+      bankName:dr.bankName,bankAccountName:dr.bankAccountName,ifsc:dr.ifsc,branch:dr.branch,accountType:dr.accountType,accountFull:dr.accountFull,accountLast4:dr.accountLast4,
       uanNumber:dr.uanNumber,nameAsPerUan:dr.nameAsPerUan,mobileLinked:dr.mobileLinked,isActive:dr.isActive,pfRecords:dr.pfRecords,
       acknowledgements_profile:dr.acknowledgements_profile,education:buildEducation(),
     })});
@@ -313,7 +362,6 @@ export default function EducationDetails() {
 
   const handleSaveSignout=async()=>{try{await saveDraft();}catch(_){}logout();};
   const handleMidSave=async()=>{setMidSaveStatus("Saving…");try{await saveDraft();setMidSaveStatus("Saved ✓");setTimeout(()=>setMidSaveStatus(""),2000);}catch(_){setMidSaveStatus("Error");setTimeout(()=>setMidSaveStatus(""),2500);}};
-
   const handleNavigate=async(path)=>{if(isDirtyRef.current){try{await saveDraft();}catch(_){}}router.push(path);};
   const handlePrevious=async()=>{if(isDirtyRef.current){try{await saveDraft();}catch(_){}}router.push("/employee/personal");};
   const handleSignout=async()=>{if(isDirtyRef.current){try{await saveDraft();}catch(_){}}logout();};
@@ -321,22 +369,26 @@ export default function EducationDetails() {
   const handleSave=async()=>{
     const errs=validate();
     if(Object.keys(errs).length>0){
-      setErrors(errs);setSaveStatus("Please fill all required fields \u2191");
+      setErrors(errs);setSaveStatus("Please fill all required fields ↑");
       setTimeout(()=>{const el=document.querySelector(".in.err,.date-input.err");if(el)el.scrollIntoView({behavior:"smooth",block:"center"});},60);
       return;
     }
     setErrors({});setSaveStatus("Saving...");
-    try{await saveDraft();setSaveStatus("Saved \u2713");router.push("/employee/previous");}
+    try{await saveDraft();setSaveStatus("Saved ✓");router.push("/employee/previous");}
     catch(err){setSaveStatus(`Error: ${err.message||"Could not save"}`);}
   };
 
   if(!ready||!user)return null;
-  if(loading)return(<div style={{minHeight:"100vh",background:"#cdd2ed",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#8b88b0",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:500}}>Loading education details\u2026</p></div>);
+  if(loading)return(<div style={{minHeight:"100vh",background:"#cdd2ed",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#8b88b0",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:500}}>Loading education details…</p></div>);
 
   const UL=({lbl,required=true,errKey:ek})=>(<>
     <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>{lbl}{required&&<span style={{color:"#ef4444",marginLeft:2}}>*</span>}</span>
     {ek&&errors[ek]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload is required</span>}
   </>);
+
+  const updateArticleship=(i,field,val)=>{
+    const a=[...articleships];a[i]={...a[i],[field]:val};setArticleships(a);isDirtyRef.current=true;
+  };
 
   return(
     <>
@@ -354,7 +406,7 @@ export default function EducationDetails() {
         <div className="wrap">
           <StepNav current={2} onNavigate={handleNavigate}/>
 
-          {/* Class X */}
+          {/* ── Class X ──────────────────────────────────────────────────── */}
           <div className="sc ind">
             <div className="sh"><div className="si ind">📚</div><span className="st">Class X — SSC / Matriculation</span></div>
             <div className="fr"><F l="School Name" v={xSchool} s={d(setXSchool)} errKey="xSchool" errors={errors} onFix={fixErr}/><F l="Board Name" v={xBoard} s={d(setXBoard)} errKey="xBoard" errors={errors} onFix={fixErr}/><F l="Hall Ticket / Roll No." v={xHall} s={d(setXHall)} errKey="xHall" errors={errors} onFix={fixErr}/></div>
@@ -368,7 +420,7 @@ export default function EducationDetails() {
             <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Class X Certificate" errKey="xCertKey"/><FileUpload label="Upload Class X Certificate" category="education" subKey="classX" apiFetch={apiFetch} value={xCertKey} onChange={(k)=>{setXCertKey(k);isDirtyRef.current=true;fixErr("xCertKey");}}/></div>
           </div>
 
-          {/* Intermediate */}
+          {/* ── Intermediate ─────────────────────────────────────────────── */}
           <div className="sc cyn">
             <div className="sh"><div className="si cyn">🏫</div><span className="st">Intermediate — HSC / 12th</span></div>
             <div className="fr"><F l="College Name" v={iCollege} s={d(setICollege)} errKey="iCollege" errors={errors} onFix={fixErr}/><F l="Board Name" v={iBoard} s={d(setIBoard)} errKey="iBoard" errors={errors} onFix={fixErr}/><F l="Hall Ticket / Roll No." v={iHall} s={d(setIHall)} errKey="iHall" errors={errors} onFix={fixErr}/></div>
@@ -383,13 +435,19 @@ export default function EducationDetails() {
             <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Intermediate Certificate" errKey="iCertKey"/><FileUpload label="Upload Intermediate Certificate" category="education" subKey="intermediate" apiFetch={apiFetch} value={iCertKey} onChange={(k)=>{setICertKey(k);isDirtyRef.current=true;fixErr("iCertKey");}}/></div>
           </div>
 
-          {/* UG — optional with YesNo */}
+          {/* ── Undergraduate ─────────────────────────────────────────────── */}
           <div className="sc amb">
             <div className="sh"><div className="si amb">🎓</div><span className="st">Undergraduate — UG / Degree</span></div>
+            <p style={{fontSize:"0.72rem",color:"#8b88b0",marginBottom:"0.85rem",fontWeight:500,lineHeight:1.5}}>Covers B.Tech, B.E, BCA, BBA, BCom, BA, BSc, MBBS, BDS, LLB, BArch, B.Pharm, B.Ed, BHM, BFA, and all undergraduate professional degrees.</p>
             <YesNo label="Do you have an Undergraduate degree?" value={hasUG} onChange={(v)=>{setHasUG(v);isDirtyRef.current=true;}}/>
             {hasUG==="Yes"&&(<>
               <div className="fr"><F l="College Name" v={ugCollege} s={d(setUgCollege)} errKey="ugCollege" errors={errors} onFix={fixErr}/><F l="University Name" v={ugUniversity} s={d(setUgUniversity)} errKey="ugUniversity" errors={errors} onFix={fixErr}/><F l="Course / Degree" v={ugCourse} s={d(setUgCourse)} errKey="ugCourse" errors={errors} onFix={fixErr}/></div>
-              <div className="fr"><F l="Hall Ticket / Roll No." v={ugHall} s={d(setUgHall)} errKey="ugHall" errors={errors} onFix={fixErr}/><FS l="Mode" v={ugMode} s={d(setUgMode)} o={["Full-time","Part-time","Distance"]} errKey="ugMode" errors={errors} onFix={fixErr}/></div>
+              {/* Specialization — optional, for MBBS/BDS/LLB/BArch/B.Pharm etc. */}
+              <div className="fr">
+                <F l="Specialization / Branch" v={ugSpecialization} s={d(setUgSpecialization)} r={false} errKey="ugSpecialization" errors={errors} onFix={fixErr}/>
+                <F l="Hall Ticket / Roll No." v={ugHall} s={d(setUgHall)} errKey="ugHall" errors={errors} onFix={fixErr}/>
+                <FS l="Mode" v={ugMode} s={d(setUgMode)} o={["Full-time","Part-time","Distance","Integrated"]} errKey="ugMode" errors={errors} onFix={fixErr}/>
+              </div>
               <div className="fr">
                 <DateField l="From" v={ugFrom} s={d(setUgFrom)} errKey="ugFrom" errors={errors} onFix={fixErr}/>
                 <DateField l="To" v={ugTo} s={d(setUgTo)} errKey="ugTo" errors={errors} onFix={fixErr}/>
@@ -409,13 +467,19 @@ export default function EducationDetails() {
             </>)}
           </div>
 
-          {/* PG */}
+          {/* ── Postgraduate ──────────────────────────────────────────────── */}
           <div className="sc vio">
             <div className="sh"><div className="si vio">🧑‍🎓</div><span className="st">Postgraduate — PG / Masters</span></div>
+            <p style={{fontSize:"0.72rem",color:"#8b88b0",marginBottom:"0.85rem",fontWeight:500,lineHeight:1.5}}>Covers MBA, M.Tech, MCA, MCom, MA, MSc, MD, MS, MDS, LLM, M.Pharm, M.Ed, MFA, and all postgraduate professional degrees.</p>
             <YesNo label="Do you have a Postgraduate degree?" value={hasPG} onChange={(v)=>{setHasPG(v);isDirtyRef.current=true;}}/>
             {hasPG==="Yes"&&(<>
               <div className="fr"><F l="College Name" v={pgCollege} s={d(setPgCollege)} errKey="pgCollege" errors={errors} onFix={fixErr}/><F l="University Name" v={pgUniversity} s={d(setPgUniversity)} errKey="pgUniversity" errors={errors} onFix={fixErr}/><F l="Course / Degree" v={pgCourse} s={d(setPgCourse)} errKey="pgCourse" errors={errors} onFix={fixErr}/></div>
-              <div className="fr"><F l="Hall Ticket / Roll No." v={pgHall} s={d(setPgHall)} errKey="pgHall" errors={errors} onFix={fixErr}/><FS l="Mode" v={pgMode} s={d(setPgMode)} o={["Full-time","Part-time","Distance"]} errKey="pgMode" errors={errors} onFix={fixErr}/></div>
+              {/* Specialization — required for MBA, MD, MS etc. */}
+              <div className="fr">
+                <F l="Specialization / Branch" v={pgSpecialization} s={d(setPgSpecialization)} r={false} errKey="pgSpecialization" errors={errors} onFix={fixErr}/>
+                <F l="Hall Ticket / Roll No." v={pgHall} s={d(setPgHall)} errKey="pgHall" errors={errors} onFix={fixErr}/>
+                <FS l="Mode" v={pgMode} s={d(setPgMode)} o={["Full-time","Part-time","Distance","Executive"]} errKey="pgMode" errors={errors} onFix={fixErr}/>
+              </div>
               <div className="fr">
                 <DateField l="From" v={pgFrom} s={d(setPgFrom)} errKey="pgFrom" errors={errors} onFix={fixErr}/>
                 <DateField l="To" v={pgTo} s={d(setPgTo)} errKey="pgTo" errors={errors} onFix={fixErr}/>
@@ -435,7 +499,7 @@ export default function EducationDetails() {
             </>)}
           </div>
 
-          {/* Diploma */}
+          {/* ── Diploma ───────────────────────────────────────────────────── */}
           <div className="sc grn">
             <div className="sh"><div className="si grn">🔧</div><span className="st">Diploma / Technical / Vocational</span></div>
             <YesNo label="Do you have a Diploma or Technical qualification?" value={hasDip} onChange={(v)=>{setHasDip(v);isDirtyRef.current=true;}}/>
@@ -451,10 +515,10 @@ export default function EducationDetails() {
             </>)}
           </div>
 
-          {/* Professional Qualifications */}
+          {/* ── Professional Qualifications ────────────────────────────────── */}
           <div className="sc slt">
             <div className="sh"><div className="si slt">🏛️</div><span className="st">Professional Qualifications</span></div>
-            <p style={{fontSize:"0.76rem",color:"#8b88b0",marginBottom:"0.9rem",fontWeight:500}}>CA, CMA (ICWA), CS, CFA, ACCA or any other professional body qualification. CA / CMA students without a degree can use this section.</p>
+            <p style={{fontSize:"0.76rem",color:"#8b88b0",marginBottom:"0.9rem",fontWeight:500}}>CA, CMA (ICWA), CS, CFA, ACCA, CIMA, FRM, PMP, or any professional body qualification. CA / CMA students can also use this section even without a degree.</p>
             <YesNo label="Do you have a professional qualification?" value={hasProfQual} onChange={(v)=>{setHasProfQual(v);isDirtyRef.current=true;}}/>
             {hasProfQual==="Yes"&&(<>
               {profQuals.map((q,idx)=>(
@@ -468,7 +532,7 @@ export default function EducationDetails() {
                       <span className="fl">Qualification Type <span style={{color:"#ef4444"}}>*</span></span>
                       <select className={`in${errors[`pq_type_${idx}`]?" err":""}`} value={q.type} onChange={e=>{const p=[...profQuals];p[idx]={...p[idx],type:e.target.value};setProfQuals(p);isDirtyRef.current=true;fixErr(`pq_type_${idx}`);}}>
                         <option value="">Select</option>
-                        {["CA (Chartered Accountant)","CMA / ICWA","CS (Company Secretary)","CFA","ACCA","CIMA","FRM","PMP","Other"].map(x=><option key={x} value={x}>{x}</option>)}
+                        {["CA (Chartered Accountant)","CMA / ICWA","CS (Company Secretary)","CFA","ACCA","CIMA","FRM","PMP","ICSI","Other"].map(x=><option key={x} value={x}>{x}</option>)}
                       </select>
                       {errors[`pq_type_${idx}`]&&<span className="err-msg">Required</span>}
                     </div>
@@ -496,10 +560,62 @@ export default function EducationDetails() {
             </>)}
           </div>
 
-          {/* Certifications */}
+          {/* ── Articleship / Practical Training ─────────────────────────── */}
+          <div className="sc ora">
+            <div className="sh"><div className="si ora">📝</div><span className="st">Articleship / Practical Training</span></div>
+            <p style={{fontSize:"0.76rem",color:"#8b88b0",marginBottom:"0.9rem",fontWeight:500,lineHeight:1.5}}>
+              For CA Articleship (ICAI), CS Training (ICSI), CMA Training, medical internships, pharmacy internships, law internships, and any mandatory practical training as part of a professional course.
+            </p>
+            <YesNo label="Do you have any articleship or practical training?" value={hasArticleship} onChange={(v)=>{setHasArticleship(v);isDirtyRef.current=true;}}/>
+            {hasArticleship==="Yes"&&(<>
+              {articleships.map((a,idx)=>(
+                <div key={idx} className="cert-box" style={{background:"#fff7ed",border:"1.5px solid #fed7aa"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.75rem"}}>
+                    <span style={{fontSize:"0.78rem",color:"#ea580c",fontWeight:700}}>Training / Articleship {idx+1}</span>
+                    {idx>0&&<button className="rm-btn" onClick={()=>{const arr=[...articleships];arr.splice(idx,1);setArticleships(arr);isDirtyRef.current=true;}}>- Remove</button>}
+                  </div>
+                  <div className="fr">
+                    <div className="fi">
+                      <span className="fl">Training Type <span style={{color:"#ef4444"}}>*</span></span>
+                      <select className={`in${errors[`art_type_${idx}`]?" err":""}`} value={a.type} onChange={e=>updateArticleship(idx,"type",e.target.value)}>
+                        <option value="">Select</option>
+                        {["CA Articleship (ICAI)","CS Training (ICSI)","CMA Training (ICMAI)","Medical Internship","Pharmacy Internship","Law Internship","Architecture Internship","Other Practical Training"].map(x=><option key={x} value={x}>{x}</option>)}
+                      </select>
+                      {errors[`art_type_${idx}`]&&<span className="err-msg">Required</span>}
+                    </div>
+                    <F l="Firm / Organisation Name" v={a.firm} s={v=>updateArticleship(idx,"firm",v)} errKey={`art_firm_${idx}`} errors={errors} onFix={fixErr}/>
+                  </div>
+                  <div className="fr">
+                    <F l="City / Location" v={a.city} s={v=>updateArticleship(idx,"city",v)} r={false}/>
+                    <F l="Principal / Supervisor Name" v={a.principalName} s={v=>updateArticleship(idx,"principalName",v)} r={false}/>
+                    <F l="Registration / Membership No." v={a.regNo} s={v=>updateArticleship(idx,"regNo",v)} r={false}/>
+                  </div>
+                  <div className="fr">
+                    <DateField l="From" v={a.from} s={v=>updateArticleship(idx,"from",v)} errKey={`art_from_${idx}`} errors={errors} onFix={fixErr}/>
+                    <DateField l="To" v={a.to} s={v=>updateArticleship(idx,"to",v)} r={false}/>
+                    <div className="fi">
+                      <span className="fl">Status</span>
+                      <div style={{display:"flex",gap:"0.55rem",marginTop:"0.15rem"}}>
+                        {["Ongoing","Completed"].map(v=>(
+                          <button key={v} type="button" onClick={()=>updateArticleship(idx,"isOngoing",v)} style={{flex:1,padding:"0.55rem 0",borderRadius:9,border:a.isOngoing===v?"2px solid #ea580c":"1.5px solid #b8b4d4",background:a.isOngoing===v?"#ea580c":"#ececf9",color:a.isOngoing===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.78rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}>{v}</button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{marginTop:"0.5rem"}}>
+                    <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Upload Completion / Experience Letter</span>
+                    <FileUpload label="Upload Letter" category="education" subKey={`articleship_${idx}`} apiFetch={apiFetch} value={typeof a.certKey==="string"?a.certKey:""} onChange={(k)=>{updateArticleship(idx,"certKey",typeof k==="string"?k:"");}}/>
+                  </div>
+                </div>
+              ))}
+              <button className="add-btn" onClick={()=>{setArticleships([...articleships,{firm:"",city:"",principalName:"",regNo:"",from:"",to:"",isOngoing:"",type:"",certKey:""}]);isDirtyRef.current=true;}}>+ Add Another Training</button>
+            </>)}
+          </div>
+
+          {/* ── Professional Certifications ────────────────────────────────── */}
           <div className="sc ros">
             <div className="sh"><div className="si ros">🏅</div><span className="st">Professional Certifications</span></div>
-            <YesNo label="Do you have certifications? (AWS, Azure, PMP, etc.)" value={hasCerts} onChange={(v)=>{setHasCerts(v);isDirtyRef.current=true;}}/>
+            <YesNo label="Do you have certifications? (AWS, Azure, PMP, CPA, etc.)" value={hasCerts} onChange={(v)=>{setHasCerts(v);isDirtyRef.current=true;}}/>
             {hasCerts==="Yes"&&(<>
               {certs.map((cert,idx)=>(
                 <div key={idx} className="cert-box">
@@ -525,9 +641,42 @@ export default function EducationDetails() {
             </>)}
           </div>
 
+          {/* ── Education Gap Before First Job ─────────────────────────────── */}
+          <div className="sc ind">
+            <div className="sh"><div className="si ind">⏱</div><span className="st">Education Gap / Break Before First Job</span></div>
+            <p style={{fontSize:"0.76rem",color:"#6b6894",marginBottom:"0.9rem",fontWeight:500,lineHeight:1.55}}>
+              Was there any gap between completing your education and joining your first job? This includes breaks for exam preparation, personal reasons, higher education attempts, health reasons, or any other period of non-employment.
+            </p>
+            {/* Required Yes/No toggle */}
+            <div style={{display:"flex",gap:"0.65rem",marginBottom:hasEduGap==="Yes"?"0.75rem":"0"}}>
+              {["Yes","No"].map(v=>(
+                <button key={v} type="button" onClick={()=>{d(setHasEduGap)(v);if(v==="No")setEduGapReason("");fixErr("hasEduGap");}} style={{padding:"0.45rem 1.6rem",borderRadius:999,border:hasEduGap===v?"2px solid #4f46e5":"1.5px solid #dddaf0",background:hasEduGap===v?"#4f46e5":"#f2f1f9",color:hasEduGap===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.875rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
+              ))}
+            </div>
+            {errors.hasEduGap&&<span className="err-msg" style={{marginTop:"0.4rem",display:"block"}}>Please answer this question before continuing</span>}
+            {hasEduGap==="Yes"&&(
+              <div style={{marginTop:"0.65rem"}}>
+                <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Reason for Gap <span style={{color:"#ef4444"}}>*</span></span>
+                <textarea
+                  className={`in${errors.eduGapReason?" err":""}`}
+                  style={{minHeight:72,resize:"vertical"}}
+                  value={eduGapReason}
+                  placeholder="Briefly describe the gap period and reason (e.g. UPSC preparation, family obligation, medical recovery, pursuing further education, etc.)"
+                  onChange={e=>{d(setEduGapReason)(e.target.value);fixErr("eduGapReason");}}
+                />
+                {errors.eduGapReason&&<span className="err-msg">Please describe the reason for the gap</span>}
+              </div>
+            )}
+            {hasEduGap==="No"&&(
+              <div style={{marginTop:"0.5rem",padding:"0.65rem 0.875rem",background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:9,fontSize:"0.78rem",color:"#15803d",fontWeight:500}}>
+                ✓ No gap between education and first job.
+              </div>
+            )}
+          </div>
+
           <div className="sbar">
             <button className="sbtn" onClick={handlePrevious}>← Previous</button>
-            <span className={`ss${saveStatus==="Saved \u2713"?" ok":saveStatus.startsWith("Error")||saveStatus.includes("required")?" err":""}`}>{saveStatus}</span>
+            <span className={`ss${saveStatus==="Saved ✓"?" ok":saveStatus.startsWith("Error")||saveStatus.includes("required")?" err":""}`}>{saveStatus}</span>
             <div style={{display:"flex",gap:"0.65rem",alignItems:"center"}}>
               <button className="sbtn" onClick={handleMidSave} style={{fontSize:"0.8rem"}}>{midSaveStatus||"Save draft"}</button>
               <button className="pbtn" onClick={handleSave}>Save & Continue →</button>
