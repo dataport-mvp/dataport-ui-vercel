@@ -162,17 +162,47 @@ const GUIDE_STEPS = [
 
 // ── Date field — native date input, stores YYYY-MM-DD ─────────────────────────
 function FDate({ l, v, s, r=true, errKey, errors, onFix, max }) {
+  // DD/MM/YYYY text input — stores as YYYY-MM-DD internally
+  const [raw, setRaw] = useState(()=>{
+    if(v&&v.includes("-")){const[y,mo,d]=v.split("-");return `${d}/${mo}/${y}`;}
+    return v||"";
+  });
+  const [focused, setFocused] = useState(false);
+  useEffect(()=>{
+    if(!focused){
+      if(v&&v.includes("-")){const[y,mo,d]=v.split("-");setRaw(`${d}/${mo}/${y}`);}
+      else setRaw(v||"");
+    }
+  },[v,focused]);
   const hasErr = errKey && errors && errors[errKey];
+  const handleChange=(e)=>{
+    let val=e.target.value.replace(/[^0-9/]/g,"");
+    if(val.length===2&&raw.length===1)val=val+"/";
+    if(val.length===5&&raw.length===4)val=val+"/";
+    if(val.length>10)return;
+    setRaw(val);
+    if(val.length===10){
+      const[d,mo,y]=val.split("/");
+      if(d&&mo&&y&&y.length===4){
+        s(`${y}-${mo}-${d}`);
+        if(onFix&&hasErr)onFix(errKey);
+      }
+    } else {
+      s("");
+    }
+  };
   return (
     <div className="fi">
       <span className="fl">{l}{r&&<span style={{color:"#ef4444",marginLeft:2}}>*</span>}</span>
       <input
         className={`in${hasErr?" err":""}`}
-        type="date"
-        value={v||""}
-        max={max||""}
-        onChange={e=>{s(e.target.value);if(onFix&&hasErr)onFix(errKey);}}
-        style={{colorScheme:"light"}}
+        value={raw}
+        placeholder="DD/MM/YYYY"
+        onFocus={()=>setFocused(true)}
+        onBlur={()=>setFocused(false)}
+        onChange={handleChange}
+        maxLength={10}
+        inputMode="numeric"
       />
       {hasErr&&<span className="err-msg">Required</span>}
     </div>
@@ -373,7 +403,7 @@ export default function PreviousCompany() {
           // All previous employers: end date always required
           if(!emp.endDate) e[`${i}_endDate`]=true;
         }
-        if(!emp.reasonForRelieving) e[`${i}_reasonForRelieving`]=true;
+        if(!(i===0&&emp.currentlyWorking==="Yes")&&!emp.reasonForRelieving) e[`${i}_reasonForRelieving`]=true;
         if(!emp.reference.role) e[`${i}_refRole`]=true;
         if(!emp.reference.name) e[`${i}_refName`]=true;
         if(!emp.reference.email) e[`${i}_refEmail`]=true;
@@ -513,7 +543,7 @@ export default function PreviousCompany() {
             <FileUpload
               label="Upload Resume / CV *"
               category="employment"
-              subKey="resume"
+              subKey="cv"
               apiFetch={apiFetch}
               value={resumeKey}
               onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setResumeKey(key);isDirtyRef.current=true;fixErr("resumeKey");}}
@@ -651,9 +681,12 @@ export default function PreviousCompany() {
                 </div>
               )}
 
-              <div style={{marginTop:"0.75rem"}}>
-                <TA l="Reason for Relieving / Leaving" v={emp.reasonForRelieving} s={v=>update(index,"reasonForRelieving",v)} errKey={`${index}_reasonForRelieving`} errors={errors} onFix={fixErr}/>
-              </div>
+              {/* Hide reason when currently working at this company */}
+              {!(index===0 && emp.currentlyWorking==="Yes") && (
+                <div style={{marginTop:"0.75rem"}}>
+                  <TA l="Reason for Relieving / Leaving" v={emp.reasonForRelieving} s={v=>update(index,"reasonForRelieving",v)} errKey={`${index}_reasonForRelieving`} errors={errors} onFix={fixErr}/>
+                </div>
+              )}
 
               <div className="subsec">
                 <div className="sub-lbl">Reference Details</div>
