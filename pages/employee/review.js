@@ -217,7 +217,7 @@ function getMissingFields(d, empHistory) {
   if (!d.ifsc)            p1.push("IFSC Code");
   if (!d.branch)          p1.push("Branch Name");
   if (!d.accountType)     p1.push("Account Type");
-  if (!d.accountLast4)    p1.push("Account Number");
+  if (!d.accountFull && !d.accountLast4) p1.push("Account Number");
   if (p1.length) issues.push({ step:1, label:"Personal Details", path:"/employee/personal", fields:p1 });
 
   const p2 = [];
@@ -525,6 +525,8 @@ export default function ReviewPage() {
                 <AttChip label="Profile Photo"   docKey={d.photoKey}    urls={docUrls}/>
                 <AttChip label="Aadhaar Card"    docKey={d.aadhaarKey}  urls={docUrls}/>
                 <AttChip label="PAN Card"        docKey={d.panKey}      urls={docUrls}/>
+                {d.hasPassport==="Yes"&&d.passportKey&&<AttChip label="Passport" docKey={d.passportKey} urls={docUrls}/>}
+                {d.hasPassport==="Yes"&&!d.passportKey&&<span className="att-chip missing">⚠ Passport upload missing</span>}
               </div>
             </div>
           </div>
@@ -538,7 +540,7 @@ export default function ReviewPage() {
               <KV label="IFSC Code"            value={d.ifsc}/>
               <KV label="Branch"               value={d.branch}/>
               <KV label="Account Type"         value={d.accountType}/>
-              <KV label="Account Number"       value={maskAccount(d.accountLast4)}/>
+              <KV label="Account Number"       value={d.accountFull ? ("•".repeat(Math.max(0,d.accountFull.length-4))+d.accountFull.slice(-4)) : (d.accountLast4 ? ("•".repeat(8)+d.accountLast4) : "—")}/>
             </div>
           </div>
 
@@ -612,6 +614,36 @@ export default function ReviewPage() {
                   {edu.certifications.map((c,i) => (
                     <AttChip key={i} label={c.name||`Cert ${i+1}`} docKey={c.certKey} urls={docUrls}/>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Articleships */}
+            {Array.isArray(edu.articleships) && edu.articleships.length > 0 && (
+              <div style={{marginTop:"0.9rem",paddingTop:"0.9rem",borderTop:"1px solid #f0eef8"}}>
+                <div style={{fontSize:"0.72rem",fontWeight:700,color:"#ea580c",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.5rem"}}>Articleship / Practical Training</div>
+                {edu.articleships.map((a,i)=>(
+                  <div key={i} style={{background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:8,padding:"0.65rem 0.85rem",marginBottom:"0.5rem"}}>
+                    <div style={{fontSize:"0.78rem",fontWeight:700,color:"#ea580c",marginBottom:"0.3rem"}}>{a.type||`Training ${i+1}`} — {a.firm}</div>
+                    <div className="grid" style={{gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))"}}>
+                      {a.city&&<KV label="City" value={a.city}/>}
+                      {a.from&&<KV label="From" value={a.from}/>}
+                      {a.to&&<KV label="To" value={a.to}/>}
+                      {a.isOngoing&&<KV label="Status" value={a.isOngoing}/>}
+                    </div>
+                    {a.certKey&&<div className="att-grid" style={{marginTop:"0.4rem"}}><AttChip label="Training Letter" docKey={a.certKey} urls={docUrls}/></div>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Education Gap */}
+            {edu.hasEduGap && (
+              <div style={{marginTop:"0.9rem",paddingTop:"0.9rem",borderTop:"1px solid #f0eef8"}}>
+                <div style={{fontSize:"0.72rem",fontWeight:700,color:"#4f46e5",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.4rem"}}>Education Gap Before First Job</div>
+                <div className="grid">
+                  <KV label="Had Education Gap" value={edu.hasEduGap}/>
+                  {edu.eduGapReason&&<KV label="Reason" value={edu.eduGapReason}/>}
                 </div>
               </div>
             )}
