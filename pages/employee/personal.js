@@ -451,10 +451,11 @@ export default function PersonalDetails() {
   const [bankAccountName,setBankAccountName] = useState("");
   const [ifsc,setIfsc]                   = useState("");
   const [branch,setBranch]               = useState("");
-  const [accountNo,setAccountNo]         = useState("");         // raw entry (cleared after save)
+  const [accountNo,setAccountNo]         = useState("");         // raw entry
   const [accountNoConfirm,setAccountNoConfirm] = useState("");   // confirm field
   const [accountType,setAccountType]     = useState("");
-  const [accountLast4,setAccountLast4]   = useState("");         // stored/loaded last 4 digits
+  const [accountFull,setAccountFull]     = useState("");         // full number stored, shown masked
+  const [accountLast4,setAccountLast4]   = useState("");         // last 4 for display
 
   const dirty = (setter) => (val) => { setter(val); isDirtyRef.current = true; };
 
@@ -511,7 +512,8 @@ export default function PersonalDetails() {
           if (d.bankAccountName) setBankAccountName(d.bankAccountName);
           if (d.ifsc)            setIfsc(d.ifsc);
           if (d.branch)          setBranch(d.branch);
-          if (d.accountLast4)    setAccountLast4(d.accountLast4);
+          if (d.accountFull)     setAccountFull(d.accountFull);
+          if (d.accountLast4)    setAccountLast4(d.accountFull ? d.accountFull.slice(-4) : (d.accountLast4||""));
           if (d.accountType)     setAccountType(d.accountType);
           const cur  = d.currentAddress   || {};
           const perm = d.permanentAddress || {};
@@ -569,10 +571,11 @@ export default function PersonalDetails() {
     emergName, emergRel, emergPhone,
     aadhaarKey, panKey, photoKey,
     sameAsCurrent,
-    // Bank — store only last 4 digits of account number (DPDP compliance)
+    // Bank — full account number stored securely, displayed masked
     bankName: bankName === "Other" ? (bankOther || bankName) : bankName,
     bankOther,
     bankAccountName, ifsc, branch, accountType,
+    accountFull: accountNo || accountFull || "",
     accountLast4: accountNo.length >= 4
       ? accountNo.slice(-4)
       : (accountLast4 || ""),
@@ -595,8 +598,8 @@ export default function PersonalDetails() {
     if (!res.ok) throw new Error(parseError(await res.json().catch(() => ({}))));
     const rd = await res.json().catch(() => ({}));
     if (rd.employee_id) setEmployeeId(rd.employee_id);
-    // After saving, update accountLast4 and clear raw fields
-    if (accountNo.length >= 4) { setAccountLast4(accountNo.slice(-4)); setAccountNo(""); setAccountNoConfirm(""); }
+    // After saving, store full number in accountFull for masked display
+    if (accountNo.length >= 4) { setAccountFull(accountNo); setAccountLast4(accountNo.slice(-4)); setAccountNo(""); setAccountNoConfirm(""); }
   };
 
   const handleSave = async () => {
@@ -612,6 +615,7 @@ export default function PersonalDetails() {
     if (!nameAsPerAadhaar)  e.nameAsPerAadhaar = true;
     if (!pan)           e.pan = true;
     if (!nameAsPerPan)  e.nameAsPerPan = true;
+    if (!hasPassport)   e.hasPassport = true;
     if (!bloodGroup)    e.bloodGroup = true;
     if (!maritalStatus) e.maritalStatus = true;
     if (!curDoor)       e.curDoor = true;
@@ -623,6 +627,7 @@ export default function PersonalDetails() {
     if (!photoKey)      e.photoKey = true;
     // Bank — required
     if (!bankName)         e.bankName = true;
+    if (bankName==="Other" && !bankOther) e.bankOther = true;
     if (!bankAccountName)  e.bankAccountName = true;
     if (!ifsc)             e.ifsc = true;
     if (!branch)           e.branch = true;
@@ -812,7 +817,7 @@ export default function PersonalDetails() {
                       onChange={(e) => { const raw = e.target.value.replace(/[^0-9]/g, ""); if (raw.length <= 12) dirty(setAadhar)(raw); }}
                     />
                     {aadhar && aadhar.length !== 12 && aadhar.length !== 4 && <span className="fe">Must be exactly 12 digits ({aadhar.length}/12)</span>}
-                    <p style={{fontSize:"0.68rem",color:"#8b88b0",marginTop:3,fontWeight:500}}>🔒 Only the last 4 digits are stored (DPDP compliance)</p>
+
                     {/* Name as per Aadhaar */}
                     <div style={{marginTop:"0.75rem"}}>
                       <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Name as per Aadhaar <span style={{color:"#ef4444"}}>*</span></span>
@@ -846,8 +851,8 @@ export default function PersonalDetails() {
                   <div className="si teal">🏦</div>
                   <span className="st">Bank Account Details</span>
                 </div>
-                <div className="bank-note">
-                  🔒 Only the last 4 digits of your account number are stored (DPDP compliance). Please verify your details carefully — this will be used for salary processing.
+                <div style={{background:"#f0fdfa",border:"1px solid #99f6e4",borderRadius:8,padding:"0.5rem 0.75rem",marginBottom:"0.85rem",fontSize:"0.72rem",color:"#0d9488",fontWeight:500,lineHeight:1.5}}>
+                  🏦 Please verify your bank details carefully — this will be used for salary processing.
                 </div>
                 <div className="fr">
                   {/* Bank name with dropdown */}
@@ -858,7 +863,10 @@ export default function PersonalDetails() {
                       {BANK_LIST.map(b=><option key={b} value={b}>{b}</option>)}
                     </select>
                     {bankName==="Other"&&(
-                      <input className="in" style={{marginTop:"0.4rem"}} value={bankOther} placeholder="Enter your bank name" onChange={e=>{dirty(setBankOther)(e.target.value);}}/>
+                      <>
+                        <input className={`in${errors.bankOther?" err":""}`} style={{marginTop:"0.4rem"}} value={bankOther} placeholder="Enter your bank name" onChange={e=>{dirty(setBankOther)(e.target.value);fixErr("bankOther");}}/>
+                        {errors.bankOther && <span className="err-msg">Please enter your bank name</span>}
+                      </>
                     )}
                     {errors.bankName && <span className="err-msg">Required</span>}
                   </div>
@@ -901,35 +909,45 @@ export default function PersonalDetails() {
                     {/* If already saved, show masked + option to update */}
                     {accountLast4 && !accountNo ? (
                       <div>
-                        <input className="in" value={`XXXX XXXX XXXX ${accountLast4}`} disabled style={{letterSpacing:"0.05em"}}/>
-                        <button type="button" onClick={()=>{setAccountLast4("");isDirtyRef.current=true;}} style={{marginTop:"0.3rem",fontSize:"0.68rem",color:"#4f46e5",background:"none",border:"none",cursor:"pointer",fontWeight:600,padding:0}}>Update account number</button>
+                        <input className="in" value={accountFull ? "•".repeat(accountFull.length-4)+" "+accountFull.slice(-4) : `•••• ${accountLast4}`} disabled style={{letterSpacing:"0.08em",fontFamily:"monospace"}}/>
+                        <button type="button" onClick={()=>{setAccountFull("");setAccountLast4("");isDirtyRef.current=true;}} style={{marginTop:"0.3rem",fontSize:"0.68rem",color:"#4f46e5",background:"none",border:"none",cursor:"pointer",fontWeight:600,padding:0}}>Update account number</button>
                       </div>
                     ) : (
                       <input
                         className={`in${errors.accountNo?" err":""}`}
-                        value={accountNo}
+                        value={accountNo.length > 4 ? "•".repeat(accountNo.length - 4) + accountNo.slice(-4) : accountNo}
                         placeholder="Enter full account number"
                         inputMode="numeric"
-                        onChange={e=>{dirty(setAccountNo)(e.target.value.replace(/\D/g,""));fixErr("accountNo");if(accountNoConfirm)fixErr("accountNoConfirm");}}
+                        onChange={e=>{
+                          // Strip bullets, merge with existing raw to get actual digits typed
+                          const typed = e.target.value.replace(/[^0-9]/g,"");
+                          dirty(setAccountNo)(typed);
+                          fixErr("accountNo");
+                          if(accountNoConfirm) fixErr("accountNoConfirm");
+                        }}
                       />
                     )}
                     {errors.accountNo && <span className="err-msg">Account number is required</span>}
-                    {!accountLast4 && <span style={{fontSize:"0.68rem",color:"#8b88b0",marginTop:3,display:"block",fontWeight:500}}>🔒 Only last 4 digits will be stored</span>}
                   </div>
                   <div className="fi">
                     <span className="fl">
                       Re-enter Account Number <span style={{color:"#ef4444"}}>*</span>
                     </span>
                     {accountLast4 && !accountNo ? (
-                      <input className="in" value={`XXXX XXXX XXXX ${accountLast4}`} disabled style={{letterSpacing:"0.05em"}}/>
+                      <input className="in" value={accountFull ? "•".repeat(accountFull.length-4)+" "+accountFull.slice(-4) : `•••• ${accountLast4}`} disabled style={{letterSpacing:"0.08em",fontFamily:"monospace"}}/>
                     ) : (
                       <input
                         className={`in${errors.accountNoConfirm?" err":""}`}
-                        value={accountNoConfirm}
+                        value={accountNoConfirm.length > 4 ? "•".repeat(accountNoConfirm.length - 4) + accountNoConfirm.slice(-4) : accountNoConfirm}
                         placeholder="Re-enter to confirm"
                         inputMode="numeric"
                         onPaste={e=>e.preventDefault()}
-                        onChange={e=>{setAccountNoConfirm(e.target.value.replace(/\D/g,""));isDirtyRef.current=true;fixErr("accountNoConfirm");}}
+                        onChange={e=>{
+                          const typed = e.target.value.replace(/[^0-9]/g,"");
+                          setAccountNoConfirm(typed);
+                          isDirtyRef.current=true;
+                          fixErr("accountNoConfirm");
+                        }}
                       />
                     )}
                     {errors.accountNoConfirm && <span className="err-msg">Account numbers do not match</span>}
