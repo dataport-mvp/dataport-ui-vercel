@@ -676,7 +676,7 @@ export default function EducationDetails() {
 
           {/* ── Education Gap Before First Job ─────────────────────────────── */}
           <div className="sc ind">
-            <div className="sh"><div className="si ind">⏱</div><span className="st">Education Gap / Break Before First Job</span></div>
+            <div className="sh"><div className="si ind">⏱</div><span className="st">Education Gap / Break Before First Job <span style={{color:"#ef4444",fontSize:"0.82rem"}}>*</span></span></div>
             <p style={{fontSize:"0.76rem",color:"#6b6894",marginBottom:"0.9rem",fontWeight:500,lineHeight:1.55}}>
               Was there any gap between completing your education and joining your first job? This includes breaks for exam preparation, personal reasons, higher education attempts, health reasons, or any other period of non-employment.
             </p>
