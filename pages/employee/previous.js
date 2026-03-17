@@ -567,7 +567,7 @@ export default function PreviousCompany() {
                 }) and joining this one.`;
 
             return (
-            <div key={index} className="emp-card">
+            <div key={emp.company_id} className="emp-card">
 
               {/* Header */}
               <div className="emp-hdr">
