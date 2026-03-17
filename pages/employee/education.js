@@ -197,6 +197,9 @@ export default function EducationDetails() {
   const [hasUG,setHasUG]=useState("");
   const [hasPG,setHasPG]=useState("");
   const [hasDip,setHasDip]=useState("");
+  // afterTenth: what did user pursue immediately after Class X?
+  // "Intermediate" | "Diploma" | "Both" | ""
+  const [afterTenth,setAfterTenth]=useState("");
   const [hasCerts,setHasCerts]=useState("");
   const [hasProfQual,setHasProfQual]=useState("");
   const [hasArticleship,setHasArticleship]=useState(""); // NEW
@@ -287,6 +290,9 @@ export default function EducationDetails() {
           if(pg.yearOfPassing)setPgYear(pg.yearOfPassing);if(pg.resultType)setPgResultType(pg.resultType);if(pg.resultValue)setPgResultValue(pg.resultValue);if(pg.backlogs)setPgBacklogs(pg.backlogs);if(pg.medium)setPgMedium(pg.medium);
           if(pg.provKey)setPgProvKey(pg.provKey);if(pg.convoKey)setPgConvoKey(pg.convoKey);if(!pg.provKey&&pg.certKey)setPgProvKey(pg.certKey);
 
+          if(edu.afterTenth)setAfterTenth(edu.afterTenth);
+          // legacy: if old data had hasDip="Yes" but no afterTenth, infer afterTenth
+          else if(edu.hasDip==="Yes"&&dip.institute){setAfterTenth("Diploma");}
           if(edu.hasDip)setHasDip(edu.hasDip); else if(dip.institute)setHasDip("Yes");
           if(edu.hasCerts)setHasCerts(edu.hasCerts);
           if(edu.hasProfQual)setHasProfQual(edu.hasProfQual);
@@ -314,20 +320,29 @@ export default function EducationDetails() {
     if(!xSchool)e.xSchool=true;if(!xBoard)e.xBoard=true;if(!xHall)e.xHall=true;
     if(!xFrom)e.xFrom=true;if(!xTo)e.xTo=true;if(!xYear)e.xYear=true;if(!xAddress)e.xAddress=true;
     if(!xResultType)e.xResultType=true;if(!xResultValue)e.xResultValue=true;if(!xMedium)e.xMedium=true;if(!xCertKey)e.xCertKey=true;
-    if(!iCollege)e.iCollege=true;if(!iBoard)e.iBoard=true;if(!iHall)e.iHall=true;
-    if(!iFrom)e.iFrom=true;if(!iTo)e.iTo=true;if(!iYear)e.iYear=true;if(!iAddress)e.iAddress=true;
-    if(!iMode)e.iMode=true;if(!iResultType)e.iResultType=true;if(!iResultValue)e.iResultValue=true;if(!iMedium)e.iMedium=true;if(!iCertKey)e.iCertKey=true;
+    if(!afterTenth) e.afterTenth=true;
+    if(afterTenth==="Intermediate"||afterTenth==="Both"){
+      if(!iCollege)e.iCollege=true;if(!iBoard)e.iBoard=true;if(!iHall)e.iHall=true;
+      if(!iFrom)e.iFrom=true;if(!iTo)e.iTo=true;if(!iYear)e.iYear=true;if(!iAddress)e.iAddress=true;
+      if(!iMode)e.iMode=true;if(!iResultType)e.iResultType=true;if(!iResultValue)e.iResultValue=true;if(!iMedium)e.iMedium=true;if(!iCertKey)e.iCertKey=true;
+    }
+    if(afterTenth==="Diploma"||afterTenth==="Both"){
+      if(!dipInstitute)e.dipInstitute=true;if(!dipBoard)e.dipBoard=true;if(!dipCourse)e.dipCourse=true;
+      if(!dipFrom)e.dipFrom=true;if(!dipTo)e.dipTo=true;if(!dipYear)e.dipYear=true;
+      if(!dipResultType)e.dipResultType=true;if(!dipResultValue)e.dipResultValue=true;if(!dipMode)e.dipMode=true;if(!dipCertKey)e.dipCertKey=true;
+    }
     if(hasUG==="Yes"){
       if(!ugCollege)e.ugCollege=true;if(!ugUniversity)e.ugUniversity=true;if(!ugCourse)e.ugCourse=true;if(!ugHall)e.ugHall=true;
       if(!ugFrom)e.ugFrom=true;if(!ugTo)e.ugTo=true;if(!ugYear)e.ugYear=true;if(!ugAddress)e.ugAddress=true;
       if(!ugMode)e.ugMode=true;if(!ugResultType)e.ugResultType=true;if(!ugResultValue)e.ugResultValue=true;if(!ugMedium)e.ugMedium=true;if(!ugBacklogs)e.ugBacklogs=true;if(ugBacklogs!=="Yes"&&!ugProvKey)e.ugProvKey=true;
     }
     if(hasPG==="Yes"){if(!pgCollege)e.pgCollege=true;if(!pgUniversity)e.pgUniversity=true;if(!pgCourse)e.pgCourse=true;if(!pgHall)e.pgHall=true;if(!pgFrom)e.pgFrom=true;if(!pgTo)e.pgTo=true;if(!pgYear)e.pgYear=true;if(!pgAddress)e.pgAddress=true;if(!pgMode)e.pgMode=true;if(!pgResultType)e.pgResultType=true;if(!pgResultValue)e.pgResultValue=true;if(!pgMedium)e.pgMedium=true;if(!pgBacklogs)e.pgBacklogs=true;if(pgBacklogs!=="Yes"&&!pgProvKey)e.pgProvKey=true;}
-    if(hasDip==="Yes"){if(!dipInstitute)e.dipInstitute=true;if(!dipBoard)e.dipBoard=true;if(!dipCourse)e.dipCourse=true;if(!dipFrom)e.dipFrom=true;if(!dipTo)e.dipTo=true;if(!dipYear)e.dipYear=true;if(!dipResultType)e.dipResultType=true;if(!dipResultValue)e.dipResultValue=true;if(!dipMode)e.dipMode=true;if(!dipCertKey)e.dipCertKey=true;}
+    // Additional diploma (separate from afterTenth path) — only if hasDip toggled Yes explicitly
+    if(hasDip==="Yes"&&afterTenth!=="Diploma"&&afterTenth!=="Both"){if(!dipInstitute)e.dipInstitute=true;if(!dipBoard)e.dipBoard=true;if(!dipCourse)e.dipCourse=true;if(!dipFrom)e.dipFrom=true;if(!dipTo)e.dipTo=true;if(!dipYear)e.dipYear=true;if(!dipResultType)e.dipResultType=true;if(!dipResultValue)e.dipResultValue=true;if(!dipMode)e.dipMode=true;if(!dipCertKey)e.dipCertKey=true;}
     if(hasCerts==="Yes"){certs.forEach((c,idx)=>{if(!c.name)e[`cert_name_${idx}`]=true;if(!c.certKey)e[`cert_key_${idx}`]=true;});}
     if(hasProfQual==="Yes"){profQuals.forEach((q,idx)=>{if(!q.type)e[`pq_type_${idx}`]=true;if(!q.level)e[`pq_level_${idx}`]=true;if(!q.year)e[`pq_year_${idx}`]=true;});}
     if(hasArticleship==="Yes"){articleships.forEach((a,idx)=>{if(!a.firm)e[`art_firm_${idx}`]=true;if(!a.from)e[`art_from_${idx}`]=true;if(!a.type)e[`art_type_${idx}`]=true;});}
-    if(!hasDip) e.hasDip=true;
+    // hasDip required only if afterTenth is already answered (additional diploma below is optional)
     if(!hasCerts) e.hasCerts=true;
     if(!hasProfQual) e.hasProfQual=true;
     if(!hasArticleship) e.hasArticleship=true;
@@ -341,7 +356,7 @@ export default function EducationDetails() {
     intermediate:{college:iCollege,board:iBoard,hallTicket:iHall,from:iFrom,to:iTo,address:iAddress,mode:iMode,yearOfPassing:iYear,resultType:iResultType,resultValue:iResultValue,medium:iMedium,certKey:iCertKey},
     undergraduate:hasUG==="Yes"?{college:ugCollege,university:ugUniversity,course:ugCourse,specialization:ugSpecialization,hallTicket:ugHall,from:ugFrom,to:ugTo,address:ugAddress,mode:ugMode,yearOfPassing:ugYear,resultType:ugResultType,resultValue:ugResultValue,backlogs:ugBacklogs,medium:ugMedium,provKey:ugProvKey,convoKey:ugConvoKey}:{},
     postgraduate:hasPG==="Yes"?{college:pgCollege,university:pgUniversity,course:pgCourse,specialization:pgSpecialization,hallTicket:pgHall,from:pgFrom,to:pgTo,address:pgAddress,mode:pgMode,yearOfPassing:pgYear,resultType:pgResultType,resultValue:pgResultValue,backlogs:pgBacklogs,medium:pgMedium,provKey:pgProvKey,convoKey:pgConvoKey}:{},
-    hasDip, hasCerts, hasProfQual, hasArticleship,
+    afterTenth, hasDip, hasCerts, hasProfQual, hasArticleship,
     diploma:hasDip==="Yes"?{institute:dipInstitute,board:dipBoard,course:dipCourse,from:dipFrom,to:dipTo,yearOfPassing:dipYear,resultType:dipResultType,resultValue:dipResultValue,mode:dipMode,certKey:dipCertKey}:{},
     certifications:hasCerts==="Yes"?certs:[],
     professionalQualifications:hasProfQual==="Yes"?profQuals:[],
@@ -429,7 +444,36 @@ export default function EducationDetails() {
             <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Class X Certificate" errKey="xCertKey"/><FileUpload label="Upload Class X Certificate" category="education" subKey="classX" apiFetch={apiFetch} value={xCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setXCertKey(key);isDirtyRef.current=true;fixErr("xCertKey");}}/></div>
           </div>
 
-          {/* ── Intermediate ─────────────────────────────────────────────── */}
+          {/* ── After Class X — smart path selector ───────────────────────── */}
+          <div className="sc cyn">
+            <div className="sh"><div className="si cyn">🔀</div><span className="st">After Class X — What did you pursue? <span style={{color:"#ef4444",fontSize:"0.82rem"}}>*</span></span></div>
+            <p style={{fontSize:"0.76rem",color:"#6b6894",marginBottom:"1rem",fontWeight:500,lineHeight:1.55}}>
+              After completing Class X (10th), what was your next qualification? This determines which sections appear below.
+            </p>
+            <div style={{display:"flex",gap:"0.6rem",flexWrap:"wrap"}}>
+              {[
+                {v:"Intermediate", label:"Intermediate / 12th", desc:"Regular HSC / Pre-University / +2"},
+                {v:"Diploma",      label:"Diploma (after 10th)", desc:"3-year Polytechnic / ITI directly after 10th"},
+                {v:"Both",         label:"Both",                 desc:"Did Intermediate AND a Diploma"},
+              ].map(({v,label,desc})=>(
+                <button key={v} type="button"
+                  onClick={()=>{setAfterTenth(v);isDirtyRef.current=true;fixErr("afterTenth");}}
+                  style={{
+                    padding:"0.6rem 1rem",borderRadius:10,cursor:"pointer",textAlign:"left",transition:"all 0.18s",
+                    border:afterTenth===v?"2px solid #0891b2":"1.5px solid #dddaf0",
+                    background:afterTenth===v?"#ecfeff":"#f2f1f9",
+                    minWidth:180,
+                  }}>
+                  <div style={{fontSize:"0.84rem",fontWeight:700,color:afterTenth===v?"#0891b2":"#1a1730"}}>{label}</div>
+                  <div style={{fontSize:"0.68rem",color:"#8b88b0",marginTop:"0.15rem",fontWeight:500}}>{desc}</div>
+                </button>
+              ))}
+            </div>
+            {errors.afterTenth&&<span className="err-msg" style={{marginTop:"0.5rem",display:"block"}}>Please select your path after Class X</span>}
+          </div>
+
+          {/* ── Intermediate — shown when afterTenth is Intermediate or Both ── */}
+          {(afterTenth==="Intermediate"||afterTenth==="Both")&&(
           <div className="sc cyn">
             <div className="sh"><div className="si cyn">🏫</div><span className="st">Intermediate — HSC / 12th</span></div>
             <div className="fr"><F l="College Name" v={iCollege} s={d(setICollege)} errKey="iCollege" errors={errors} onFix={fixErr}/><F l="Board Name" v={iBoard} s={d(setIBoard)} errKey="iBoard" errors={errors} onFix={fixErr}/><F l="Hall Ticket / Roll No." v={iHall} s={d(setIHall)} errKey="iHall" errors={errors} onFix={fixErr}/></div>
@@ -443,6 +487,23 @@ export default function EducationDetails() {
             <div className="fr"><F l="Medium of Study" v={iMedium} s={d(setIMedium)} errKey="iMedium" errors={errors} onFix={fixErr}/></div>
             <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Intermediate Certificate" errKey="iCertKey"/><FileUpload label="Upload Intermediate Certificate" category="education" subKey="intermediate" apiFetch={apiFetch} value={iCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setICertKey(key);isDirtyRef.current=true;fixErr("iCertKey");}}/></div>
           </div>
+          )}
+
+          {/* ── Diploma after 10th — shown when afterTenth is Diploma or Both ── */}
+          {(afterTenth==="Diploma"||afterTenth==="Both")&&(
+          <div className="sc grn">
+            <div className="sh"><div className="si grn">🔧</div><span className="st">Diploma — After Class X</span></div>
+            <p style={{fontSize:"0.72rem",color:"#8b88b0",marginBottom:"0.85rem",fontWeight:500,lineHeight:1.5}}>3-year Polytechnic Diploma / ITI / Technical qualification pursued directly after 10th.</p>
+            <div className="fr"><F l="Institute Name" v={dipInstitute} s={d(setDipInstitute)} errKey="dipInstitute" errors={errors} onFix={fixErr}/><F l="Board / University" v={dipBoard} s={d(setDipBoard)} errKey="dipBoard" errors={errors} onFix={fixErr}/><F l="Course / Programme" v={dipCourse} s={d(setDipCourse)} errKey="dipCourse" errors={errors} onFix={fixErr}/></div>
+            <div className="fr">
+              <DateField l="From" v={dipFrom} s={d(setDipFrom)} errKey="dipFrom" errors={errors} onFix={fixErr}/>
+              <DateField l="To" v={dipTo} s={d(setDipTo)} errKey="dipTo" errors={errors} onFix={fixErr}/>
+              <YearField l="Year of Passing" v={dipYear} s={d(setDipYear)} errKey="dipYear" errors={errors} onFix={fixErr}/>
+            </div>
+            <div className="fr"><FS l="Mode" v={dipMode} s={d(setDipMode)} o={["Full-time","Part-time","Distance"]} errKey="dipMode" errors={errors} onFix={fixErr}/><FS l="Result Type" v={dipResultType} s={d(setDipResultType)} o={["Percentage","CGPA","Grade"]} errKey="dipResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={dipResultValue} s={d(setDipResultValue)} errKey="dipResultValue" errors={errors} onFix={fixErr}/></div>
+            <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Diploma Certificate" errKey="dipCertKey"/><FileUpload label="Upload Diploma Certificate" category="education" subKey="diploma" apiFetch={apiFetch} value={dipCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipCertKey(key);isDirtyRef.current=true;fixErr("dipCertKey");}}/></div>
+          </div>
+          )}
 
           {/* ── Undergraduate ─────────────────────────────────────────────── */}
           <div className="sc amb">
@@ -508,16 +569,25 @@ export default function EducationDetails() {
             </>)}
           </div>
 
-          {/* ── Diploma ───────────────────────────────────────────────────── */}
+          {/* ── Additional Diploma — only shown for Intermediate path users ── */}
+          {/* Diploma path users already filled diploma above — skip this for them */}
+          {afterTenth!=="Diploma"&&(
           <div className="sc grn">
-            <div className="sh"><div className="si grn">🔧</div><span className="st">Diploma / Technical / Vocational</span></div>
+            <div className="sh"><div className="si grn">🔧</div><span className="st">{afterTenth==="Both"?"Additional Diploma / Technical":"Diploma / Technical / Vocational"}</span></div>
+            <p style={{fontSize:"0.72rem",color:"#8b88b0",marginBottom:"0.85rem",fontWeight:500,lineHeight:1.5}}>
+              {afterTenth==="Both"
+                ? "Any additional diploma / certificate course taken after Intermediate or during degree."
+                : "Diploma, ITI, or any technical / vocational qualification not covered above."}
+            </p>
             <div style={{display:"flex",alignItems:"center",gap:"0.5rem",flexWrap:"wrap",marginBottom:"1rem"}}>
-              <span style={{fontSize:"0.875rem",color:"#1a1730",fontWeight:600}}>Do you have a Diploma or Technical qualification? <span style={{color:"#ef4444"}}>*</span></span>
+              <span style={{fontSize:"0.875rem",color:"#1a1730",fontWeight:600}}>
+                {afterTenth==="Both"?"Do you have an additional diploma?":"Do you have a Diploma or Technical qualification?"}{" "}
+                <span style={{color:"#8b88b0",fontSize:"0.75rem",fontWeight:400}}>(optional)</span>
+              </span>
               {["Yes","No"].map(v=>(
                 <button key={v} onClick={()=>{setHasDip(v);isDirtyRef.current=true;fixErr("hasDip");}} style={{padding:"0.32rem 1.1rem",borderRadius:999,border:hasDip===v?"2px solid #4f46e5":"1.5px solid #dddaf0",background:hasDip===v?"#4f46e5":"#f2f1f9",color:hasDip===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
               ))}
             </div>
-            {errors.hasDip&&<span className="err-msg" style={{marginTop:"-0.5rem",marginBottom:"0.5rem",display:"block"}}>Please answer this question</span>}
             {hasDip==="Yes"&&(<>
               <div className="fr"><F l="Institute Name" v={dipInstitute} s={d(setDipInstitute)} errKey="dipInstitute" errors={errors} onFix={fixErr}/><F l="Board / University" v={dipBoard} s={d(setDipBoard)} errKey="dipBoard" errors={errors} onFix={fixErr}/><F l="Course / Programme" v={dipCourse} s={d(setDipCourse)} errKey="dipCourse" errors={errors} onFix={fixErr}/></div>
               <div className="fr">
@@ -529,6 +599,7 @@ export default function EducationDetails() {
               <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Diploma / Technical Certificate" errKey="dipCertKey"/><FileUpload label="Upload Diploma Certificate" category="education" subKey="diploma" apiFetch={apiFetch} value={dipCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipCertKey(key);isDirtyRef.current=true;fixErr("dipCertKey");}}/></div>
             </>)}
           </div>
+          )}
 
           {/* ── Professional Qualifications ────────────────────────────────── */}
           <div className="sc slt">
