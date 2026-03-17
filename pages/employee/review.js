@@ -308,10 +308,20 @@ export default function ReviewPage() {
               const docData = await docRes.json();
               // Flatten all URLs into a key→url map
               const urls = {};
-              const flatten = (obj) => {
-                if (!obj || typeof obj !== "object") return;
+              const flatten = (obj, depth=0) => {
+                if (!obj || typeof obj !== "object" || depth > 8) return;
+                // Pattern 1: { key: "s3key", url: "https://..." }
                 if (obj.key && obj.url) { urls[obj.key] = obj.url; return; }
-                Object.values(obj).forEach(v => flatten(v));
+                // Pattern 2: { s3_key: "s3key", url: "https://..." }
+                if (obj.s3_key && obj.url) { urls[obj.s3_key] = obj.url; return; }
+                // Pattern 3: { url: "https://...", key: ... } variations
+                if (obj.url && typeof obj.url === "string") {
+                  // Try to find any key-like field in the same object
+                  const k = obj.key || obj.s3_key || obj.fileKey || obj.docKey;
+                  if (k) { urls[k] = obj.url; }
+                }
+                if (Array.isArray(obj)) { obj.forEach(v => flatten(v, depth+1)); return; }
+                Object.values(obj).forEach(v => flatten(v, depth+1));
               };
               flatten(docData);
               setDocUrls(urls);
@@ -452,7 +462,12 @@ export default function ReviewPage() {
               <KV label="Name as per Aadhaar" value={d.nameAsPerAadhaar}/>
               <KV label="PAN"            value={d.pan}/>
               <KV label="Name as per PAN" value={d.nameAsPerPan}/>
-              <KV label="Passport"       value={d.passport}/>
+              <KV label="Has Passport"   value={d.hasPassport||"—"}/>
+              {(d.hasPassport==="Yes"||d.passport)&&<>
+                <KV label="Passport No."   value={d.passport}/>
+                <KV label="Issue Date"     value={d.passportIssue}/>
+                <KV label="Expiry Date"    value={d.passportExpiry}/>
+              </>}
               <KV label="Blood Group"    value={d.bloodGroup}/>
               <KV label="Marital Status" value={d.maritalStatus}/>
             </div>
@@ -518,7 +533,7 @@ export default function ReviewPage() {
           <div className="sc teal">
             <SectionHead icon="🏦" title="Bank Account Details" colorClass="teal" onEdit={()=>router.push("/employee/personal")}/>
             <div className="grid">
-              <KV label="Bank Name"            value={d.bankName}/>
+              <KV label="Bank Name"            value={d.bankName==="Other"&&d.bankOther ? `Other — ${d.bankOther}` : d.bankName}/>
               <KV label="Account Holder Name"  value={d.bankAccountName}/>
               <KV label="IFSC Code"            value={d.ifsc}/>
               <KV label="Branch"               value={d.branch}/>
