@@ -542,7 +542,7 @@ export default function PreviousCompany() {
             {errors.resumeKey&&<span className="err-msg" style={{marginBottom:"0.5rem",display:"block"}}>Resume upload is required</span>}
             <FileUpload
               label="Upload Resume / CV *"
-              category="employment"
+              category="general"
               subKey="cv"
               apiFetch={apiFetch}
               value={resumeKey}
