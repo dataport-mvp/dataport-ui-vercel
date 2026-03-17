@@ -777,18 +777,12 @@ export default function PersonalDetails() {
                       <span className="fl">Passport Number <span style={{color:"#ef4444"}}>*</span></span>
                       <input className="in" value={passport} placeholder="e.g. A1234567" maxLength={8} onChange={e=>dirty(setPassport)(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,""))}/>
                     </div>
-                    <div className="fi">
-                      <span className="fl">Issue Date <span style={{color:"#ef4444"}}>*</span></span>
-                      <input className="in" type="date" value={passportIssue} max={new Date().toISOString().split("T")[0]} onChange={e=>dirty(setPassportIssue)(e.target.value)} style={{colorScheme:"light"}}/>
-                    </div>
-                    <div className="fi">
-                      <span className="fl">Expiry Date <span style={{color:"#ef4444"}}>*</span></span>
-                      <input className="in" type="date" value={passportExpiry} min={new Date().toISOString().split("T")[0]} onChange={e=>dirty(setPassportExpiry)(e.target.value)} style={{colorScheme:"light"}}/>
-                    </div>
+                    <DateField l="Issue Date" v={passportIssue} s={dirty(setPassportIssue)} />
+                    <DateField l="Expiry Date" v={passportExpiry} s={dirty(setPassportExpiry)} />
                   </div>
                   <div style={{marginTop:"0.15rem"}}>
                     <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Upload Passport <span style={{color:"#ef4444"}}>*</span></span>
-                    <FileUpload label="Upload Passport" category="personal" subKey="passport" employeeId={employeeId} apiFetch={apiFetch} value={passportKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setPassportKey(key);isDirtyRef.current=true;}}/>
+                    <FileUpload label="Upload Passport" category="personal" subKey="passport" employeeId={employeeId} apiFetch={apiFetch} value={passportKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setPassportKey(key);isDirtyRef.current=true;fixErr&&fixErr("passportKey");}}/>
                   </div>
                   </>
                 )}
