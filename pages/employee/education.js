@@ -287,13 +287,17 @@ export default function EducationDetails() {
           if(pg.yearOfPassing)setPgYear(pg.yearOfPassing);if(pg.resultType)setPgResultType(pg.resultType);if(pg.resultValue)setPgResultValue(pg.resultValue);if(pg.backlogs)setPgBacklogs(pg.backlogs);if(pg.medium)setPgMedium(pg.medium);
           if(pg.provKey)setPgProvKey(pg.provKey);if(pg.convoKey)setPgConvoKey(pg.convoKey);if(!pg.provKey&&pg.certKey)setPgProvKey(pg.certKey);
 
-          if(dip.institute){setHasDip("Yes");setDipInstitute(dip.institute);}if(dip.board)setDipBoard(dip.board);if(dip.course)setDipCourse(dip.course);
+          if(edu.hasDip)setHasDip(edu.hasDip); else if(dip.institute)setHasDip("Yes");
+          if(edu.hasCerts)setHasCerts(edu.hasCerts);
+          if(edu.hasProfQual)setHasProfQual(edu.hasProfQual);
+          if(edu.hasArticleship)setHasArticleship(edu.hasArticleship);
+          if(dip.institute)setDipInstitute(dip.institute);if(dip.board)setDipBoard(dip.board);if(dip.course)setDipCourse(dip.course);
           if(dip.from)setDipFrom(dip.from);if(dip.to)setDipTo(dip.to);if(dip.yearOfPassing)setDipYear(dip.yearOfPassing);
           if(dip.resultType)setDipResultType(dip.resultType);if(dip.resultValue)setDipResultValue(dip.resultValue);if(dip.mode)setDipMode(dip.mode);if(dip.certKey)setDipCertKey(dip.certKey);
 
-          if(certsData.length>0){setHasCerts("Yes");setCerts(certsData.map(c=>({name:typeof c.name==="string"?c.name:"",certKey:typeof c.certKey==="string"?c.certKey:""})));}
-          if(profData.length>0){setHasProfQual("Yes");setProfQuals(profData);}
-          if(artData.length>0){setHasArticleship("Yes");setArticleships(artData);}
+          if(certsData.length>0)setCerts(certsData.map(c=>({name:typeof c.name==="string"?c.name:"",certKey:typeof c.certKey==="string"?c.certKey:""})));
+          if(profData.length>0)setProfQuals(profData);
+          if(artData.length>0)setArticleships(artData);
 
           // Education gap
           if(edu.hasEduGap)setHasEduGap(edu.hasEduGap);
@@ -323,6 +327,10 @@ export default function EducationDetails() {
     if(hasCerts==="Yes"){certs.forEach((c,idx)=>{if(!c.name)e[`cert_name_${idx}`]=true;if(!c.certKey)e[`cert_key_${idx}`]=true;});}
     if(hasProfQual==="Yes"){profQuals.forEach((q,idx)=>{if(!q.type)e[`pq_type_${idx}`]=true;if(!q.level)e[`pq_level_${idx}`]=true;if(!q.year)e[`pq_year_${idx}`]=true;});}
     if(hasArticleship==="Yes"){articleships.forEach((a,idx)=>{if(!a.firm)e[`art_firm_${idx}`]=true;if(!a.from)e[`art_from_${idx}`]=true;if(!a.type)e[`art_type_${idx}`]=true;});}
+    if(!hasDip) e.hasDip=true;
+    if(!hasCerts) e.hasCerts=true;
+    if(!hasProfQual) e.hasProfQual=true;
+    if(!hasArticleship) e.hasArticleship=true;
     if(!hasEduGap) e.hasEduGap=true;
     if(hasEduGap==="Yes"&&!eduGapReason) e.eduGapReason=true;
     return e;
@@ -333,6 +341,7 @@ export default function EducationDetails() {
     intermediate:{college:iCollege,board:iBoard,hallTicket:iHall,from:iFrom,to:iTo,address:iAddress,mode:iMode,yearOfPassing:iYear,resultType:iResultType,resultValue:iResultValue,medium:iMedium,certKey:iCertKey},
     undergraduate:hasUG==="Yes"?{college:ugCollege,university:ugUniversity,course:ugCourse,specialization:ugSpecialization,hallTicket:ugHall,from:ugFrom,to:ugTo,address:ugAddress,mode:ugMode,yearOfPassing:ugYear,resultType:ugResultType,resultValue:ugResultValue,backlogs:ugBacklogs,medium:ugMedium,provKey:ugProvKey,convoKey:ugConvoKey}:{},
     postgraduate:hasPG==="Yes"?{college:pgCollege,university:pgUniversity,course:pgCourse,specialization:pgSpecialization,hallTicket:pgHall,from:pgFrom,to:pgTo,address:pgAddress,mode:pgMode,yearOfPassing:pgYear,resultType:pgResultType,resultValue:pgResultValue,backlogs:pgBacklogs,medium:pgMedium,provKey:pgProvKey,convoKey:pgConvoKey}:{},
+    hasDip, hasCerts, hasProfQual, hasArticleship,
     diploma:hasDip==="Yes"?{institute:dipInstitute,board:dipBoard,course:dipCourse,from:dipFrom,to:dipTo,yearOfPassing:dipYear,resultType:dipResultType,resultValue:dipResultValue,mode:dipMode,certKey:dipCertKey}:{},
     certifications:hasCerts==="Yes"?certs:[],
     professionalQualifications:hasProfQual==="Yes"?profQuals:[],
@@ -417,7 +426,7 @@ export default function EducationDetails() {
             </div>
             <div className="fr"><F l="School Address" v={xAddress} s={d(setXAddress)} errKey="xAddress" errors={errors} onFix={fixErr}/></div>
             <div className="fr"><FS l="Result Type" v={xResultType} s={d(setXResultType)} o={["Percentage","Grade"]} errKey="xResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={xResultValue} s={d(setXResultValue)} errKey="xResultValue" errors={errors} onFix={fixErr}/><F l="Medium of Study" v={xMedium} s={d(setXMedium)} errKey="xMedium" errors={errors} onFix={fixErr}/></div>
-            <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Class X Certificate" errKey="xCertKey"/><FileUpload label="Upload Class X Certificate" category="education" subKey="classX" apiFetch={apiFetch} value={xCertKey} onChange={(k)=>{setXCertKey(k);isDirtyRef.current=true;fixErr("xCertKey");}}/></div>
+            <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Class X Certificate" errKey="xCertKey"/><FileUpload label="Upload Class X Certificate" category="education" subKey="classX" apiFetch={apiFetch} value={xCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setXCertKey(key);isDirtyRef.current=true;fixErr("xCertKey");}}/></div>
           </div>
 
           {/* ── Intermediate ─────────────────────────────────────────────── */}
@@ -432,7 +441,7 @@ export default function EducationDetails() {
             <div className="fr"><F l="College Address" v={iAddress} s={d(setIAddress)} errKey="iAddress" errors={errors} onFix={fixErr}/></div>
             <div className="fr"><FS l="Mode" v={iMode} s={d(setIMode)} o={["Full-time","Part-time","Distance"]} errKey="iMode" errors={errors} onFix={fixErr}/><FS l="Result Type" v={iResultType} s={d(setIResultType)} o={["Percentage","Grade"]} errKey="iResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={iResultValue} s={d(setIResultValue)} errKey="iResultValue" errors={errors} onFix={fixErr}/></div>
             <div className="fr"><F l="Medium of Study" v={iMedium} s={d(setIMedium)} errKey="iMedium" errors={errors} onFix={fixErr}/></div>
-            <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Intermediate Certificate" errKey="iCertKey"/><FileUpload label="Upload Intermediate Certificate" category="education" subKey="intermediate" apiFetch={apiFetch} value={iCertKey} onChange={(k)=>{setICertKey(k);isDirtyRef.current=true;fixErr("iCertKey");}}/></div>
+            <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Intermediate Certificate" errKey="iCertKey"/><FileUpload label="Upload Intermediate Certificate" category="education" subKey="intermediate" apiFetch={apiFetch} value={iCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setICertKey(key);isDirtyRef.current=true;fixErr("iCertKey");}}/></div>
           </div>
 
           {/* ── Undergraduate ─────────────────────────────────────────────── */}
@@ -460,9 +469,9 @@ export default function EducationDetails() {
                 <div className="att-box">
                   <UL lbl="Provisional Marksheet" required={ugBacklogs!=="Yes"} errKey="ugProvKey"/>
                   {ugBacklogs==="Yes"&&<p style={{fontSize:"0.7rem",color:"#d97706",fontWeight:600,marginBottom:"0.4rem"}}>⚠️ Upload when available after clearing backlogs</p>}
-                  <FileUpload label="Upload Provisional Marksheet" category="education" subKey="ug_provisional" apiFetch={apiFetch} value={ugProvKey} onChange={(k)=>{setUgProvKey(k);isDirtyRef.current=true;fixErr("ugProvKey");}}/>
+                  <FileUpload label="Upload Provisional Marksheet" category="education" subKey="ug_provisional" apiFetch={apiFetch} value={ugProvKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setUgProvKey(key);isDirtyRef.current=true;fixErr("ugProvKey");}}/>
                 </div>
-                <div className="att-box"><span className="att-box-lbl">Convocation Certificate</span><FileUpload label="Upload Convocation Certificate" category="education" subKey="ug_convocation" apiFetch={apiFetch} value={ugConvoKey} onChange={(k)=>{setUgConvoKey(k);isDirtyRef.current=true;}}/></div>
+                <div className="att-box"><span className="att-box-lbl">Convocation Certificate</span><FileUpload label="Upload Convocation Certificate" category="education" subKey="ug_convocation" apiFetch={apiFetch} value={ugConvoKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setUgConvoKey(key);isDirtyRef.current=true;}}/></div>
               </div>
             </>)}
           </div>
@@ -492,9 +501,9 @@ export default function EducationDetails() {
                 <div className="att-box">
                   <UL lbl="Provisional Marksheet" required={pgBacklogs!=="Yes"} errKey="pgProvKey"/>
                   {pgBacklogs==="Yes"&&<p style={{fontSize:"0.7rem",color:"#d97706",fontWeight:600,marginBottom:"0.4rem"}}>⚠️ Upload when available after clearing backlogs</p>}
-                  <FileUpload label="Upload Provisional Marksheet" category="education" subKey="pg_provisional" apiFetch={apiFetch} value={pgProvKey} onChange={(k)=>{setPgProvKey(k);isDirtyRef.current=true;fixErr("pgProvKey");}}/>
+                  <FileUpload label="Upload Provisional Marksheet" category="education" subKey="pg_provisional" apiFetch={apiFetch} value={pgProvKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setPgProvKey(key);isDirtyRef.current=true;fixErr("pgProvKey");}}/>
                 </div>
-                <div className="att-box"><span className="att-box-lbl">Convocation Certificate</span><FileUpload label="Upload Convocation Certificate" category="education" subKey="pg_convocation" apiFetch={apiFetch} value={pgConvoKey} onChange={(k)=>{setPgConvoKey(k);isDirtyRef.current=true;}}/></div>
+                <div className="att-box"><span className="att-box-lbl">Convocation Certificate</span><FileUpload label="Upload Convocation Certificate" category="education" subKey="pg_convocation" apiFetch={apiFetch} value={pgConvoKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setPgConvoKey(key);isDirtyRef.current=true;}}/></div>
               </div>
             </>)}
           </div>
@@ -502,7 +511,13 @@ export default function EducationDetails() {
           {/* ── Diploma ───────────────────────────────────────────────────── */}
           <div className="sc grn">
             <div className="sh"><div className="si grn">🔧</div><span className="st">Diploma / Technical / Vocational</span></div>
-            <YesNo label="Do you have a Diploma or Technical qualification?" value={hasDip} onChange={(v)=>{setHasDip(v);isDirtyRef.current=true;}}/>
+            <div style={{display:"flex",alignItems:"center",gap:"0.5rem",flexWrap:"wrap",marginBottom:"1rem"}}>
+              <span style={{fontSize:"0.875rem",color:"#1a1730",fontWeight:600}}>Do you have a Diploma or Technical qualification? <span style={{color:"#ef4444"}}>*</span></span>
+              {["Yes","No"].map(v=>(
+                <button key={v} onClick={()=>{setHasDip(v);isDirtyRef.current=true;fixErr("hasDip");}} style={{padding:"0.32rem 1.1rem",borderRadius:999,border:hasDip===v?"2px solid #4f46e5":"1.5px solid #dddaf0",background:hasDip===v?"#4f46e5":"#f2f1f9",color:hasDip===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
+              ))}
+            </div>
+            {errors.hasDip&&<span className="err-msg" style={{marginTop:"-0.5rem",marginBottom:"0.5rem",display:"block"}}>Please answer this question</span>}
             {hasDip==="Yes"&&(<>
               <div className="fr"><F l="Institute Name" v={dipInstitute} s={d(setDipInstitute)} errKey="dipInstitute" errors={errors} onFix={fixErr}/><F l="Board / University" v={dipBoard} s={d(setDipBoard)} errKey="dipBoard" errors={errors} onFix={fixErr}/><F l="Course / Programme" v={dipCourse} s={d(setDipCourse)} errKey="dipCourse" errors={errors} onFix={fixErr}/></div>
               <div className="fr">
@@ -511,7 +526,7 @@ export default function EducationDetails() {
                 <YearField l="Year of Passing" v={dipYear} s={d(setDipYear)} errKey="dipYear" errors={errors} onFix={fixErr}/>
               </div>
               <div className="fr"><FS l="Mode" v={dipMode} s={d(setDipMode)} o={["Full-time","Part-time","Distance"]} errKey="dipMode" errors={errors} onFix={fixErr}/><FS l="Result Type" v={dipResultType} s={d(setDipResultType)} o={["Percentage","CGPA","Grade"]} errKey="dipResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={dipResultValue} s={d(setDipResultValue)} errKey="dipResultValue" errors={errors} onFix={fixErr}/></div>
-              <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Diploma / Technical Certificate" errKey="dipCertKey"/><FileUpload label="Upload Diploma Certificate" category="education" subKey="diploma" apiFetch={apiFetch} value={dipCertKey} onChange={(k)=>{setDipCertKey(k);isDirtyRef.current=true;fixErr("dipCertKey");}}/></div>
+              <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Diploma / Technical Certificate" errKey="dipCertKey"/><FileUpload label="Upload Diploma Certificate" category="education" subKey="diploma" apiFetch={apiFetch} value={dipCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipCertKey(key);isDirtyRef.current=true;fixErr("dipCertKey");}}/></div>
             </>)}
           </div>
 
@@ -519,7 +534,13 @@ export default function EducationDetails() {
           <div className="sc slt">
             <div className="sh"><div className="si slt">🏛️</div><span className="st">Professional Qualifications</span></div>
             <p style={{fontSize:"0.76rem",color:"#8b88b0",marginBottom:"0.9rem",fontWeight:500}}>CA, CMA (ICWA), CS, CFA, ACCA, CIMA, FRM, PMP, or any professional body qualification. CA / CMA students can also use this section even without a degree.</p>
-            <YesNo label="Do you have a professional qualification?" value={hasProfQual} onChange={(v)=>{setHasProfQual(v);isDirtyRef.current=true;}}/>
+            <div style={{display:"flex",alignItems:"center",gap:"0.5rem",flexWrap:"wrap",marginBottom:"1rem"}}>
+              <span style={{fontSize:"0.875rem",color:"#1a1730",fontWeight:600}}>Do you have a professional qualification? <span style={{color:"#ef4444"}}>*</span></span>
+              {["Yes","No"].map(v=>(
+                <button key={v} onClick={()=>{setHasProfQual(v);isDirtyRef.current=true;fixErr("hasProfQual");}} style={{padding:"0.32rem 1.1rem",borderRadius:999,border:hasProfQual===v?"2px solid #4f46e5":"1.5px solid #dddaf0",background:hasProfQual===v?"#4f46e5":"#f2f1f9",color:hasProfQual===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
+              ))}
+            </div>
+            {errors.hasProfQual&&<span className="err-msg" style={{marginTop:"-0.5rem",marginBottom:"0.5rem",display:"block"}}>Please answer this question</span>}
             {hasProfQual==="Yes"&&(<>
               {profQuals.map((q,idx)=>(
                 <div key={idx} className="cert-box">
@@ -566,7 +587,13 @@ export default function EducationDetails() {
             <p style={{fontSize:"0.76rem",color:"#8b88b0",marginBottom:"0.9rem",fontWeight:500,lineHeight:1.5}}>
               For CA Articleship (ICAI), CS Training (ICSI), CMA Training, medical internships, pharmacy internships, law internships, and any mandatory practical training as part of a professional course.
             </p>
-            <YesNo label="Do you have any articleship or practical training?" value={hasArticleship} onChange={(v)=>{setHasArticleship(v);isDirtyRef.current=true;}}/>
+            <div style={{display:"flex",alignItems:"center",gap:"0.5rem",flexWrap:"wrap",marginBottom:"1rem"}}>
+              <span style={{fontSize:"0.875rem",color:"#1a1730",fontWeight:600}}>Do you have any articleship or practical training? <span style={{color:"#ef4444"}}>*</span></span>
+              {["Yes","No"].map(v=>(
+                <button key={v} onClick={()=>{setHasArticleship(v);isDirtyRef.current=true;fixErr("hasArticleship");}} style={{padding:"0.32rem 1.1rem",borderRadius:999,border:hasArticleship===v?"2px solid #ea580c":"1.5px solid #dddaf0",background:hasArticleship===v?"#ea580c":"#f2f1f9",color:hasArticleship===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
+              ))}
+            </div>
+            {errors.hasArticleship&&<span className="err-msg" style={{marginTop:"-0.5rem",marginBottom:"0.5rem",display:"block"}}>Please answer this question</span>}
             {hasArticleship==="Yes"&&(<>
               {articleships.map((a,idx)=>(
                 <div key={idx} className="cert-box" style={{background:"#fff7ed",border:"1.5px solid #fed7aa"}}>
@@ -615,7 +642,13 @@ export default function EducationDetails() {
           {/* ── Professional Certifications ────────────────────────────────── */}
           <div className="sc ros">
             <div className="sh"><div className="si ros">🏅</div><span className="st">Professional Certifications</span></div>
-            <YesNo label="Do you have certifications? (AWS, Azure, PMP, CPA, etc.)" value={hasCerts} onChange={(v)=>{setHasCerts(v);isDirtyRef.current=true;}}/>
+            <div style={{display:"flex",alignItems:"center",gap:"0.5rem",flexWrap:"wrap",marginBottom:"1rem"}}>
+              <span style={{fontSize:"0.875rem",color:"#1a1730",fontWeight:600}}>Do you have certifications? (AWS, Azure, PMP, CPA, etc.) <span style={{color:"#ef4444"}}>*</span></span>
+              {["Yes","No"].map(v=>(
+                <button key={v} onClick={()=>{setHasCerts(v);isDirtyRef.current=true;fixErr("hasCerts");}} style={{padding:"0.32rem 1.1rem",borderRadius:999,border:hasCerts===v?"2px solid #e11d48":"1.5px solid #dddaf0",background:hasCerts===v?"#e11d48":"#f2f1f9",color:hasCerts===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
+              ))}
+            </div>
+            {errors.hasCerts&&<span className="err-msg" style={{marginTop:"-0.5rem",marginBottom:"0.5rem",display:"block"}}>Please answer this question</span>}
             {hasCerts==="Yes"&&(<>
               {certs.map((cert,idx)=>(
                 <div key={idx} className="cert-box">
