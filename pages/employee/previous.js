@@ -363,13 +363,27 @@ export default function PreviousCompany() {
     fetchData();
   },[ready,user,apiFetch]);
 
-  const update=(i,path,value)=>{
-    const copy=JSON.parse(JSON.stringify(employments));
-    const keys=path.split(".");let obj=copy[i];
-    for(let k=0;k<keys.length-1;k++)obj=obj[keys[k]];
-    obj[keys[keys.length-1]]=value;
-    setEmployments(copy);isDirtyRef.current=true;
-  };
+const update = (i, path, value) => {
+  setEmployments(prev => {
+    const updated = [...prev];
+
+    const keys = path.split(".");
+    let obj = { ...updated[i] };
+
+    let current = obj;
+    for (let k = 0; k < keys.length - 1; k++) {
+      current[keys[k]] = { ...current[keys[k]] };
+      current = current[keys[k]];
+    }
+
+    current[keys[keys.length - 1]] = value;
+
+    updated[i] = obj;
+    return updated;
+  });
+
+  isDirtyRef.current = true;
+};
   const addEmployer=()=>{setEmployments([...employments,emptyEmployment()]);isDirtyRef.current=true;};
   const removeEmployer=(i)=>{setEmployments(employments.filter((_,idx)=>idx!==i));isDirtyRef.current=true;};
   const fixErr=(key)=>setErrors(p=>({...p,[key]:false}));
