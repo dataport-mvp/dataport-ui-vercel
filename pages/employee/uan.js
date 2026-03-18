@@ -100,12 +100,7 @@ const G = `
     font-size:0.875rem; font-weight:600; cursor:pointer; transition:all 0.2s; }
   .sbtn:hover { color:#a78bfa; border-color:#a78bfa; }
 
-  .guide-banner { background: #eef2ff; border: 1.5px solid #c7d2fe; border-radius: 12px;
-    padding: 0.9rem 1.1rem; margin-bottom: 1.1rem; display: flex; gap: 0.75rem; align-items: flex-start; }
-  .guide-steps { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.4rem; }
-  .guide-step { font-size: 0.72rem; font-weight: 700; color: #0891b2; background: #e0f2fe;
-    padding: 0.2rem 0.55rem; border-radius: 999px; white-space: nowrap; }
-  .guide-arrow { font-size: 0.7rem; color: #94a3b8; }
+
   .nom-block { background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 12px; padding: 1.1rem 1.2rem; margin-bottom: 0.85rem; }
   .sig-canvas { border: 1.5px solid #b8b4d4; border-radius: 9px; background: #fff; cursor: crosshair; display: block; touch-action: none; }
   .sig-canvas.signed { border-color: #16a34a; background: #f0fdf4; }
@@ -429,47 +424,23 @@ export default function UanDetails() {
         <div className="wrap">
           <StepNav current={4} onNavigate={handleNavigate}/>
 
-          {/* ── Chronological guide banner ───────────────────────── */}
-          <div className="guide-banner">
-            <div style={{fontSize:"1.2rem",flexShrink:0}}>💡</div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:"0.82rem",fontWeight:700,color:"#0c4a6e",marginBottom:"0.25rem"}}>UAN & PF — What you'll fill on this page</div>
-              <div style={{fontSize:"0.72rem",color:"#6b6894",marginBottom:"0.5rem",lineHeight:1.5}}>
-                Your Universal Account Number (UAN) stays with you across jobs. Fill UAN details, upload your card, attach service history, add PF records per employer, nominee details, and digitally sign your EPFO declarations.
-              </div>
-              <div className="guide-steps">
-                {[
-                  {label:"UAN Details", sub:"number & card"},
-                  {label:"Service History", sub:"snapshot upload"},
-                  {label:"PF Per Employer", sub:"member ID"},
-                  {label:"Nominees", sub:"Form 2 / pension"},
-                  {label:"Declaration", sub:"digital sign"},
-                ].map((s,i,arr)=>(
-                  <span key={i} style={{display:"inline-flex",alignItems:"center",gap:"0.4rem"}}>
-                    <span className="guide-step" style={{display:"inline-flex",flexDirection:"column",alignItems:"center",gap:"1px"}}>
-                      <span>{s.label}</span>
-                      {s.sub&&<span style={{fontSize:"0.6rem",fontWeight:500,color:"#0891b2",letterSpacing:0,textTransform:"none"}}>{s.sub}</span>}
-                    </span>
-                    {i<arr.length-1&&<span className="guide-arrow">→</span>}
+          {/* ── Employer flow strip — same as page 3 ────────────────── */}
+          <div style={{background:"#fff",borderRadius:14,padding:"1.1rem 0.5rem 1.1rem 1.1rem",marginBottom:"1.1rem",display:"flex",alignItems:"center",flexWrap:"wrap",gap:"0.4rem",boxShadow:"0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12)"}}>
+            {(page3Companies.length > 0 ? page3Companies : [
+              {name:"",isCurrent:true},{name:""},{name:""},{name:""},{name:"",isLast:true}
+            ]).slice(0,5).map((c,i,arr)=>{
+              const label = c.name || (i===0?"Current Company":i===arr.length-1?"First Job":`Company ${i+1}`);
+              const sub   = i===0?"most recent":i===arr.length-1?"oldest":i===1?"before that":"";
+              return(
+                <span key={i} style={{display:"inline-flex",alignItems:"center",gap:"0.4rem"}}>
+                  <span style={{display:"inline-flex",flexDirection:"column",alignItems:"center",gap:"1px",background:i===0?"#0891b2":"#e0f2fe",color:i===0?"#fff":"#0891b2",padding:"0.2rem 0.55rem",borderRadius:999,fontSize:"0.68rem",fontWeight:700,whiteSpace:"nowrap",maxWidth:110}}>
+                    <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:106}}>{label}</span>
+                    {sub&&<span style={{fontSize:"0.58rem",fontWeight:500,opacity:0.85}}>{sub}</span>}
                   </span>
-                ))}
-              </div>
-              {/* Employer order strip — mirrors page 3, shows actual company names */}
-              {page3Companies.length > 0 && (
-                <div style={{marginTop:"0.6rem",paddingTop:"0.6rem",borderTop:"1px solid #c7d2fe",display:"flex",alignItems:"center",gap:"0.4rem",flexWrap:"wrap"}}>
-                  <span style={{fontSize:"0.65rem",color:"#0891b2",fontWeight:700,marginRight:"0.15rem"}}>Your employers:</span>
-                  {page3Companies.slice(0,5).map((c,i,arr)=>(
-                    <span key={i} style={{display:"inline-flex",alignItems:"center",gap:"0.35rem"}}>
-                      <span style={{display:"inline-flex",flexDirection:"column",alignItems:"center",gap:"1px",background:i===0?"#0891b2":"#e0f2fe",color:i===0?"#fff":"#0891b2",padding:"0.18rem 0.55rem",borderRadius:999,fontSize:"0.68rem",fontWeight:700,whiteSpace:"nowrap",maxWidth:110,overflow:"hidden"}}>
-                        <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:106}}>{c.name||`Employer ${i+1}`}</span>
-                        <span style={{fontSize:"0.58rem",fontWeight:500,opacity:0.85}}>{i===0?"most recent":i===arr.length-1?"oldest":i===1?"before that":""}</span>
-                      </span>
-                      {i<arr.length-1&&<span style={{fontSize:"0.65rem",color:"#94a3b8"}}>→</span>}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
+                  {i<arr.length-1&&<span style={{fontSize:"0.65rem",color:"#94a3b8"}}>→</span>}
+                </span>
+              );
+            })}
           </div>
 
           {/* ── UAN / EPFO Details ──────────────────────────────────── */}
