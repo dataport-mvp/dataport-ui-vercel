@@ -229,6 +229,18 @@ export default function UanDetails() {
   const sigDrawingRef = useRef(false);
   const sigLastRef = useRef({x:0, y:0});
 
+  // ── Restore signature onto canvas whenever sigDataUrl changes (prevents wipe on re-render)
+  useEffect(() => {
+    if (!sigDataUrl || !sigCanvasRef.current) return;
+    const img = new Image();
+    img.onload = () => {
+      const ctx = sigCanvasRef.current.getContext("2d");
+      ctx.clearRect(0, 0, sigCanvasRef.current.width, sigCanvasRef.current.height);
+      ctx.drawImage(img, 0, 0, sigCanvasRef.current.width, sigCanvasRef.current.height);
+    };
+    img.src = sigDataUrl;
+  }, [sigDataUrl]);
+
   const dirty = (setter) => (val) => { setter(val); isDirtyRef.current = true; };
 
   // ── Role guard ───────────────────────────────────────────────────────
