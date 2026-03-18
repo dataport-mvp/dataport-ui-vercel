@@ -321,7 +321,21 @@ export default function UanDetails() {
 
   const saveDraft = async () => {
     if (!draft?.employee_id) throw new Error("Please complete and save Page 1 first");
-    const res = await apiFetch(`${API}/employee`, { method:"POST", body:JSON.stringify(buildPayload()) });
+    // Always fetch fresh draft before saving — prevents stale state from
+    // overwriting document keys saved on other pages after this page mounted.
+    const freshRes = await apiFetch(`${API}/employee/draft`);
+    const freshDraft = freshRes.ok ? await freshRes.json() : draft;
+    const payload = {
+      ...freshDraft,
+      hasUan,
+      uanNumber:    hasUan === "yes" ? uanNumber    : "",
+      nameAsPerUan: hasUan === "yes" ? nameAsPerUan : "",
+      mobileLinked: hasUan === "yes" ? mobileLinked : "",
+      isActive:     hasUan === "yes" ? isActive     : "",
+      epfoKey:      hasUan === "yes" ? epfoKey      : "",
+      pfRecords:    hasUan === "yes" ? pfRecords    : [],
+    };
+    const res = await apiFetch(`${API}/employee`, { method:"POST", body:JSON.stringify(payload) });
     if (!res.ok) throw new Error(parseError(await res.json().catch(() => ({}))));
     isDirtyRef.current = false;
   };
@@ -428,7 +442,7 @@ export default function UanDetails() {
                 </div>
                 <div style={{marginTop:"0.75rem"}}>
                   <span className="fl" style={{display:"block",marginBottom:"0.4rem"}}>UAN Card / Passbook <span style={{color:"#ef4444"}}>*</span></span>
-                  <FileUpload label="Upload UAN Card or Passbook" category="uan" subKey="uanCard" apiFetch={apiFetch} value={epfoKey} onChange={k => { setEpfoKey(k); isDirtyRef.current = true; }}/>
+                  <FileUpload label="Upload UAN Card or Passbook" category="uan" subKey="uanCard" employeeId={draft?.employee_id || ""} apiFetch={apiFetch} value={epfoKey} onChange={k => { setEpfoKey(k); isDirtyRef.current = true; }}/>
                 </div>
               </>
             )}
