@@ -408,14 +408,15 @@ export default function PreviousCompany() {
           if(!emp.endDate) e[`${i}_endDate`]=true;
         }
         if(!(i===0&&emp.currentlyWorking==="Yes")&&!emp.reasonForRelieving) e[`${i}_reasonForRelieving`]=true;
-        if(!emp.reference.role) e[`${i}_refRole`]=true;
-        if(!emp.reference.name) e[`${i}_refName`]=true;
-        if(!emp.reference.email) e[`${i}_refEmail`]=true;
-        if(!emp.reference.mobile) e[`${i}_refMobile`]=true;
-        if(!emp.documents.payslipsKey) e[`${i}_payslips`]=true;
+        const stillWorking = i===0 && emp.currentlyWorking==="Yes";
+        if(!stillWorking&&!emp.reference.role) e[`${i}_refRole`]=true;
+        if(!stillWorking&&!emp.reference.name) e[`${i}_refName`]=true;
+        if(!stillWorking&&!emp.reference.email) e[`${i}_refEmail`]=true;
+        if(!stillWorking&&!emp.reference.mobile) e[`${i}_refMobile`]=true;
+        if(!stillWorking&&!emp.documents.payslipsKey) e[`${i}_payslips`]=true;
         if(!emp.documents.offerLetterKey) e[`${i}_offerLetter`]=true;
         if(i===0&&emp.currentlyWorking==="No"&&!emp.documents.resignationKey) e[`${i}_resignation`]=true;
-        if(!emp.documents.experienceKey) e[`${i}_experience`]=true;
+        if(!stillWorking&&!emp.documents.experienceKey) e[`${i}_experience`]=true;
         if(emp.gap.hasGap==="Yes"&&!emp.gap.reason) e[`${i}_gapReason`]=true;
       });
     }
@@ -688,21 +689,21 @@ export default function PreviousCompany() {
               )}
 
               <div className="subsec">
-                <div className="sub-lbl">Reference Details</div>
+                <div className="sub-lbl">Reference Details{index===0&&emp.currentlyWorking==="Yes"&&<span style={{fontSize:"0.7rem",color:"#16a34a",fontWeight:500,marginLeft:"0.5rem"}}>(optional while currently employed)</span>}</div>
                 <div className="fr">
-                  <FS l="Reference Role" v={emp.reference.role} s={v=>update(index,"reference.role",v)} o={["Manager","Colleague","HR","Client"]} errKey={`${index}_refRole`} errors={errors} onFix={fixErr}/>
-                  <F l="Reference Name" v={emp.reference.name} s={v=>update(index,"reference.name",v)} errKey={`${index}_refName`} errors={errors} onFix={fixErr}/>
+                  <FS l="Reference Role" v={emp.reference.role} s={v=>update(index,"reference.role",v)} o={["Manager","Colleague","HR","Client"]} r={!(index===0&&emp.currentlyWorking==="Yes")} errKey={`${index}_refRole`} errors={errors} onFix={fixErr}/>
+                  <F l="Reference Name" v={emp.reference.name} s={v=>update(index,"reference.name",v)} r={!(index===0&&emp.currentlyWorking==="Yes")} errKey={`${index}_refName`} errors={errors} onFix={fixErr}/>
                 </div>
                 <div className="fr">
-                  <F l="Reference Official Email" v={emp.reference.email} s={v=>update(index,"reference.email",v)} errKey={`${index}_refEmail`} errors={errors} onFix={fixErr}/>
-                  <F l="Reference Mobile" v={emp.reference.mobile} s={v=>/^\d*$/.test(v)&&update(index,"reference.mobile",v)} mx={10} errKey={`${index}_refMobile`} errors={errors} onFix={fixErr}/>
+                  <F l="Reference Official Email" v={emp.reference.email} s={v=>update(index,"reference.email",v)} r={!(index===0&&emp.currentlyWorking==="Yes")} errKey={`${index}_refEmail`} errors={errors} onFix={fixErr}/>
+                  <F l="Reference Mobile" v={emp.reference.mobile} s={v=>/^\d*$/.test(v)&&update(index,"reference.mobile",v)} mx={10} r={!(index===0&&emp.currentlyWorking==="Yes")} errKey={`${index}_refMobile`} errors={errors} onFix={fixErr}/>
                 </div>
               </div>
 
               <div className="subsec">
                 <div className="sub-lbl">Attachments</div>
                 <div className="att-wrap">
-                  <span className="att-lbl">Payslips (Last 3 Months) <span style={{color:"#ef4444"}}>*</span></span>
+                  <span className="att-lbl">Payslips (Last 3 Months){!(index===0&&emp.currentlyWorking==="Yes")&&<span style={{color:"#ef4444"}}> *</span>}{index===0&&emp.currentlyWorking==="Yes"&&<span style={{fontSize:"0.68rem",color:"#16a34a",fontWeight:500}}> (optional)</span>}</span>
                   {errors[`${index}_payslips`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
                   <FileUpload label="Payslips" category="employment" subKey="payslips" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.payslipsKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.payslipsKey",k);fixErr(`${index}_payslips`);}}/>
                 </div>
@@ -720,7 +721,7 @@ export default function PreviousCompany() {
                   <FileUpload label="Resignation" category="employment" subKey="resignation" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.resignationKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.resignationKey",k);fixErr(`${index}_resignation`);}}/>
                 </div>
                 <div className="att-wrap">
-                  <span className="att-lbl">Experience / Relieving Letter <span style={{color:"#ef4444"}}>*</span></span>
+                  <span className="att-lbl">Experience / Relieving Letter{!(index===0&&emp.currentlyWorking==="Yes")&&<span style={{color:"#ef4444"}}> *</span>}{index===0&&emp.currentlyWorking==="Yes"&&<span style={{fontSize:"0.68rem",color:"#16a34a",fontWeight:500}}> (optional — upload after relieving)</span>}</span>
                   {errors[`${index}_experience`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
                   <FileUpload label="Experience Letter" category="employment" subKey="experience" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.experienceKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.experienceKey",k);fixErr(`${index}_experience`);}}/>
                 </div>
