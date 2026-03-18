@@ -307,6 +307,7 @@ export default function EmployerDashboard() {
 
   const [showSignout,     setShowSignout]     = useState(false);
   const [termsAccepted,   setTermsAccepted]   = useState(false);
+  const [termsLoading,    setTermsLoading]    = useState(true);
   const [consents,        setConsents]        = useState([]);
   const [selected,        setSelected]        = useState(null);
   const [profileData,     setProfileData]     = useState(null);
@@ -342,6 +343,7 @@ export default function EmployerDashboard() {
           setTermsAccepted(!!data.terms_accepted);
         }
       } catch (_) {}
+      setTermsLoading(false);
     };
     checkTerms();
   }, [ready, user, apiFetch]);
@@ -453,6 +455,11 @@ export default function EmployerDashboard() {
   };
 
   if (!ready || !user) return null;
+  if (termsLoading) return (
+    <div style={{minHeight:"100vh",background:"#f0f2f7",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <p style={{color:"#94a3b8",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>Loading dashboard…</p>
+    </div>
+  );
   if (!termsAccepted) return <TermsModal onAccept={async () => {
     try {
       await apiFetch(`${API}/auth/accept-terms`, { method: "POST" });
