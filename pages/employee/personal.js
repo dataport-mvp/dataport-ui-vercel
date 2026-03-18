@@ -389,6 +389,7 @@ export default function PersonalDetails() {
   const [midSaveStatus,setMidSaveStatus] = useState("");
   const [loading,setLoading]             = useState(true);
   const [employeeId,setEmployeeId]       = useState("");
+  const [draftReady,setDraftReady]       = useState(false); // true only after draft confirmed in DB
   const employeeIdRef                    = useRef(""); // immediately available, no render delay
   const [profileStatus,setProfileStatus] = useState("");
   const [photoPreview,setPhotoPreview]   = useState(null);
@@ -477,7 +478,7 @@ export default function PersonalDetails() {
         const res = await apiFetch(`${API}/employee/draft`);
         if (res.ok) {
           const d = await res.json();
-          if (d.employee_id) { setEmployeeId(d.employee_id); employeeIdRef.current = d.employee_id; setProfileStatus(d.status || "draft"); }
+          if (d.employee_id) { setEmployeeId(d.employee_id); employeeIdRef.current = d.employee_id; setProfileStatus(d.status || "draft"); setDraftReady(true); }
           if (d.firstName)    setFirstName(d.firstName);
           if (d.middleName)   setMiddleName(d.middleName);
           if (d.lastName)     setLastName(d.lastName);
@@ -542,6 +543,7 @@ export default function PersonalDetails() {
           const confirmedId = rd.employee_id || empId;
           setEmployeeId(confirmedId);
           employeeIdRef.current = confirmedId;
+          setDraftReady(true);
         }
       } catch (_) {}
       setLoading(false);
@@ -702,7 +704,7 @@ export default function PersonalDetails() {
                     {photoPreview ? <img src={photoPreview} alt="profile"/> : <span style={{color:"#8b88b0",fontSize:"0.7rem",fontWeight:600,textAlign:"center",padding:"0 0.5rem"}}>No photo</span>}
                   </div>
                   <div style={{flex:1}}>
-                    <FileUpload label="Upload Profile Photo" category="personal" subKey="photo" employeeId={employeeIdRef.current || employeeId} apiFetch={apiFetch} value={photoKey} onChange={(k, url) => { const key=typeof k==="string"?k:(k?.key||k?.s3_key||""); setPhotoKey(key); if (url) setPhotoPreview(url); else if (!key) setPhotoPreview(null); isDirtyRef.current = true; }} accept="image/*"/>
+                    <FileUpload label="Upload Profile Photo" category="personal" subKey="photo" employeeId={employeeIdRef.current || employeeId} disabled={!draftReady} apiFetch={apiFetch} value={photoKey} onChange={(k, url) => { const key=typeof k==="string"?k:(k?.key||k?.s3_key||""); setPhotoKey(key); if (url) setPhotoPreview(url); else if (!key) setPhotoPreview(null); isDirtyRef.current = true; }} accept="image/*"/>
                     <p style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:4}}>JPG or PNG · max 5MB</p>
                   </div>
                 </div>
@@ -785,7 +787,7 @@ export default function PersonalDetails() {
                   </div>
                   <div style={{marginTop:"0.15rem"}}>
                     <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Upload Passport <span style={{color:"#ef4444"}}>*</span></span>
-                    <FileUpload label="Upload Passport" category="personal" subKey="passport" employeeId={employeeIdRef.current || employeeId} apiFetch={apiFetch} value={passportKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setPassportKey(key);isDirtyRef.current=true;fixErr&&fixErr("passportKey");}}/>
+                    <FileUpload label="Upload Passport" category="personal" subKey="passport" employeeId={employeeIdRef.current || employeeId} disabled={!draftReady} apiFetch={apiFetch} value={passportKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setPassportKey(key);isDirtyRef.current=true;fixErr&&fixErr("passportKey");}}/>
                   </div>
                   </>
                 )}
@@ -830,7 +832,7 @@ export default function PersonalDetails() {
                       {errors.nameAsPerAadhaar && <span className="err-msg">Required</span>}
                     </div>
                     <div style={{marginTop:"0.75rem"}}>
-                      <FileUpload label="Upload Aadhaar Card *" category="personal" subKey="aadhaar" employeeId={employeeIdRef.current || employeeId} apiFetch={apiFetch} value={aadhaarKey} onChange={(k) => { const key=typeof k==="string"?k:(k?.key||k?.s3_key||""); setAadhaarKey(key); isDirtyRef.current = true; }} />
+                      <FileUpload label="Upload Aadhaar Card *" category="personal" subKey="aadhaar" employeeId={employeeIdRef.current || employeeId} disabled={!draftReady} apiFetch={apiFetch} value={aadhaarKey} onChange={(k) => { const key=typeof k==="string"?k:(k?.key||k?.s3_key||""); setAadhaarKey(key); isDirtyRef.current = true; }} />
                     </div>
                   </div>
                   {/* PAN */}
@@ -844,7 +846,7 @@ export default function PersonalDetails() {
                       {errors.nameAsPerPan && <span className="err-msg">Required</span>}
                     </div>
                     <div style={{marginTop:"0.75rem"}}>
-                      <FileUpload label="Upload PAN Card *" category="personal" subKey="pan" employeeId={employeeIdRef.current || employeeId} apiFetch={apiFetch} value={panKey} onChange={(k) => { const key=typeof k==="string"?k:(k?.key||k?.s3_key||""); setPanKey(key); isDirtyRef.current = true; }} />
+                      <FileUpload label="Upload PAN Card *" category="personal" subKey="pan" employeeId={employeeIdRef.current || employeeId} disabled={!draftReady} apiFetch={apiFetch} value={panKey} onChange={(k) => { const key=typeof k==="string"?k:(k?.key||k?.s3_key||""); setPanKey(key); isDirtyRef.current = true; }} />
                     </div>
                   </div>
                 </div>
