@@ -10,19 +10,29 @@ const DATA_TABS = ["Overview", "Education", "Employment", "UAN & PF", "Documents
 // ── Normalizers ───────────────────────────────────────────────────────
 const normalizeEducation = (ed = {}) => {
   const isNewFormat = !!(ed.xSchool || ed.xBoard || ed.xiiSchool || ed.degCollege || ed.pgCollege);
-  if (isNewFormat) {
-    return {
-      classX:        { school: ed.xSchool, board: ed.xBoard, yearOfPassing: ed.xYear, resultValue: ed.xPercent },
-      intermediate:  { school: ed.xiiSchool, board: ed.xiiBoard, yearOfPassing: ed.xiiYear, resultValue: ed.xiiPercent },
-      undergraduate: { college: ed.degCollege, course: ed.degName, branch: ed.degBranch, yearOfPassing: ed.degYear, resultValue: ed.degPercent },
-      postgraduate:  { college: ed.pgCollege, course: ed.pgName, branch: ed.pgBranch, yearOfPassing: ed.pgYear, resultValue: ed.pgPercent },
-    };
-  }
-  return {
+  const base = isNewFormat ? {
+    classX:        { school: ed.xSchool, board: ed.xBoard, yearOfPassing: ed.xYear, resultValue: ed.xPercent },
+    intermediate:  { school: ed.xiiSchool, board: ed.xiiBoard, yearOfPassing: ed.xiiYear, resultValue: ed.xiiPercent },
+    undergraduate: { college: ed.degCollege, course: ed.degName, branch: ed.degBranch, yearOfPassing: ed.degYear, resultValue: ed.degPercent },
+    postgraduate:  { college: ed.pgCollege, course: ed.pgName, branch: ed.pgBranch, yearOfPassing: ed.pgYear, resultValue: ed.pgPercent },
+  } : {
     classX:        ed?.classX        || ed?.class_x   || {},
     intermediate:  ed?.intermediate  || ed?.classXII  || ed?.class_xii || {},
     undergraduate: ed?.undergraduate || ed?.ug        || {},
     postgraduate:  ed?.postgraduate  || ed?.pg        || {},
+  };
+  return {
+    ...base,
+    diploma:                    ed?.diploma                    || {},
+    certifications:             Array.isArray(ed?.certifications)             ? ed.certifications             : [],
+    professionalQualifications: Array.isArray(ed?.professionalQualifications) ? ed.professionalQualifications : [],
+    articleships:               Array.isArray(ed?.articleships)               ? ed.articleships               : [],
+    hasEduGap:      ed?.hasEduGap      || "",
+    eduGapReason:   ed?.eduGapReason   || "",
+    hasDip:         ed?.hasDip         || "",
+    hasCerts:       ed?.hasCerts       || "",
+    hasProfQual:    ed?.hasProfQual    || "",
+    hasArticleship: ed?.hasArticleship || "",
   };
 };
 
@@ -286,7 +296,7 @@ async function printProfile(profile, empHistory, documents, employerName) {
 
   ${eduSection("Class X — SSC / Matriculation",      edu.classX,        "#334155")}
   ${eduSection("Intermediate — HSC / 12th",           edu.intermediate,  "#334155")}
-  ${edu.diploma?.institute ? eduSection("Diploma (after 10th)", edu.diploma, "#334155") : ""}
+  ${(edu.hasDip==="Yes"||edu.diploma?.institute) && edu.diploma && Object.values(edu.diploma).some(Boolean) ? eduSection("Diploma / Technical / Vocational", edu.diploma, "#334155") : ""}
   ${eduSection("Undergraduate / Degree",              edu.undergraduate, "#334155")}
   ${edu.postgraduate?.college ? eduSection("Postgraduate / Masters", edu.postgraduate, "#334155") : ""}
 
@@ -434,7 +444,7 @@ const G = `
     display: flex; align-items: center; justify-content: space-between;
   }
   .brand-wrap { display: flex; align-items: center; gap: 0.6rem; }
-  .brand-icon { width: 28px; height: 28px; border-radius: 8px; background: #18181b; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+  .brand-icon { width: 28px; height: 28px; border-radius: 8px; background: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
   .brand-name { font-size: 0.95rem; font-weight: 700; color: #18181b; letter-spacing: -0.2px; }
   .brand-sub  { font-size: 0.58rem; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 1px; }
   .so-btn { width: 28px; height: 28px; border-radius: 6px; border: 1px solid #e4e4e7; background: transparent; color: #a1a1aa; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
@@ -457,16 +467,16 @@ const G = `
   .req-ta { resize: vertical; min-height: 52px; line-height: 1.45; }
   .req-msg { font-size: 0.68rem; margin: 0 0 0.35rem; }
   .req-msg.e { color: #ef4444; } .req-msg.s { color: #16a34a; }
-  .send-btn { width: 100%; padding: 0.52rem; background: #18181b; color: #fff; border: none; border-radius: 7px; font-family: inherit; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: background 0.15s; letter-spacing: 0.1px; }
-  .send-btn:hover:not(:disabled) { background: #27272a; }
+  .send-btn { width: 100%; padding: 0.52rem; background: #2563eb; color: #fff; border: none; border-radius: 7px; font-family: inherit; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: background 0.15s; letter-spacing: 0.1px; }
+  .send-btn:hover:not(:disabled) { background: #1d4ed8; }
   .send-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
   .filter-tabs { display: flex; border-bottom: 1px solid #f0f0f0; padding: 0 0.5rem; }
   .ft-btn { flex: 1; padding: 0.6rem 0; background: none; border: none; border-bottom: 2px solid transparent; font-size: 0.63rem; font-weight: 600; color: #a1a1aa; cursor: pointer; transition: all 0.12s; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: -1px; display: flex; align-items: center; justify-content: center; gap: 4px; font-family: inherit; }
   .ft-btn:hover { color: #71717a; }
-  .ft-btn.on { color: #18181b; border-bottom-color: #18181b; }
+  .ft-btn.on { color: #2563eb; border-bottom-color: #2563eb; }
   .ft-cnt { padding: 1px 5px; border-radius: 4px; font-size: 0.58rem; font-weight: 700; background: #f4f4f5; color: #71717a; }
-  .ft-btn.on .ft-cnt { background: #18181b; color: #fff; }
+  .ft-btn.on .ft-cnt { background: #2563eb; color: #fff; }
 
   .search-wrap { padding: 0.7rem 1.35rem 0.3rem; }
   .search-in { width: 100%; padding: 0.42rem 0.65rem; background: #fff; border: 1px solid #e4e4e7; border-radius: 6px; font-family: inherit; font-size: 0.71rem; color: #18181b; outline: none; transition: border-color 0.12s; }
@@ -491,8 +501,8 @@ const G = `
   .top-title { font-size: 0.78rem; font-weight: 500; color: #71717a; }
   .top-title strong { color: #18181b; font-size: 0.9rem; font-weight: 700; }
 
-  .print-btn { padding: 0.44rem 1rem; background: #18181b; color: #fff; border: none; border-radius: 7px; font-family: inherit; font-size: 0.73rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; transition: background 0.15s; }
-  .print-btn:hover:not(:disabled) { background: #27272a; }
+  .print-btn { padding: 0.44rem 1rem; background: #2563eb; color: #fff; border: none; border-radius: 7px; font-family: inherit; font-size: 0.73rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; transition: background 0.15s; }
+  .print-btn:hover:not(:disabled) { background: #1d4ed8; }
   .print-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
   .empty-view { display: flex; flex-direction: column; align-items: center; justify-content: center; height: calc(100vh - 57px); gap: 0.5rem; }
@@ -504,22 +514,22 @@ const G = `
   .pane { padding: 1.5rem 1.75rem; }
 
   .hero-card {
-    background: linear-gradient(135deg, #18181b 0%, #27272a 100%);
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
     border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.1rem;
     display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.75rem;
   }
   .hero-name { font-size: 1.25rem; font-weight: 700; color: #fafafa; letter-spacing: -0.3px; }
-  .hero-email { font-size: 0.72rem; color: #71717a; margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
+  .hero-email { font-size: 0.72rem; color: #94a3b8; margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
   .hero-badges { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.7rem; }
   .hb { padding: 0.18rem 0.6rem; border-radius: 4px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
   .hb-approved { background: rgba(34,197,94,0.18); color: #4ade80; }
   .hb-pending  { background: rgba(234,179,8,0.18);  color: #fbbf24; }
   .hb-declined { background: rgba(239,68,68,0.18);  color: #f87171; }
-  .hb-info     { background: rgba(255,255,255,0.08); color: #a1a1aa; }
+  .hb-info     { background: rgba(255,255,255,0.12); color: #cbd5e1; }
 
   .msg-bubble { max-width: 260px; padding: 0.65rem 0.9rem; background: rgba(255,255,255,0.06); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); }
-  .msg-lbl { font-size: 0.55rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
-  .msg-txt { font-size: 0.72rem; color: #a1a1aa; line-height: 1.5; }
+  .msg-lbl { font-size: 0.55rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
+  .msg-txt { font-size: 0.72rem; color: #cbd5e1; line-height: 1.5; }
 
   .note-bar { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 0.6rem 0.9rem; font-size: 0.7rem; color: #92400e; margin-bottom: 1.1rem; line-height: 1.55; }
   .status-card { background: #fff; border: 1px solid #ebebeb; border-radius: 9px; padding: 1.1rem 1.25rem; font-size: 0.82rem; color: #71717a; }
@@ -529,7 +539,7 @@ const G = `
   .tab-nav { display: flex; background: #fff; border-bottom: 1.5px solid #ebebeb; border-radius: 9px 9px 0 0; overflow: hidden; }
   .tab-btn { flex: 1; padding: 0.7rem 0.4rem; background: none; border: none; border-bottom: 2.5px solid transparent; font-family: inherit; font-size: 0.72rem; font-weight: 500; color: #a1a1aa; cursor: pointer; margin-bottom: -1.5px; transition: all 0.12s; white-space: nowrap; }
   .tab-btn:hover { color: #52525b; background: #fafafa; }
-  .tab-btn.on { color: #18181b; border-bottom-color: #18181b; font-weight: 700; background: #fff; }
+  .tab-btn.on { color: #2563eb; border-bottom-color: #2563eb; font-weight: 700; background: #fff; }
 
   .tab-pane { background: #fff; border: 1px solid #ebebeb; border-top: none; border-radius: 0 0 9px 9px; padding: 1.25rem 1.4rem; margin-bottom: 1.1rem; }
 
@@ -548,8 +558,8 @@ const G = `
   .nd-box { font-size: 0.76rem; color: #a1a1aa; padding: 0.7rem; background: #fafafa; border-radius: 6px; }
 
   .emp-card { border: 1px solid #ebebeb; border-radius: 8px; padding: 1rem 1.1rem; margin-bottom: 0.7rem; position: relative; overflow: hidden; background: #fff; }
-  .emp-card::before { content:''; position:absolute; top:0; left:0; bottom:0; width:3px; background:#18181b; border-radius:3px 0 0 3px; }
-  .emp-title { font-size: 0.65rem; font-weight: 700; color: #18181b; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 0.65rem; padding-left: 4px; display: flex; align-items: center; gap: 0.4rem; }
+  .emp-card::before { content:''; position:absolute; top:0; left:0; bottom:0; width:3px; background:#2563eb; border-radius:3px 0 0 3px; }
+  .emp-title { font-size: 0.65rem; font-weight: 700; color: #2563eb; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 0.65rem; padding-left: 4px; display: flex; align-items: center; gap: 0.4rem; }
   .curr-pill { background: #dcfce7; color: #15803d; padding: 1px 7px; border-radius: 4px; font-size: 0.58rem; font-weight: 700; }
 
   .edu-card { border: 1px solid #ebebeb; border-radius: 8px; padding: 1rem 1.1rem; margin-bottom: 0.7rem; background: #fff; }
@@ -565,8 +575,8 @@ const G = `
   .doc-row { display: flex; align-items: center; justify-content: space-between; padding: 0.55rem 0.85rem; background: #fafafa; border: 1px solid #ebebeb; border-radius: 6px; margin-bottom: 0.35rem; }
   .doc-name { font-size: 0.76rem; font-weight: 600; color: #18181b; }
   .doc-meta { font-size: 0.62rem; color: #a1a1aa; margin-top: 1px; font-family: 'JetBrains Mono', monospace; }
-  .doc-view { padding: 0.3rem 0.75rem; background: #18181b; color: #fff; border-radius: 5px; font-size: 0.68rem; font-weight: 600; text-decoration: none; white-space: nowrap; transition: background 0.15s; }
-  .doc-view:hover { background: #27272a; }
+  .doc-view { padding: 0.3rem 0.75rem; background: #1e293b; color: #fff; border-radius: 5px; font-size: 0.68rem; font-weight: 600; text-decoration: none; white-space: nowrap; transition: background 0.15s; }
+  .doc-view:hover { background: #334155; }
 
   @media(max-width:768px) {
     .sidebar { width:100%; height:auto; position:relative; }
@@ -758,11 +768,11 @@ function EducationTab({ data }) {
     <div>
       <EduCard title="Class X — SSC / Matriculation"  s={data.classX} />
       <EduCard title="Intermediate — HSC / 12th"       s={data.intermediate} />
-      {data.diploma?.institute&&<EduCard title="Diploma (after 10th)" s={data.diploma} />}
+      {(data.hasDip==="Yes"||data.diploma?.institute)&&data.diploma&&Object.values(data.diploma).some(Boolean)&&<EduCard title="Diploma / Technical / Vocational" s={data.diploma} />}
       <EduCard title="Undergraduate / Degree"          s={data.undergraduate} />
       {data.postgraduate?.college&&<EduCard title="Postgraduate / Masters" s={data.postgraduate} />}
 
-      {Array.isArray(data.professionalQualifications)&&data.professionalQualifications.length>0&&(
+      {(data.hasProfQual==="Yes"||true)&&Array.isArray(data.professionalQualifications)&&data.professionalQualifications.filter(q=>q.type).length>0&&(
         <Sec title="Professional Qualifications">
           {data.professionalQualifications.map((q,i)=>(
             <div key={i} style={{padding:"0.6rem 0.75rem",background:"#f8fafc",borderRadius:6,border:"1px solid #e8ecf2",marginBottom:"0.35rem"}}>
@@ -776,7 +786,7 @@ function EducationTab({ data }) {
         </Sec>
       )}
 
-      {Array.isArray(data.articleships)&&data.articleships.length>0&&(
+      {(data.hasArticleship==="Yes"||true)&&Array.isArray(data.articleships)&&data.articleships.filter(a=>a.firm||a.type).length>0&&(
         <Sec title="Articleship / Practical Training">
           {data.articleships.map((a,i)=>(
             <div key={i} style={{padding:"0.6rem 0.75rem",background:"#fff7ed",borderRadius:6,border:"1px solid #fed7aa",marginBottom:"0.35rem"}}>
@@ -794,7 +804,7 @@ function EducationTab({ data }) {
         </Sec>
       )}
 
-      {Array.isArray(data.certifications)&&data.certifications.length>0&&(
+      {(data.hasCerts==="Yes"||true)&&Array.isArray(data.certifications)&&data.certifications.filter(c=>c.name).length>0&&(
         <Sec title="Certifications">
           <div className="kv-grid">
             {data.certifications.map((c,i)=><KV key={i} k={`Cert ${i+1}`} v={c.name} />)}
