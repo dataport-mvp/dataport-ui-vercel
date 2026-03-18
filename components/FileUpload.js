@@ -29,6 +29,13 @@ export default function FileUpload({
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Hard guard — disabled prop blocks all uploads
+    if (disabled) {
+      e.target.value = "";
+      return;
+    }
+
     if (!employeeId) {
       setError("Please save your profile first before uploading documents.");
       e.target.value = "";
@@ -182,9 +189,9 @@ export default function FileUpload({
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span>✓ {displayName}</span>
             <div>
-              <label style={fs.changeBtn}>
+              <label style={disabled ? {...fs.changeBtn, opacity: 0.4, cursor: "not-allowed"} : fs.changeBtn}>
                 Replace
-                <input type="file" onChange={handleFile} hidden />
+                {!disabled && <input type="file" onChange={handleFile} hidden />}
               </label>
               <button onClick={handleRemove} style={fs.removeBtn}>
                 ✕
@@ -192,16 +199,10 @@ export default function FileUpload({
             </div>
           </div>
         ) : (
-          disabled ? (
-            <label style={{ ...fs.uploadBtn, color: "#94a3b8", cursor: "not-allowed" }}>
-              ⏳ Preparing…
-            </label>
-          ) : (
           <label style={fs.uploadBtn}>
             📎 Choose file
             <input type="file" onChange={handleFile} hidden />
           </label>
-          )
         )}
       </div>
 
