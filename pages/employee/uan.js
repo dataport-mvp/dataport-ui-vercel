@@ -100,6 +100,15 @@ const G = `
     font-size:0.875rem; font-weight:600; cursor:pointer; transition:all 0.2s; }
   .sbtn:hover { color:#a78bfa; border-color:#a78bfa; }
 
+  .guide-banner { background: #eef2ff; border: 1.5px solid #c7d2fe; border-radius: 12px;
+    padding: 0.9rem 1.1rem; margin-bottom: 1.1rem; display: flex; gap: 0.75rem; align-items: flex-start; }
+  .guide-steps { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.4rem; }
+  .guide-step { font-size: 0.72rem; font-weight: 700; color: #0891b2; background: #e0f2fe;
+    padding: 0.2rem 0.55rem; border-radius: 999px; white-space: nowrap; }
+  .guide-arrow { font-size: 0.7rem; color: #94a3b8; }
+  .nom-block { background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 12px; padding: 1.1rem 1.2rem; margin-bottom: 0.85rem; }
+  .sig-canvas { border: 1.5px solid #b8b4d4; border-radius: 9px; background: #fff; cursor: crosshair; display: block; touch-action: none; }
+  .sig-canvas.signed { border-color: #16a34a; background: #f0fdf4; }
   @media(max-width:640px){
     .fr{flex-direction:column;} .fi{min-width:100%;}
     .topbar{flex-direction:column;gap:0.6rem;align-items:flex-start;position:relative;}
@@ -209,6 +218,22 @@ export default function UanDetails() {
   // Used to show a "from page 3" badge on each PF block
   const [page3Companies, setPage3Companies] = useState([]); // [{name, index}]
 
+  // ── Nominee fields (EPFO Form 2 / Pension nomination) ──────────────
+  const makeNominee = () => ({
+    name:"", dob:"", relation:"", address:"", share:"",
+    guardianName:"", guardianAddress:"", // if nominee is minor
+  });
+  const [nominees, setNominees] = useState([makeNominee()]);
+  const [pfNomAck, setPfNomAck] = useState(false); // PF nomination acknowledgement
+  const [pensionNomAck, setPensionNomAck] = useState(false); // Pension nomination acknowledgement
+  const [epfoDecl, setEpfoDecl] = useState(false); // General EPFO declaration
+  // ── Digital Signature ───────────────────────────────────────────────
+  const [sigDataUrl, setSigDataUrl] = useState(""); // base64 PNG of drawn signature
+  const [sigTimestamp, setSigTimestamp] = useState(""); // ISO timestamp when signed
+  const sigCanvasRef = useRef(null);
+  const sigDrawingRef = useRef(false);
+  const sigLastRef = useRef({x:0, y:0});
+
   const dirty = (setter) => (val) => { setter(val); isDirtyRef.current = true; };
 
   // ── Role guard ───────────────────────────────────────────────────────
@@ -244,6 +269,16 @@ export default function UanDetails() {
           // EPFO-fetched read-only
           if (Array.isArray(d.epfoFetched) && d.epfoFetched.length > 0) {
             setEpfoFetched(d.epfoFetched);
+          }
+          // Nominees
+          if (Array.isArray(d.epfoNominees) && d.epfoNominees.length > 0) {
+            setNominees(d.epfoNominees);
+          }
+          // Declarations
+          if (d.epfoDeclarations) {
+            if (d.epfoDeclarations.pfNomAck) setPfNomAck(d.epfoDeclarations.pfNomAck);
+            if (d.epfoDeclarations.pensionNomAck) setPensionNomAck(d.epfoDeclarations.pensionNomAck);
+            if (d.epfoDeclarations.epfoDecl) setEpfoDecl(d.epfoDeclarations.epfoDecl);
           }
 
           // Load employment history to pre-fill company names
@@ -334,6 +369,9 @@ export default function UanDetails() {
       isActive:     hasUan === "yes" ? isActive     : "",
       epfoKey:      hasUan === "yes" ? epfoKey      : "",
       pfRecords:    hasUan === "yes" ? pfRecords    : [],
+      epfoNominees: nominees,
+      epfoSignature: { dataUrl: sigDataUrl, timestamp: sigTimestamp },
+      epfoDeclarations: { pfNomAck, pensionNomAck, epfoDecl },
     };
     const res = await apiFetch(`${API}/employee`, { method:"POST", body:JSON.stringify(payload) });
     if (!res.ok) throw new Error(parseError(await res.json().catch(() => ({}))));
@@ -391,6 +429,34 @@ export default function UanDetails() {
         <div className="wrap">
           <StepNav current={4} onNavigate={handleNavigate}/>
 
+          {/* ── Chronological guide banner ───────────────────────── */}
+          <div className="guide-banner">
+            <div style={{fontSize:"1.2rem",flexShrink:0}}>💡</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:"0.82rem",fontWeight:700,color:"#0c4a6e",marginBottom:"0.25rem"}}>UAN & PF — What you'll fill on this page</div>
+              <div style={{fontSize:"0.72rem",color:"#6b6894",marginBottom:"0.5rem",lineHeight:1.5}}>
+                Your Universal Account Number (UAN) stays with you across jobs. Fill UAN details, upload your card, attach service history, add PF records per employer, nominee details, and digitally sign your EPFO declarations.
+              </div>
+              <div className="guide-steps">
+                {[
+                  {label:"UAN Details", sub:"number & card"},
+                  {label:"Service History", sub:"snapshot upload"},
+                  {label:"PF Per Employer", sub:"member ID"},
+                  {label:"Nominees", sub:"Form 2 / pension"},
+                  {label:"Declaration", sub:"digital sign"},
+                ].map((s,i,arr)=>(
+                  <span key={i} style={{display:"inline-flex",alignItems:"center",gap:"0.4rem"}}>
+                    <span className="guide-step" style={{display:"inline-flex",flexDirection:"column",alignItems:"center",gap:"1px"}}>
+                      <span>{s.label}</span>
+                      {s.sub&&<span style={{fontSize:"0.6rem",fontWeight:500,color:"#0891b2",letterSpacing:0,textTransform:"none"}}>{s.sub}</span>}
+                    </span>
+                    {i<arr.length-1&&<span className="guide-arrow">→</span>}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
           {/* ── UAN / EPFO Details ──────────────────────────────────── */}
           <div className="sc cyn">
             <div className="sh">
@@ -441,8 +507,15 @@ export default function UanDetails() {
                   </div>
                 </div>
                 <div style={{marginTop:"0.75rem"}}>
-                  <span className="fl" style={{display:"block",marginBottom:"0.4rem"}}>UAN Card / Passbook <span style={{color:"#ef4444"}}>*</span></span>
-                  <FileUpload label="Upload UAN Card or Passbook" category="uan" subKey="uanCard" employeeId={draft?.employee_id || ""} apiFetch={apiFetch} value={epfoKey} onChange={k => { setEpfoKey(k); isDirtyRef.current = true; }}/>
+                  <span className="fl" style={{display:"block",marginBottom:"0.4rem"}}>UAN Card <span style={{color:"#ef4444"}}>*</span></span>
+                  <FileUpload label="Upload UAN Card *" category="uan" subKey="uanCard" employeeId={draft?.employee_id || ""} apiFetch={apiFetch} value={epfoKey} onChange={k => { setEpfoKey(k); isDirtyRef.current = true; }}/>
+                </div>
+                <div style={{marginTop:"0.75rem"}}>
+                  <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Service History Record Snapshot <span style={{color:"#ef4444"}}>*</span></span>
+                  <p style={{fontSize:"0.7rem",color:"#6b6894",marginBottom:"0.4rem",fontWeight:500,lineHeight:1.5}}>
+                    Download your Service History from the EPFO Member Portal (passbook.epfindia.gov.in) and upload a screenshot or PDF. This shows your complete employment and PF contribution history.
+                  </p>
+                  <FileUpload label="Upload Service History Snapshot *" category="uan" subKey="serviceHistory" employeeId={draft?.employee_id || ""} apiFetch={apiFetch} value={draft?.serviceHistoryKey || ""} onChange={k => { isDirtyRef.current = true; setDraft(prev => ({...prev, serviceHistoryKey: typeof k==="string"?k:(k?.key||k?.s3_key||"")})); }}/>
                 </div>
               </>
             )}
@@ -453,13 +526,28 @@ export default function UanDetails() {
             <div className="sc vio">
               <div className="sh">
                 <div className="si vio">📋</div>
-                <span className="st">PF Details (Per Previous Employer)</span>
+                <span className="st">PF Details — Per Employer</span>
               </div>
-              <p style={{fontSize:"0.75rem",color:"#8b88b0",marginBottom:"0.9rem",fontWeight:500,lineHeight:1.5}}>
+              <p style={{fontSize:"0.75rem",color:"#8b88b0",marginBottom:"0.75rem",fontWeight:500,lineHeight:1.5}}>
                 {page3Companies.length > 0
-                  ? "Company names are pre-filled from your employment history on page 3. Fill in the PF details for each."
+                  ? "Pre-filled from your employment history on page 3 — same order as you entered them. Fill PF details for each."
                   : "Enter PF member details for each company where PF was deducted. Add one row per employer."}
               </p>
+              {/* Mini flow guide — mirrors page 3 order */}
+              {page3Companies.length > 0 && (
+                <div style={{display:"flex",alignItems:"center",gap:"0.4rem",flexWrap:"wrap",marginBottom:"0.9rem",padding:"0.65rem 0.9rem",background:"#f5f3ff",border:"1px solid #dddaf0",borderRadius:10}}>
+                  <span style={{fontSize:"0.68rem",color:"#7c3aed",fontWeight:700,marginRight:"0.2rem"}}>Order:</span>
+                  {page3Companies.map((c,i,arr)=>(
+                    <span key={i} style={{display:"inline-flex",alignItems:"center",gap:"0.35rem"}}>
+                      <span style={{display:"inline-flex",flexDirection:"column",alignItems:"center",gap:"1px",background:i===0?"#7c3aed":"#ede9fe",color:i===0?"#fff":"#7c3aed",padding:"0.18rem 0.55rem",borderRadius:999,fontSize:"0.68rem",fontWeight:700,whiteSpace:"nowrap"}}>
+                        <span>{i===0?"Current Employer":`Employer ${i+1}`}</span>
+                        <span style={{fontSize:"0.58rem",fontWeight:500,opacity:0.85}}>{i===0?"most recent":"previous"}</span>
+                      </span>
+                      {i<arr.length-1&&<span style={{fontSize:"0.65rem",color:"#94a3b8"}}>→</span>}
+                    </span>
+                  ))}
+                </div>
+              )}
 
               {pfRecords.map((rec, i) => {
                 const p3 = page3Companies[i];
@@ -472,7 +560,7 @@ export default function UanDetails() {
                         </span>
                         {p3 && (
                           <span className="pf-block-badge">
-                            {p3.isCurrent ? "🟢 Current / Most Recent Employer" : `Previous Employer ${i}`}
+                            {p3.isCurrent ? "🟢 Current / Most Recent" : i===1 ? "⬅ Previous Employer" : `⬅ Previous Employer ${i}`}
                           </span>
                         )}
                       </div>
@@ -550,6 +638,204 @@ export default function UanDetails() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* ── Nominee Details (EPFO Form 2 / Pension) ─────────────── */}
+          {hasUan !== "" && (
+            <div className="sc grn" style={{marginBottom:"1.1rem"}}>
+              <div className="sh">
+                <div className="si grn">👨‍👩‍👧</div>
+                <span className="st">Nominee Details — PF & Pension (Form 2)</span>
+              </div>
+              <p style={{fontSize:"0.75rem",color:"#6b6894",marginBottom:"0.9rem",fontWeight:500,lineHeight:1.5}}>
+                As per EPFO guidelines, you must nominate beneficiaries for your PF and Pension accumulations. These details are used to fill <strong>Form 2 (Revised)</strong>. You can nominate up to 4 persons. Shares must add up to 100%.
+              </p>
+              {nominees.map((nom, idx) => (
+                <div key={idx} className="nom-block">
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.75rem"}}>
+                    <span style={{fontSize:"0.72rem",fontWeight:800,color:"#16a34a",textTransform:"uppercase",letterSpacing:"0.5px"}}>Nominee {idx+1}</span>
+                    {idx>0&&<button className="rm-btn" onClick={()=>{setNominees(prev=>prev.filter((_,i)=>i!==idx));isDirtyRef.current=true;}}>− Remove</button>}
+                  </div>
+                  <div className="fr">
+                    <div className="fi">
+                      <span className="fl">Full Name <span style={{color:"#ef4444"}}>*</span></span>
+                      <input className="in" value={nom.name||""} placeholder="As per Aadhaar / PAN" onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],name:e.target.value};return n;});isDirtyRef.current=true;}}/>
+                    </div>
+                    <div className="fi">
+                      <span className="fl">Date of Birth <span style={{color:"#ef4444"}}>*</span></span>
+                      <input className="in" type="date" value={nom.dob||""} onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],dob:e.target.value};return n;});isDirtyRef.current=true;}} style={{colorScheme:"light"}}/>
+                    </div>
+                    <div className="fi">
+                      <span className="fl">Relationship <span style={{color:"#ef4444"}}>*</span></span>
+                      <select className="in" value={nom.relation||""} onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],relation:e.target.value};return n;});isDirtyRef.current=true;}} style={{background:nom.relation?"#fff":"#f2f1f9",color:nom.relation?"#1a1730":"#8b88b0"}}>
+                        <option value="">Select</option>
+                        {["Spouse","Son","Daughter","Father","Mother","Brother","Sister","Other"].map(r=><option key={r} value={r}>{r}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="fr">
+                    <div className="fi" style={{minWidth:220}}>
+                      <span className="fl">Address <span style={{color:"#ef4444"}}>*</span></span>
+                      <input className="in" value={nom.address||""} placeholder="Full residential address" onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],address:e.target.value};return n;});isDirtyRef.current=true;}}/>
+                    </div>
+                    <div className="fi" style={{maxWidth:140}}>
+                      <span className="fl">Share (%) <span style={{color:"#ef4444"}}>*</span></span>
+                      <input className="in" value={nom.share||""} placeholder="e.g. 50" inputMode="numeric" maxLength={3} onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,3);setNominees(p=>{const n=[...p];n[idx]={...n[idx],share:v};return n;});isDirtyRef.current=true;}}/>
+                      {nominees.length>1&&<span style={{fontSize:"0.65rem",color:"#6b6894",marginTop:2}}>Total: {nominees.reduce((s,n)=>s+(parseInt(n.share)||0),0)}%</span>}
+                    </div>
+                  </div>
+                  {/* Guardian details if nominee is minor */}
+                  {nom.dob && new Date().getFullYear() - new Date(nom.dob).getFullYear() < 18 && (
+                    <div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:"0.7rem 0.9rem",marginTop:"0.5rem"}}>
+                      <div style={{fontSize:"0.68rem",fontWeight:700,color:"#92400e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.5rem"}}>⚠️ Minor Nominee — Guardian Required</div>
+                      <div className="fr">
+                        <div className="fi">
+                          <span className="fl">Guardian Name <span style={{color:"#ef4444"}}>*</span></span>
+                          <input className="in" value={nom.guardianName||""} placeholder="Legal guardian's full name" onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],guardianName:e.target.value};return n;});isDirtyRef.current=true;}}/>
+                        </div>
+                        <div className="fi">
+                          <span className="fl">Guardian Address <span style={{color:"#ef4444"}}>*</span></span>
+                          <input className="in" value={nom.guardianAddress||""} placeholder="Guardian's address" onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],guardianAddress:e.target.value};return n;});isDirtyRef.current=true;}}/>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {nominees.length < 4 && (
+                <button className="add-btn" onClick={()=>{setNominees(p=>[...p,makeNominee()]);isDirtyRef.current=true;}}>+ Add Another Nominee</button>
+              )}
+              {nominees.length > 1 && nominees.reduce((s,n)=>s+(parseInt(n.share)||0),0) !== 100 && (
+                <p style={{fontSize:"0.75rem",color:"#ef4444",fontWeight:600,marginTop:"0.5rem"}}>⚠️ Total share must equal 100%. Current total: {nominees.reduce((s,n)=>s+(parseInt(n.share)||0),0)}%</p>
+              )}
+            </div>
+          )}
+
+          {/* ── EPFO Declarations + Digital Signature ────────────────── */}
+          {hasUan !== "" && (
+            <div className="sc" style={{marginBottom:"1.1rem",position:"relative",overflow:"hidden"}}>
+              <div style={{position:"absolute",top:0,left:0,bottom:0,width:4,borderRadius:"16px 0 0 16px",background:"#4f46e5"}}/>
+              <div className="sh">
+                <div className="si" style={{background:"#eef2ff"}}>📜</div>
+                <span className="st">EPFO Declarations & Digital Signature</span>
+              </div>
+              <p style={{fontSize:"0.75rem",color:"#6b6894",marginBottom:"0.9rem",fontWeight:500,lineHeight:1.5}}>
+                As per EPFO guidelines, the following declarations are mandatory. Your digital signature with timestamp serves as your consent and replaces the physical Form 2 signature for this submission.
+              </p>
+
+              {/* Declaration 1 — PF Nomination */}
+              <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"0.75rem"}}>
+                <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
+                  <input type="checkbox" checked={pfNomAck} onChange={e=>{setPfNomAck(e.target.checked);isDirtyRef.current=true;}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#4f46e5",flexShrink:0,cursor:"pointer"}}/>
+                  <div>
+                    <div style={{fontSize:"0.68rem",fontWeight:800,color:"#4f46e5",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>PF Nomination Declaration (Form 2 — Part A)</div>
+                    <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>
+                      I hereby nominate the person(s) listed above to receive the amount standing to my credit in the Provident Fund in the event of my death before the amount becomes payable, or having become payable, remains unpaid at my death. I confirm the nominee details are accurate and the shares add up to 100%.
+                    </span>
+                  </div>
+                </label>
+              </div>
+
+              {/* Declaration 2 — Pension Nomination */}
+              <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"0.75rem"}}>
+                <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
+                  <input type="checkbox" checked={pensionNomAck} onChange={e=>{setPensionNomAck(e.target.checked);isDirtyRef.current=true;}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#4f46e5",flexShrink:0,cursor:"pointer"}}/>
+                  <div>
+                    <div style={{fontSize:"0.68rem",fontWeight:800,color:"#4f46e5",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>Pension Nomination Declaration (Form 2 — Part B)</div>
+                    <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>
+                      I nominate the above person(s) to receive the monthly widow/widower pension or children pension payable under the Employees' Pension Scheme, 1995, in the event of my death while in service or after retirement. I confirm all nominee details and am aware that this nomination supersedes any previous nomination made by me.
+                    </span>
+                  </div>
+                </label>
+              </div>
+
+              {/* Declaration 3 — General EPFO */}
+              <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"1rem"}}>
+                <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
+                  <input type="checkbox" checked={epfoDecl} onChange={e=>{setEpfoDecl(e.target.checked);isDirtyRef.current=true;}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#4f46e5",flexShrink:0,cursor:"pointer"}}/>
+                  <div>
+                    <div style={{fontSize:"0.68rem",fontWeight:800,color:"#4f46e5",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>General EPFO Declaration</div>
+                    <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>
+                      I hereby declare that the information provided in this form regarding my UAN, PF member ID(s), service history, and nominee details is true and correct to the best of my knowledge. I understand that any false declaration may result in legal action under the Employees' Provident Funds & Miscellaneous Provisions Act, 1952.
+                    </span>
+                  </div>
+                </label>
+              </div>
+
+              {/* Digital Signature Canvas */}
+              <div style={{background:"#fff",border:"1.5px solid #e4e2f0",borderRadius:12,padding:"1.1rem 1.2rem"}}>
+                <div style={{fontSize:"0.72rem",fontWeight:800,color:"#4f46e5",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.5rem"}}>Digital Signature</div>
+                <p style={{fontSize:"0.72rem",color:"#6b6894",marginBottom:"0.75rem",fontWeight:500,lineHeight:1.5}}>
+                  Draw your signature below using mouse or finger. This will be recorded along with the date and time as your digital consent.
+                </p>
+                <canvas
+                  ref={sigCanvasRef}
+                  width={560} height={120}
+                  className={`sig-canvas${sigDataUrl?" signed":""}`}
+                  style={{width:"100%",maxWidth:560,height:120}}
+                  onMouseDown={e=>{
+                    sigDrawingRef.current=true;
+                    const r=sigCanvasRef.current.getBoundingClientRect();
+                    const scaleX=sigCanvasRef.current.width/r.width;
+                    sigLastRef.current={x:(e.clientX-r.left)*scaleX,y:(e.clientY-r.top)*scaleX};
+                  }}
+                  onMouseMove={e=>{
+                    if(!sigDrawingRef.current)return;
+                    const r=sigCanvasRef.current.getBoundingClientRect();
+                    const scaleX=sigCanvasRef.current.width/r.width;
+                    const ctx=sigCanvasRef.current.getContext("2d");
+                    const x=(e.clientX-r.left)*scaleX, y=(e.clientY-r.top)*scaleX;
+                    ctx.beginPath();ctx.strokeStyle="#1a1730";ctx.lineWidth=2;ctx.lineCap="round";
+                    ctx.moveTo(sigLastRef.current.x,sigLastRef.current.y);ctx.lineTo(x,y);ctx.stroke();
+                    sigLastRef.current={x,y};
+                  }}
+                  onMouseUp={()=>{
+                    sigDrawingRef.current=false;
+                    const dataUrl=sigCanvasRef.current.toDataURL("image/png");
+                    setSigDataUrl(dataUrl);setSigTimestamp(new Date().toISOString());isDirtyRef.current=true;
+                  }}
+                  onTouchStart={e=>{
+                    e.preventDefault();sigDrawingRef.current=true;
+                    const r=sigCanvasRef.current.getBoundingClientRect();
+                    const scaleX=sigCanvasRef.current.width/r.width;
+                    const t=e.touches[0];
+                    sigLastRef.current={x:(t.clientX-r.left)*scaleX,y:(t.clientY-r.top)*scaleX};
+                  }}
+                  onTouchMove={e=>{
+                    e.preventDefault();if(!sigDrawingRef.current)return;
+                    const r=sigCanvasRef.current.getBoundingClientRect();
+                    const scaleX=sigCanvasRef.current.width/r.width;
+                    const ctx=sigCanvasRef.current.getContext("2d");
+                    const t=e.touches[0];
+                    const x=(t.clientX-r.left)*scaleX, y=(t.clientY-r.top)*scaleX;
+                    ctx.beginPath();ctx.strokeStyle="#1a1730";ctx.lineWidth=2;ctx.lineCap="round";
+                    ctx.moveTo(sigLastRef.current.x,sigLastRef.current.y);ctx.lineTo(x,y);ctx.stroke();
+                    sigLastRef.current={x,y};
+                  }}
+                  onTouchEnd={()=>{
+                    sigDrawingRef.current=false;
+                    const dataUrl=sigCanvasRef.current.toDataURL("image/png");
+                    setSigDataUrl(dataUrl);setSigTimestamp(new Date().toISOString());isDirtyRef.current=true;
+                  }}
+                  onMouseLeave={()=>{sigDrawingRef.current=false;}}
+                />
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:"0.6rem",flexWrap:"wrap",gap:"0.5rem"}}>
+                  <div>
+                    {sigDataUrl && sigTimestamp && (
+                      <span style={{fontSize:"0.7rem",color:"#16a34a",fontWeight:600}}>
+                        ✓ Signed — {new Date(sigTimestamp).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}
+                      </span>
+                    )}
+                    {!sigDataUrl && <span style={{fontSize:"0.7rem",color:"#8b88b0",fontWeight:500}}>Draw your signature above</span>}
+                  </div>
+                  <button onClick={()=>{
+                    const ctx=sigCanvasRef.current.getContext("2d");
+                    ctx.clearRect(0,0,sigCanvasRef.current.width,sigCanvasRef.current.height);
+                    setSigDataUrl("");setSigTimestamp("");isDirtyRef.current=true;
+                  }} style={{padding:"0.3rem 0.8rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:7,fontSize:"0.72rem",fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Clear</button>
+                </div>
+              </div>
             </div>
           )}
 
