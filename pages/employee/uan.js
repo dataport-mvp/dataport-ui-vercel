@@ -202,6 +202,7 @@ export default function UanDetails() {
   const [mobileLinked, setMobileLinked] = useState("");
   const [isActive,     setIsActive]     = useState("");
   const [epfoKey,      setEpfoKey]      = useState("");
+  const [serviceHistoryKey, setServiceHistoryKey] = useState("");
 
   // ── PF records — pre-filled from page 3 employment company names ────
   const [pfRecords,   setPfRecords]   = useState([makePfRecord()]);
@@ -271,7 +272,8 @@ export default function UanDetails() {
           if (d.nameAsPerUan) setNameAsPerUan(d.nameAsPerUan);
           if (d.mobileLinked) setMobileLinked(d.mobileLinked);
           if (d.isActive)     setIsActive(d.isActive);
-          if (d.epfoKey)      setEpfoKey(d.epfoKey);
+          if (d.epfoKey)           setEpfoKey(d.epfoKey);
+          if (d.serviceHistoryKey) setServiceHistoryKey(d.serviceHistoryKey);
 
           // EPFO-fetched read-only
           if (Array.isArray(d.epfoFetched) && d.epfoFetched.length > 0) {
@@ -376,6 +378,7 @@ export default function UanDetails() {
       isActive:     hasUan === "yes" ? isActive     : "",
       epfoKey:      hasUan === "yes" ? epfoKey      : "",
       pfRecords:    hasUan === "yes" ? pfRecords    : [],
+      serviceHistoryKey,
       epfoNominees: nominees,
       epfoSignature: { dataUrl: sigDataUrl, timestamp: sigTimestamp },
       epfoDeclarations: { pfNomAck, pensionNomAck, epfoDecl },
@@ -522,7 +525,7 @@ export default function UanDetails() {
                   <p style={{fontSize:"0.7rem",color:"#6b6894",marginBottom:"0.4rem",fontWeight:500,lineHeight:1.5}}>
                     Download your Service History from the EPFO Member Portal (passbook.epfindia.gov.in) and upload a screenshot or PDF. This shows your complete employment and PF contribution history.
                   </p>
-                  <FileUpload label="Upload Service History Snapshot *" category="uan" subKey="serviceHistory" employeeId={draft?.employee_id || ""} apiFetch={apiFetch} value={draft?.serviceHistoryKey || ""} onChange={k => { isDirtyRef.current = true; setDraft(prev => ({...prev, serviceHistoryKey: typeof k==="string"?k:(k?.key||k?.s3_key||"")})); }}/>
+                  <FileUpload label="Upload Service History Snapshot *" category="uan" subKey="serviceHistory" employeeId={draft?.employee_id || ""} apiFetch={apiFetch} value={serviceHistoryKey} onChange={k => { const key = typeof k==="string"?k:(k?.key||k?.s3_key||""); setServiceHistoryKey(key); isDirtyRef.current = true; }}/>
                 </div>
               </>
             )}
