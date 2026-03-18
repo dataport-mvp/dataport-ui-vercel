@@ -124,7 +124,6 @@ const G = `
   @media (max-width:640px){ .fr{flex-direction:column;} .fi{min-width:100%;} .topbar{flex-direction:column;gap:0.6rem;position:relative;} }
 `;
 
-// ── Acknowledgement definitions ───────────────────────────────────────────────
 const ACK_DEFS = [
   {
     key: "business",
@@ -160,9 +159,7 @@ const GUIDE_STEPS = [
   { label: "First Job",       sub: "oldest"       },
 ];
 
-// ── Date field — native date input, stores YYYY-MM-DD ─────────────────────────
 function FDate({ l, v, s, r=true, errKey, errors, onFix, max }) {
-  // DD/MM/YYYY text input — stores as YYYY-MM-DD internally
   const [raw, setRaw] = useState(()=>{
     if(v&&v.includes("-")){const[y,mo,d]=v.split("-");return `${d}/${mo}/${y}`;}
     return v||"";
@@ -363,27 +360,23 @@ export default function PreviousCompany() {
     fetchData();
   },[ready,user,apiFetch]);
 
-const update = (i, path, value) => {
-  setEmployments(prev => {
-    const updated = [...prev];
+  const update = (i, path, value) => {
+    setEmployments(prev => {
+      const updated = [...prev];
+      const keys = path.split(".");
+      let obj = { ...updated[i] };
+      let current = obj;
+      for (let k = 0; k < keys.length - 1; k++) {
+        current[keys[k]] = { ...current[keys[k]] };
+        current = current[keys[k]];
+      }
+      current[keys[keys.length - 1]] = value;
+      updated[i] = obj;
+      return updated;
+    });
+    isDirtyRef.current = true;
+  };
 
-    const keys = path.split(".");
-    let obj = { ...updated[i] };
-
-    let current = obj;
-    for (let k = 0; k < keys.length - 1; k++) {
-      current[keys[k]] = { ...current[keys[k]] };
-      current = current[keys[k]];
-    }
-
-    current[keys[keys.length - 1]] = value;
-
-    updated[i] = obj;
-    return updated;
-  });
-
-  isDirtyRef.current = true;
-};
   const addEmployer=()=>{setEmployments([...employments,emptyEmployment()]);isDirtyRef.current=true;};
   const removeEmployer=(i)=>{setEmployments(employments.filter((_,idx)=>idx!==i));isDirtyRef.current=true;};
   const fixErr=(key)=>setErrors(p=>({...p,[key]:false}));
@@ -407,14 +400,11 @@ const update = (i, path, value) => {
           if(!emp.contractVendor.email) e[`${i}_vendorEmail`]=true;
           if(!emp.contractVendor.mobile) e[`${i}_vendorMobile`]=true;
         }
-        // Dates — start date required for all
         if(!emp.startDate) e[`${i}_startDate`]=true;
-        // Index 0: must answer currentlyWorking; end date required only if No
         if(i===0){
           if(!emp.currentlyWorking) e[`${i}_currentlyWorking`]=true;
           if(emp.currentlyWorking==="No"&&!emp.endDate) e[`${i}_endDate`]=true;
         } else {
-          // All previous employers: end date always required
           if(!emp.endDate) e[`${i}_endDate`]=true;
         }
         if(!(i===0&&emp.currentlyWorking==="Yes")&&!emp.reasonForRelieving) e[`${i}_reasonForRelieving`]=true;
@@ -422,34 +412,37 @@ const update = (i, path, value) => {
         if(!emp.reference.name) e[`${i}_refName`]=true;
         if(!emp.reference.email) e[`${i}_refEmail`]=true;
         if(!emp.reference.mobile) e[`${i}_refMobile`]=true;
-        // Payslips: mandatory for all
         if(!emp.documents.payslipsKey) e[`${i}_payslips`]=true;
-        // Offer letter: mandatory for all
         if(!emp.documents.offerLetterKey) e[`${i}_offerLetter`]=true;
-        // Resignation acceptance: mandatory for index 0 ONLY when not currently working
         if(i===0&&emp.currentlyWorking==="No"&&!emp.documents.resignationKey) e[`${i}_resignation`]=true;
-        // Experience / relieving letter: mandatory for all
         if(!emp.documents.experienceKey) e[`${i}_experience`]=true;
-        // Gap reason required when gap is toggled on
         if(emp.gap.hasGap==="Yes"&&!emp.gap.reason) e[`${i}_gapReason`]=true;
       });
     }
     ACK_DEFS.forEach(({key})=>{
       if(!ack[key].val) e[`ack_${key}`]=true;
     });
-    // Declaration checkbox must be checked
     if(!declared) e.declared=true;
     return e;
   };
 
   const saveHistory=async()=>{
     if(!employeeId) throw new Error("Please complete and save Page 1 first");
+
+    // ── FIX: fetch the existing draft and spread it so we never overwrite
+    //         firstName / lastName / mobile or any other personal fields.
+    //         Only resumeKey and hasExperience need to change here.
     if(resumeKey||hasExperience){
+      const existingRes = await apiFetch(`${API}/employee/draft`);
+      const existing = existingRes.ok ? await existingRes.json() : {};
       await apiFetch(`${API}/employee`,{method:"POST",body:JSON.stringify({
-        employee_id:employeeId,status:"draft",resumeKey,hasExperience,
-        firstName:"_",lastName:"_",mobile:"0000000000",email:user?.email||"",
+        ...existing,
+        employee_id: employeeId,
+        resumeKey,
+        hasExperience,
       })});
     }
+
     const res=await apiFetch(`${API}/employee/employment-history`,{method:"POST",body:JSON.stringify({employments,acknowledgements:ack,declared})});
     if(!res.ok) throw new Error(parseError(await res.json().catch(()=>({}))));
     isDirtyRef.current=false;
@@ -457,8 +450,8 @@ const update = (i, path, value) => {
 
   const handleSaveSignout=async()=>{try{await saveHistory();}catch(_){}logout();};
   const handleMidSave=async()=>{
-    setMidSaveStatus("Saving\u2026");
-    try{await saveHistory();setMidSaveStatus("Saved \u2713");setTimeout(()=>setMidSaveStatus(""),2000);}
+    setMidSaveStatus("Saving…");
+    try{await saveHistory();setMidSaveStatus("Saved ✓");setTimeout(()=>setMidSaveStatus(""),2000);}
     catch(_){setMidSaveStatus("Error");setTimeout(()=>setMidSaveStatus(""),2500);}
   };
   const handleNavigate=async(path)=>{if(isDirtyRef.current){setExitTarget(path);setExitAction("nav");setShowExitAck(true);return;}router.push(path);};
@@ -469,17 +462,17 @@ const update = (i, path, value) => {
   const handleNext=async()=>{
     const errs=validate();
     if(Object.keys(errs).length>0){
-      setErrors(errs);setSaveStatus("Please fill all required fields \u2191");
+      setErrors(errs);setSaveStatus("Please fill all required fields ↑");
       setTimeout(()=>{const el=document.querySelector(".in.err,.ta.err");if(el)el.scrollIntoView({behavior:"smooth",block:"center"});},60);
       return;
     }
     setSaveStatus("Saving...");
-    try{await saveHistory();setSaveStatus("Saved \u2713");router.push("/employee/uan");}
+    try{await saveHistory();setSaveStatus("Saved ✓");router.push("/employee/uan");}
     catch(err){setSaveStatus(`Error: ${err.message||"Could not save"}`);}
   };
 
   if(!ready||!user)return null;
-  if(loading)return(<div style={{minHeight:"100vh",background:"#cdd2ed",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#8b88b0",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:500}}>Loading employment history\u2026</p></div>);
+  if(loading)return(<div style={{minHeight:"100vh",background:"#cdd2ed",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#8b88b0",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:500}}>Loading employment history…</p></div>);
 
   return (
     <>
@@ -500,7 +493,7 @@ const update = (i, path, value) => {
         <div className="wrap">
           <StepNav current={3} onNavigate={handleNavigate}/>
 
-          {/* ── Chronological guide ───────────────────────────────────── */}
+          {/* ── Chronological guide ── */}
           <div className="guide-banner">
             <div style={{fontSize:"1.2rem",flexShrink:0}}>💡</div>
             <div style={{flex:1}}>
@@ -522,7 +515,7 @@ const update = (i, path, value) => {
             </div>
           </div>
 
-          {/* ── Experience toggle ─────────────────────────────────────── */}
+          {/* ── Experience toggle ── */}
           <div className="exp-card">
             <div style={{display:"flex",alignItems:"center",gap:"0.6rem",marginBottom:"0.85rem"}}>
               <div style={{width:32,height:32,borderRadius:8,background:"#f5f3ff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.95rem",flexShrink:0}}>💼</div>
@@ -544,7 +537,7 @@ const update = (i, path, value) => {
             )}
           </div>
 
-          {/* ── Resume Upload ─────────────────────────────────────────── */}
+          {/* ── Resume Upload ── */}
           <div className="resume-card">
             <div style={{display:"flex",alignItems:"center",gap:"0.6rem",marginBottom:"0.9rem"}}>
               <div style={{width:32,height:32,borderRadius:8,background:"#f0fdf4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.95rem",flexShrink:0}}>📄</div>
@@ -564,11 +557,10 @@ const update = (i, path, value) => {
             />
           </div>
 
-          {/* ── Employer cards ────────────────────────────────────────── */}
+          {/* ── Employer cards ── */}
           {hasExperience==="Yes"&&(<>
           {employments.map((emp,index)=>{
             const isCurrentlyWorking = index===0 && emp.currentlyWorking==="Yes";
-
             const gapPillLabel = emp.gap.hasGap==="Yes"
               ? (index===0?"Gap before joining: Yes":"Gap before this job: Yes")
               : (index===0?"Gap before joining?":"Gap before this job?");
@@ -582,8 +574,6 @@ const update = (i, path, value) => {
 
             return (
             <div key={emp.company_id} className="emp-card">
-
-              {/* Header */}
               <div className="emp-hdr">
                 <div style={{display:"flex",alignItems:"center",gap:"0.55rem",flexWrap:"wrap"}}>
                   <span className="emp-title">
@@ -602,7 +592,6 @@ const update = (i, path, value) => {
                 </div>
               </div>
 
-              {/* Gap reason */}
               {emp.gap.hasGap==="Yes"&&(
                 <div className="gap-reason-box">
                   <span className="fl" style={{display:"block",marginBottom:"0.35rem"}}>
@@ -622,7 +611,6 @@ const update = (i, path, value) => {
                 </div>
               )}
 
-              {/* Core fields */}
               <div className="fr">
                 <F l="Company Name" v={emp.companyName} s={v=>update(index,"companyName",v)} errKey={`${index}_companyName`} errors={errors} onFix={fixErr}/>
                 <F l="Office Address" v={emp.officeAddress} s={v=>update(index,"officeAddress",v)} errKey={`${index}_officeAddress`} errors={errors} onFix={fixErr}/>
@@ -640,7 +628,6 @@ const update = (i, path, value) => {
                 <FS l="Employment Type" v={emp.employmentType} s={v=>update(index,"employmentType",v)} o={["Full-time","Intern","Contract"]} errKey={`${index}_employmentType`} errors={errors} onFix={fixErr}/>
               </div>
 
-              {/* ── Dates + currently working row ── */}
               <div className="fr">
                 <FDate
                   l="Date of Joining"
@@ -651,7 +638,6 @@ const update = (i, path, value) => {
                   errors={errors}
                   onFix={fixErr}
                 />
-                {/* End date: shown for all non-current; for index 0 shown only when Not currently working */}
                 {(index!==0||(index===0&&emp.currentlyWorking==="No"))&&(
                   <FDate
                     l="Date of Leaving"
@@ -663,7 +649,6 @@ const update = (i, path, value) => {
                     onFix={fixErr}
                   />
                 )}
-                {/* Currently working toggle — index 0 only */}
                 {index===0&&(
                   <div className="fi">
                     <span className="fl">Currently Working Here <span style={{color:"#ef4444",marginLeft:2}}>*</span></span>
@@ -695,7 +680,6 @@ const update = (i, path, value) => {
                 </div>
               )}
 
-              {/* Hide reason when currently working at this company */}
               {!(index===0 && emp.currentlyWorking==="Yes") && (
                 <div style={{marginTop:"0.75rem"}}>
                   <TA l="Reason for Relieving / Leaving" v={emp.reasonForRelieving} s={v=>update(index,"reasonForRelieving",v)} errKey={`${index}_reasonForRelieving`} errors={errors} onFix={fixErr}/>
@@ -726,7 +710,6 @@ const update = (i, path, value) => {
                   {errors[`${index}_offerLetter`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
                   <FileUpload label="Offer Letter" category="employment" subKey="offerLetter" companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.offerLetterKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.offerLetterKey",k);fixErr(`${index}_offerLetter`);}}/>
                 </div>
-                {/* Resignation: shown always; mandatory for index 0 only when NOT currently working */}
                 <div className="att-wrap">
                   <span className="att-lbl">
                     Resignation Acceptance
@@ -745,15 +728,13 @@ const update = (i, path, value) => {
                   <FileUpload label="ID Card" category="employment" subKey="idCard" companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.idCardKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.idCardKey",k);}}/>
                 </div>
               </div>
-
             </div>
             );
           })}
-
           <button className="add-btn" onClick={addEmployer}>+ Add Another Employer</button>
           </>)}
 
-          {/* ── Other Declarations ────────────────────────────────────── */}
+          {/* ── Other Declarations ── */}
           <div className="decl-card">
             <div style={{display:"flex",alignItems:"center",gap:"0.6rem",marginBottom:"0.5rem"}}>
               <div style={{width:32,height:32,borderRadius:8,background:"#f5f3ff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.95rem"}}>📋</div>
@@ -782,7 +763,6 @@ const update = (i, path, value) => {
               </div>
             ))}
 
-            {/* ── Final declaration checkbox ─────────────────────────── */}
             <div style={{
               marginTop:"0.5rem",padding:"1rem 1.1rem",borderRadius:10,transition:"all 0.18s",
               background:errors.declared?"#fff8f8":"#f5f3ff",
@@ -809,7 +789,7 @@ const update = (i, path, value) => {
 
           <div className="sbar">
             <button className="sbtn" onClick={()=>handleNavigate("/employee/education")}>← Previous</button>
-            <span className={`ss${saveStatus==="Saved \u2713"?" ok":saveStatus.startsWith("Error")||saveStatus.includes("required")?" err":""}`}>{saveStatus}</span>
+            <span className={`ss${saveStatus==="Saved ✓"?" ok":saveStatus.startsWith("Error")||saveStatus.includes("required")?" err":""}`}>{saveStatus}</span>
             <div style={{display:"flex",gap:"0.65rem",alignItems:"center"}}>
               <button className="sbtn" onClick={handleMidSave} style={{fontSize:"0.8rem"}}>{midSaveStatus||"Save draft"}</button>
               <button className="pbtn" onClick={handleNext}>Save & Continue →</button>
