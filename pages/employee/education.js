@@ -235,7 +235,7 @@ export default function EducationDetails() {
 
   // ── Certifications & Professional Qualifications ─────────────────
   const [certs,setCerts]=useState([{name:"",certKey:""}]);
-  const [profQuals,setProfQuals]=useState([{type:"",level:"",year:"",certKey:""}]);
+  const [profQuals,setProfQuals]=useState([{type:"",otherType:"",level:"",year:"",certKey:""}]);
 
   // ── Articleship / Practical Training (CA/CS/CMA) ─────────────────
   // NEW section
@@ -302,12 +302,13 @@ export default function EducationDetails() {
           if(dip.resultType)setDipResultType(dip.resultType);if(dip.resultValue)setDipResultValue(dip.resultValue);if(dip.mode)setDipMode(dip.mode);if(dip.certKey)setDipCertKey(dip.certKey);
 
           if(certsData.length>0)setCerts(certsData.map(c=>({name:typeof c.name==="string"?c.name:"",certKey:typeof c.certKey==="string"?c.certKey:""})));
-          if(profData.length>0)setProfQuals(profData);
+          if(profData.length>0)setProfQuals(profData.map(q=>({type:q.type||"",otherType:q.otherType||"",level:q.level||"",year:q.year||"",certKey:q.certKey||""})));
           if(artData.length>0)setArticleships(artData);
 
           // Education gap
           if(edu.hasEduGap)setHasEduGap(edu.hasEduGap);
           if(edu.eduGapReason)setEduGapReason(edu.eduGapReason);
+          else if(edu.hasEduGap==="Yes")setEduGapReason(""); // preserve empty on Yes
         }
       }catch(_){}
       setLoading(false);
@@ -362,7 +363,7 @@ export default function EducationDetails() {
     professionalQualifications:hasProfQual==="Yes"?profQuals:[],
     articleships:hasArticleship==="Yes"?articleships:[],
     hasEduGap,
-    eduGapReason: hasEduGap==="Yes"?eduGapReason:"",
+    eduGapReason: eduGapReason, // always preserve, even if hasEduGap changes
   });
 
   const saveDraft=async()=>{
@@ -622,10 +623,11 @@ export default function EducationDetails() {
                   <div className="fr">
                     <div className="fi">
                       <span className="fl">Qualification Type <span style={{color:"#ef4444"}}>*</span></span>
-                      <select className={`in${errors[`pq_type_${idx}`]?" err":""}`} value={q.type} onChange={e=>{const p=[...profQuals];p[idx]={...p[idx],type:e.target.value};setProfQuals(p);isDirtyRef.current=true;fixErr(`pq_type_${idx}`);}}>
+                      <select className={`in${errors[`pq_type_${idx}`]?" err":""}`} value={q.type} onChange={e=>{const p=[...profQuals];p[idx]={...p[idx],type:e.target.value,otherType:e.target.value!=="Other"?"":p[idx].otherType};setProfQuals(p);isDirtyRef.current=true;fixErr(`pq_type_${idx}`);}}>
                         <option value="">Select</option>
                         {["CA (Chartered Accountant)","CMA / ICWA","CS (Company Secretary)","CFA","ACCA","CIMA","FRM","PMP","ICSI","Other"].map(x=><option key={x} value={x}>{x}</option>)}
                       </select>
+                      {q.type==="Other"&&<input className="in" style={{marginTop:"0.4rem"}} value={q.otherType||""} placeholder="Enter qualification name" onChange={e=>{const p=[...profQuals];p[idx]={...p[idx],otherType:e.target.value};setProfQuals(p);isDirtyRef.current=true;}}/>}
                       {errors[`pq_type_${idx}`]&&<span className="err-msg">Required</span>}
                     </div>
                     <div className="fi">
@@ -648,7 +650,7 @@ export default function EducationDetails() {
                   </div>
                 </div>
               ))}
-              <button className="add-btn" onClick={()=>{setProfQuals([...profQuals,{type:"",level:"",year:"",certKey:""}]);isDirtyRef.current=true;}}>+ Add Another Qualification</button>
+              <button className="add-btn" onClick={()=>{setProfQuals([...profQuals,{type:"",otherType:"",level:"",year:"",certKey:""}]);isDirtyRef.current=true;}}>+ Add Another Qualification</button>
             </>)}
           </div>
 
@@ -737,7 +739,7 @@ export default function EducationDetails() {
                   <div style={{marginTop:"0.5rem"}}>
                     <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Upload Certificate <span style={{color:"#ef4444"}}>*</span></span>
                     {errors[`cert_key_${idx}`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload is required</span>}
-                    <FileUpload label="Upload Certificate" category="education" subKey={`cert_${idx}`} employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={typeof cert.certKey==="string"?cert.certKey:""} onChange={(k)=>{const c=[...certs];c[idx]={...c[idx],certKey:typeof k==="string"?k:""};setCerts(c);isDirtyRef.current=true;fixErr(`cert_key_${idx}`);}}/>
+                    <FileUpload label={cert.name?`Upload ${cert.name} Certificate`:"Upload Certificate"} category="education" subKey={`cert_${idx}`} employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={typeof cert.certKey==="string"?cert.certKey:""} onChange={(k)=>{const c=[...certs];c[idx]={...c[idx],certKey:typeof k==="string"?k:""};setCerts(c);isDirtyRef.current=true;fixErr(`cert_key_${idx}`);}}/>
                   </div>
                 </div>
               ))}
