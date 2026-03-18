@@ -192,10 +192,16 @@ export default function FileUpload({
             </div>
           </div>
         ) : (
+          disabled ? (
+            <label style={{ ...fs.uploadBtn, color: "#94a3b8", cursor: "not-allowed" }}>
+              ⏳ Preparing…
+            </label>
+          ) : (
           <label style={fs.uploadBtn}>
             📎 Choose file
             <input type="file" onChange={handleFile} hidden />
           </label>
+          )
         )}
       </div>
 
