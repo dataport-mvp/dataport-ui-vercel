@@ -454,6 +454,21 @@ export default function UanDetails() {
                   </span>
                 ))}
               </div>
+              {/* Employer order strip — mirrors page 3, shows actual company names */}
+              {page3Companies.length > 0 && (
+                <div style={{marginTop:"0.6rem",paddingTop:"0.6rem",borderTop:"1px solid #c7d2fe",display:"flex",alignItems:"center",gap:"0.4rem",flexWrap:"wrap"}}>
+                  <span style={{fontSize:"0.65rem",color:"#0891b2",fontWeight:700,marginRight:"0.15rem"}}>Your employers:</span>
+                  {page3Companies.slice(0,5).map((c,i,arr)=>(
+                    <span key={i} style={{display:"inline-flex",alignItems:"center",gap:"0.35rem"}}>
+                      <span style={{display:"inline-flex",flexDirection:"column",alignItems:"center",gap:"1px",background:i===0?"#0891b2":"#e0f2fe",color:i===0?"#fff":"#0891b2",padding:"0.18rem 0.55rem",borderRadius:999,fontSize:"0.68rem",fontWeight:700,whiteSpace:"nowrap",maxWidth:110,overflow:"hidden"}}>
+                        <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:106}}>{c.name||`Employer ${i+1}`}</span>
+                        <span style={{fontSize:"0.58rem",fontWeight:500,opacity:0.85}}>{i===0?"most recent":i===arr.length-1?"oldest":i===1?"before that":""}</span>
+                      </span>
+                      {i<arr.length-1&&<span style={{fontSize:"0.65rem",color:"#94a3b8"}}>→</span>}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
