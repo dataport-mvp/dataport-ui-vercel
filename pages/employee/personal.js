@@ -538,6 +538,7 @@ export default function PersonalDetails() {
           const empId = `emp-${Date.now()}`;
           const createRes = await apiFetch(`${API}/employee`, { method:"POST", body:JSON.stringify({ employee_id:empId, status:"draft", email:user?.email||"", mobile:user?.phone||"" }) });
           const rd = await createRes.json().catch(() => ({}));
+          const confirmedId = rd.employee_id || empId;
           setEmployeeId(rd.employee_id || empId);
         }
       } catch (_) {}
