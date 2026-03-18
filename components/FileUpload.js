@@ -15,6 +15,7 @@ export default function FileUpload({
   label,
   category,
   subKey,
+  employeeId,
   companyId,
   apiFetch,
   value,
@@ -62,6 +63,7 @@ export default function FileUpload({
         category,
         sub_key: subKey,
         filename: stableFilename,
+        employee_id: employeeId,
       };
 
       // Only attach company_id when required
