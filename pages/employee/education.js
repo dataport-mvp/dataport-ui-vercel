@@ -441,7 +441,7 @@ export default function EducationDetails() {
             </div>
             <div className="fr"><F l="School Address" v={xAddress} s={d(setXAddress)} errKey="xAddress" errors={errors} onFix={fixErr}/></div>
             <div className="fr"><FS l="Result Type" v={xResultType} s={d(setXResultType)} o={["Percentage","Grade"]} errKey="xResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={xResultValue} s={d(setXResultValue)} errKey="xResultValue" errors={errors} onFix={fixErr}/><F l="Medium of Study" v={xMedium} s={d(setXMedium)} errKey="xMedium" errors={errors} onFix={fixErr}/></div>
-            <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Class X Certificate" errKey="xCertKey"/><FileUpload label="Upload Class X Certificate" category="education" subKey="classX" apiFetch={apiFetch} value={xCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setXCertKey(key);isDirtyRef.current=true;fixErr("xCertKey");}}/></div>
+            <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Class X Certificate" errKey="xCertKey"/><FileUpload label="Upload Class X Certificate" category="education" subKey="classX" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={xCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setXCertKey(key);isDirtyRef.current=true;fixErr("xCertKey");}}/></div>
           </div>
 
           {/* ── After Class X — smart path selector ───────────────────────── */}
@@ -485,7 +485,7 @@ export default function EducationDetails() {
             <div className="fr"><F l="College Address" v={iAddress} s={d(setIAddress)} errKey="iAddress" errors={errors} onFix={fixErr}/></div>
             <div className="fr"><FS l="Mode" v={iMode} s={d(setIMode)} o={["Full-time","Part-time","Distance"]} errKey="iMode" errors={errors} onFix={fixErr}/><FS l="Result Type" v={iResultType} s={d(setIResultType)} o={["Percentage","Grade"]} errKey="iResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={iResultValue} s={d(setIResultValue)} errKey="iResultValue" errors={errors} onFix={fixErr}/></div>
             <div className="fr"><F l="Medium of Study" v={iMedium} s={d(setIMedium)} errKey="iMedium" errors={errors} onFix={fixErr}/></div>
-            <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Intermediate Certificate" errKey="iCertKey"/><FileUpload label="Upload Intermediate Certificate" category="education" subKey="intermediate" apiFetch={apiFetch} value={iCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setICertKey(key);isDirtyRef.current=true;fixErr("iCertKey");}}/></div>
+            <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Intermediate Certificate" errKey="iCertKey"/><FileUpload label="Upload Intermediate Certificate" category="education" subKey="intermediate" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={iCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setICertKey(key);isDirtyRef.current=true;fixErr("iCertKey");}}/></div>
           </div>
           )}
 
@@ -501,7 +501,7 @@ export default function EducationDetails() {
               <YearField l="Year of Passing" v={dipYear} s={d(setDipYear)} errKey="dipYear" errors={errors} onFix={fixErr}/>
             </div>
             <div className="fr"><FS l="Mode" v={dipMode} s={d(setDipMode)} o={["Full-time","Part-time","Distance"]} errKey="dipMode" errors={errors} onFix={fixErr}/><FS l="Result Type" v={dipResultType} s={d(setDipResultType)} o={["Percentage","CGPA","Grade"]} errKey="dipResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={dipResultValue} s={d(setDipResultValue)} errKey="dipResultValue" errors={errors} onFix={fixErr}/></div>
-            <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Diploma Certificate" errKey="dipCertKey"/><FileUpload label="Upload Diploma Certificate" category="education" subKey="diploma" apiFetch={apiFetch} value={dipCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipCertKey(key);isDirtyRef.current=true;fixErr("dipCertKey");}}/></div>
+            <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Diploma Certificate" errKey="dipCertKey"/><FileUpload label="Upload Diploma Certificate" category="education" subKey="diploma" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={dipCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipCertKey(key);isDirtyRef.current=true;fixErr("dipCertKey");}}/></div>
           </div>
           )}
 
@@ -530,9 +530,9 @@ export default function EducationDetails() {
                 <div className="att-box">
                   <UL lbl="Provisional Marksheet" required={ugBacklogs!=="Yes"} errKey="ugProvKey"/>
                   {ugBacklogs==="Yes"&&<p style={{fontSize:"0.7rem",color:"#d97706",fontWeight:600,marginBottom:"0.4rem"}}>⚠️ Upload when available after clearing backlogs</p>}
-                  <FileUpload label="Upload Provisional Marksheet" category="education" subKey="ug_provisional" apiFetch={apiFetch} value={ugProvKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setUgProvKey(key);isDirtyRef.current=true;fixErr("ugProvKey");}}/>
+                  <FileUpload label="Upload Provisional Marksheet" category="education" subKey="ug_provisional" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={ugProvKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setUgProvKey(key);isDirtyRef.current=true;fixErr("ugProvKey");}}/>
                 </div>
-                <div className="att-box"><span className="att-box-lbl">Convocation Certificate</span><FileUpload label="Upload Convocation Certificate" category="education" subKey="ug_convocation" apiFetch={apiFetch} value={ugConvoKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setUgConvoKey(key);isDirtyRef.current=true;}}/></div>
+                <div className="att-box"><span className="att-box-lbl">Convocation Certificate</span><FileUpload label="Upload Convocation Certificate" category="education" subKey="ug_convocation" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={ugConvoKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setUgConvoKey(key);isDirtyRef.current=true;}}/></div>
               </div>
             </>)}
           </div>
@@ -562,9 +562,9 @@ export default function EducationDetails() {
                 <div className="att-box">
                   <UL lbl="Provisional Marksheet" required={pgBacklogs!=="Yes"} errKey="pgProvKey"/>
                   {pgBacklogs==="Yes"&&<p style={{fontSize:"0.7rem",color:"#d97706",fontWeight:600,marginBottom:"0.4rem"}}>⚠️ Upload when available after clearing backlogs</p>}
-                  <FileUpload label="Upload Provisional Marksheet" category="education" subKey="pg_provisional" apiFetch={apiFetch} value={pgProvKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setPgProvKey(key);isDirtyRef.current=true;fixErr("pgProvKey");}}/>
+                  <FileUpload label="Upload Provisional Marksheet" category="education" subKey="pg_provisional" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={pgProvKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setPgProvKey(key);isDirtyRef.current=true;fixErr("pgProvKey");}}/>
                 </div>
-                <div className="att-box"><span className="att-box-lbl">Convocation Certificate</span><FileUpload label="Upload Convocation Certificate" category="education" subKey="pg_convocation" apiFetch={apiFetch} value={pgConvoKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setPgConvoKey(key);isDirtyRef.current=true;}}/></div>
+                <div className="att-box"><span className="att-box-lbl">Convocation Certificate</span><FileUpload label="Upload Convocation Certificate" category="education" subKey="pg_convocation" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={pgConvoKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setPgConvoKey(key);isDirtyRef.current=true;}}/></div>
               </div>
             </>)}
           </div>
@@ -596,7 +596,7 @@ export default function EducationDetails() {
                 <YearField l="Year of Passing" v={dipYear} s={d(setDipYear)} errKey="dipYear" errors={errors} onFix={fixErr}/>
               </div>
               <div className="fr"><FS l="Mode" v={dipMode} s={d(setDipMode)} o={["Full-time","Part-time","Distance"]} errKey="dipMode" errors={errors} onFix={fixErr}/><FS l="Result Type" v={dipResultType} s={d(setDipResultType)} o={["Percentage","CGPA","Grade"]} errKey="dipResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={dipResultValue} s={d(setDipResultValue)} errKey="dipResultValue" errors={errors} onFix={fixErr}/></div>
-              <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Diploma / Technical Certificate" errKey="dipCertKey"/><FileUpload label="Upload Diploma Certificate" category="education" subKey="diploma" apiFetch={apiFetch} value={dipCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipCertKey(key);isDirtyRef.current=true;fixErr("dipCertKey");}}/></div>
+              <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Diploma / Technical Certificate" errKey="dipCertKey"/><FileUpload label="Upload Diploma Certificate" category="education" subKey="diploma" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={dipCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipCertKey(key);isDirtyRef.current=true;fixErr("dipCertKey");}}/></div>
             </>)}
           </div>
           )}
@@ -644,7 +644,7 @@ export default function EducationDetails() {
                   </div>
                   <div style={{marginTop:"0.5rem"}}>
                     <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Upload Certificate / Marksheet</span>
-                    <FileUpload label="Upload Certificate" category="education" subKey={`profqual_${idx}`} apiFetch={apiFetch} value={typeof q.certKey==="string"?q.certKey:""} onChange={(k)=>{const p=[...profQuals];p[idx]={...p[idx],certKey:typeof k==="string"?k:""};setProfQuals(p);isDirtyRef.current=true;}}/>
+                    <FileUpload label="Upload Certificate" category="education" subKey={`profqual_${idx}`} employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={typeof q.certKey==="string"?q.certKey:""} onChange={(k)=>{const p=[...profQuals];p[idx]={...p[idx],certKey:typeof k==="string"?k:""};setProfQuals(p);isDirtyRef.current=true;}}/>
                   </div>
                 </div>
               ))}
@@ -702,7 +702,7 @@ export default function EducationDetails() {
                   </div>
                   <div style={{marginTop:"0.5rem"}}>
                     <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Upload Completion / Experience Letter</span>
-                    <FileUpload label="Upload Letter" category="education" subKey={`articleship_${idx}`} apiFetch={apiFetch} value={typeof a.certKey==="string"?a.certKey:""} onChange={(k)=>{updateArticleship(idx,"certKey",typeof k==="string"?k:"");}}/>
+                    <FileUpload label="Upload Letter" category="education" subKey={`articleship_${idx}`} employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={typeof a.certKey==="string"?a.certKey:""} onChange={(k)=>{updateArticleship(idx,"certKey",typeof k==="string"?k:"");}}/>
                   </div>
                 </div>
               ))}
@@ -737,7 +737,7 @@ export default function EducationDetails() {
                   <div style={{marginTop:"0.5rem"}}>
                     <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Upload Certificate <span style={{color:"#ef4444"}}>*</span></span>
                     {errors[`cert_key_${idx}`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload is required</span>}
-                    <FileUpload label="Upload Certificate" category="education" subKey={`cert_${idx}`} apiFetch={apiFetch} value={typeof cert.certKey==="string"?cert.certKey:""} onChange={(k)=>{const c=[...certs];c[idx]={...c[idx],certKey:typeof k==="string"?k:""};setCerts(c);isDirtyRef.current=true;fixErr(`cert_key_${idx}`);}}/>
+                    <FileUpload label="Upload Certificate" category="education" subKey={`cert_${idx}`} employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={typeof cert.certKey==="string"?cert.certKey:""} onChange={(k)=>{const c=[...certs];c[idx]={...c[idx],certKey:typeof k==="string"?k:""};setCerts(c);isDirtyRef.current=true;fixErr(`cert_key_${idx}`);}}/>
                   </div>
                 </div>
               ))}
