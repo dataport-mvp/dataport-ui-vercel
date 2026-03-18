@@ -291,7 +291,7 @@ function TermsModal({ onAccept }) {
           <span style={{ fontSize: "0.8rem", color: "#374151", lineHeight: 1.55 }}>I have read and agree to the Data Access & Sharing Agreement on behalf of my organisation.</span>
         </div>
         <button
-          onClick={() => { if (checked) { localStorage.setItem("dg_employer_terms", "1"); onAccept(); } }}
+          onClick={() => { if (checked) onAccept(); }}
           disabled={!checked}
           style={{ padding: "0.75rem", background: checked ? "#0f172a" : "#e2e8f0", color: checked ? "#fff" : "#94a3b8", border: "none", borderRadius: 10, fontFamily: "inherit", fontSize: "0.875rem", fontWeight: 700, cursor: checked ? "pointer" : "not-allowed", transition: "all 0.2s" }}>
           Accept & Continue to Dashboard
@@ -306,9 +306,7 @@ export default function EmployerDashboard() {
   const router = useRouter();
 
   const [showSignout,     setShowSignout]     = useState(false);
-  const [termsAccepted,   setTermsAccepted]   = useState(
-    () => typeof window !== "undefined" && localStorage.getItem("dg_employer_terms") === "1"
-  );
+  const [termsAccepted,   setTermsAccepted]   = useState(false);
   const [consents,        setConsents]        = useState([]);
   const [selected,        setSelected]        = useState(null);
   const [profileData,     setProfileData]     = useState(null);
@@ -332,6 +330,21 @@ export default function EmployerDashboard() {
     if (!user) { router.replace("/employer/login"); return; }
     if (user.role !== "employer") { router.replace("/employer/login"); return; }
   }, [ready, user, router]);
+
+  // Check terms acceptance from backend — not localStorage
+  useEffect(() => {
+    if (!ready || !user) return;
+    const checkTerms = async () => {
+      try {
+        const res = await apiFetch(`${API}/auth/me`);
+        if (res.ok) {
+          const data = await res.json();
+          setTermsAccepted(!!data.terms_accepted);
+        }
+      } catch (_) {}
+    };
+    checkTerms();
+  }, [ready, user, apiFetch]);
 
   const normalizeStatus = (status) => {
     const s = String(status || "pending").toLowerCase();
@@ -440,7 +453,12 @@ export default function EmployerDashboard() {
   };
 
   if (!ready || !user) return null;
-  if (!termsAccepted) return <TermsModal onAccept={() => setTermsAccepted(true)} />;
+  if (!termsAccepted) return <TermsModal onAccept={async () => {
+    try {
+      await apiFetch(`${API}/auth/accept-terms`, { method: "POST" });
+    } catch (_) {}
+    setTermsAccepted(true);
+  }} />;
 
   const tabCounts        = { pending: pending.length, completed: completed.length, rejected: rejected.length };
   const currentList      = consentTab === "pending" ? filteredPending : consentTab === "completed" ? filteredCompleted : filteredRejected;
