@@ -29,6 +29,11 @@ export default function FileUpload({
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!employeeId) {
+      setError("Please save your profile first before uploading documents.");
+      e.target.value = "";
+      return;
+    }
 
     // ✅ File validations
     if (!ALLOWED_TYPES.includes(file.type)) {
