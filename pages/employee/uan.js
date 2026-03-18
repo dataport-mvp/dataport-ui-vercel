@@ -433,18 +433,18 @@ export default function UanDetails() {
                 Add each employer in reverse chronological order — most recent first, working backwards to your very first job.
               </div>
               <div style={{display:"flex",alignItems:"center",gap:"0.4rem",flexWrap:"wrap"}}>
-                {(page3Companies.length > 0 ? page3Companies : [
-                  {name:"",isCurrent:true},{name:""},{name:""},{name:""},{name:"",isLast:true}
-                ]).slice(0,5).map((c,i,arr)=>{
-                  const label = c.name||(i===0?"Current Company":i===arr.length-1?"First Job":`Company ${i+1}`);
-                  const sub   = i===0?"most recent":i===arr.length-1?"oldest":i===1?"before that":"";
+                {Array.from({length:5}).map((_,i)=>{
+                  const c = page3Companies[i];
+                  const label = i===0?"Current Company":i===4?"First Job":`Company ${i+1}`;
+                  const sub   = i===0?"most recent":i===4?"oldest":i===1?"before that":"";
+                  const arr   = {length:5};
                   return(
                     <span key={i} style={{display:"inline-flex",alignItems:"center",gap:"0.4rem"}}>
                       <span style={{display:"inline-flex",flexDirection:"column",alignItems:"center",gap:"1px",background:i===0?"#4f46e5":"#e0e7ff",color:i===0?"#fff":"#4f46e5",padding:"0.2rem 0.55rem",borderRadius:999,fontSize:"0.68rem",fontWeight:700,whiteSpace:"nowrap",maxWidth:110}}>
                         <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:106}}>{label}</span>
                         {sub&&<span style={{fontSize:"0.58rem",fontWeight:500,opacity:0.85}}>{sub}</span>}
                       </span>
-                      {i<arr.length-1&&<span style={{fontSize:"0.65rem",color:"#94a3b8"}}>→</span>}
+                      {i<4&&<span style={{fontSize:"0.65rem",color:"#94a3b8"}}>→</span>}
                     </span>
                   );
                 })}
