@@ -659,14 +659,24 @@ export default function UanDetails() {
                     </div>
                     <div className="fi">
                       <span className="fl">Date of Birth <span style={{color:"#ef4444"}}>*</span></span>
-                      <input className="in" type="date" value={nom.dob||""} onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],dob:e.target.value};return n;});isDirtyRef.current=true;}} style={{colorScheme:"light"}}/>
+                      <input className="in" type="text" value={nom.dob||""} placeholder="dd-mm-yyyy" maxLength={10}
+                        onChange={e=>{
+                          let v=e.target.value.replace(/[^\d]/g,"");
+                          if(v.length>2) v=v.slice(0,2)+"-"+v.slice(2);
+                          if(v.length>5) v=v.slice(0,5)+"-"+v.slice(5);
+                          v=v.slice(0,10);
+                          setNominees(p=>{const n=[...p];n[idx]={...n[idx],dob:v};return n;});isDirtyRef.current=true;
+                        }}/>
                     </div>
                     <div className="fi">
                       <span className="fl">Relationship <span style={{color:"#ef4444"}}>*</span></span>
-                      <select className="in" value={nom.relation||""} onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],relation:e.target.value};return n;});isDirtyRef.current=true;}} style={{background:nom.relation?"#fff":"#f2f1f9",color:nom.relation?"#1a1730":"#8b88b0"}}>
+                      <select className="in" value={nom.relation||""} onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],relation:e.target.value,otherRelation:""};return n;});isDirtyRef.current=true;}} style={{background:nom.relation?"#fff":"#f2f1f9",color:nom.relation?"#1a1730":"#8b88b0"}}>
                         <option value="">Select</option>
                         {["Spouse","Son","Daughter","Father","Mother","Brother","Sister","Other"].map(r=><option key={r} value={r}>{r}</option>)}
                       </select>
+                      {nom.relation==="Other"&&(
+                        <input className="in" style={{marginTop:"0.4rem"}} value={nom.otherRelation||""} placeholder="Please specify relationship" onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],otherRelation:e.target.value};return n;});isDirtyRef.current=true;}}/>
+                      )}
                     </div>
                   </div>
                   <div className="fr">
