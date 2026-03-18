@@ -424,23 +424,32 @@ export default function UanDetails() {
         <div className="wrap">
           <StepNav current={4} onNavigate={handleNavigate}/>
 
-          {/* ── Employer flow strip — same as page 3 ────────────────── */}
-          <div style={{background:"#fff",borderRadius:14,padding:"1.1rem 0.5rem 1.1rem 1.1rem",marginBottom:"1.1rem",display:"flex",alignItems:"center",flexWrap:"wrap",gap:"0.4rem",boxShadow:"0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12)"}}>
-            {(page3Companies.length > 0 ? page3Companies : [
-              {name:"",isCurrent:true},{name:""},{name:""},{name:""},{name:"",isLast:true}
-            ]).slice(0,5).map((c,i,arr)=>{
-              const label = c.name || (i===0?"Current Company":i===arr.length-1?"First Job":`Company ${i+1}`);
-              const sub   = i===0?"most recent":i===arr.length-1?"oldest":i===1?"before that":"";
-              return(
-                <span key={i} style={{display:"inline-flex",alignItems:"center",gap:"0.4rem"}}>
-                  <span style={{display:"inline-flex",flexDirection:"column",alignItems:"center",gap:"1px",background:i===0?"#0891b2":"#e0f2fe",color:i===0?"#fff":"#0891b2",padding:"0.2rem 0.55rem",borderRadius:999,fontSize:"0.68rem",fontWeight:700,whiteSpace:"nowrap",maxWidth:110}}>
-                    <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:106}}>{label}</span>
-                    {sub&&<span style={{fontSize:"0.58rem",fontWeight:500,opacity:0.85}}>{sub}</span>}
-                  </span>
-                  {i<arr.length-1&&<span style={{fontSize:"0.65rem",color:"#94a3b8"}}>→</span>}
-                </span>
-              );
-            })}
+          {/* ── Guide banner — same as page 3 ───────────────────────── */}
+          <div style={{background:"#eef2ff",border:"1.5px solid #c7d2fe",borderRadius:12,padding:"0.9rem 1.1rem",marginBottom:"1.1rem",display:"flex",gap:"0.75rem",alignItems:"flex-start"}}>
+            <div style={{fontSize:"1.2rem",flexShrink:0}}>💡</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:"0.82rem",fontWeight:700,color:"#3730a3",marginBottom:"0.25rem"}}>Always start with your current or most recent company</div>
+              <div style={{fontSize:"0.72rem",color:"#6b6894",marginBottom:"0.5rem",lineHeight:1.5}}>
+                Add each employer in reverse chronological order — most recent first, working backwards to your very first job.
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:"0.4rem",flexWrap:"wrap"}}>
+                {(page3Companies.length > 0 ? page3Companies : [
+                  {name:"",isCurrent:true},{name:""},{name:""},{name:""},{name:"",isLast:true}
+                ]).slice(0,5).map((c,i,arr)=>{
+                  const label = c.name||(i===0?"Current Company":i===arr.length-1?"First Job":`Company ${i+1}`);
+                  const sub   = i===0?"most recent":i===arr.length-1?"oldest":i===1?"before that":"";
+                  return(
+                    <span key={i} style={{display:"inline-flex",alignItems:"center",gap:"0.4rem"}}>
+                      <span style={{display:"inline-flex",flexDirection:"column",alignItems:"center",gap:"1px",background:i===0?"#4f46e5":"#e0e7ff",color:i===0?"#fff":"#4f46e5",padding:"0.2rem 0.55rem",borderRadius:999,fontSize:"0.68rem",fontWeight:700,whiteSpace:"nowrap",maxWidth:110}}>
+                        <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:106}}>{label}</span>
+                        {sub&&<span style={{fontSize:"0.58rem",fontWeight:500,opacity:0.85}}>{sub}</span>}
+                      </span>
+                      {i<arr.length-1&&<span style={{fontSize:"0.65rem",color:"#94a3b8"}}>→</span>}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           {/* ── UAN / EPFO Details ──────────────────────────────────── */}
