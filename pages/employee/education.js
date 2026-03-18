@@ -646,7 +646,7 @@ export default function EducationDetails() {
                   </div>
                   <div style={{marginTop:"0.5rem"}}>
                     <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Upload Certificate / Marksheet</span>
-                    <FileUpload label="Upload Certificate" category="education" subKey={`profqual_${idx}`} employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={typeof q.certKey==="string"?q.certKey:""} onChange={(k)=>{const p=[...profQuals];p[idx]={...p[idx],certKey:typeof k==="string"?k:""};setProfQuals(p);isDirtyRef.current=true;}}/>
+                    <FileUpload label="Upload Certificate" category="education" subKey={(q.type&&q.type!=="Other"?`profqual_${q.type.toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,20)}_${idx}`:(q.otherType?`profqual_${q.otherType.toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,20)}_${idx}`:`profqual_${idx}`))} employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={typeof q.certKey==="string"?q.certKey:""} onChange={(k)=>{const p=[...profQuals];p[idx]={...p[idx],certKey:typeof k==="string"?k:""};setProfQuals(p);isDirtyRef.current=true;}}/>
                   </div>
                 </div>
               ))}
@@ -679,7 +679,7 @@ export default function EducationDetails() {
                       <span className="fl">Training Type <span style={{color:"#ef4444"}}>*</span></span>
                       <select className={`in${errors[`art_type_${idx}`]?" err":""}`} value={a.type} onChange={e=>updateArticleship(idx,"type",e.target.value)}>
                         <option value="">Select</option>
-                        {["CA Articleship (ICAI)","CS Training (ICSI)","CMA Training (ICMAI)","Medical Internship","Pharmacy Internship","Law Internship","Architecture Internship","Other Practical Training"].map(x=><option key={x} value={x}>{x}</option>)}
+                        {["CA Articleship (ICAI)","CS Training (ICSI)","CMA Training (ICMAI)","Medical Internship","Pharmacy Internship","Law Internship","Architecture Internship"].map(x=><option key={x} value={x}>{x}</option>)}
                       </select>
                       {errors[`art_type_${idx}`]&&<span className="err-msg">Required</span>}
                     </div>
@@ -704,7 +704,7 @@ export default function EducationDetails() {
                   </div>
                   <div style={{marginTop:"0.5rem"}}>
                     <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Upload Completion / Experience Letter</span>
-                    <FileUpload label="Upload Letter" category="education" subKey={`articleship_${idx}`} employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={typeof a.certKey==="string"?a.certKey:""} onChange={(k)=>{updateArticleship(idx,"certKey",typeof k==="string"?k:"");}}/>
+                    <FileUpload label="Upload Letter" category="education" subKey={a.firm?`articleship_${a.firm.toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,20)}_${idx}`:`articleship_${idx}`} employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={typeof a.certKey==="string"?a.certKey:""} onChange={(k)=>{updateArticleship(idx,"certKey",typeof k==="string"?k:"");}}/>
                   </div>
                 </div>
               ))}
@@ -739,7 +739,7 @@ export default function EducationDetails() {
                   <div style={{marginTop:"0.5rem"}}>
                     <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Upload Certificate <span style={{color:"#ef4444"}}>*</span></span>
                     {errors[`cert_key_${idx}`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload is required</span>}
-                    <FileUpload label={cert.name?`Upload ${cert.name} Certificate`:"Upload Certificate"} category="education" subKey={`cert_${idx}`} employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={typeof cert.certKey==="string"?cert.certKey:""} onChange={(k)=>{const c=[...certs];c[idx]={...c[idx],certKey:typeof k==="string"?k:""};setCerts(c);isDirtyRef.current=true;fixErr(`cert_key_${idx}`);}}/>
+                    <FileUpload label={cert.name?`Upload ${cert.name} Certificate`:"Upload Certificate"} category="education" subKey={cert.name?`cert_${cert.name.toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,20)}_${idx}`:`cert_${idx}`} employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={typeof cert.certKey==="string"?cert.certKey:""} onChange={(k)=>{const c=[...certs];c[idx]={...c[idx],certKey:typeof k==="string"?k:""};setCerts(c);isDirtyRef.current=true;fixErr(`cert_key_${idx}`);}}/>
                   </div>
                 </div>
               ))}
