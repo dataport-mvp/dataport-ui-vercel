@@ -304,8 +304,9 @@ export default function ReviewPage() {
       if (dRes.ok) {
         const d = await dRes.json();
         setDraft(d);
-        // Restore review acknowledgements if previously saved
-        if (d.acknowledgements_review && !acksRestoredRef.current) {
+        // Only restore acks if user did NOT come from editing (no ?edited=1 in URL)
+        const isEdited = typeof window !== "undefined" && window.location.search.includes("edited=1");
+        if (!isEdited && d.acknowledgements_review && !acksRestoredRef.current) {
           const restored = ACK_STATEMENTS.map((_, i) => !!d.acknowledgements_review[String(i)]);
           if (restored.some(Boolean)) { setAcks(restored); acksRestoredRef.current = true; }
         }
@@ -752,8 +753,6 @@ export default function ReviewPage() {
                 <KV label="UAN Active"      value={d.isActive}/>
               </>}
             </div>
-            {d.epfoKey && <div className="att-grid" style={{marginTop:"0.65rem"}}><AttChip label="UAN Card / Passbook" docKey={d.epfoKey} urls={docUrls}/></div>}
-
             {/* PF records */}
             {Array.isArray(d.pfRecords) && d.pfRecords.length > 0 && (
               <div style={{marginTop:"0.85rem"}}>
@@ -774,6 +773,67 @@ export default function ReviewPage() {
                     }
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* UAN uploads */}
+            <div className="att-grid" style={{marginTop:"0.65rem",display:"flex",gap:"0.6rem",flexWrap:"wrap"}}>
+              {d.epfoKey && <AttChip label="UAN Card" docKey={d.epfoKey} urls={docUrls}/>}
+              {d.serviceHistoryKey && <AttChip label="Service History Snapshot" docKey={d.serviceHistoryKey} urls={docUrls}/>}
+            </div>
+
+            {/* Nominees */}
+            {Array.isArray(d.epfoNominees) && d.epfoNominees.length > 0 && (
+              <div style={{marginTop:"0.85rem"}}>
+                <div className="sec-divider">Nominee Details (Form 2)</div>
+                {d.epfoNominees.map((nom, i) => (
+                  <div key={i} style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:"0.75rem 0.9rem",marginBottom:"0.6rem"}}>
+                    <div style={{fontSize:"0.68rem",fontWeight:800,color:"#16a34a",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.4rem"}}>Nominee {i+1}</div>
+                    <div className="grid">
+                      <KV label="Full Name"     value={nom.name}/>
+                      <KV label="Date of Birth" value={nom.dob}/>
+                      <KV label="Relationship"  value={nom.relation==="Other"&&nom.otherRelation?nom.otherRelation:nom.relation}/>
+                      <KV label="Address"       value={nom.address}/>
+                      <KV label="Share (%)"     value={nom.share?`${nom.share}%`:undefined}/>
+                      {nom.guardianName && <KV label="Guardian Name"    value={nom.guardianName}/>}
+                      {nom.guardianAddress && <KV label="Guardian Address" value={nom.guardianAddress}/>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* EPFO Declarations */}
+            {d.epfoDeclarations && (
+              <div style={{marginTop:"0.85rem"}}>
+                <div className="sec-divider">EPFO Declarations</div>
+                <div className="grid">
+                  <KV label="PF Nomination (Form 2 — Part A)"      value={d.epfoDeclarations.pfNomAck?"✓ Confirmed":"Not confirmed"}/>
+                  <KV label="Pension Nomination (Form 2 — Part B)" value={d.epfoDeclarations.pensionNomAck?"✓ Confirmed":"Not confirmed"}/>
+                  <KV label="General EPFO Declaration"             value={d.epfoDeclarations.epfoDecl?"✓ Confirmed":"Not confirmed"}/>
+                </div>
+              </div>
+            )}
+
+            {/* Digital Signature — displayed via S3 signed URL */}
+            {(d.epfoSignature?.s3Key || d.epfoSignature?.dataUrl) && (
+              <div style={{marginTop:"0.85rem"}}>
+                <div className="sec-divider">Digital Signature</div>
+                <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:"0.75rem 0.9rem"}}>
+                  {(() => {
+                    const sigUrl = d.epfoSignature?.s3Key
+                      ? (docUrls[d.epfoSignature.s3Key] || null)
+                      : d.epfoSignature?.dataUrl; // legacy fallback
+                    return sigUrl
+                      ? <img src={sigUrl} alt="Digital Signature" style={{maxWidth:280,height:60,border:"1px solid #e4e2f0",borderRadius:6,background:"#fff",display:"block"}}/>
+                      : <span style={{fontSize:"0.72rem",color:"#8b88b0"}}>⏳ Loading signature…</span>;
+                  })()}
+                  {d.epfoSignature.timestamp && (
+                    <p style={{fontSize:"0.68rem",color:"#16a34a",fontWeight:600,marginTop:"0.4rem"}}>
+                      ✓ Signed — {new Date(d.epfoSignature.timestamp).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}
+                    </p>
+                  )}
+                </div>
               </div>
             )}
           </div>
