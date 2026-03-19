@@ -276,7 +276,9 @@ export default function ReviewPage() {
   const [profileEdited, setProfileEdited] = useState(false);
   // Capture ?edited=1 synchronously on first render — before router.replace cleans the URL
   const editedOnMount = useRef(
-    typeof window !== "undefined" && window.location.search.includes("edited=1")
+    typeof window !== "undefined" && (
+      window.location.search.includes("edited=1") ||
+    )
   );
   const [saveStatus,   setSaveStatus]   = useState("");
   const [submitting,   setSubmitting]   = useState(false);
@@ -295,8 +297,6 @@ export default function ReviewPage() {
   useEffect(() => {
     if (editedOnMount.current) {
       setAcks(Array(ACK_STATEMENTS.length).fill(false));
-      // Set acksRestoredRef = true to BLOCK loadData from restoring saved acks
-      // (we want them reset, not restored)
       acksRestoredRef.current = true;
       setProfileEdited(true);
       router.replace("/employee/review", undefined, { shallow: true });
