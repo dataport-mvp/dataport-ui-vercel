@@ -238,7 +238,8 @@ export default function UanDetails() {
     const img = new Image();
     img.onload = () => {
       const ctx = sigCanvasRef.current.getContext("2d");
-      ctx.clearRect(0, 0, sigCanvasRef.current.width, sigCanvasRef.current.height);
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, sigCanvasRef.current.width, sigCanvasRef.current.height);
       ctx.drawImage(img, 0, 0, sigCanvasRef.current.width, sigCanvasRef.current.height);
     };
     img.src = sigDataUrl;
@@ -247,7 +248,13 @@ export default function UanDetails() {
   const dirty = (setter) => (val) => {
     setter(val);
     isDirtyRef.current = true;
-    if (wasSignedRef.current) setEditedAfterSign(true);
+    if (wasSignedRef.current) {
+      setEditedAfterSign(true);
+      // Reset EPFO declarations so user must re-confirm after editing
+      setPfNomAck(false);
+      setPensionNomAck(false);
+      setEpfoDecl(false);
+    }
   };
 
   // ── Role guard ───────────────────────────────────────────────────────
@@ -356,6 +363,10 @@ export default function UanDetails() {
   const updatePf = (i, field, value) => {
     setPfRecords(prev => prev.map((r, idx) => idx === i ? {...r, [field]: value} : r));
     isDirtyRef.current = true;
+    if (wasSignedRef.current) {
+      setEditedAfterSign(true);
+      setPfNomAck(false); setPensionNomAck(false); setEpfoDecl(false);
+    }
   };
   const addPfRecord    = () => { setPfRecords(prev => [...prev, makePfRecord()]); isDirtyRef.current = true; };
   const removePfRecord = (i) => { if(i === 0) return; setPfRecords(prev => prev.filter((_, idx) => idx !== i)); isDirtyRef.current = true; };
@@ -399,7 +410,9 @@ export default function UanDetails() {
 
   const handleNavigate = async (path) => {
     if (isDirtyRef.current) { try { await saveDraft(); } catch(_) {} }
-    router.push(path);
+    // Tell review page that user came from editing
+    const dest = path === "/employee/review" ? "/employee/review?edited=1" : path;
+    router.push(dest);
   };
   const handleSignout = async () => {
     if (isDirtyRef.current) { try { await saveDraft(); } catch(_) {} }
@@ -416,7 +429,7 @@ export default function UanDetails() {
   };
   const handleNext = async () => {
     setSaveStatus("Saving...");
-    try { await saveDraft(); setSaveStatus("Saved ✓"); router.push("/employee/review"); }
+    try { await saveDraft(); setSaveStatus("Saved ✓"); router.push("/employee/review?edited=1"); }
     catch(err) { setSaveStatus(`Error: ${err.message || "Could not save"}`); }
   };
 
@@ -749,6 +762,11 @@ export default function UanDetails() {
                 <div className="si" style={{background:"#eef2ff"}}>📜</div>
                 <span className="st">EPFO Declarations & Digital Signature</span>
               </div>
+              {editedAfterSign && (
+                <div style={{background:"#fff8f0",border:"1.5px solid #fbbf24",borderRadius:10,padding:"0.65rem 1rem",marginBottom:"0.75rem",fontSize:"0.75rem",color:"#92400e",fontWeight:600}}>
+                  ⚠️ You edited UAN/PF/Nominee information — please re-confirm all declarations and sign again below.
+                </div>
+              )}
               <p style={{fontSize:"0.75rem",color:"#6b6894",marginBottom:"0.9rem",fontWeight:500,lineHeight:1.5}}>
                 As per EPFO guidelines, the following declarations are mandatory. Your digital signature with timestamp serves as your consent and replaces the physical Form 2 signature for this submission.
               </p>
@@ -815,6 +833,8 @@ export default function UanDetails() {
                     const r=sigCanvasRef.current.getBoundingClientRect();
                     const scaleX=sigCanvasRef.current.width/r.width;
                     sigLastRef.current={x:(e.clientX-r.left)*scaleX,y:(e.clientY-r.top)*scaleX};
+                    // Fill white background on first stroke so JPEG renders cleanly
+                    if(!sigDataUrl){const ctx=sigCanvasRef.current.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,sigCanvasRef.current.width,sigCanvasRef.current.height);}
                   }}
                   onMouseMove={e=>{
                     if(!sigDrawingRef.current)return;
@@ -828,7 +848,7 @@ export default function UanDetails() {
                   }}
                   onMouseUp={()=>{
                     sigDrawingRef.current=false;
-                    const dataUrl=sigCanvasRef.current.toDataURL("image/png");
+                    const dataUrl=sigCanvasRef.current.toDataURL("image/jpeg",0.5);
                     setSigDataUrl(dataUrl);setSigTimestamp(new Date().toISOString());
                     isDirtyRef.current=true;wasSignedRef.current=true;setEditedAfterSign(false);
                   }}
@@ -852,7 +872,7 @@ export default function UanDetails() {
                   }}
                   onTouchEnd={()=>{
                     sigDrawingRef.current=false;
-                    const dataUrl=sigCanvasRef.current.toDataURL("image/png");
+                    const dataUrl=sigCanvasRef.current.toDataURL("image/jpeg",0.5);
                     setSigDataUrl(dataUrl);setSigTimestamp(new Date().toISOString());
                     isDirtyRef.current=true;wasSignedRef.current=true;setEditedAfterSign(false);
                   }}
