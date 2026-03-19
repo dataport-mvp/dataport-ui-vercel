@@ -1,4 +1,6 @@
 // pages/employee/previous.js  — Page 3 of 5
+// Fixes: DateField no calendar + DD/MM/YYYY with month name display
+// Ack cascade: if user edits page 3, flags page3_edited in DB so page 5 knows to re-ask acks
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "../../utils/AuthContext";
@@ -9,6 +11,16 @@ const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
 const ACCENTS    = { 1:"#4f46e5", 2:"#d97706", 3:"#7c3aed", 4:"#0891b2", 5:"#16a34a" };
 const STEP_DONE_BG = "#2a2460"; const STEP_DONE_CK = "#a78bfa"; const STEP_CONN = "#a78bfa";
+
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+function isoToDisplay(iso) {
+  if (!iso || !iso.includes("-")) return iso || "";
+  const [y, mo, d] = iso.split("-");
+  const idx = parseInt(mo, 10) - 1;
+  const mName = MONTH_NAMES[idx] || mo;
+  return `${parseInt(d,10)} ${mName} ${y}`;
+}
 
 const genId = () => typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)+Date.now().toString(36);
 const emptyEmployment = () => ({
@@ -99,6 +111,13 @@ const G = `
     outline: none; width: 100%; min-height: 72px; resize: vertical; transition: all 0.18s; }
   .ta:focus { border-color: #4f46e5; background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.13); }
   .ta.err { border-color: #ef4444 !important; background: #fff8f8 !important; }
+  .date-input { padding: 0.65rem 0.875rem; background: #ececf9; border: 1.5px solid #b8b4d4;
+    border-radius: 9px; font-family: inherit; font-size: 0.875rem; color: #1a1730;
+    outline: none; width: 100%; transition: all 0.18s; }
+  .date-input:focus { border-color: #4f46e5; background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.13); }
+  .date-input::placeholder { color: #b8b4d4; }
+  .date-input.err { border-color: #ef4444 !important; background: #fff8f8 !important; }
+  .date-display { margin-top: 0.22rem; font-size: 0.72rem; color: #4f46e5; font-weight: 600; letter-spacing: 0.2px; }
   .add-btn { padding: 0.6rem 1.4rem; background: #eef2ff; color: #4f46e5; border: 1.5px solid #c7d2fe;
     border-radius: 10px; font-family: inherit; font-size: 0.875rem; font-weight: 700; cursor: pointer; margin-bottom: 1.1rem; }
   .rm-btn { padding: 0.3rem 0.75rem; background: #fff5f5; color: #ef4444; border: 1.5px solid #fecaca;
@@ -125,41 +144,22 @@ const G = `
 `;
 
 const ACK_DEFS = [
-  {
-    key: "business",
-    title: "Other Business or Employment",
-    question: "Are you currently engaged in any other business, employment, or professional activity outside of this role?",
-    detail: "This includes part-time employment, freelance or consulting work, directorships, partnerships, or any activity that generates income or could create a conflict of interest with your employment here. Disclosure is required even if such engagement is outside regular working hours.",
-  },
-  {
-    key: "dismissed",
-    title: "Dismissal or Termination for Cause",
-    question: "Have you ever been dismissed, discharged, or asked to resign from any position of employment for reasons of misconduct, performance, or any disciplinary action?",
-    detail: "This includes termination with cause, constructive dismissal where you resigned under pressure, or any exit that followed a formal disciplinary process. It does not include voluntary resignations or role eliminations due to redundancy or organisational restructuring.",
-  },
-  {
-    key: "criminal",
-    title: "Criminal Conviction or Pending Proceedings",
-    question: "Have you ever been convicted of a criminal offence, or do you currently have any criminal proceedings pending against you in any court of law?",
-    detail: "This includes convictions resulting in fines, community service, probation, imprisonment, or any other sentence. It also includes matters where a charge has been framed and the case is currently sub judice. You are not required to disclose offences for which you have received a statutory pardon or that are otherwise spent under applicable law.",
-  },
-  {
-    key: "civil",
-    title: "Civil Judgments or Regulatory Actions",
-    question: "Have you ever had a civil judgment entered against you, or been subject to a regulatory finding, ban, or sanction by any court, tribunal, or regulatory authority?",
-    detail: "This includes money decrees, injunctions, adverse orders in consumer or labour disputes, and findings by bodies such as SEBI, RBI, IRDAI, or equivalent regulators. It does not include ongoing disputes where no judgment or final order has yet been passed.",
-  },
+  { key:"business", title:"Other Business or Employment", question:"Are you currently engaged in any other business, employment, or professional activity outside of this role?", detail:"This includes part-time employment, freelance or consulting work, directorships, partnerships, or any activity that generates income or could create a conflict of interest." },
+  { key:"dismissed", title:"Dismissal or Termination for Cause", question:"Have you ever been dismissed, discharged, or asked to resign from any position of employment for reasons of misconduct, performance, or any disciplinary action?", detail:"This includes termination with cause, constructive dismissal, or any exit that followed a formal disciplinary process." },
+  { key:"criminal", title:"Criminal Conviction or Pending Proceedings", question:"Have you ever been convicted of a criminal offence, or do you currently have any criminal proceedings pending against you in any court of law?", detail:"This includes convictions resulting in fines, community service, probation, imprisonment, or any other sentence." },
+  { key:"civil", title:"Civil Judgments or Regulatory Actions", question:"Have you ever had a civil judgment entered against you, or been subject to a regulatory finding, ban, or sanction by any court, tribunal, or regulatory authority?", detail:"This includes money decrees, injunctions, adverse orders in consumer or labour disputes." },
 ];
 
 const GUIDE_STEPS = [
-  { label: "Current Company", sub: "most recent" },
-  { label: "Company 2",       sub: "before that"  },
-  { label: "Company 3",       sub: ""             },
-  { label: "Company 4",       sub: ""             },
-  { label: "First Job",       sub: "oldest"       },
+  { label:"Current Company", sub:"most recent" },
+  { label:"Company 2",       sub:"before that"  },
+  { label:"Company 3",       sub:""             },
+  { label:"Company 4",       sub:""             },
+  { label:"First Job",       sub:"oldest"       },
 ];
 
-function FDate({ l, v, s, r=true, errKey, errors, onFix, max }) {
+// ── DateField: no calendar, DD/MM/YYYY input, shows month name below ──
+function FDate({ l, v, s, r=true, errKey, errors, onFix }) {
   const [raw, setRaw] = useState(()=>{
     if(v&&v.includes("-")){const[y,mo,d]=v.split("-");return `${d}/${mo}/${y}`;}
     return v||"";
@@ -184,15 +184,14 @@ function FDate({ l, v, s, r=true, errKey, errors, onFix, max }) {
         s(`${y}-${mo}-${d}`);
         if(onFix&&hasErr)onFix(errKey);
       }
-    } else {
-      s("");
-    }
+    } else { s(""); }
   };
+  const displayDate = (!focused && v && v.includes("-")) ? isoToDisplay(v) : null;
   return (
     <div className="fi">
       <span className="fl">{l}{r&&<span style={{color:"#ef4444",marginLeft:2}}>*</span>}</span>
       <input
-        className={`in${hasErr?" err":""}`}
+        className={`date-input${hasErr?" err":""}`}
         value={raw}
         placeholder="DD/MM/YYYY"
         onFocus={()=>setFocused(true)}
@@ -200,7 +199,9 @@ function FDate({ l, v, s, r=true, errKey, errors, onFix, max }) {
         onChange={handleChange}
         maxLength={10}
         inputMode="numeric"
+        autoComplete="off"
       />
+      {displayDate && <div className="date-display">📅 {displayDate}</div>}
       {hasErr&&<span className="err-msg">Required</span>}
     </div>
   );
@@ -361,6 +362,7 @@ export default function PreviousCompany() {
     fetchData();
   },[ready,user,apiFetch]);
 
+  // Mark edited — resets declaration so user must re-confirm
   const markEdited = () => {
     if (!wasEdited.current) {
       wasEdited.current = true;
@@ -429,9 +431,7 @@ export default function PreviousCompany() {
         if(emp.gap.hasGap==="Yes"&&!emp.gap.reason) e[`${i}_gapReason`]=true;
       });
     }
-    ACK_DEFS.forEach(({key})=>{
-      if(!ack[key].val) e[`ack_${key}`]=true;
-    });
+    ACK_DEFS.forEach(({key})=>{ if(!ack[key].val) e[`ack_${key}`]=true; });
     if(!declared) e.declared=true;
     return e;
   };
@@ -439,9 +439,6 @@ export default function PreviousCompany() {
   const saveHistory=async()=>{
     if(!employeeId) throw new Error("Please complete and save Page 1 first");
 
-    // ── FIX: fetch the existing draft and spread it so we never overwrite
-    //         firstName / lastName / mobile or any other personal fields.
-    //         Only resumeKey and hasExperience need to change here.
     if(resumeKey||hasExperience){
       const existingRes = await apiFetch(`${API}/employee/draft`);
       const existing = existingRes.ok ? await existingRes.json() : {};
@@ -450,6 +447,10 @@ export default function PreviousCompany() {
         employee_id: employeeId,
         resumeKey,
         hasExperience,
+        // ── Cascade flag: if page 3 was edited, page 5 review acks must be re-done
+        page3_edited: wasEdited.current ? true : (existing.page3_edited || false),
+        // Reset review acks so page 5 prompts again
+        ...(wasEdited.current ? { acknowledgements_review: {} } : {}),
       })});
     }
 
@@ -477,7 +478,13 @@ export default function PreviousCompany() {
       return;
     }
     setSaveStatus("Saving...");
-    try{await saveHistory();setSaveStatus("Saved ✓");router.push("/employee/uan");}
+    try{
+      await saveHistory();
+      setSaveStatus("Saved ✓");
+      // If page 3 was edited, signal review page to re-ask acks
+      const dest = wasEdited.current ? "/employee/uan?p3edited=1" : "/employee/uan";
+      router.push(dest);
+    }
     catch(err){setSaveStatus(`Error: ${err.message||"Could not save"}`);}
   };
 
@@ -503,20 +510,18 @@ export default function PreviousCompany() {
         <div className="wrap">
           <StepNav current={3} onNavigate={handleNavigate}/>
 
-          {/* ── Chronological guide ── */}
+          {/* ── Guide ── */}
           <div className="guide-banner">
             <div style={{fontSize:"1.2rem",flexShrink:0}}>💡</div>
             <div style={{flex:1}}>
               <div style={{fontSize:"0.82rem",fontWeight:700,color:"#3730a3",marginBottom:"0.25rem"}}>Always start with your current or most recent company</div>
-              <div style={{fontSize:"0.72rem",color:"#6b6894",marginBottom:"0.5rem",lineHeight:1.5}}>
-                Add each employer in reverse chronological order — most recent first, working backwards to your very first job.
-              </div>
+              <div style={{fontSize:"0.72rem",color:"#6b6894",marginBottom:"0.5rem",lineHeight:1.5}}>Add each employer in reverse chronological order — most recent first.</div>
               <div className="guide-steps">
                 {GUIDE_STEPS.map((s,i,arr)=>(
                   <span key={i} style={{display:"inline-flex",alignItems:"center",gap:"0.4rem"}}>
                     <span className="guide-step" style={{display:"inline-flex",flexDirection:"column",alignItems:"center",gap:"1px"}}>
                       <span>{s.label}</span>
-                      {s.sub&&<span style={{fontSize:"0.6rem",fontWeight:500,color:"#818cf8",letterSpacing:0,textTransform:"none"}}>{s.sub}</span>}
+                      {s.sub&&<span style={{fontSize:"0.6rem",fontWeight:500,color:"#818cf8"}}>{s.sub}</span>}
                     </span>
                     {i<arr.length-1&&<span className="guide-arrow">→</span>}
                   </span>
@@ -531,41 +536,23 @@ export default function PreviousCompany() {
               <div style={{width:32,height:32,borderRadius:8,background:"#f5f3ff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.95rem",flexShrink:0}}>💼</div>
               <span style={{fontSize:"0.93rem",fontWeight:700,color:"#1a1730"}}>Work Experience</span>
             </div>
-            <p style={{fontSize:"0.82rem",color:"#4b5563",marginBottom:"0.85rem",fontWeight:500,lineHeight:1.55}}>
-              Do you have prior work experience? Freshers joining directly from college can select No and skip to the next step.
-            </p>
+            <p style={{fontSize:"0.82rem",color:"#4b5563",marginBottom:"0.85rem",fontWeight:500,lineHeight:1.55}}>Do you have prior work experience?</p>
             <div style={{display:"flex",gap:"0.65rem"}}>
               {["Yes","No"].map(v=>(
                 <button key={v} onClick={()=>{setHasExperience(v);markEdited();fixErr("hasExperience");}} style={{padding:"0.45rem 1.6rem",borderRadius:999,border:hasExperience===v?"2px solid #7c3aed":"1.5px solid #dddaf0",background:hasExperience===v?"#7c3aed":"#f2f1f9",color:hasExperience===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.875rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
               ))}
             </div>
             {errors.hasExperience&&<span className="err-msg" style={{marginTop:"0.4rem",display:"block"}}>Please select Yes or No</span>}
-            {hasExperience==="No"&&(
-              <div style={{marginTop:"0.85rem",padding:"0.7rem 0.9rem",background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:9,fontSize:"0.78rem",color:"#15803d",fontWeight:500}}>
-                ✓ No problem — upload your resume above and continue to the next step.
-              </div>
-            )}
           </div>
 
-          {/* ── Resume Upload ── */}
+          {/* ── Resume ── */}
           <div className="resume-card">
             <div style={{display:"flex",alignItems:"center",gap:"0.6rem",marginBottom:"0.9rem"}}>
               <div style={{width:32,height:32,borderRadius:8,background:"#f0fdf4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.95rem",flexShrink:0}}>📄</div>
-              <span style={{fontSize:"0.93rem",fontWeight:700,color:"#1a1730"}}>
-                Latest Resume / CV <span style={{color:"#ef4444",fontSize:"0.82rem"}}>*</span>
-              </span>
+              <span style={{fontSize:"0.93rem",fontWeight:700,color:"#1a1730"}}>Latest Resume / CV <span style={{color:"#ef4444",fontSize:"0.82rem"}}>*</span></span>
             </div>
-            <p style={{fontSize:"0.76rem",color:"#8b88b0",marginBottom:"0.85rem",fontWeight:500}}>Upload your most recent resume. PDF only · max 5MB.</p>
             {errors.resumeKey&&<span className="err-msg" style={{marginBottom:"0.5rem",display:"block"}}>Resume upload is required</span>}
-            <FileUpload
-              label="Upload Resume / CV *"
-              category="general"
-              subKey="cv"
-              employeeId={employeeId}
-              apiFetch={apiFetch}
-              value={resumeKey}
-              onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setResumeKey(key);markEdited();fixErr("resumeKey");}}
-            />
+            <FileUpload label="Upload Resume / CV *" category="general" subKey="cv" employeeId={employeeId} apiFetch={apiFetch} value={resumeKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setResumeKey(key);markEdited();fixErr("resumeKey");}}/>
           </div>
 
           {/* ── Employer cards ── */}
@@ -576,48 +563,27 @@ export default function PreviousCompany() {
               ? (index===0?"Gap before joining: Yes":"Gap before this job: Yes")
               : (index===0?"Gap before joining?":"Gap before this job?");
             const gapHint = index===0
-              ? "Any gap between leaving your previous company and joining this (current) one."
-              : `Any gap between leaving the company below (${
-                  employments[index+1]?.companyName
-                    ? `"${employments[index+1].companyName}"`
-                    : "the next older employer"
-                }) and joining this one.`;
+              ? "Any gap between leaving your previous company and joining this one."
+              : `Any gap between leaving the company below and joining this one.`;
 
             return (
             <div key={emp.company_id} className="emp-card">
               <div className="emp-hdr">
                 <div style={{display:"flex",alignItems:"center",gap:"0.55rem",flexWrap:"wrap"}}>
-                  <span className="emp-title">
-                    {index===0?"Current / Most Recent Employer":`Previous Employer ${index}`}
-                  </span>
+                  <span className="emp-title">{index===0?"Current / Most Recent Employer":`Previous Employer ${index}`}</span>
                   {isCurrentlyWorking&&<span className="cur-badge">✓ Currently working here</span>}
                 </div>
                 <div className="emp-hdr-right">
-                  <button
-                    className={`gap-pill${emp.gap.hasGap==="Yes"?" on":""}`}
-                    onClick={()=>update(index,"gap.hasGap",emp.gap.hasGap==="Yes"?"":"Yes")}
-                  >
-                    ⏱ {gapPillLabel}
-                  </button>
+                  <button className={`gap-pill${emp.gap.hasGap==="Yes"?" on":""}`} onClick={()=>update(index,"gap.hasGap",emp.gap.hasGap==="Yes"?"":"Yes")}>⏱ {gapPillLabel}</button>
                   {index!==0&&<button className="rm-btn" onClick={()=>removeEmployer(index)}>− Remove</button>}
                 </div>
               </div>
 
               {emp.gap.hasGap==="Yes"&&(
                 <div className="gap-reason-box">
-                  <span className="fl" style={{display:"block",marginBottom:"0.35rem"}}>
-                    Reason for Gap <span style={{color:"#ef4444"}}>*</span>
-                  </span>
-                  <p style={{fontSize:"0.71rem",color:"#92400e",marginBottom:"0.5rem",fontWeight:500,lineHeight:1.4}}>
-                    {gapHint}
-                  </p>
-                  <textarea
-                    className={`ta${errors[`${index}_gapReason`]?" err":""}`}
-                    value={emp.gap.reason||""}
-                    placeholder="Describe the gap period and reason…"
-                    style={{background:"#fffbeb",borderColor:errors[`${index}_gapReason`]?"#ef4444":"#fde68a"}}
-                    onChange={e=>{update(index,"gap.reason",e.target.value);fixErr(`${index}_gapReason`);}}
-                  />
+                  <span className="fl" style={{display:"block",marginBottom:"0.35rem"}}>Reason for Gap <span style={{color:"#ef4444"}}>*</span></span>
+                  <p style={{fontSize:"0.71rem",color:"#92400e",marginBottom:"0.5rem",fontWeight:500,lineHeight:1.4}}>{gapHint}</p>
+                  <textarea className={`ta${errors[`${index}_gapReason`]?" err":""}`} value={emp.gap.reason||""} placeholder="Describe the gap period and reason…" style={{background:"#fffbeb",borderColor:errors[`${index}_gapReason`]?"#ef4444":"#fde68a"}} onChange={e=>{update(index,"gap.reason",e.target.value);fixErr(`${index}_gapReason`);}}/>
                   {errors[`${index}_gapReason`]&&<span className="err-msg">Required</span>}
                 </div>
               )}
@@ -640,39 +606,16 @@ export default function PreviousCompany() {
               </div>
 
               <div className="fr">
-                <FDate
-                  l="Date of Joining"
-                  v={emp.startDate}
-                  s={v=>update(index,"startDate",v)}
-                  max={todayISO}
-                  errKey={`${index}_startDate`}
-                  errors={errors}
-                  onFix={fixErr}
-                />
+                <FDate l="Date of Joining" v={emp.startDate} s={v=>update(index,"startDate",v)} errKey={`${index}_startDate`} errors={errors} onFix={fixErr}/>
                 {(index!==0||(index===0&&emp.currentlyWorking==="No"))&&(
-                  <FDate
-                    l="Date of Leaving"
-                    v={emp.endDate}
-                    s={v=>update(index,"endDate",v)}
-                    max={todayISO}
-                    errKey={`${index}_endDate`}
-                    errors={errors}
-                    onFix={fixErr}
-                  />
+                  <FDate l="Date of Leaving" v={emp.endDate} s={v=>update(index,"endDate",v)} errKey={`${index}_endDate`} errors={errors} onFix={fixErr}/>
                 )}
                 {index===0&&(
                   <div className="fi">
                     <span className="fl">Currently Working Here <span style={{color:"#ef4444",marginLeft:2}}>*</span></span>
                     <div style={{display:"flex",gap:"0.55rem",marginTop:"0.15rem"}}>
                       {["Yes","No"].map(v=>(
-                        <button key={v}
-                          onClick={()=>{update(0,"currentlyWorking",v);fixErr("0_currentlyWorking");}}
-                          style={{flex:1,padding:"0.62rem 0",borderRadius:9,
-                            border:emp.currentlyWorking===v?"2px solid #4f46e5":"1.5px solid #b8b4d4",
-                            background:emp.currentlyWorking===v?"#4f46e5":"#ececf9",
-                            color:emp.currentlyWorking===v?"#fff":"#6b6894",
-                            cursor:"pointer",fontSize:"0.82rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}
-                        >{v}</button>
+                        <button key={v} onClick={()=>{update(0,"currentlyWorking",v);fixErr("0_currentlyWorking");}} style={{flex:1,padding:"0.62rem 0",borderRadius:9,border:emp.currentlyWorking===v?"2px solid #4f46e5":"1.5px solid #b8b4d4",background:emp.currentlyWorking===v?"#4f46e5":"#ececf9",color:emp.currentlyWorking===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}>{v}</button>
                       ))}
                     </div>
                     {errors[`0_currentlyWorking`]&&<span className="err-msg">Required</span>}
@@ -712,7 +655,7 @@ export default function PreviousCompany() {
               <div className="subsec">
                 <div className="sub-lbl">Attachments</div>
                 <div className="att-wrap">
-                  <span className="att-lbl">Payslips (Last 3 Months){!(index===0&&emp.currentlyWorking==="Yes")&&<span style={{color:"#ef4444"}}> *</span>}{index===0&&emp.currentlyWorking==="Yes"&&<span style={{fontSize:"0.68rem",color:"#16a34a",fontWeight:500}}> (optional)</span>}</span>
+                  <span className="att-lbl">Payslips (Last 3 Months){!(index===0&&emp.currentlyWorking==="Yes")&&<span style={{color:"#ef4444"}}> *</span>}</span>
                   {errors[`${index}_payslips`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
                   <FileUpload label="Payslips" category="employment" subKey="payslips" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.payslipsKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.payslipsKey",k);fixErr(`${index}_payslips`);}}/>
                 </div>
@@ -722,15 +665,12 @@ export default function PreviousCompany() {
                   <FileUpload label="Offer Letter" category="employment" subKey="offerLetter" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.offerLetterKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.offerLetterKey",k);fixErr(`${index}_offerLetter`);}}/>
                 </div>
                 <div className="att-wrap">
-                  <span className="att-lbl">
-                    Resignation Acceptance
-                    {index===0&&emp.currentlyWorking==="No"&&<span style={{color:"#ef4444"}}> *</span>}
-                  </span>
+                  <span className="att-lbl">Resignation Acceptance{index===0&&emp.currentlyWorking==="No"&&<span style={{color:"#ef4444"}}> *</span>}</span>
                   {errors[`${index}_resignation`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
                   <FileUpload label="Resignation" category="employment" subKey="resignation" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.resignationKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.resignationKey",k);fixErr(`${index}_resignation`);}}/>
                 </div>
                 <div className="att-wrap">
-                  <span className="att-lbl">Experience / Relieving Letter{!(index===0&&emp.currentlyWorking==="Yes")&&<span style={{color:"#ef4444"}}> *</span>}{index===0&&emp.currentlyWorking==="Yes"&&<span style={{fontSize:"0.68rem",color:"#16a34a",fontWeight:500}}> (optional — upload after relieving)</span>}</span>
+                  <span className="att-lbl">Experience / Relieving Letter{!(index===0&&emp.currentlyWorking==="Yes")&&<span style={{color:"#ef4444"}}> *</span>}</span>
                   {errors[`${index}_experience`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
                   <FileUpload label="Experience Letter" category="employment" subKey="experience" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.experienceKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.experienceKey",k);fixErr(`${index}_experience`);}}/>
                 </div>
@@ -751,9 +691,7 @@ export default function PreviousCompany() {
               <div style={{width:32,height:32,borderRadius:8,background:"#f5f3ff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.95rem"}}>📋</div>
               <span style={{fontSize:"0.93rem",fontWeight:700,color:"#1a1730"}}>Other Declarations</span>
             </div>
-            <p style={{fontSize:"0.78rem",color:"#6b6894",lineHeight:1.6,marginBottom:"1.1rem",fontWeight:400}}>
-              Please read each declaration carefully and respond accurately. These questions apply to your entire career history and are answered once. If you select Yes to any item, you will be prompted to provide further details.
-            </p>
+            <p style={{fontSize:"0.78rem",color:"#6b6894",lineHeight:1.6,marginBottom:"1.1rem"}}>Please read each declaration carefully and respond accurately.</p>
 
             {ACK_DEFS.map(({key,title,question,detail})=>(
               <div key={key} className="decl-item">
@@ -779,27 +717,14 @@ export default function PreviousCompany() {
                 ⚠️ You edited employment information — please re-confirm the declaration below before continuing.
               </div>
             )}
-            <div style={{
-              marginTop:"0.5rem",padding:"1rem 1.1rem",borderRadius:10,transition:"all 0.18s",
-              background:errors.declared?"#fff8f8":"#f5f3ff",
-              border:`1.5px solid ${errors.declared?"#fecaca":"#dddaf0"}`
-            }}>
+            <div style={{marginTop:"0.5rem",padding:"1rem 1.1rem",borderRadius:10,transition:"all 0.18s",background:errors.declared?"#fff8f8":"#f5f3ff",border:`1.5px solid ${errors.declared?"#fecaca":"#dddaf0"}`}}>
               <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
-                <input
-                  type="checkbox"
-                  checked={declared}
-                  onChange={e=>{setDeclared(e.target.checked);isDirtyRef.current=true;if(e.target.checked)fixErr("declared");}}
-                  style={{marginTop:"0.18rem",width:17,height:17,accentColor:"#4f46e5",flexShrink:0,cursor:"pointer"}}
-                />
+                <input type="checkbox" checked={declared} onChange={e=>{setDeclared(e.target.checked);isDirtyRef.current=true;if(e.target.checked)fixErr("declared");}} style={{marginTop:"0.18rem",width:17,height:17,accentColor:"#4f46e5",flexShrink:0,cursor:"pointer"}}/>
                 <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>
-                  I hereby declare that all information provided in this employment history section is true, complete, and accurate to the best of my knowledge. I understand that any misrepresentation or omission of facts may result in the rejection of my application or termination of employment, and may also render me liable to disciplinary or legal action.
+                  I hereby declare that all information provided in this employment history section is true, complete, and accurate to the best of my knowledge. I understand that any misrepresentation or omission may result in rejection of my application or termination of employment.
                 </span>
               </label>
-              {errors.declared&&(
-                <p style={{fontSize:"0.68rem",color:"#ef4444",fontWeight:600,marginTop:"0.5rem",marginLeft:"1.7rem"}}>
-                  Please confirm this declaration before proceeding
-                </p>
-              )}
+              {errors.declared&&<p style={{fontSize:"0.68rem",color:"#ef4444",fontWeight:600,marginTop:"0.5rem",marginLeft:"1.7rem"}}>Please confirm this declaration before proceeding</p>}
             </div>
           </div>
 
