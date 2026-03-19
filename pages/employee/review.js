@@ -276,9 +276,7 @@ export default function ReviewPage() {
   const [profileEdited, setProfileEdited] = useState(false);
   // Capture ?edited=1 synchronously on first render — before router.replace cleans the URL
   const editedOnMount = useRef(
-    typeof window !== "undefined" && (
-      window.location.search.includes("edited=1") ||
-    )
+    typeof window !== "undefined" && window.location.search.includes("edited=1")
   );
   const [saveStatus,   setSaveStatus]   = useState("");
   const [submitting,   setSubmitting]   = useState(false);
