@@ -310,9 +310,28 @@ export default function UanDetails() {
             if (d.epfoDeclarations.pensionNomAck) setPensionNomAck(d.epfoDeclarations.pensionNomAck);
             if (d.epfoDeclarations.epfoDecl) setEpfoDecl(d.epfoDeclarations.epfoDecl);
           }
-          // Signature — restore S3 key and timestamp (dataUrl no longer stored in DynamoDB)
-          if (d.epfoSignature?.s3Key) { setSigS3Key(d.epfoSignature.s3Key); wasSignedRef.current = true; }
-          if (d.epfoSignature?.dataUrl) { setSigDataUrl(d.epfoSignature.dataUrl); wasSignedRef.current = true; } // legacy fallback
+          // Signature — restore S3 key and timestamp
+          if (d.epfoSignature?.s3Key) {
+            setSigS3Key(d.epfoSignature.s3Key);
+            wasSignedRef.current = true;
+            // Fetch signed URL so canvas can redraw the signature
+            try {
+              const docRes = await apiFetch(`${API}/documents/${d.employee_id}`);
+              if (docRes.ok) {
+                const docData = await docRes.json();
+                // Flatten docs to find the signature URL
+                const findUrl = (obj, depth=0) => {
+                  if (!obj || typeof obj !== "object" || depth > 8) return null;
+                  if ((obj.key === d.epfoSignature.s3Key || obj.s3_key === d.epfoSignature.s3Key) && obj.url) return obj.url;
+                  for (const v of Object.values(obj)) { const r = findUrl(v, depth+1); if (r) return r; }
+                  return null;
+                };
+                const sigUrl = findUrl(docData);
+                if (sigUrl) setSigDataUrl(sigUrl); // triggers canvas restore useEffect
+              }
+            } catch(_) {}
+          }
+          if (d.epfoSignature?.dataUrl) { setSigDataUrl(d.epfoSignature.dataUrl); wasSignedRef.current = true; } // legacy
           if (d.epfoSignature?.timestamp) setSigTimestamp(d.epfoSignature.timestamp);
 
           // Load employment history to pre-fill company names
