@@ -229,6 +229,8 @@ export default function UanDetails() {
   const sigCanvasRef = useRef(null);
   const sigDrawingRef = useRef(false);
   const sigLastRef = useRef({x:0, y:0});
+  const [editedAfterSign, setEditedAfterSign] = useState(false); // track if user edited after signing
+  const wasSignedRef = useRef(false); // true once signature was loaded/drawn
 
   // ── Restore signature onto canvas whenever sigDataUrl changes (prevents wipe on re-render)
   useEffect(() => {
@@ -242,7 +244,11 @@ export default function UanDetails() {
     img.src = sigDataUrl;
   }, [sigDataUrl]);
 
-  const dirty = (setter) => (val) => { setter(val); isDirtyRef.current = true; };
+  const dirty = (setter) => (val) => {
+    setter(val);
+    isDirtyRef.current = true;
+    if (wasSignedRef.current) setEditedAfterSign(true);
+  };
 
   // ── Role guard ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -289,6 +295,9 @@ export default function UanDetails() {
             if (d.epfoDeclarations.pensionNomAck) setPensionNomAck(d.epfoDeclarations.pensionNomAck);
             if (d.epfoDeclarations.epfoDecl) setEpfoDecl(d.epfoDeclarations.epfoDecl);
           }
+          // Signature — restore dataUrl and timestamp
+          if (d.epfoSignature?.dataUrl) { setSigDataUrl(d.epfoSignature.dataUrl); wasSignedRef.current = true; }
+          if (d.epfoSignature?.timestamp) setSigTimestamp(d.epfoSignature.timestamp);
 
           // Load employment history to pre-fill company names
           if (d.employee_id) {
@@ -785,7 +794,14 @@ export default function UanDetails() {
 
               {/* Digital Signature Canvas */}
               <div style={{background:"#fff",border:"1.5px solid #e4e2f0",borderRadius:12,padding:"1.1rem 1.2rem"}}>
-                <div style={{fontSize:"0.72rem",fontWeight:800,color:"#4f46e5",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.5rem"}}>Digital Signature</div>
+                <div style={{fontSize:"0.72rem",fontWeight:800,color:"#4f46e5",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.5rem"}}>
+                  Digital Signature <span style={{color:"#ef4444"}}>*</span>
+                </div>
+                {editedAfterSign && (
+                  <div style={{background:"#fff8f0",border:"1.5px solid #fbbf24",borderRadius:8,padding:"0.6rem 0.9rem",marginBottom:"0.75rem",fontSize:"0.75rem",color:"#92400e",fontWeight:600}}>
+                    ⚠️ You edited information after signing. Please sign again to confirm your updated details.
+                  </div>
+                )}
                 <p style={{fontSize:"0.72rem",color:"#6b6894",marginBottom:"0.75rem",fontWeight:500,lineHeight:1.5}}>
                   Draw your signature below using mouse or finger. This will be recorded along with the date and time as your digital consent.
                 </p>
@@ -813,7 +829,8 @@ export default function UanDetails() {
                   onMouseUp={()=>{
                     sigDrawingRef.current=false;
                     const dataUrl=sigCanvasRef.current.toDataURL("image/png");
-                    setSigDataUrl(dataUrl);setSigTimestamp(new Date().toISOString());isDirtyRef.current=true;
+                    setSigDataUrl(dataUrl);setSigTimestamp(new Date().toISOString());
+                    isDirtyRef.current=true;wasSignedRef.current=true;setEditedAfterSign(false);
                   }}
                   onTouchStart={e=>{
                     e.preventDefault();sigDrawingRef.current=true;
@@ -836,7 +853,8 @@ export default function UanDetails() {
                   onTouchEnd={()=>{
                     sigDrawingRef.current=false;
                     const dataUrl=sigCanvasRef.current.toDataURL("image/png");
-                    setSigDataUrl(dataUrl);setSigTimestamp(new Date().toISOString());isDirtyRef.current=true;
+                    setSigDataUrl(dataUrl);setSigTimestamp(new Date().toISOString());
+                    isDirtyRef.current=true;wasSignedRef.current=true;setEditedAfterSign(false);
                   }}
                   onMouseLeave={()=>{sigDrawingRef.current=false;}}
                 />
@@ -852,7 +870,7 @@ export default function UanDetails() {
                   <button onClick={()=>{
                     const ctx=sigCanvasRef.current.getContext("2d");
                     ctx.clearRect(0,0,sigCanvasRef.current.width,sigCanvasRef.current.height);
-                    setSigDataUrl("");setSigTimestamp("");isDirtyRef.current=true;
+                    setSigDataUrl("");setSigTimestamp("");isDirtyRef.current=true;wasSignedRef.current=false;setEditedAfterSign(false);
                   }} style={{padding:"0.3rem 0.8rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:7,fontSize:"0.72rem",fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Clear</button>
                 </div>
               </div>
