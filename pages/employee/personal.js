@@ -690,7 +690,7 @@ export default function PersonalDetails() {
   };
 
   const handleSaveSignout = async () => { try { await saveDraft(); isDirtyRef.current = false; } catch (_) {} logout(); };
-  const handleNavigate = async (path) => { if (isDirtyRef.current) { try { await saveDraft(); isDirtyRef.current = false; } catch (_) {} } router.push(path); };
+  const handleNavigate = async (path) => { if (isDirtyRef.current) { try { await saveDraft(); isDirtyRef.current = false; } catch (_) {} } const dest = path === "/employee/review" ? "/employee/review?edited=1" : path; router.push(dest); };
   const handleSignout  = async () => { if (isDirtyRef.current) { try { await saveDraft(); } catch (_) {} } logout(); };
 
   const aadhaarDisplay = aadhaarEditing
