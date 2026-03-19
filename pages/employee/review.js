@@ -1,4 +1,14 @@
 // pages/employee/review.js  — Page 5 of 5
+// Fixes:
+// Reader mode: user arrives to view submitted profile → NO acks required, banner hidden
+// Editor mode: triggered by ANY of:
+//   1. ?edited=1 URL param (user just navigated from any page after editing)
+//   2. draft.page1_edited === true (personal page was changed)
+//   3. draft.page2_edited === true (education page was changed)
+//   4. draft.page3_edited === true (employment page was changed)
+//   5. draft.page4_edited === true (UAN page was changed)
+// In editor mode: acks reset to all-false, banner shown, must re-confirm before submit
+// On successful submit: clears page1_edited, page2_edited, page3_edited, page4_edited flags in DB
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "../../utils/AuthContext";
@@ -19,7 +29,6 @@ const STEPS = [
 ];
 const ACCENTS = { 1:"#4f46e5", 2:"#d97706", 3:"#7c3aed", 4:"#0891b2", 5:"#16a34a" };
 
-// ── Review-specific acknowledgements (different from page 3 employment declaration and page 4 acks)
 const ACK_STATEMENTS = [
   "I confirm that I have reviewed all information across all sections of this profile and it is accurate and complete to the best of my knowledge.",
   "I authorise Datagate and its authorised verification partners to contact my previous employers, educational institutions, and references to verify the details I have submitted.",
@@ -74,7 +83,6 @@ const G = `
     background:none; border:none; font-family:inherit; padding:0.2rem 0.6rem; border-radius:6px; transition:all 0.15s; }
   .edit-link:hover { background:#eef2ff; }
 
-  /* Attachment chip — clickable, opens in new tab */
   .att-chip { display:inline-flex; align-items:center; gap:0.35rem; padding:0.28rem 0.75rem;
     background:#eef2ff; border:1.5px solid #c7d2fe; border-radius:999px;
     font-size:0.72rem; font-weight:700; color:#4f46e5; cursor:pointer; text-decoration:none;
@@ -152,9 +160,11 @@ function maskAadhaar(a) {
   const d = String(a).replace(/\D/g, "");
   return `XXXX XXXX ${d.slice(-4)||d}`;
 }
-function maskAccount(last4) {
-  if (!last4) return "—";
-  return `XXXX XXXX XXXX ${last4}`;
+function maskAccount(last4, full) {
+  if (!last4 && !full) return "—";
+  const l4 = last4 || (full ? full.slice(-4) : "");
+  const len = full ? full.length : 12;
+  return "•".repeat(Math.max(0, len - 4)) + " " + l4;
 }
 
 function KV({ label, value }) {
@@ -176,22 +186,15 @@ function SectionHead({ icon, title, colorClass, onEdit }) {
   );
 }
 
-// ── Attachment chip — fetches signed URL and opens in new tab ──────────
 function AttChip({ label, docKey, urls }) {
   if (!docKey) return <span className="att-chip missing">⚠ {label} missing</span>;
   const url = urls[docKey];
   if (!url) return <span className="att-chip" style={{opacity:0.6,cursor:"wait"}}>⏳ {label}</span>;
-  return (
-    <a className="att-chip" href={url} target="_blank" rel="noopener noreferrer">
-      📎 {label}
-    </a>
-  );
+  return <a className="att-chip" href={url} target="_blank" rel="noopener noreferrer">📎 {label}</a>;
 }
 
-// ── Missing fields validator ─────────────────────────────────────────
 function getMissingFields(d, empHistory) {
   const issues = [];
-
   const p1 = [];
   if (!d.firstName)   p1.push("First Name");
   if (!d.lastName)    p1.push("Last Name");
@@ -211,7 +214,6 @@ function getMissingFields(d, empHistory) {
   if (!cur.district)  p1.push("Current Address – District");
   if (!cur.state)     p1.push("Current Address – State");
   if (!cur.pin)       p1.push("Current Address – Pincode");
-  // Bank
   if (!d.bankName)        p1.push("Bank Name");
   if (!d.bankAccountName) p1.push("Name as per Bank Account");
   if (!d.ifsc)            p1.push("IFSC Code");
@@ -223,21 +225,17 @@ function getMissingFields(d, empHistory) {
   const p2 = [];
   const edu = d.education || {};
   const x   = edu.classX        || {};
-  const inter = edu.intermediate  || {};
+  const inter = edu.intermediate || {};
   const ug  = edu.undergraduate  || {};
-  if (!x.school)          p2.push("Class X – School Name");
-  if (!x.yearOfPassing)   p2.push("Class X – Year");
-  if (!x.resultValue)     p2.push("Class X – Result");
-  if (!x.certKey)         p2.push("Class X – Document");
-  if (!inter.college)     p2.push("Intermediate – College");
-  if (!inter.yearOfPassing) p2.push("Intermediate – Year");
-  if (!inter.resultValue) p2.push("Intermediate – Result");
-  if (!inter.certKey)     p2.push("Intermediate – Document");
-  if (!ug.college)        p2.push("UG – College Name");
-  if (!ug.course)         p2.push("UG – Degree / Course");
-  if (!ug.yearOfPassing)  p2.push("UG – Year");
-  if (!ug.resultValue)    p2.push("UG – Result");
-  if (ug.backlogs !== "Yes" && !ug.provKey) p2.push("UG – Provisional Marksheet");
+  if (!x.school)            p2.push("Class X – School Name");
+  if (!x.yearOfPassing)     p2.push("Class X – Year");
+  if (!x.resultValue)       p2.push("Class X – Result");
+  if (!x.certKey)           p2.push("Class X – Document");
+  if (edu.afterTenth === "Intermediate" || edu.afterTenth === "Both") {
+    if (!inter.college)       p2.push("Intermediate – College");
+    if (!inter.yearOfPassing) p2.push("Intermediate – Year");
+  }
+  if (!ug.college && edu.hasUG === "Yes") p2.push("UG – College Name");
   if (p2.length) issues.push({ step:2, label:"Education", path:"/employee/education", fields:p2 });
 
   if (empHistory.length > 0) {
@@ -272,18 +270,20 @@ export default function ReviewPage() {
   const [empHistory,   setEmpHistory]   = useState([]);
   const [loading,      setLoading]      = useState(true);
   const [acks,         setAcks]         = useState(Array(ACK_STATEMENTS.length).fill(false));
-  const acksRestoredRef = useRef(false);
   const [profileEdited, setProfileEdited] = useState(false);
-  // Capture ?edited=1 synchronously on first render — before router.replace cleans the URL
-  const editedOnMount = useRef(
-    typeof window !== "undefined" && window.location.search.includes("edited=1")
-  );
   const [saveStatus,   setSaveStatus]   = useState("");
   const [submitting,   setSubmitting]   = useState(false);
   const [showSignout,  setShowSignout]  = useState(false);
   const [missingIssues,setMissingIssues]= useState([]);
-  // Signed URLs for attachments: { [docKey]: signedUrl }
   const [docUrls,      setDocUrls]      = useState({});
+
+  // ── Capture ?edited=1 synchronously BEFORE router.replace cleans URL ──
+  // This ref is set on first render from window.location so it never misses the param
+  const editedOnMount = useRef(
+    typeof window !== "undefined" && window.location.search.includes("edited=1")
+  );
+  // Track whether we've already applied the "edited" logic to avoid double-reset
+  const editedAppliedRef = useRef(false);
 
   useEffect(() => {
     if (!ready) return;
@@ -291,27 +291,43 @@ export default function ReviewPage() {
     if (user.role !== "employee") { router.replace("/employee/login"); return; }
   }, [ready, user, router]);
 
-  // If user arrived with ?edited=1 — reset acks, show banner, clean URL
-  useEffect(() => {
-    if (editedOnMount.current) {
-      setAcks(Array(ACK_STATEMENTS.length).fill(false));
-      acksRestoredRef.current = true;
-      setProfileEdited(true);
-      router.replace("/employee/review", undefined, { shallow: true });
-    }
-  }, []);
-
+  // ── Data load: fetch draft, employment history, documents ──
   const loadData = useCallback(async () => {
     try {
       const dRes = await apiFetch(`${API}/employee/draft`);
       if (dRes.ok) {
         const d = await dRes.json();
         setDraft(d);
-        // Restore acks only if not blocked (blocked when user arrived with ?edited=1)
-        if (d.acknowledgements_review && !acksRestoredRef.current) {
-          const restored = ACK_STATEMENTS.map((_, i) => !!d.acknowledgements_review[String(i)]);
-          if (restored.some(Boolean)) { setAcks(restored); acksRestoredRef.current = true; }
+
+        // ── Determine editor vs reader mode ──
+        // Editor mode if:
+        //   (a) ?edited=1 was in the URL when page loaded
+        //   (b) draft.page3_edited === true (page 3 was changed since last submit)
+        //   (c) draft.page4_edited === true (page 4 was changed since last submit)
+        const urlEdited = editedOnMount.current;
+        const p1edited  = !!d.page1_edited;
+        const p2edited  = !!d.page2_edited;
+        const p3edited  = !!d.page3_edited;
+        const p4edited  = !!d.page4_edited;
+        const isEditorMode = urlEdited || p1edited || p2edited || p3edited || p4edited;
+
+        if (isEditorMode && !editedAppliedRef.current) {
+          editedAppliedRef.current = true;
+          // Reset acks — user must re-confirm
+          setAcks(Array(ACK_STATEMENTS.length).fill(false));
+          setProfileEdited(true);
+          // Clean the URL if it had ?edited=1
+          if (urlEdited) {
+            router.replace("/employee/review", undefined, { shallow: true });
+          }
+        } else if (!isEditorMode) {
+          // Reader mode: restore saved acks if any
+          if (d.acknowledgements_review && !editedAppliedRef.current) {
+            const restored = ACK_STATEMENTS.map((_, i) => !!d.acknowledgements_review[String(i)]);
+            if (restored.some(Boolean)) setAcks(restored);
+          }
         }
+
         // Employment history
         if (d.employee_id) {
           try {
@@ -322,24 +338,20 @@ export default function ReviewPage() {
               setEmpHistory(emps);
             }
           } catch (_) {}
-          // Fetch all document signed URLs
+
+          // Signed document URLs
           try {
             const docRes = await apiFetch(`${API}/documents/${d.employee_id}`);
             if (docRes.ok) {
               const docData = await docRes.json();
-              // Flatten all URLs into a key→url map
               const urls = {};
               const flatten = (obj, depth=0) => {
                 if (!obj || typeof obj !== "object" || depth > 8) return;
-                // Pattern 1: { key: "s3key", url: "https://..." }
-                if (obj.key && obj.url) { urls[obj.key] = obj.url; return; }
-                // Pattern 2: { s3_key: "s3key", url: "https://..." }
+                if (obj.key && obj.url)    { urls[obj.key]    = obj.url; return; }
                 if (obj.s3_key && obj.url) { urls[obj.s3_key] = obj.url; return; }
-                // Pattern 3: { url: "https://...", key: ... } variations
                 if (obj.url && typeof obj.url === "string") {
-                  // Try to find any key-like field in the same object
                   const k = obj.key || obj.s3_key || obj.fileKey || obj.docKey;
-                  if (k) { urls[k] = obj.url; }
+                  if (k) urls[k] = obj.url;
                 }
                 if (Array.isArray(obj)) { obj.forEach(v => flatten(v, depth+1)); return; }
                 Object.values(obj).forEach(v => flatten(v, depth+1));
@@ -352,18 +364,29 @@ export default function ReviewPage() {
       }
     } catch (_) {}
     setLoading(false);
-  }, [apiFetch]);
+  }, [apiFetch, router]);
 
   useEffect(() => { if (ready && user) loadData(); }, [ready, user, loadData]);
 
   useEffect(() => {
     if (!draft) return;
-    const d = { ...draft, employmentHistory: empHistory };
-    setMissingIssues(getMissingFields(d, empHistory));
+    setMissingIssues(getMissingFields(draft, empHistory));
   }, [draft, empHistory]);
 
+  // ── If user edits something directly on page 5, switch to editor mode ──
+  const handleInlineEdit = () => {
+    if (!profileEdited) {
+      setProfileEdited(true);
+      setAcks(Array(ACK_STATEMENTS.length).fill(false));
+    }
+  };
+
   const handleNavigate = (path) => { router.push(path); };
-  const toggleAck = (i) => { setAcks(prev => { const n=[...prev]; n[i]=!n[i]; return n; }); };
+  const toggleAck = (i) => {
+    // If reader mode and user starts checking acks, treat as editor mode
+    if (!profileEdited) handleInlineEdit();
+    setAcks(prev => { const n=[...prev]; n[i]=!n[i]; return n; });
+  };
   const allAcked = acks.every(Boolean);
 
   const handleSubmit = async () => {
@@ -373,16 +396,21 @@ export default function ReviewPage() {
       window.scrollTo({ top:0, behavior:"smooth" });
       return;
     }
-    if (!allAcked) {
+
+    // Only require acks if in editor mode
+    if (profileEdited && !allAcked) {
       setSaveStatus("⚠️ Please accept all acknowledgements below before submitting.");
       document.getElementById("ack-section")?.scrollIntoView({ behavior:"smooth", block:"center" });
       return;
     }
+
     setSubmitting(true);
     setSaveStatus("Submitting…");
     const acksDict = Object.fromEntries(acks.map((v, i) => [String(i), v]));
+
     const safePfRecords = (Array.isArray(draft?.pfRecords) ? draft.pfRecords : [])
       .filter(r => r.companyName && (r.hasPf === "No" || (r.pfMemberId && r.dojEpfo && r.doeEpfo)));
+
     try {
       const res = await apiFetch(`${API}/employee`, {
         method: "POST",
@@ -392,6 +420,11 @@ export default function ReviewPage() {
           status: "submitted",
           submitted_at: Date.now(),
           acknowledgements_review: acksDict,
+          // ── Clear cascade flags on successful submit ──
+          page1_edited: false,
+          page2_edited: false,
+          page3_edited: false,
+          page4_edited: false,
         }),
       });
       if (!res.ok) {
@@ -469,9 +502,9 @@ export default function ReviewPage() {
             </div>
           )}
 
-          {/* ── Page 1: Personal ──────────────────────────────────────── */}
+          {/* ── Page 1: Personal ── */}
           <div className="sc ind">
-            <SectionHead icon="👤" title="Personal Details" colorClass="ind" onEdit={()=>router.push("/employee/personal")}/>
+            <SectionHead icon="👤" title="Personal Details" colorClass="ind" onEdit={()=>{handleInlineEdit();router.push("/employee/personal");}}/>
             <div className="grid">
               <KV label="Full Name"      value={[d.firstName,d.middleName,d.lastName].filter(Boolean).join(" ")}/>
               <KV label="Date of Birth"  value={d.dob}/>
@@ -492,83 +525,66 @@ export default function ReviewPage() {
               <KV label="Blood Group"    value={d.bloodGroup}/>
               <KV label="Marital Status" value={d.maritalStatus}/>
             </div>
-
-            {(d.fatherFirst||d.fatherLast) && (
-              <div>
-                <div className="sec-divider">Family</div>
-                <div className="grid">
-                  <KV label="Father's Name" value={[d.fatherFirst,d.fatherMiddle,d.fatherLast].filter(Boolean).join(" ")}/>
-                  <KV label="Mother's Name" value={[d.motherFirst,d.motherMiddle,d.motherLast].filter(Boolean).join(" ")}/>
-                </div>
-              </div>
-            )}
-
-            {(d.emergName||d.emergPhone) && (
-              <div>
-                <div className="sec-divider">Emergency Contact</div>
-                <div className="grid">
-                  <KV label="Name"         value={d.emergName}/>
-                  <KV label="Relationship" value={d.emergRel}/>
-                  <KV label="Phone"        value={d.emergPhone}/>
-                </div>
-              </div>
-            )}
-
-            <div>
-              <div className="sec-divider">Current Address</div>
+            {(d.fatherFirst||d.fatherName)&&(<>
+              <div className="sec-divider">Family</div>
               <div className="grid">
-                <KV label="Door / Street" value={cur.door}/>
-                <KV label="Village / Area" value={cur.village}/>
-                <KV label="Tehsil / Taluk" value={cur.locality}/>
-                <KV label="District" value={cur.district}/>
-                <KV label="State"    value={cur.state}/>
-                <KV label="Pincode"  value={cur.pin}/>
+                <KV label="Father's Name" value={d.fatherName||[d.fatherFirst,d.fatherMiddle,d.fatherLast].filter(Boolean).join(" ")}/>
+                <KV label="Mother's Name" value={d.motherName||[d.motherFirst,d.motherMiddle,d.motherLast].filter(Boolean).join(" ")}/>
               </div>
+            </>)}
+            {(d.emergName||d.emergPhone)&&(<>
+              <div className="sec-divider">Emergency Contact</div>
+              <div className="grid">
+                <KV label="Name"         value={d.emergName}/>
+                <KV label="Relationship" value={d.emergRel}/>
+                <KV label="Phone"        value={d.emergPhone}/>
+              </div>
+            </>)}
+            <div className="sec-divider">Current Address</div>
+            <div className="grid">
+              <KV label="Door / Street"  value={cur.door}/>
+              <KV label="Village / Area" value={cur.village}/>
+              <KV label="Tehsil / Taluk" value={cur.locality}/>
+              <KV label="District"       value={cur.district}/>
+              <KV label="State"          value={cur.state}/>
+              <KV label="Pincode"        value={cur.pin}/>
             </div>
-
-            {(perm.door||perm.state) && (
-              <div>
-                <div className="sec-divider">Permanent / Native Address</div>
-                <div className="grid">
-                  <KV label="Door / Street" value={perm.door}/>
-                  <KV label="Village / Area" value={perm.village}/>
-                  <KV label="District" value={perm.district}/>
-                  <KV label="State"    value={perm.state}/>
-                  <KV label="Pincode"  value={perm.pin}/>
-                </div>
+            {(perm.door||perm.state)&&(<>
+              <div className="sec-divider">Permanent / Native Address</div>
+              <div className="grid">
+                <KV label="Door / Street"  value={perm.door}/>
+                <KV label="Village / Area" value={perm.village}/>
+                <KV label="District"       value={perm.district}/>
+                <KV label="State"          value={perm.state}/>
+                <KV label="Pincode"        value={perm.pin}/>
               </div>
-            )}
-
-            {/* Attachments — Page 1 */}
-            <div>
-              <div className="sec-divider">Documents</div>
-              <div className="att-grid">
-                <AttChip label="Profile Photo"   docKey={d.photoKey}    urls={docUrls}/>
-                <AttChip label="Aadhaar Card"    docKey={d.aadhaarKey}  urls={docUrls}/>
-                <AttChip label="PAN Card"        docKey={d.panKey}      urls={docUrls}/>
-                {d.hasPassport==="Yes"&&d.passportKey&&<AttChip label="Passport" docKey={d.passportKey} urls={docUrls}/>}
-                {d.hasPassport==="Yes"&&!d.passportKey&&<span className="att-chip missing">⚠ Passport upload missing</span>}
-              </div>
+            </>)}
+            <div className="sec-divider">Documents</div>
+            <div className="att-grid">
+              <AttChip label="Profile Photo"   docKey={d.photoKey}    urls={docUrls}/>
+              <AttChip label="Aadhaar Card"    docKey={d.aadhaarKey}  urls={docUrls}/>
+              <AttChip label="PAN Card"        docKey={d.panKey}      urls={docUrls}/>
+              {d.hasPassport==="Yes"&&d.passportKey&&<AttChip label="Passport" docKey={d.passportKey} urls={docUrls}/>}
+              {d.hasPassport==="Yes"&&!d.passportKey&&<span className="att-chip missing">⚠ Passport upload missing</span>}
             </div>
           </div>
 
-          {/* ── Bank Details ──────────────────────────────────────────── */}
+          {/* ── Bank Details ── */}
           <div className="sc teal">
-            <SectionHead icon="🏦" title="Bank Account Details" colorClass="teal" onEdit={()=>router.push("/employee/personal")}/>
+            <SectionHead icon="🏦" title="Bank Account Details" colorClass="teal" onEdit={()=>{handleInlineEdit();router.push("/employee/personal");}}/>
             <div className="grid">
-              <KV label="Bank Name"            value={d.bankName==="Other"&&d.bankOther ? `Other — ${d.bankOther}` : d.bankName}/>
+              <KV label="Bank Name"            value={d.bankName==="Other"&&d.bankOther?`Other — ${d.bankOther}`:d.bankName}/>
               <KV label="Account Holder Name"  value={d.bankAccountName}/>
               <KV label="IFSC Code"            value={d.ifsc}/>
               <KV label="Branch"               value={d.branch}/>
               <KV label="Account Type"         value={d.accountType}/>
-              <KV label="Account Number"       value={d.accountFull ? ("•".repeat(Math.max(0,d.accountFull.length-4))+d.accountFull.slice(-4)) : (d.accountLast4 ? ("•".repeat(8)+d.accountLast4) : "—")}/>
+              <KV label="Account Number"       value={maskAccount(d.accountLast4, d.accountFull)}/>
             </div>
           </div>
 
-          {/* ── Page 2: Education ─────────────────────────────────────── */}
+          {/* ── Page 2: Education ── */}
           <div className="sc amb">
-            <SectionHead icon="🎓" title="Education" colorClass="amb" onEdit={()=>router.push("/employee/education")}/>
-
+            <SectionHead icon="🎓" title="Education" colorClass="amb" onEdit={()=>{handleInlineEdit();router.push("/employee/education");}}/>
             {[
               { title:"Class X",        data:edu.classX,        subKey:"classX"       },
               ...((edu.afterTenth==="Intermediate"||edu.afterTenth==="Both"||edu.intermediate?.college) ? [{ title:"Intermediate",   data:edu.intermediate,  subKey:"intermediate" }] : []),
@@ -597,7 +613,6 @@ export default function ReviewPage() {
                 </div>
               );
             })}
-
             {edu.postgraduate?.college && (
               <div style={{marginBottom:"0.9rem",paddingBottom:"0.9rem",borderBottom:"1px solid #f0eef8"}}>
                 <div style={{fontSize:"0.72rem",fontWeight:700,color:"#d97706",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.5rem"}}>Post Graduate</div>
@@ -616,7 +631,6 @@ export default function ReviewPage() {
                 )}
               </div>
             )}
-
             {edu.diploma?.institute && (
               <div style={{marginBottom:"0.9rem",paddingBottom:"0.9rem",borderBottom:"1px solid #f0eef8"}}>
                 <div style={{fontSize:"0.72rem",fontWeight:700,color:"#d97706",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.5rem"}}>Diploma / Technical</div>
@@ -628,19 +642,14 @@ export default function ReviewPage() {
                 {edu.diploma?.certKey && <div className="att-grid"><AttChip label="Diploma Certificate" docKey={edu.diploma.certKey} urls={docUrls}/></div>}
               </div>
             )}
-
             {Array.isArray(edu.certifications) && edu.certifications.length > 0 && (
               <div>
                 <div style={{fontSize:"0.72rem",fontWeight:700,color:"#d97706",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.5rem"}}>Certifications</div>
                 <div className="att-grid">
-                  {edu.certifications.map((c,i) => (
-                    <AttChip key={i} label={c.name||`Cert ${i+1}`} docKey={c.certKey} urls={docUrls}/>
-                  ))}
+                  {edu.certifications.map((c,i) => <AttChip key={i} label={c.name||`Cert ${i+1}`} docKey={c.certKey} urls={docUrls}/>)}
                 </div>
               </div>
             )}
-
-            {/* Articleships */}
             {Array.isArray(edu.articleships) && edu.articleships.length > 0 && (
               <div style={{marginTop:"0.9rem",paddingTop:"0.9rem",borderTop:"1px solid #f0eef8"}}>
                 <div style={{fontSize:"0.72rem",fontWeight:700,color:"#ea580c",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.5rem"}}>Articleship / Practical Training</div>
@@ -651,15 +660,11 @@ export default function ReviewPage() {
                       {a.city&&<KV label="City" value={a.city}/>}
                       {a.from&&<KV label="From" value={a.from}/>}
                       {a.to&&<KV label="To" value={a.to}/>}
-                      {a.isOngoing&&<KV label="Status" value={a.isOngoing}/>}
                     </div>
-                    {a.certKey&&<div className="att-grid" style={{marginTop:"0.4rem"}}><AttChip label="Training Letter" docKey={a.certKey} urls={docUrls}/></div>}
                   </div>
                 ))}
               </div>
             )}
-
-            {/* Education Gap */}
             {edu.hasEduGap && (
               <div style={{marginTop:"0.9rem",paddingTop:"0.9rem",borderTop:"1px solid #f0eef8"}}>
                 <div style={{fontSize:"0.72rem",fontWeight:700,color:"#4f46e5",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.4rem"}}>Education Gap Before First Job</div>
@@ -671,17 +676,10 @@ export default function ReviewPage() {
             )}
           </div>
 
-          {/* ── Page 3: Employment ───────────────────────────────────── */}
+          {/* ── Page 3: Employment ── */}
           <div className="sc vio">
-            <SectionHead icon="💼" title="Employment History" colorClass="vio" onEdit={()=>router.push("/employee/previous")}/>
-
-            {/* Resume */}
-            {d.resumeKey && (
-              <div style={{marginBottom:"0.85rem"}}>
-                <div className="att-grid"><AttChip label="Latest Resume / CV" docKey={d.resumeKey} urls={docUrls}/></div>
-              </div>
-            )}
-
+            <SectionHead icon="💼" title="Employment History" colorClass="vio" onEdit={()=>{handleInlineEdit();router.push("/employee/previous");}}/>
+            {d.resumeKey && <div style={{marginBottom:"0.85rem"}}><div className="att-grid"><AttChip label="Latest Resume / CV" docKey={d.resumeKey} urls={docUrls}/></div></div>}
             {empHistory.length === 0 ? (
               <p style={{color:"#b8b4d4",fontSize:"0.875rem",fontStyle:"italic"}}>No employment history added.</p>
             ) : empHistory.map((e, idx) => (
@@ -696,14 +694,12 @@ export default function ReviewPage() {
                   <KV label="Employment Type" value={e.employmentType}/>
                   <KV label="Date of Joining" value={e.startDate}/>
                   {idx===0
-                    ? <KV label="Currently Working" value={e.currentlyWorking==="Yes"?"Yes — Still Employed":e.currentlyWorking==="No"?"No":e.currentlyWorking}/>
-                    : <KV label="Date of Leaving"   value={e.endDate}/>
-                  }
+                    ?<KV label="Currently Working" value={e.currentlyWorking==="Yes"?"Yes — Still Employed":e.currentlyWorking==="No"?"No":e.currentlyWorking}/>
+                    :<KV label="Date of Leaving"   value={e.endDate}/>}
                   {idx===0&&e.currentlyWorking==="No"&&<KV label="Date of Leaving" value={e.endDate}/>}
                   <KV label="Work Email"      value={e.workEmail}/>
                   {e.employmentType==="Contract"&&<KV label="Vendor" value={e.contractVendor?.company}/>}
                 </div>
-                {/* Reference */}
                 {e.reference?.name && (
                   <div style={{marginTop:"0.5rem"}}>
                     <div style={{fontSize:"0.68rem",fontWeight:700,color:"#8b88b0",textTransform:"uppercase",letterSpacing:0.4,marginBottom:"0.3rem"}}>Reference</div>
@@ -714,17 +710,15 @@ export default function ReviewPage() {
                     </div>
                   </div>
                 )}
-                {/* Employment attachments */}
                 {(e.documents?.payslipsKey||e.documents?.offerLetterKey||e.documents?.resignationKey||e.documents?.experienceKey||e.documents?.idCardKey) && (
                   <div className="att-grid" style={{marginTop:"0.6rem"}}>
-                    {e.documents.payslipsKey    && <AttChip label="Payslips"             docKey={e.documents.payslipsKey}    urls={docUrls}/>}
-                    {e.documents.offerLetterKey && <AttChip label="Offer Letter"         docKey={e.documents.offerLetterKey} urls={docUrls}/>}
-                    {e.documents.resignationKey && <AttChip label="Resignation"          docKey={e.documents.resignationKey} urls={docUrls}/>}
-                    {e.documents.experienceKey  && <AttChip label="Experience Letter"    docKey={e.documents.experienceKey}  urls={docUrls}/>}
-                    {e.documents.idCardKey      && <AttChip label="Company ID Card"      docKey={e.documents.idCardKey}      urls={docUrls}/>}
+                    {e.documents.payslipsKey    && <AttChip label="Payslips"          docKey={e.documents.payslipsKey}    urls={docUrls}/>}
+                    {e.documents.offerLetterKey && <AttChip label="Offer Letter"      docKey={e.documents.offerLetterKey} urls={docUrls}/>}
+                    {e.documents.resignationKey && <AttChip label="Resignation"       docKey={e.documents.resignationKey} urls={docUrls}/>}
+                    {e.documents.experienceKey  && <AttChip label="Experience Letter" docKey={e.documents.experienceKey}  urls={docUrls}/>}
+                    {e.documents.idCardKey      && <AttChip label="Company ID Card"   docKey={e.documents.idCardKey}      urls={docUrls}/>}
                   </div>
                 )}
-                {/* Gap */}
                 {e.gap?.hasGap==="Yes"&&e.gap?.reason&&(
                   <div style={{marginTop:"0.5rem",padding:"0.5rem 0.75rem",background:"#fffbeb",borderRadius:8,border:"1px solid #fde68a",fontSize:"0.78rem",color:"#92400e",fontWeight:500}}>
                     ⏱ Gap: {e.gap.reason}
@@ -732,20 +726,11 @@ export default function ReviewPage() {
                 )}
               </div>
             ))}
-
-            {/* Employment declarations from page 3 */}
-            {empHistory.length > 0 && (
-              <div style={{marginTop:"0.5rem",padding:"0.7rem 0.9rem",background:"#f5f3ff",borderRadius:8,border:"1px solid #dddaf0",fontSize:"0.78rem",color:"#6b6894",fontWeight:500}}>
-                {(empHistory[empHistory.length-1]?.declared || d.declared)
-                  ? "✅ Employment declaration confirmed on page 3."
-                  : "⚠️ Employment declaration not yet confirmed — go back to page 3."}
-              </div>
-            )}
           </div>
 
-          {/* ── Page 4: UAN ──────────────────────────────────────────── */}
+          {/* ── Page 4: UAN ── */}
           <div className="sc cyn">
-            <SectionHead icon="🏦" title="UAN / EPFO" colorClass="cyn" onEdit={()=>router.push("/employee/uan")}/>
+            <SectionHead icon="🏦" title="UAN / EPFO" colorClass="cyn" onEdit={()=>{handleInlineEdit();router.push("/employee/uan");}}/>
             <div className="grid">
               <KV label="Has UAN"         value={d.hasUan==="yes"||d.hasUan===true?"Yes":"No"}/>
               {(d.hasUan==="yes"||d.hasUan===true)&&<>
@@ -755,15 +740,12 @@ export default function ReviewPage() {
                 <KV label="UAN Active"      value={d.isActive}/>
               </>}
             </div>
-            {/* PF records */}
             {Array.isArray(d.pfRecords) && d.pfRecords.length > 0 && (
               <div style={{marginTop:"0.85rem"}}>
                 <div className="sec-divider">PF Details per Employer</div>
                 {d.pfRecords.map((pf, i) => (
                   <div key={i} style={{background:"#f8f7ff",border:"1px solid #e4e2f0",borderRadius:10,padding:"0.75rem 0.9rem",marginBottom:"0.6rem"}}>
-                    <div style={{fontSize:"0.68rem",fontWeight:800,color:"#7c3aed",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.4rem"}}>
-                      {pf.companyName||`Employer ${i+1}`}
-                    </div>
+                    <div style={{fontSize:"0.68rem",fontWeight:800,color:"#7c3aed",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.4rem"}}>{pf.companyName||`Employer ${i+1}`}</div>
                     {pf.hasPf==="No"
                       ? <p style={{fontSize:"0.78rem",color:"#0369a1",fontWeight:500}}>ℹ️ PF not maintained by this employer</p>
                       : <div className="grid">
@@ -777,14 +759,10 @@ export default function ReviewPage() {
                 ))}
               </div>
             )}
-
-            {/* UAN uploads */}
             <div className="att-grid" style={{marginTop:"0.65rem",display:"flex",gap:"0.6rem",flexWrap:"wrap"}}>
               {d.epfoKey && <AttChip label="UAN Card" docKey={d.epfoKey} urls={docUrls}/>}
               {d.serviceHistoryKey && <AttChip label="Service History Snapshot" docKey={d.serviceHistoryKey} urls={docUrls}/>}
             </div>
-
-            {/* Nominees */}
             {Array.isArray(d.epfoNominees) && d.epfoNominees.length > 0 && (
               <div style={{marginTop:"0.85rem"}}>
                 <div className="sec-divider">Nominee Details (Form 2)</div>
@@ -797,15 +775,12 @@ export default function ReviewPage() {
                       <KV label="Relationship"  value={nom.relation==="Other"&&nom.otherRelation?nom.otherRelation:nom.relation}/>
                       <KV label="Address"       value={nom.address}/>
                       <KV label="Share (%)"     value={nom.share?`${nom.share}%`:undefined}/>
-                      {nom.guardianName && <KV label="Guardian Name"    value={nom.guardianName}/>}
-                      {nom.guardianAddress && <KV label="Guardian Address" value={nom.guardianAddress}/>}
+                      {nom.guardianName && <KV label="Guardian Name" value={nom.guardianName}/>}
                     </div>
                   </div>
                 ))}
               </div>
             )}
-
-            {/* EPFO Declarations */}
             {d.epfoDeclarations && (
               <div style={{marginTop:"0.85rem"}}>
                 <div className="sec-divider">EPFO Declarations</div>
@@ -816,21 +791,17 @@ export default function ReviewPage() {
                 </div>
               </div>
             )}
-
-            {/* Digital Signature — displayed via S3 signed URL */}
             {(d.epfoSignature?.s3Key || d.epfoSignature?.dataUrl) && (
               <div style={{marginTop:"0.85rem"}}>
                 <div className="sec-divider">Digital Signature</div>
                 <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:"0.75rem 0.9rem"}}>
-                  {(() => {
-                    const sigUrl = d.epfoSignature?.s3Key
-                      ? (docUrls[d.epfoSignature.s3Key] || null)
-                      : d.epfoSignature?.dataUrl; // legacy fallback
+                  {(()=>{
+                    const sigUrl = d.epfoSignature?.s3Key ? (docUrls[d.epfoSignature.s3Key] || null) : d.epfoSignature?.dataUrl;
                     return sigUrl
                       ? <img src={sigUrl} alt="Digital Signature" style={{maxWidth:280,height:60,border:"1px solid #e4e2f0",borderRadius:6,background:"#fff",display:"block"}}/>
                       : <span style={{fontSize:"0.72rem",color:"#8b88b0"}}>⏳ Loading signature…</span>;
                   })()}
-                  {d.epfoSignature.timestamp && (
+                  {d.epfoSignature?.timestamp && (
                     <p style={{fontSize:"0.68rem",color:"#16a34a",fontWeight:600,marginTop:"0.4rem"}}>
                       ✓ Signed — {new Date(d.epfoSignature.timestamp).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}
                     </p>
@@ -840,34 +811,69 @@ export default function ReviewPage() {
             )}
           </div>
 
-          {/* ── Final Acknowledgements (review-specific) ─────────────── */}
+          {/* ── Final Acknowledgements ── */}
+          {/* Reader mode: shown but greyed/informational; Editor mode: required */}
           <div className="sc grn" id="ack-section">
             <div className="sh">
               <div className="si grn">✅</div>
               <span className="st">Final Acknowledgements</span>
-              {allAcked && <span style={{marginLeft:"auto",fontSize:"0.72rem",fontWeight:700,color:"#16a34a"}}>All confirmed ✓</span>}
+              {!profileEdited && (
+                <span style={{marginLeft:"auto",fontSize:"0.72rem",color:"#16a34a",fontWeight:600,background:"#f0fdf4",padding:"0.2rem 0.6rem",borderRadius:6,border:"1px solid #bbf7d0"}}>
+                  View mode — no changes detected
+                </span>
+              )}
+              {profileEdited && allAcked && (
+                <span style={{marginLeft:"auto",fontSize:"0.72rem",fontWeight:700,color:"#16a34a"}}>All confirmed ✓</span>
+              )}
             </div>
+
+            {/* Reader mode banner */}
+            {!profileEdited && (
+              <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:10,padding:"0.75rem 1rem",marginBottom:"1rem",display:"flex",alignItems:"flex-start",gap:"0.6rem"}}>
+                <span style={{fontSize:"1rem",flexShrink:0}}>ℹ️</span>
+                <div>
+                  <div style={{fontSize:"0.78rem",fontWeight:700,color:"#15803d",marginBottom:"0.2rem"}}>Viewing your submitted profile</div>
+                  <div style={{fontSize:"0.72rem",color:"#166534",fontWeight:500,lineHeight:1.5}}>
+                    You haven't made any changes. Acknowledgements are only required when you edit and re-submit. If you make changes on any page and return here, you'll be asked to re-confirm.
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Editor mode banner */}
             {profileEdited && (
               <div style={{background:"#fff8f0",border:"1.5px solid #fbbf24",borderRadius:10,padding:"0.75rem 1rem",marginBottom:"1rem",display:"flex",alignItems:"flex-start",gap:"0.6rem"}}>
                 <span style={{fontSize:"1rem",flexShrink:0}}>⚠️</span>
                 <div>
-                  <div style={{fontSize:"0.78rem",fontWeight:700,color:"#92400e",marginBottom:"0.2rem"}}>You updated your profile — please re-confirm</div>
-                  <div style={{fontSize:"0.72rem",color:"#92400e",fontWeight:500,lineHeight:1.5}}>Your acknowledgements have been reset because you made changes. Please read and re-confirm each statement below before submitting.</div>
+                  <div style={{fontSize:"0.78rem",fontWeight:700,color:"#92400e",marginBottom:"0.2rem"}}>Profile changes detected — please re-confirm</div>
+                  <div style={{fontSize:"0.72rem",color:"#92400e",fontWeight:500,lineHeight:1.5}}>
+                    Changes were made to your profile. Please read and re-confirm each statement below before submitting. These are different from the declarations made on earlier pages.
+                  </div>
                 </div>
               </div>
             )}
+
             <p style={{fontSize:"0.78rem",color:"#6b6894",marginBottom:"1rem",lineHeight:1.55}}>
-              These acknowledgements are specific to your final submission. Please read each carefully — they are different from the declarations made on earlier pages.
+              {profileEdited
+                ? "These acknowledgements confirm your final submission. Please read each carefully."
+                : "These are the acknowledgements you confirmed on your last submission."}
             </p>
+
             {ACK_STATEMENTS.map((stmt, i) => (
-              <div key={i} className="ack-box" onClick={()=>toggleAck(i)} style={{cursor:"pointer"}}>
-                <div className={`ack-check${acks[i]?" checked":""}`}>
+              <div
+                key={i}
+                className="ack-box"
+                onClick={() => profileEdited && toggleAck(i)}
+                style={{cursor: profileEdited ? "pointer" : "default", opacity: profileEdited ? 1 : 0.65}}
+              >
+                <div className={`ack-check${acks[i]?" checked":""}`} style={{cursor: profileEdited ? "pointer" : "default"}}>
                   {acks[i] && <span style={{color:"#fff",fontWeight:800,fontSize:"0.75rem"}}>✓</span>}
                 </div>
                 <span className="ack-text">{stmt}</span>
               </div>
             ))}
-            {!allAcked && (
+
+            {profileEdited && !allAcked && (
               <p style={{fontSize:"0.75rem",color:"#d97706",marginTop:"0.75rem",fontWeight:600}}>
                 ⚠️ Please confirm all {ACK_STATEMENTS.length} statements to enable submission.
               </p>
@@ -882,7 +888,7 @@ export default function ReviewPage() {
                   {saveStatus}
                 </span>
               )}
-              {missingIssues.length===0 && allAcked && (
+              {missingIssues.length===0 && (!profileEdited || allAcked) && (
                 <span className="ss ok" style={{fontSize:"0.75rem"}}>✓ Ready to submit</span>
               )}
             </div>
