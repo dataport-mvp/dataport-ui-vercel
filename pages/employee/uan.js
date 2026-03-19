@@ -224,8 +224,9 @@ export default function UanDetails() {
   const [pensionNomAck, setPensionNomAck] = useState(false); // Pension nomination acknowledgement
   const [epfoDecl, setEpfoDecl] = useState(false); // General EPFO declaration
   // ── Digital Signature ───────────────────────────────────────────────
-  const [sigDataUrl, setSigDataUrl] = useState(""); // base64 PNG of drawn signature
+  const [sigDataUrl, setSigDataUrl] = useState(""); // base64 for canvas preview only
   const [sigTimestamp, setSigTimestamp] = useState(""); // ISO timestamp when signed
+  const [sigS3Key, setSigS3Key] = useState(""); // S3 key after upload — stored in DynamoDB
   const sigCanvasRef = useRef(null);
   const sigDrawingRef = useRef(false);
   const sigLastRef = useRef({x:0, y:0});
@@ -234,15 +235,22 @@ export default function UanDetails() {
 
   // ── Restore signature onto canvas whenever sigDataUrl changes (prevents wipe on re-render)
   useEffect(() => {
-    if (!sigDataUrl || !sigCanvasRef.current) return;
-    const img = new Image();
-    img.onload = () => {
-      const ctx = sigCanvasRef.current.getContext("2d");
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(0, 0, sigCanvasRef.current.width, sigCanvasRef.current.height);
-      ctx.drawImage(img, 0, 0, sigCanvasRef.current.width, sigCanvasRef.current.height);
+    if (!sigDataUrl) return;
+    const draw = () => {
+      if (!sigCanvasRef.current) return;
+      const img = new Image();
+      img.onload = () => {
+        if (!sigCanvasRef.current) return;
+        const ctx = sigCanvasRef.current.getContext("2d");
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, sigCanvasRef.current.width, sigCanvasRef.current.height);
+        ctx.drawImage(img, 0, 0, sigCanvasRef.current.width, sigCanvasRef.current.height);
+      };
+      img.src = sigDataUrl;
     };
-    img.src = sigDataUrl;
+    // Small delay to ensure canvas is mounted in DOM before drawing
+    const t = setTimeout(draw, 50);
+    return () => clearTimeout(t);
   }, [sigDataUrl]);
 
   const dirty = (setter) => (val) => {
@@ -302,8 +310,9 @@ export default function UanDetails() {
             if (d.epfoDeclarations.pensionNomAck) setPensionNomAck(d.epfoDeclarations.pensionNomAck);
             if (d.epfoDeclarations.epfoDecl) setEpfoDecl(d.epfoDeclarations.epfoDecl);
           }
-          // Signature — restore dataUrl and timestamp
-          if (d.epfoSignature?.dataUrl) { setSigDataUrl(d.epfoSignature.dataUrl); wasSignedRef.current = true; }
+          // Signature — restore S3 key and timestamp (dataUrl no longer stored in DynamoDB)
+          if (d.epfoSignature?.s3Key) { setSigS3Key(d.epfoSignature.s3Key); wasSignedRef.current = true; }
+          if (d.epfoSignature?.dataUrl) { setSigDataUrl(d.epfoSignature.dataUrl); wasSignedRef.current = true; } // legacy fallback
           if (d.epfoSignature?.timestamp) setSigTimestamp(d.epfoSignature.timestamp);
 
           // Load employment history to pre-fill company names
@@ -383,6 +392,36 @@ export default function UanDetails() {
     pfRecords:    hasUan === "yes" ? pfRecords    : [],
   });
 
+  // ── Upload canvas blob to S3 and return s3_key ──────────────────────
+  const uploadSignature = async (dataUrl) => {
+    if (!draft?.employee_id) return null;
+    try {
+      // Convert base64 dataUrl to Blob
+      const res2 = await fetch(dataUrl);
+      const blob = await res2.blob();
+      // Get presigned URL from backend
+      const presignRes = await apiFetch(`${API}/upload/presigned`, {
+        method: "POST",
+        body: JSON.stringify({
+          category: "uan",
+          sub_key: "signature",
+          filename: "signature.jpg",
+          employee_id: draft.employee_id,
+        }),
+      });
+      if (!presignRes.ok) return null;
+      const { upload_url, s3_key } = await presignRes.json();
+      // PUT blob to S3
+      const uploadRes = await fetch(upload_url, {
+        method: "PUT",
+        body: blob,
+        headers: { "Content-Type": "image/jpeg" },
+      });
+      if (!uploadRes.ok) return null;
+      return s3_key;
+    } catch (_) { return null; }
+  };
+
   const saveDraft = async () => {
     if (!draft?.employee_id) throw new Error("Please complete and save Page 1 first");
     // Always fetch fresh draft before saving — prevents stale state from
@@ -400,7 +439,7 @@ export default function UanDetails() {
       pfRecords:    hasUan === "yes" ? pfRecords    : [],
       serviceHistoryKey,
       epfoNominees: nominees,
-      epfoSignature: { dataUrl: sigDataUrl, timestamp: sigTimestamp },
+      epfoSignature: { s3Key: sigS3Key, timestamp: sigTimestamp },
       epfoDeclarations: { pfNomAck, pensionNomAck, epfoDecl },
     };
     const res = await apiFetch(`${API}/employee`, { method:"POST", body:JSON.stringify(payload) });
@@ -825,9 +864,9 @@ export default function UanDetails() {
                 </p>
                 <canvas
                   ref={sigCanvasRef}
-                  width={560} height={120}
+                  width={400} height={90}
                   className={`sig-canvas${sigDataUrl?" signed":""}`}
-                  style={{width:"100%",maxWidth:560,height:120}}
+                  style={{width:"100%",maxWidth:400,height:90}}
                   onMouseDown={e=>{
                     sigDrawingRef.current=true;
                     const r=sigCanvasRef.current.getBoundingClientRect();
@@ -846,11 +885,16 @@ export default function UanDetails() {
                     ctx.moveTo(sigLastRef.current.x,sigLastRef.current.y);ctx.lineTo(x,y);ctx.stroke();
                     sigLastRef.current={x,y};
                   }}
-                  onMouseUp={()=>{
+                  onMouseUp={async ()=>{
                     sigDrawingRef.current=false;
-                    const dataUrl=sigCanvasRef.current.toDataURL("image/jpeg",0.5);
-                    setSigDataUrl(dataUrl);setSigTimestamp(new Date().toISOString());
+                    const dataUrl=sigCanvasRef.current.toDataURL("image/jpeg",0.3);
+                    setSigDataUrl(dataUrl); // preview only
+                    const ts=new Date().toISOString();
+                    setSigTimestamp(ts);
                     isDirtyRef.current=true;wasSignedRef.current=true;setEditedAfterSign(false);
+                    // Upload to S3 immediately after signing
+                    const key = await uploadSignature(dataUrl);
+                    if (key) setSigS3Key(key);
                   }}
                   onTouchStart={e=>{
                     e.preventDefault();sigDrawingRef.current=true;
@@ -870,27 +914,35 @@ export default function UanDetails() {
                     ctx.moveTo(sigLastRef.current.x,sigLastRef.current.y);ctx.lineTo(x,y);ctx.stroke();
                     sigLastRef.current={x,y};
                   }}
-                  onTouchEnd={()=>{
+                  onTouchEnd={async ()=>{
                     sigDrawingRef.current=false;
-                    const dataUrl=sigCanvasRef.current.toDataURL("image/jpeg",0.5);
-                    setSigDataUrl(dataUrl);setSigTimestamp(new Date().toISOString());
+                    const dataUrl=sigCanvasRef.current.toDataURL("image/jpeg",0.3);
+                    setSigDataUrl(dataUrl); // preview only
+                    const ts=new Date().toISOString();
+                    setSigTimestamp(ts);
                     isDirtyRef.current=true;wasSignedRef.current=true;setEditedAfterSign(false);
+                    // Upload to S3 immediately after signing
+                    const key = await uploadSignature(dataUrl);
+                    if (key) setSigS3Key(key);
                   }}
                   onMouseLeave={()=>{sigDrawingRef.current=false;}}
                 />
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:"0.6rem",flexWrap:"wrap",gap:"0.5rem"}}>
                   <div>
-                    {sigDataUrl && sigTimestamp && (
+                    {sigDataUrl && sigTimestamp && sigS3Key && (
                       <span style={{fontSize:"0.7rem",color:"#16a34a",fontWeight:600}}>
                         ✓ Signed — {new Date(sigTimestamp).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}
                       </span>
+                    )}
+                    {sigDataUrl && !sigS3Key && (
+                      <span style={{fontSize:"0.7rem",color:"#d97706",fontWeight:500}}>⏳ Saving signature…</span>
                     )}
                     {!sigDataUrl && <span style={{fontSize:"0.7rem",color:"#8b88b0",fontWeight:500}}>Draw your signature above</span>}
                   </div>
                   <button onClick={()=>{
                     const ctx=sigCanvasRef.current.getContext("2d");
                     ctx.clearRect(0,0,sigCanvasRef.current.width,sigCanvasRef.current.height);
-                    setSigDataUrl("");setSigTimestamp("");isDirtyRef.current=true;wasSignedRef.current=false;setEditedAfterSign(false);
+                    setSigDataUrl("");setSigTimestamp("");setSigS3Key("");isDirtyRef.current=true;wasSignedRef.current=false;setEditedAfterSign(false);
                   }} style={{padding:"0.3rem 0.8rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:7,fontSize:"0.72rem",fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Clear</button>
                 </div>
               </div>
