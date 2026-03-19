@@ -295,10 +295,11 @@ export default function ReviewPage() {
   useEffect(() => {
     if (editedOnMount.current) {
       setAcks(Array(ACK_STATEMENTS.length).fill(false));
-      acksRestoredRef.current = false;
+      // Set acksRestoredRef = true to BLOCK loadData from restoring saved acks
+      // (we want them reset, not restored)
+      acksRestoredRef.current = true;
       setProfileEdited(true);
       router.replace("/employee/review", undefined, { shallow: true });
-      editedOnMount.current = false; // consumed — clear so Back/forward nav works normally
     }
   }, []);
 
@@ -308,8 +309,8 @@ export default function ReviewPage() {
       if (dRes.ok) {
         const d = await dRes.json();
         setDraft(d);
-        // Only restore acks if user did NOT arrive from editing a page
-        if (!editedOnMount.current && d.acknowledgements_review && !acksRestoredRef.current) {
+        // Restore acks only if not blocked (blocked when user arrived with ?edited=1)
+        if (d.acknowledgements_review && !acksRestoredRef.current) {
           const restored = ACK_STATEMENTS.map((_, i) => !!d.acknowledgements_review[String(i)]);
           if (restored.some(Boolean)) { setAcks(restored); acksRestoredRef.current = true; }
         }
