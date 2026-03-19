@@ -1,20 +1,9 @@
 // pages/employee/review.js  — Page 5 of 5
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "../../utils/AuthContext";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
-
-function ConsentBell({ apiFetch, router }) {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    const load = async () => {
-      try { const res = await apiFetch(`${API}/consent/my`); if(res.ok){const data=await res.json();setCount(data.filter(c=>String(c.status||"pending").toLowerCase()==="pending").length);} } catch(_) {}
-    };
-    load(); const id=setInterval(load,15000); return ()=>clearInterval(id);
-  }, [apiFetch]);
-  return (<button style={{position:"relative",width:36,height:36,borderRadius:9,border:"1.5px solid #2d2860",background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",transition:"all 0.2s"}} onClick={()=>router.push("/employee/personal?tab=consents")} title="Consent Requests">🔔{count>0&&<span style={{position:"absolute",top:-5,right:-5,background:"#ef4444",color:"#fff",borderRadius:999,fontSize:"0.6rem",fontWeight:800,minWidth:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 3px",border:"2px solid #1e1a3e"}}>{count}</span>}</button>);
-}
 
 const STEP_SHADOW  = "rgba(22,163,74,0.35)";
 const STEP_DONE_BG = "#2a2460";
@@ -283,6 +272,8 @@ export default function ReviewPage() {
   const [empHistory,   setEmpHistory]   = useState([]);
   const [loading,      setLoading]      = useState(true);
   const [acks,         setAcks]         = useState(Array(ACK_STATEMENTS.length).fill(false));
+  const acksRestoredRef = useRef(false);
+  const [profileEdited, setProfileEdited] = useState(false); // true if user came from editing a page
   const [saveStatus,   setSaveStatus]   = useState("");
   const [submitting,   setSubmitting]   = useState(false);
   const [showSignout,  setShowSignout]  = useState(false);
@@ -296,12 +287,28 @@ export default function ReviewPage() {
     if (user.role !== "employee") { router.replace("/employee/login"); return; }
   }, [ready, user, router]);
 
+  // If user navigated here after editing pages 1-4, reset acks and show re-confirm banner
+  useEffect(() => {
+    if (router.query.edited === "1") {
+      setAcks(Array(ACK_STATEMENTS.length).fill(false));
+      acksRestoredRef.current = false;
+      setProfileEdited(true);
+      // Remove ?edited from URL cleanly without reloading
+      router.replace("/employee/review", undefined, { shallow: true });
+    }
+  }, [router.query.edited]);
+
   const loadData = useCallback(async () => {
     try {
       const dRes = await apiFetch(`${API}/employee/draft`);
       if (dRes.ok) {
         const d = await dRes.json();
         setDraft(d);
+        // Restore review acknowledgements if previously saved
+        if (d.acknowledgements_review && !acksRestoredRef.current) {
+          const restored = ACK_STATEMENTS.map((_, i) => !!d.acknowledgements_review[String(i)]);
+          if (restored.some(Boolean)) { setAcks(restored); acksRestoredRef.current = true; }
+        }
         // Employment history
         if (d.employee_id) {
           try {
@@ -434,7 +441,6 @@ export default function ReviewPage() {
           <span className="logo-text">Datagate</span>
           <div className="topbar-right">
             <span className="user-name">👤 {user.name || user.email}</span>
-            <ConsentBell apiFetch={apiFetch} router={router}/>
             <button className="signout-btn" onClick={()=>setShowSignout(true)}>Sign out</button>
           </div>
         </div>
@@ -725,9 +731,9 @@ export default function ReviewPage() {
             ))}
 
             {/* Employment declarations from page 3 */}
-            {(d.employmentHistory||empHistory).length > 0 && (
+            {empHistory.length > 0 && (
               <div style={{marginTop:"0.5rem",padding:"0.7rem 0.9rem",background:"#f5f3ff",borderRadius:8,border:"1px solid #dddaf0",fontSize:"0.78rem",color:"#6b6894",fontWeight:500}}>
-                {d.declared
+                {(empHistory[empHistory.length-1]?.declared || d.declared)
                   ? "✅ Employment declaration confirmed on page 3."
                   : "⚠️ Employment declaration not yet confirmed — go back to page 3."}
               </div>
@@ -738,7 +744,7 @@ export default function ReviewPage() {
           <div className="sc cyn">
             <SectionHead icon="🏦" title="UAN / EPFO" colorClass="cyn" onEdit={()=>router.push("/employee/uan")}/>
             <div className="grid">
-              <KV label="Has UAN" value={d.hasUan==="yes"||d.hasUan===true?"Yes":"No"}/>
+              <KV label="Has UAN"         value={d.hasUan==="yes"||d.hasUan===true?"Yes":"No"}/>
               {(d.hasUan==="yes"||d.hasUan===true)&&<>
                 <KV label="UAN Number"      value={d.uanNumber}/>
                 <KV label="Name as per UAN" value={d.nameAsPerUan}/>
@@ -746,11 +752,7 @@ export default function ReviewPage() {
                 <KV label="UAN Active"      value={d.isActive}/>
               </>}
             </div>
-            {/* UAN uploads */}
-            <div className="att-grid" style={{marginTop:"0.65rem",display:"flex",gap:"0.6rem",flexWrap:"wrap"}}>
-              {d.epfoKey && <AttChip label="UAN Card" docKey={d.epfoKey} urls={docUrls}/>}
-              {d.serviceHistoryKey && <AttChip label="Service History Snapshot" docKey={d.serviceHistoryKey} urls={docUrls}/>}
-            </div>
+            {d.epfoKey && <div className="att-grid" style={{marginTop:"0.65rem"}}><AttChip label="UAN Card / Passbook" docKey={d.epfoKey} urls={docUrls}/></div>}
 
             {/* PF records */}
             {Array.isArray(d.pfRecords) && d.pfRecords.length > 0 && (
@@ -764,62 +766,14 @@ export default function ReviewPage() {
                     {pf.hasPf==="No"
                       ? <p style={{fontSize:"0.78rem",color:"#0369a1",fontWeight:500}}>ℹ️ PF not maintained by this employer</p>
                       : <div className="grid">
-                          <KV label="PF Member ID"    value={pf.pfMemberId}/>
-                          <KV label="Date of Joining" value={pf.dojEpfo}/>
-                          <KV label="Date of Exit"    value={pf.doeEpfo}/>
-                          <KV label="PF Transferred"  value={pf.pfTransferred}/>
+                          <KV label="PF Member ID"     value={pf.pfMemberId}/>
+                          <KV label="Date of Joining"  value={pf.dojEpfo}/>
+                          <KV label="Date of Exit"     value={pf.doeEpfo}/>
+                          <KV label="PF Transferred"   value={pf.pfTransferred}/>
                         </div>
                     }
                   </div>
                 ))}
-              </div>
-            )}
-
-            {/* Nominees */}
-            {Array.isArray(d.epfoNominees) && d.epfoNominees.length > 0 && (
-              <div style={{marginTop:"0.85rem"}}>
-                <div className="sec-divider">Nominee Details (Form 2)</div>
-                {d.epfoNominees.map((nom, i) => (
-                  <div key={i} style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:"0.75rem 0.9rem",marginBottom:"0.6rem"}}>
-                    <div style={{fontSize:"0.68rem",fontWeight:800,color:"#16a34a",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.4rem"}}>Nominee {i+1}</div>
-                    <div className="grid">
-                      <KV label="Full Name"     value={nom.name}/>
-                      <KV label="Date of Birth" value={nom.dob}/>
-                      <KV label="Relationship"  value={nom.relation==="Other"&&nom.otherRelation?nom.otherRelation:nom.relation}/>
-                      <KV label="Address"       value={nom.address}/>
-                      <KV label="Share (%)"     value={nom.share?`${nom.share}%`:undefined}/>
-                      {nom.guardianName && <KV label="Guardian Name"    value={nom.guardianName}/>}
-                      {nom.guardianAddress && <KV label="Guardian Address" value={nom.guardianAddress}/>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* EPFO Declarations */}
-            {d.epfoDeclarations && (
-              <div style={{marginTop:"0.85rem"}}>
-                <div className="sec-divider">EPFO Declarations</div>
-                <div className="grid">
-                  <KV label="PF Nomination (Form 2 — Part A)"  value={d.epfoDeclarations.pfNomAck?"✓ Confirmed":"Not confirmed"}/>
-                  <KV label="Pension Nomination (Form 2 — Part B)" value={d.epfoDeclarations.pensionNomAck?"✓ Confirmed":"Not confirmed"}/>
-                  <KV label="General EPFO Declaration"          value={d.epfoDeclarations.epfoDecl?"✓ Confirmed":"Not confirmed"}/>
-                </div>
-              </div>
-            )}
-
-            {/* Digital Signature */}
-            {d.epfoSignature?.dataUrl && (
-              <div style={{marginTop:"0.85rem"}}>
-                <div className="sec-divider">Digital Signature</div>
-                <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:"0.75rem 0.9rem"}}>
-                  <img src={d.epfoSignature.dataUrl} alt="Digital Signature" style={{maxWidth:280,height:60,border:"1px solid #e4e2f0",borderRadius:6,background:"#fff",display:"block"}}/>
-                  {d.epfoSignature.timestamp && (
-                    <p style={{fontSize:"0.68rem",color:"#16a34a",fontWeight:600,marginTop:"0.4rem"}}>
-                      ✓ Signed — {new Date(d.epfoSignature.timestamp).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}
-                    </p>
-                  )}
-                </div>
               </div>
             )}
           </div>
@@ -831,6 +785,15 @@ export default function ReviewPage() {
               <span className="st">Final Acknowledgements</span>
               {allAcked && <span style={{marginLeft:"auto",fontSize:"0.72rem",fontWeight:700,color:"#16a34a"}}>All confirmed ✓</span>}
             </div>
+            {profileEdited && (
+              <div style={{background:"#fff8f0",border:"1.5px solid #fbbf24",borderRadius:10,padding:"0.75rem 1rem",marginBottom:"1rem",display:"flex",alignItems:"flex-start",gap:"0.6rem"}}>
+                <span style={{fontSize:"1rem",flexShrink:0}}>⚠️</span>
+                <div>
+                  <div style={{fontSize:"0.78rem",fontWeight:700,color:"#92400e",marginBottom:"0.2rem"}}>You updated your profile — please re-confirm</div>
+                  <div style={{fontSize:"0.72rem",color:"#92400e",fontWeight:500,lineHeight:1.5}}>Your acknowledgements have been reset because you made changes. Please read and re-confirm each statement below before submitting.</div>
+                </div>
+              </div>
+            )}
             <p style={{fontSize:"0.78rem",color:"#6b6894",marginBottom:"1rem",lineHeight:1.55}}>
               These acknowledgements are specific to your final submission. Please read each carefully — they are different from the declarations made on earlier pages.
             </p>
