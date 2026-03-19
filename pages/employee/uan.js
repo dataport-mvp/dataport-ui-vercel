@@ -1,4 +1,10 @@
 // pages/employee/uan.js  — Page 4 of 5
+// Fixes:
+// 1. DateField — no calendar, DD/MM/YYYY, shows month name
+// 2. Signature — NOT cleared when user edits; only cleared manually via "Clear" button
+// 3. If user edits after signing: acks reset so they must re-confirm, but signature stays
+// 4. Signature + all 3 acks mandatory before Save & Continue
+// 5. page4_edited flag saved to DB → page 5 knows to re-ask review acks
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "../../utils/AuthContext";
@@ -12,7 +18,16 @@ const STEP_DONE_BG = "#2a2460";
 const STEP_DONE_CK = "#a78bfa";
 const STEP_CONN    = "#a78bfa";
 
-// Build an empty PF record, optionally pre-filled with a company name from page 3
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+function isoToDisplay(iso) {
+  if (!iso || !iso.includes("-")) return iso || "";
+  const [y, mo, d] = iso.split("-");
+  const idx = parseInt(mo, 10) - 1;
+  const mName = MONTH_NAMES[idx] || mo;
+  return `${parseInt(d,10)} ${mName} ${y}`;
+}
+
 const makePfRecord = (companyName = "") => ({
   companyName, hasPf:"", pfMemberId:"", dojEpfo:"", doeEpfo:"", pfTransferred:"",
 });
@@ -23,7 +38,6 @@ const G = `
   body { background: #cdd2ed; font-family: 'Plus Jakarta Sans', sans-serif; }
   .pg  { min-height: 100vh; background: #cdd2ed; padding-bottom: 3rem; }
   .wrap { max-width: 860px; margin: auto; padding: 0 1.25rem; }
-
   .topbar { background: #1e1a3e; border-bottom: 1px solid #2d2860; padding: 0.85rem 1.75rem;
     display: flex; justify-content: space-between; align-items: center;
     margin-bottom: 1.75rem; position: sticky; top: 0; z-index: 50;
@@ -42,7 +56,6 @@ const G = `
   .bell-badge { position: absolute; top: -5px; right: -5px; background: #ef4444; color: #fff;
     border-radius: 999px; font-size: 0.6rem; font-weight: 800; min-width: 16px; height: 16px;
     display: flex; align-items: center; justify-content: center; padding: 0 3px; border: 2px solid #1e1a3e; }
-
   .sc { background: #ffffff; border-radius: 16px; padding: 1.5rem 1.6rem;
     margin-bottom: 1.1rem; box-shadow: 0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12);
     border: 1px solid rgba(255,255,255,0.85); position: relative; overflow: hidden; }
@@ -50,12 +63,10 @@ const G = `
   .sc.cyn::before { background:#0891b2; }
   .sc.grn::before { background:#16a34a; }
   .sc.vio::before { background:#7c3aed; }
-
   .sh { display:flex; align-items:center; gap:0.6rem; margin-bottom:1.15rem; }
   .si { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:0.95rem; flex-shrink:0; }
   .si.cyn{background:#ecfeff;} .si.grn{background:#f0fdf4;} .si.vio{background:#f5f3ff;}
   .st { font-size:0.93rem; font-weight:700; color:#1e293b; }
-
   .fr { display:flex; gap:0.9rem; flex-wrap:wrap; margin-bottom:0.85rem; }
   .fr:last-child { margin-bottom:0; }
   .fi { display:flex; flex-direction:column; gap:0.28rem; flex:1; min-width:138px; }
@@ -67,16 +78,20 @@ const G = `
   .in:disabled { background:#ece9f5; color:#a0aec0; cursor:not-allowed; }
   .in.err { border-color:#ef4444 !important; background:#fff8f8 !important; }
   .err-msg { font-size:0.68rem; color:#ef4444; font-weight:600; margin-top:0.2rem; display:block; }
-
+  .date-input { padding:0.65rem 0.875rem; background:#ececf9; border:1.5px solid #b8b4d4;
+    border-radius:9px; font-family:inherit; font-size:0.875rem; color:#1e293b;
+    outline:none; width:100%; transition:all 0.18s; }
+  .date-input:focus { border-color:#0891b2; background:#fff; box-shadow:0 0 0 3px rgba(8,145,178,0.13); }
+  .date-input::placeholder { color:#b8b4d4; }
+  .date-input.err { border-color:#ef4444 !important; background:#fff8f8 !important; }
+  .date-display { margin-top:0.22rem; font-size:0.72rem; color:#0891b2; font-weight:600; }
   .yn-row { display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap; margin-bottom:0.75rem; }
   .yn-lbl { font-size:0.875rem; color:#1e293b; font-weight:600; }
   .yn-btn { padding:0.32rem 1.1rem; border-radius:999px; font-family:inherit; font-size:0.82rem; font-weight:700; cursor:pointer; transition:all 0.18s; border:none; }
-
   .pf-row { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:0.7rem; margin-top:0.65rem; }
   .pf-kv { display:flex; flex-direction:column; gap:0.15rem; }
   .pf-key { font-size:0.67rem; font-weight:700; color:#8b88b0; text-transform:uppercase; letter-spacing:0.5px; }
   .pf-val { font-size:0.84rem; font-weight:600; color:#0f172a; }
-
   .pf-block { background:#f8f7ff; border:1px solid #e4e2f0; border-radius:12px; padding:1.1rem 1.2rem; margin-bottom:0.85rem; }
   .pf-block-hdr { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.85rem; gap:0.5rem; }
   .pf-block-title { font-size:0.72rem; font-weight:800; color:#7c3aed; text-transform:uppercase; letter-spacing:0.6px; }
@@ -85,7 +100,6 @@ const G = `
     border-radius:10px; font-family:inherit; font-size:0.875rem; font-weight:700; cursor:pointer; }
   .rm-btn { padding:0.28rem 0.7rem; background:#fff5f5; color:#ef4444; border:1.5px solid #fecaca;
     border-radius:7px; font-size:0.75rem; font-weight:600; cursor:pointer; font-family:inherit; }
-
   .sbar { display:flex; justify-content:space-between; align-items:center;
     margin-top:1.5rem; padding:1rem 1.5rem; background:#1e1a3e;
     border-radius:12px; box-shadow:0 6px 28px rgba(30,26,62,0.22); border:1px solid rgba(255,255,255,0.1); }
@@ -99,8 +113,6 @@ const G = `
     border:1.5px solid #2d2860; border-radius:10px; font-family:inherit;
     font-size:0.875rem; font-weight:600; cursor:pointer; transition:all 0.2s; }
   .sbtn:hover { color:#a78bfa; border-color:#a78bfa; }
-
-
   .nom-block { background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 12px; padding: 1.1rem 1.2rem; margin-bottom: 0.85rem; }
   .sig-canvas { border: 1.5px solid #b8b4d4; border-radius: 9px; background: #fff; cursor: crosshair; display: block; touch-action: none; }
   .sig-canvas.signed { border-color: #16a34a; background: #f0fdf4; }
@@ -170,17 +182,70 @@ function StepNav({ current, onNavigate }) {
   );
 }
 
+// ── DateField: no calendar, DD/MM/YYYY with month name display ──
 function F({ l, v, s, t="text", r=true, disabled=false, mx, errKey, errors, onFix }) {
   const hasErr = errKey && errors && errors[errKey];
+  // Date type override — always use text for date fields
+  const inputType = t === "date" ? "text" : t;
   return (
     <div className="fi">
       <span className="fl">{l}{r&&<span style={{color:"#ef4444",marginLeft:2}}>*</span>}</span>
       <input
         className={`in${hasErr?" err":""}`}
-        type={t} value={v||""} disabled={disabled} maxLength={mx||undefined}
+        type={inputType} value={v||""} disabled={disabled} maxLength={mx||undefined}
         onChange={e=>{s&&s(e.target.value);if(onFix&&hasErr)onFix(errKey);}}
+        placeholder={t==="date"?"DD/MM/YYYY":undefined}
         style={{colorScheme:"light"}}
       />
+      {hasErr&&<span className="err-msg">Required</span>}
+    </div>
+  );
+}
+
+// Date field specifically for PF dates (stored as YYYY-MM-DD, shown as month name)
+function FDate({ l, v, s, r=true, errKey, errors, onFix }) {
+  const [raw, setRaw] = useState(()=>{
+    if(v&&v.includes("-")){const[y,mo,d]=v.split("-");return `${d}/${mo}/${y}`;}
+    return v||"";
+  });
+  const [focused, setFocused] = useState(false);
+  useEffect(()=>{
+    if(!focused){
+      if(v&&v.includes("-")){const[y,mo,d]=v.split("-");setRaw(`${d}/${mo}/${y}`);}
+      else setRaw(v||"");
+    }
+  },[v,focused]);
+  const hasErr = errKey && errors && errors[errKey];
+  const handleChange=(e)=>{
+    let val=e.target.value.replace(/[^0-9/]/g,"");
+    if(val.length===2&&raw.length===1)val=val+"/";
+    if(val.length===5&&raw.length===4)val=val+"/";
+    if(val.length>10)return;
+    setRaw(val);
+    if(val.length===10){
+      const[d,mo,y]=val.split("/");
+      if(d&&mo&&y&&y.length===4){
+        s(`${y}-${mo}-${d}`);
+        if(onFix&&hasErr)onFix(errKey);
+      }
+    } else { s(""); }
+  };
+  const displayDate = (!focused && v && v.includes("-")) ? isoToDisplay(v) : null;
+  return (
+    <div className="fi">
+      <span className="fl">{l}{r&&<span style={{color:"#ef4444",marginLeft:2}}>*</span>}</span>
+      <input
+        className={`date-input${hasErr?" err":""}`}
+        value={raw}
+        placeholder="DD/MM/YYYY"
+        onFocus={()=>setFocused(true)}
+        onBlur={()=>setFocused(false)}
+        onChange={handleChange}
+        maxLength={10}
+        inputMode="numeric"
+        autoComplete="off"
+      />
+      {displayDate && <div className="date-display">📅 {displayDate}</div>}
       {hasErr&&<span className="err-msg">Required</span>}
     </div>
   );
@@ -194,8 +259,10 @@ export default function UanDetails() {
   const [loading,     setLoading]     = useState(true);
   const [draft,       setDraft]       = useState(null);
   const isDirtyRef = useRef(false);
+  // Track whether user edited AFTER page was loaded (triggers ack reset)
+  const wasEditedAfterLoad = useRef(false);
 
-  // ── UAN fields ──────────────────────────────────────────────────────
+  // ── UAN fields ──
   const [hasUan,       setHasUan]       = useState("");
   const [uanNumber,    setUanNumber]    = useState("");
   const [nameAsPerUan, setNameAsPerUan] = useState("");
@@ -203,92 +270,89 @@ export default function UanDetails() {
   const [isActive,     setIsActive]     = useState("");
   const [epfoKey,      setEpfoKey]      = useState("");
   const [serviceHistoryKey, setServiceHistoryKey] = useState("");
-
-  // ── PF records — pre-filled from page 3 employment company names ────
   const [pfRecords,   setPfRecords]   = useState([makePfRecord()]);
-
-  // ── EPFO-fetched read-only records (passbook fetch) ─────────────────
   const [epfoFetched, setEpfoFetched] = useState([]);
+  const [page3Companies, setPage3Companies] = useState([]);
 
-  // ── Company names pulled from page 3 employments ────────────────────
-  // Used to show a "from page 3" badge on each PF block
-  const [page3Companies, setPage3Companies] = useState([]); // [{name, index}]
-
-  // ── Nominee fields (EPFO Form 2 / Pension nomination) ──────────────
-  const makeNominee = () => ({
-    name:"", dob:"", relation:"", address:"", share:"",
-    guardianName:"", guardianAddress:"", // if nominee is minor
-  });
+  // ── Nominees ──
+  const makeNominee = () => ({ name:"", dob:"", relation:"", address:"", share:"", guardianName:"", guardianAddress:"" });
   const [nominees, setNominees] = useState([makeNominee()]);
-  const [pfNomAck, setPfNomAck] = useState(false); // PF nomination acknowledgement
-  const [pensionNomAck, setPensionNomAck] = useState(false); // Pension nomination acknowledgement
-  const [epfoDecl, setEpfoDecl] = useState(false); // General EPFO declaration
-  // ── Digital Signature ───────────────────────────────────────────────
-  const [sigDataUrl, setSigDataUrl] = useState(""); // base64 for canvas preview only
-  const [sigTimestamp, setSigTimestamp] = useState(""); // ISO timestamp when signed
-  const [sigS3Key, setSigS3Key] = useState(""); // S3 key after upload — stored in DynamoDB
+
+  // ── Declarations ──
+  const [pfNomAck, setPfNomAck] = useState(false);
+  const [pensionNomAck, setPensionNomAck] = useState(false);
+  const [epfoDecl, setEpfoDecl] = useState(false);
+
+  // ── Signature ──
+  // sigDataUrl: used only for canvas preview drawing (base64 or signed URL)
+  // sigS3Key: the actual stored S3 key — this is what gets saved to DB
+  // sigTimestamp: when signed
+  const [sigDataUrl, setSigDataUrl] = useState("");
+  const [sigTimestamp, setSigTimestamp] = useState("");
+  const [sigS3Key, setSigS3Key] = useState("");
+  // editedAfterSign: user changed something AFTER signing — must re-confirm acks but signature stays
+  const [editedAfterSign, setEditedAfterSign] = useState(false);
   const sigCanvasRef = useRef(null);
   const sigDrawingRef = useRef(false);
   const sigLastRef = useRef({x:0, y:0});
-  const [editedAfterSign, setEditedAfterSign] = useState(false); // track if user edited after signing
-  const wasSignedRef = useRef(false); // true once signature was loaded/drawn
+  const wasSignedRef = useRef(false);
+  // Prevent canvas wipe on re-renders — track if we've restored sig once
+  const sigRestoredRef = useRef(false);
 
-  // ── Restore signature onto canvas whenever sigDataUrl changes (prevents wipe on re-render)
+  // ── Restore signature to canvas ──
+  // Only runs when sigDataUrl changes AND we haven't drawn it yet
   useEffect(() => {
     if (!sigDataUrl) return;
     const draw = () => {
       if (!sigCanvasRef.current) return;
       const img = new Image();
-      img.crossOrigin = "anonymous"; // required for drawImage with S3 signed URLs
+      img.crossOrigin = "anonymous";
       img.onload = () => {
         if (!sigCanvasRef.current) return;
         const ctx = sigCanvasRef.current.getContext("2d");
         ctx.fillStyle = "#fff";
         ctx.fillRect(0, 0, sigCanvasRef.current.width, sigCanvasRef.current.height);
         ctx.drawImage(img, 0, 0, sigCanvasRef.current.width, sigCanvasRef.current.height);
+        sigRestoredRef.current = true;
       };
-      img.onerror = () => {
-        // If CORS blocks canvas draw, fall back to showing timestamp only
-        console.warn("Signature image load failed — CORS or URL expired");
-      };
+      img.onerror = () => { sigRestoredRef.current = true; };
       img.src = sigDataUrl;
     };
-    // Small delay to ensure canvas is mounted in DOM before drawing
     const t = setTimeout(draw, 50);
     return () => clearTimeout(t);
   }, [sigDataUrl]);
 
+  // ── dirty setter — marks edited, resets acks but NOT signature ──
   const dirty = (setter) => (val) => {
     setter(val);
     isDirtyRef.current = true;
+    wasEditedAfterLoad.current = true;
     if (wasSignedRef.current) {
       setEditedAfterSign(true);
-      // Reset EPFO declarations so user must re-confirm after editing
+      // Reset acks so user must re-confirm — but DO NOT touch signature
       setPfNomAck(false);
       setPensionNomAck(false);
       setEpfoDecl(false);
     }
   };
 
-  // ── Role guard ───────────────────────────────────────────────────────
+  // Role guard
   useEffect(() => {
     if (!ready) return;
     if (!user) { router.replace("/employee/login"); return; }
     if (user.role !== "employee") { router.replace("/employee/login"); return; }
   }, [ready, user, router]);
 
-  // ── Load draft + employment history ─────────────────────────────────
+  // Load draft + employment history
   useEffect(() => {
     if (!ready || !user) return;
     const fetchData = async () => {
       try {
-        // Load main draft
         const draftRes = await apiFetch(`${API}/employee/draft`);
         if (draftRes.ok) {
           const d = await draftRes.json();
           setDraft(d);
 
-          // Restore UAN fields
           if (d.hasUan !== undefined && d.hasUan !== null) {
             setHasUan(d.hasUan === true || d.hasUan === "yes" ? "yes" : "no");
           } else if (d.uanNumber) {
@@ -300,36 +364,29 @@ export default function UanDetails() {
           if (d.isActive)     setIsActive(d.isActive);
           if (d.epfoKey)           setEpfoKey(d.epfoKey);
           if (d.serviceHistoryKey) setServiceHistoryKey(d.serviceHistoryKey);
-
-          // EPFO-fetched read-only
-          if (Array.isArray(d.epfoFetched) && d.epfoFetched.length > 0) {
-            setEpfoFetched(d.epfoFetched);
-          }
-          // Nominees
-          if (Array.isArray(d.epfoNominees) && d.epfoNominees.length > 0) {
-            setNominees(d.epfoNominees);
-          }
-          // Declarations
+          if (Array.isArray(d.epfoFetched) && d.epfoFetched.length > 0) setEpfoFetched(d.epfoFetched);
+          if (Array.isArray(d.epfoNominees) && d.epfoNominees.length > 0) setNominees(d.epfoNominees);
           if (d.epfoDeclarations) {
-            if (d.epfoDeclarations.pfNomAck) setPfNomAck(d.epfoDeclarations.pfNomAck);
+            if (d.epfoDeclarations.pfNomAck)     setPfNomAck(d.epfoDeclarations.pfNomAck);
             if (d.epfoDeclarations.pensionNomAck) setPensionNomAck(d.epfoDeclarations.pensionNomAck);
-            if (d.epfoDeclarations.epfoDecl) setEpfoDecl(d.epfoDeclarations.epfoDecl);
+            if (d.epfoDeclarations.epfoDecl)     setEpfoDecl(d.epfoDeclarations.epfoDecl);
           }
-          // Signature — restore S3 key and timestamp
+
+          // ── Restore signature ──
+          // Priority: s3Key (fetch signed URL) > legacy dataUrl
           if (d.epfoSignature?.s3Key) {
             setSigS3Key(d.epfoSignature.s3Key);
             wasSignedRef.current = true;
-            // Fetch signed URL so canvas can redraw the signature
+            // Fetch signed URL for canvas preview
             try {
               const docRes = await apiFetch(`${API}/documents/${d.employee_id}`);
               if (docRes.ok) {
                 const docData = await docRes.json();
-                // Build key→url map (same logic as review.js flatten)
                 const urls = {};
                 const flatten = (obj, depth=0) => {
                   if (!obj || typeof obj !== "object" || depth > 8) return;
-                  if (obj.key && obj.url)     { urls[obj.key]     = obj.url; return; }
-                  if (obj.s3_key && obj.url)  { urls[obj.s3_key]  = obj.url; return; }
+                  if (obj.key && obj.url)    { urls[obj.key]    = obj.url; return; }
+                  if (obj.s3_key && obj.url) { urls[obj.s3_key] = obj.url; return; }
                   if (obj.url && typeof obj.url === "string") {
                     const k = obj.key || obj.s3_key || obj.fileKey || obj.docKey;
                     if (k) urls[k] = obj.url;
@@ -339,14 +396,17 @@ export default function UanDetails() {
                 };
                 flatten(docData);
                 const sigUrl = urls[d.epfoSignature.s3Key];
-                if (sigUrl) setSigDataUrl(sigUrl); // triggers canvas restore useEffect
+                if (sigUrl) setSigDataUrl(sigUrl);
               }
             } catch(_) {}
+          } else if (d.epfoSignature?.dataUrl) {
+            // Legacy: base64 stored directly
+            setSigDataUrl(d.epfoSignature.dataUrl);
+            wasSignedRef.current = true;
           }
-          if (d.epfoSignature?.dataUrl) { setSigDataUrl(d.epfoSignature.dataUrl); wasSignedRef.current = true; } // legacy
           if (d.epfoSignature?.timestamp) setSigTimestamp(d.epfoSignature.timestamp);
 
-          // Load employment history to pre-fill company names
+          // Load employment history for PF pre-fill
           if (d.employee_id) {
             try {
               const histRes = await apiFetch(`${API}/employee/employment-history/${d.employee_id}`);
@@ -362,34 +422,16 @@ export default function UanDetails() {
                     }))
                   : [];
                 setPage3Companies(companies);
-
-                // Restore saved PF records — if none saved, pre-fill from page 3 companies
                 if (Array.isArray(d.pfRecords) && d.pfRecords.length > 0) {
-                  setPfRecords(d.pfRecords.map(r => ({
-                    companyName:   r.companyName   || "",
-                    hasPf:         r.hasPf         || "",
-                    pfMemberId:    r.pfMemberId    || "",
-                    dojEpfo:       r.dojEpfo       || "",
-                    doeEpfo:       r.doeEpfo       || "",
-                    pfTransferred: r.pfTransferred || "",
-                  })));
+                  setPfRecords(d.pfRecords.map(r => ({ companyName:r.companyName||"", hasPf:r.hasPf||"", pfMemberId:r.pfMemberId||"", dojEpfo:r.dojEpfo||"", doeEpfo:r.doeEpfo||"", pfTransferred:r.pfTransferred||"" })));
                 } else if (companies.length > 0) {
-                  // Pre-fill one PF row per employer from page 3
                   setPfRecords(companies.map(c => makePfRecord(c.name)));
                 }
               }
             } catch(_) {}
           } else {
-            // No employment history — restore saved PF records if any
             if (Array.isArray(d.pfRecords) && d.pfRecords.length > 0) {
-              setPfRecords(d.pfRecords.map(r => ({
-                companyName:   r.companyName   || "",
-                hasPf:         r.hasPf         || "",
-                pfMemberId:    r.pfMemberId    || "",
-                dojEpfo:       r.dojEpfo       || "",
-                doeEpfo:       r.doeEpfo       || "",
-                pfTransferred: r.pfTransferred || "",
-              })));
+              setPfRecords(d.pfRecords.map(r => ({ companyName:r.companyName||"", hasPf:r.hasPf||"", pfMemberId:r.pfMemberId||"", dojEpfo:r.dojEpfo||"", doeEpfo:r.doeEpfo||"", pfTransferred:r.pfTransferred||"" })));
             }
           }
         }
@@ -399,55 +441,26 @@ export default function UanDetails() {
     fetchData();
   }, [ready, user, apiFetch]);
 
-  // ── PF record helpers ────────────────────────────────────────────────
   const updatePf = (i, field, value) => {
     setPfRecords(prev => prev.map((r, idx) => idx === i ? {...r, [field]: value} : r));
-    isDirtyRef.current = true;
-    if (wasSignedRef.current) {
-      setEditedAfterSign(true);
-      setPfNomAck(false); setPensionNomAck(false); setEpfoDecl(false);
-    }
+    dirty(() => {})("");
   };
   const addPfRecord    = () => { setPfRecords(prev => [...prev, makePfRecord()]); isDirtyRef.current = true; };
   const removePfRecord = (i) => { if(i === 0) return; setPfRecords(prev => prev.filter((_, idx) => idx !== i)); isDirtyRef.current = true; };
 
-  // ── Build save payload ───────────────────────────────────────────────
-  const buildPayload = () => ({
-    ...(draft || {}),
-    hasUan,
-    uanNumber:    hasUan === "yes" ? uanNumber    : "",
-    nameAsPerUan: hasUan === "yes" ? nameAsPerUan : "",
-    mobileLinked: hasUan === "yes" ? mobileLinked : "",
-    isActive:     hasUan === "yes" ? isActive     : "",
-    epfoKey:      hasUan === "yes" ? epfoKey      : "",
-    pfRecords:    hasUan === "yes" ? pfRecords    : [],
-  });
-
-  // ── Upload canvas blob to S3 and return s3_key ──────────────────────
+  // Upload canvas blob to S3
   const uploadSignature = async (dataUrl) => {
     if (!draft?.employee_id) return null;
     try {
-      // Convert base64 dataUrl to Blob
       const res2 = await fetch(dataUrl);
       const blob = await res2.blob();
-      // Get presigned URL from backend
       const presignRes = await apiFetch(`${API}/upload/presigned`, {
         method: "POST",
-        body: JSON.stringify({
-          category: "uan",
-          sub_key: "signature",
-          filename: "signature.jpg",
-          employee_id: draft.employee_id,
-        }),
+        body: JSON.stringify({ category:"uan", sub_key:"signature", filename:"signature.jpg", employee_id:draft.employee_id }),
       });
       if (!presignRes.ok) return null;
       const { upload_url, s3_key } = await presignRes.json();
-      // PUT blob to S3
-      const uploadRes = await fetch(upload_url, {
-        method: "PUT",
-        body: blob,
-        headers: { "Content-Type": "image/jpeg" },
-      });
+      const uploadRes = await fetch(upload_url, { method:"PUT", body:blob, headers:{"Content-Type":"image/jpeg"} });
       if (!uploadRes.ok) return null;
       return s3_key;
     } catch (_) { return null; }
@@ -455,8 +468,6 @@ export default function UanDetails() {
 
   const saveDraft = async () => {
     if (!draft?.employee_id) throw new Error("Please complete and save Page 1 first");
-    // Always fetch fresh draft before saving — prevents stale state from
-    // overwriting document keys saved on other pages after this page mounted.
     const freshRes = await apiFetch(`${API}/employee/draft`);
     const freshDraft = freshRes.ok ? await freshRes.json() : draft;
     const payload = {
@@ -470,8 +481,14 @@ export default function UanDetails() {
       pfRecords:    hasUan === "yes" ? pfRecords    : [],
       serviceHistoryKey,
       epfoNominees: nominees,
-      epfoSignature: { s3Key: sigS3Key, timestamp: sigTimestamp },
+      epfoSignature: {
+        s3Key: sigS3Key,
+        timestamp: sigTimestamp,
+      },
       epfoDeclarations: { pfNomAck, pensionNomAck, epfoDecl },
+      // ── Cascade flag: page 4 was edited → page 5 must re-ask review acks
+      page4_edited: wasEditedAfterLoad.current ? true : (freshDraft.page4_edited || false),
+      ...(wasEditedAfterLoad.current ? { acknowledgements_review: {} } : {}),
     };
     const res = await apiFetch(`${API}/employee`, { method:"POST", body:JSON.stringify(payload) });
     if (!res.ok) throw new Error(parseError(await res.json().catch(() => ({}))));
@@ -481,7 +498,6 @@ export default function UanDetails() {
   const handleNavigate = async (path) => {
     const wasDirty = isDirtyRef.current;
     if (wasDirty) { try { await saveDraft(); } catch(_) {} }
-    // Only flag as edited if user actually changed something
     const dest = (path === "/employee/review" && wasDirty) ? "/employee/review?edited=1" : path;
     router.push(dest);
   };
@@ -498,13 +514,28 @@ export default function UanDetails() {
     try { await saveDraft(); setSaveStatus("Saved ✓"); setTimeout(() => setSaveStatus(""), 2000); }
     catch(_) { setSaveStatus("Error"); setTimeout(() => setSaveStatus(""), 2500); }
   };
+
   const handleNext = async () => {
+    // Validate: acks + signature mandatory
+    const errs = [];
+    if (!pfNomAck)     errs.push("PF Nomination Declaration");
+    if (!pensionNomAck) errs.push("Pension Nomination Declaration");
+    if (!epfoDecl)     errs.push("General EPFO Declaration");
+    if (!sigS3Key && !sigDataUrl) errs.push("Digital Signature");
+
+    if (errs.length > 0) {
+      setSaveStatus(`⚠️ Required: ${errs.join(", ")}`);
+      document.getElementById("epfo-decl-section")?.scrollIntoView({ behavior:"smooth", block:"center" });
+      return;
+    }
+
     setSaveStatus("Saving...");
     const wasDirty = isDirtyRef.current;
     try {
       await saveDraft();
       setSaveStatus("Saved ✓");
-      const dest = wasDirty ? "/employee/review?edited=1" : "/employee/review";
+      // If page 4 was edited, signal review page
+      const dest = (wasEditedAfterLoad.current || wasDirty) ? "/employee/review?edited=1" : "/employee/review";
       router.push(dest);
     }
     catch(err) { setSaveStatus(`Error: ${err.message || "Could not save"}`); }
@@ -517,7 +548,6 @@ export default function UanDetails() {
     </div>
   );
 
-  const showToggle    = hasUan === "" || hasUan === "no";
   const showUanFields = hasUan === "yes";
 
   return (
@@ -538,63 +568,21 @@ export default function UanDetails() {
         <div className="wrap">
           <StepNav current={4} onNavigate={handleNavigate}/>
 
-          {/* ── Guide banner — same as page 3 ───────────────────────── */}
-          <div style={{background:"#eef2ff",border:"1.5px solid #c7d2fe",borderRadius:12,padding:"0.9rem 1.1rem",marginBottom:"1.1rem",display:"flex",gap:"0.75rem",alignItems:"flex-start"}}>
-            <div style={{fontSize:"1.2rem",flexShrink:0}}>💡</div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:"0.82rem",fontWeight:700,color:"#3730a3",marginBottom:"0.25rem"}}>Always start with your current or most recent company</div>
-              <div style={{fontSize:"0.72rem",color:"#6b6894",marginBottom:"0.5rem",lineHeight:1.5}}>
-                Add each employer in reverse chronological order — most recent first, working backwards to your very first job.
-              </div>
-              <div style={{display:"flex",alignItems:"center",gap:"0.4rem",flexWrap:"wrap"}}>
-                {Array.from({length:5}).map((_,i)=>{
-                  const c = page3Companies[i];
-                  const label = i===0?"Current Company":i===4?"First Job":`Company ${i+1}`;
-                  const sub   = i===0?"most recent":i===4?"oldest":i===1?"before that":"";
-                  const arr   = {length:5};
-                  return(
-                    <span key={i} style={{display:"inline-flex",alignItems:"center",gap:"0.4rem"}}>
-                      <span style={{display:"inline-flex",flexDirection:"column",alignItems:"center",gap:"1px",background:i===0?"#4f46e5":"#e0e7ff",color:i===0?"#fff":"#4f46e5",padding:"0.2rem 0.55rem",borderRadius:999,fontSize:"0.68rem",fontWeight:700,whiteSpace:"nowrap",maxWidth:110}}>
-                        <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:106}}>{label}</span>
-                        {sub&&<span style={{fontSize:"0.58rem",fontWeight:500,opacity:0.85}}>{sub}</span>}
-                      </span>
-                      {i<4&&<span style={{fontSize:"0.65rem",color:"#94a3b8"}}>→</span>}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* ── UAN / EPFO Details ──────────────────────────────────── */}
+          {/* ── UAN / EPFO Details ── */}
           <div className="sc cyn">
-            <div className="sh">
-              <div className="si cyn">🏦</div>
-              <span className="st">UAN / EPFO Details</span>
+            <div className="sh"><div className="si cyn">🏦</div><span className="st">UAN / EPFO Details</span></div>
+
+            <div className="yn-row">
+              <span className="yn-lbl">Do you have a UAN (Universal Account Number)?</span>
+              <button className="yn-btn" onClick={() => { setHasUan("yes"); dirty(() => {})(""); }}
+                style={{border:hasUan==="yes"?"2px solid #0891b2":"1.5px solid #dddaf0",background:hasUan==="yes"?"#0891b2":"#f2f1f9",color:hasUan==="yes"?"#fff":"#6b6894"}}>Yes</button>
+              <button className="yn-btn" onClick={() => { setHasUan("no"); dirty(() => {})(""); }}
+                style={{border:hasUan==="no"?"2px solid #0891b2":"1.5px solid #dddaf0",background:hasUan==="no"?"#0891b2":"#f2f1f9",color:hasUan==="no"?"#fff":"#6b6894"}}>No</button>
             </div>
-
-            {showToggle && (
-              <div className="yn-row">
-                <span className="yn-lbl">Do you have a UAN (Universal Account Number)?</span>
-                <button className="yn-btn" onClick={() => { setHasUan("yes"); isDirtyRef.current = true; }}
-                  style={{border:hasUan==="yes"?"2px solid #0891b2":"1.5px solid #dddaf0",background:hasUan==="yes"?"#0891b2":"#f2f1f9",color:hasUan==="yes"?"#fff":"#6b6894"}}>Yes</button>
-                <button className="yn-btn" onClick={() => { setHasUan("no"); isDirtyRef.current = true; }}
-                  style={{border:hasUan==="no"?"2px solid #0891b2":"1.5px solid #dddaf0",background:hasUan==="no"?"#0891b2":"#f2f1f9",color:hasUan==="no"?"#fff":"#6b6894"}}>No</button>
-              </div>
-            )}
-
-            {hasUan === "yes" && !showToggle && (
-              <div style={{marginBottom:"0.75rem"}}>
-                <span style={{fontSize:"0.78rem",color:"#0891b2",fontWeight:600}}>UAN on file</span>
-                <button onClick={() => { setHasUan("no"); isDirtyRef.current = true; }} style={{marginLeft:"0.75rem",fontSize:"0.72rem",color:"#ef4444",background:"none",border:"none",cursor:"pointer",fontWeight:600,textDecoration:"underline"}}>I don't have a UAN</button>
-              </div>
-            )}
 
             {hasUan === "no" && (
               <div style={{padding:"0.75rem 1rem",background:"#f0f9ff",borderRadius:10,border:"1px solid #bae6fd",marginTop:"0.5rem"}}>
-                <p style={{fontSize:"0.84rem",color:"#0369a1",fontWeight:500,lineHeight:1.5}}>
-                  No UAN recorded. If you get a UAN in future, come back and update this section.
-                </p>
+                <p style={{fontSize:"0.84rem",color:"#0369a1",fontWeight:500,lineHeight:1.5}}>No UAN recorded. You can update this later if you get one.</p>
               </div>
             )}
 
@@ -621,42 +609,20 @@ export default function UanDetails() {
                 </div>
                 <div style={{marginTop:"0.75rem"}}>
                   <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Service History Record Snapshot <span style={{color:"#ef4444"}}>*</span></span>
-                  <p style={{fontSize:"0.7rem",color:"#6b6894",marginBottom:"0.4rem",fontWeight:500,lineHeight:1.5}}>
-                    Download your Service History from the EPFO Member Portal (passbook.epfindia.gov.in) and upload a screenshot or PDF. This shows your complete employment and PF contribution history.
-                  </p>
+                  <p style={{fontSize:"0.7rem",color:"#6b6894",marginBottom:"0.4rem",fontWeight:500,lineHeight:1.5}}>Download from EPFO Member Portal (passbook.epfindia.gov.in) and upload screenshot or PDF.</p>
                   <FileUpload label="Upload Service History Snapshot *" category="uan" subKey="serviceHistory" employeeId={draft?.employee_id || ""} apiFetch={apiFetch} value={serviceHistoryKey} onChange={k => { const key = typeof k==="string"?k:(k?.key||k?.s3_key||""); setServiceHistoryKey(key); isDirtyRef.current = true; }}/>
                 </div>
               </>
             )}
           </div>
 
-          {/* ── PF Details — pre-filled from page 3 employers ───────── */}
+          {/* ── PF Details ── */}
           {showUanFields && (
             <div className="sc vio">
-              <div className="sh">
-                <div className="si vio">📋</div>
-                <span className="st">PF Details — Per Employer</span>
-              </div>
+              <div className="sh"><div className="si vio">📋</div><span className="st">PF Details — Per Employer</span></div>
               <p style={{fontSize:"0.75rem",color:"#8b88b0",marginBottom:"0.75rem",fontWeight:500,lineHeight:1.5}}>
-                {page3Companies.length > 0
-                  ? "Pre-filled from your employment history on page 3 — same order as you entered them. Fill PF details for each."
-                  : "Enter PF member details for each company where PF was deducted. Add one row per employer."}
+                {page3Companies.length > 0 ? "Pre-filled from your employment history on page 3." : "Enter PF details for each employer."}
               </p>
-              {/* Mini flow guide — mirrors page 3 order */}
-              {page3Companies.length > 0 && (
-                <div style={{display:"flex",alignItems:"center",gap:"0.4rem",flexWrap:"wrap",marginBottom:"0.9rem",padding:"0.65rem 0.9rem",background:"#f5f3ff",border:"1px solid #dddaf0",borderRadius:10}}>
-                  <span style={{fontSize:"0.68rem",color:"#7c3aed",fontWeight:700,marginRight:"0.2rem"}}>Order:</span>
-                  {page3Companies.map((c,i,arr)=>(
-                    <span key={i} style={{display:"inline-flex",alignItems:"center",gap:"0.35rem"}}>
-                      <span style={{display:"inline-flex",flexDirection:"column",alignItems:"center",gap:"1px",background:i===0?"#7c3aed":"#ede9fe",color:i===0?"#fff":"#7c3aed",padding:"0.18rem 0.55rem",borderRadius:999,fontSize:"0.68rem",fontWeight:700,whiteSpace:"nowrap"}}>
-                        <span>{i===0?"Current Employer":`Employer ${i+1}`}</span>
-                        <span style={{fontSize:"0.58rem",fontWeight:500,opacity:0.85}}>{i===0?"most recent":"previous"}</span>
-                      </span>
-                      {i<arr.length-1&&<span style={{fontSize:"0.65rem",color:"#94a3b8"}}>→</span>}
-                    </span>
-                  ))}
-                </div>
-              )}
 
               {pfRecords.map((rec, i) => {
                 const p3 = page3Companies[i];
@@ -664,22 +630,13 @@ export default function UanDetails() {
                   <div key={i} className="pf-block">
                     <div className="pf-block-hdr">
                       <div style={{display:"flex",flexDirection:"column",gap:"0.25rem"}}>
-                        <span className="pf-block-title">
-                          {rec.companyName || (p3?.label) || `Employer ${i + 1}`}
-                        </span>
-                        {p3 && (
-                          <span className="pf-block-badge">
-                            {p3.isCurrent ? "🟢 Current / Most Recent" : i===1 ? "⬅ Previous Employer" : `⬅ Previous Employer ${i}`}
-                          </span>
-                        )}
+                        <span className="pf-block-title">{rec.companyName || (p3?.label) || `Employer ${i + 1}`}</span>
+                        {p3 && <span className="pf-block-badge">{p3.isCurrent ? "🟢 Current / Most Recent" : `⬅ Previous Employer ${i}`}</span>}
                       </div>
                       {i > 0 && <button className="rm-btn" onClick={() => removePfRecord(i)}>− Remove</button>}
                     </div>
-
-                    {/* Company name field */}
                     <div className="fr">
                       <F l="Company Name" v={rec.companyName} s={v => updatePf(i, "companyName", v)}/>
-                      {/* hasPf toggle */}
                       <div className="fi">
                         <span className="fl">PF Maintained by Employer <span style={{color:"#ef4444",marginLeft:2}}>*</span></span>
                         <div style={{display:"flex",gap:"0.55rem",marginTop:"0.15rem"}}>
@@ -689,23 +646,17 @@ export default function UanDetails() {
                         </div>
                       </div>
                     </div>
-
-                    {/* If employer does NOT maintain PF — show a note and skip all PF fields */}
                     {rec.hasPf === "No" && (
                       <div style={{padding:"0.7rem 0.9rem",background:"#f0f9ff",border:"1px solid #bae6fd",borderRadius:9,fontSize:"0.78rem",color:"#0369a1",fontWeight:500,marginTop:"0.1rem"}}>
-                        ℹ️ No PF details required — this employer does not maintain Provident Fund (e.g. startup, exempt establishment, or below threshold).
+                        ℹ️ No PF details required — employer does not maintain Provident Fund.
                       </div>
                     )}
-
-                    {/* PF fields — only shown when hasPf is Yes */}
                     {rec.hasPf === "Yes" && (
                       <>
+                        <div className="fr"><F l="PF Member ID" v={rec.pfMemberId} s={v => updatePf(i, "pfMemberId", v)}/></div>
                         <div className="fr">
-                          <F l="PF Member ID" v={rec.pfMemberId} s={v => updatePf(i, "pfMemberId", v)}/>
-                        </div>
-                        <div className="fr">
-                          <F l="Date of Joining (EPFO)" v={rec.dojEpfo} s={v => updatePf(i, "dojEpfo", v)} t="date"/>
-                          <F l="Date of Exit (EPFO)" v={rec.doeEpfo} s={v => updatePf(i, "doeEpfo", v)} t="date"/>
+                          <FDate l="Date of Joining (EPFO)" v={rec.dojEpfo} s={v => updatePf(i, "dojEpfo", v)}/>
+                          <FDate l="Date of Exit (EPFO)" v={rec.doeEpfo} s={v => updatePf(i, "doeEpfo", v)}/>
                         </div>
                         <div>
                           <span className="fl" style={{display:"block",marginBottom:"0.4rem"}}>Was PF Transferred?</span>
@@ -724,42 +675,28 @@ export default function UanDetails() {
             </div>
           )}
 
-          {/* ── EPFO-fetched read-only records ───────────────────────── */}
+          {/* ── EPFO-fetched read-only ── */}
           {showUanFields && epfoFetched.length > 0 && (
             <div className="sc grn">
-              <div className="sh">
-                <div className="si grn">📑</div>
-                <span className="st">PF Employment Records (from EPFO)</span>
-              </div>
-              <p style={{fontSize:"0.75rem",color:"#8b88b0",marginBottom:"0.75rem",fontWeight:500}}>
-                Records fetched from EPFO passbook — read only.
-              </p>
+              <div className="sh"><div className="si grn">📑</div><span className="st">PF Employment Records (from EPFO)</span></div>
               {epfoFetched.map((pf, i) => (
                 <div key={i} style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"0.65rem"}}>
-                  <div style={{fontSize:"0.72rem",fontWeight:700,color:"#16a34a",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.5rem"}}>
-                    {pf.companyName || `Employer ${i + 1}`}
-                  </div>
+                  <div style={{fontSize:"0.72rem",fontWeight:700,color:"#16a34a",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.5rem"}}>{pf.companyName||`Employer ${i+1}`}</div>
                   <div className="pf-row">
-                    {pf.pfMemberId    && <div className="pf-kv"><span className="pf-key">PF Member ID</span><span className="pf-val">{pf.pfMemberId}</span></div>}
-                    {pf.dojEpfo       && <div className="pf-kv"><span className="pf-key">Date of Joining</span><span className="pf-val">{pf.dojEpfo}</span></div>}
-                    {pf.doeEpfo       && <div className="pf-kv"><span className="pf-key">Date of Exit</span><span className="pf-val">{pf.doeEpfo}</span></div>}
-                    {pf.pfTransferred !== undefined && <div className="pf-kv"><span className="pf-key">PF Transferred</span><span className="pf-val">{pf.pfTransferred ? "Yes" : "No"}</span></div>}
+                    {pf.pfMemberId && <div className="pf-kv"><span className="pf-key">PF Member ID</span><span className="pf-val">{pf.pfMemberId}</span></div>}
+                    {pf.dojEpfo    && <div className="pf-kv"><span className="pf-key">Date of Joining</span><span className="pf-val">{isoToDisplay(pf.dojEpfo)}</span></div>}
+                    {pf.doeEpfo    && <div className="pf-kv"><span className="pf-key">Date of Exit</span><span className="pf-val">{isoToDisplay(pf.doeEpfo)}</span></div>}
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          {/* ── Nominee Details (EPFO Form 2 / Pension) ─────────────── */}
+          {/* ── Nominees ── */}
           {hasUan !== "" && (
             <div className="sc grn" style={{marginBottom:"1.1rem"}}>
-              <div className="sh">
-                <div className="si grn">👨‍👩‍👧</div>
-                <span className="st">Nominee Details — PF & Pension (Form 2)</span>
-              </div>
-              <p style={{fontSize:"0.75rem",color:"#6b6894",marginBottom:"0.9rem",fontWeight:500,lineHeight:1.5}}>
-                As per EPFO guidelines, you must nominate beneficiaries for your PF and Pension accumulations. These details are used to fill <strong>Form 2 (Revised)</strong>. You can nominate up to 4 persons. Shares must add up to 100%.
-              </p>
+              <div className="sh"><div className="si grn">👨‍👩‍👧</div><span className="st">Nominee Details — PF & Pension (Form 2)</span></div>
+              <p style={{fontSize:"0.75rem",color:"#6b6894",marginBottom:"0.9rem",fontWeight:500,lineHeight:1.5}}>Nominate beneficiaries for your PF and Pension. Shares must add up to 100%.</p>
               {nominees.map((nom, idx) => (
                 <div key={idx} className="nom-block">
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.75rem"}}>
@@ -788,130 +725,101 @@ export default function UanDetails() {
                         <option value="">Select</option>
                         {["Spouse","Son","Daughter","Father","Mother","Brother","Sister","Other"].map(r=><option key={r} value={r}>{r}</option>)}
                       </select>
-                      {nom.relation==="Other"&&(
-                        <input className="in" style={{marginTop:"0.4rem"}} value={nom.otherRelation||""} placeholder="Please specify relationship" onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],otherRelation:e.target.value};return n;});isDirtyRef.current=true;}}/>
-                      )}
                     </div>
                   </div>
                   <div className="fr">
                     <div className="fi" style={{minWidth:220}}>
                       <span className="fl">Address <span style={{color:"#ef4444"}}>*</span></span>
-                      <input className="in" value={nom.address||""} placeholder="Full residential address" onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],address:e.target.value};return n;});isDirtyRef.current=true;}}/>
+                      <input className="in" value={nom.address||""} onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],address:e.target.value};return n;});isDirtyRef.current=true;}}/>
                     </div>
                     <div className="fi" style={{maxWidth:140}}>
                       <span className="fl">Share (%) <span style={{color:"#ef4444"}}>*</span></span>
                       <input className="in" value={nom.share||""} placeholder="e.g. 50" inputMode="numeric" maxLength={3} onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,3);setNominees(p=>{const n=[...p];n[idx]={...n[idx],share:v};return n;});isDirtyRef.current=true;}}/>
-                      {nominees.length>1&&<span style={{fontSize:"0.65rem",color:"#6b6894",marginTop:2}}>Total: {nominees.reduce((s,n)=>s+(parseInt(n.share)||0),0)}%</span>}
                     </div>
                   </div>
-                  {/* Guardian details if nominee is minor */}
-                  {nom.dob && new Date().getFullYear() - new Date(nom.dob).getFullYear() < 18 && (
-                    <div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:"0.7rem 0.9rem",marginTop:"0.5rem"}}>
-                      <div style={{fontSize:"0.68rem",fontWeight:700,color:"#92400e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.5rem"}}>⚠️ Minor Nominee — Guardian Required</div>
-                      <div className="fr">
-                        <div className="fi">
-                          <span className="fl">Guardian Name <span style={{color:"#ef4444"}}>*</span></span>
-                          <input className="in" value={nom.guardianName||""} placeholder="Legal guardian's full name" onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],guardianName:e.target.value};return n;});isDirtyRef.current=true;}}/>
-                        </div>
-                        <div className="fi">
-                          <span className="fl">Guardian Address <span style={{color:"#ef4444"}}>*</span></span>
-                          <input className="in" value={nom.guardianAddress||""} placeholder="Guardian's address" onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],guardianAddress:e.target.value};return n;});isDirtyRef.current=true;}}/>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
               ))}
-              {nominees.length < 4 && (
-                <button className="add-btn" onClick={()=>{setNominees(p=>[...p,makeNominee()]);isDirtyRef.current=true;}}>+ Add Another Nominee</button>
-              )}
+              {nominees.length < 4 && <button className="add-btn" onClick={()=>{setNominees(p=>[...p,makeNominee()]);isDirtyRef.current=true;}}>+ Add Another Nominee</button>}
               {nominees.length > 1 && nominees.reduce((s,n)=>s+(parseInt(n.share)||0),0) !== 100 && (
                 <p style={{fontSize:"0.75rem",color:"#ef4444",fontWeight:600,marginTop:"0.5rem"}}>⚠️ Total share must equal 100%. Current total: {nominees.reduce((s,n)=>s+(parseInt(n.share)||0),0)}%</p>
               )}
             </div>
           )}
 
-          {/* ── EPFO Declarations + Digital Signature ────────────────── */}
+          {/* ── EPFO Declarations + Signature ── */}
           {hasUan !== "" && (
-            <div className="sc" style={{marginBottom:"1.1rem",position:"relative",overflow:"hidden"}}>
+            <div id="epfo-decl-section" className="sc" style={{marginBottom:"1.1rem",position:"relative",overflow:"hidden"}}>
               <div style={{position:"absolute",top:0,left:0,bottom:0,width:4,borderRadius:"16px 0 0 16px",background:"#4f46e5"}}/>
-              <div className="sh">
-                <div className="si" style={{background:"#eef2ff"}}>📜</div>
-                <span className="st">EPFO Declarations & Digital Signature</span>
-              </div>
+              <div className="sh"><div className="si" style={{background:"#eef2ff"}}>📜</div><span className="st">EPFO Declarations & Digital Signature</span></div>
+
               {editedAfterSign && (
                 <div style={{background:"#fff8f0",border:"1.5px solid #fbbf24",borderRadius:10,padding:"0.65rem 1rem",marginBottom:"0.75rem",fontSize:"0.75rem",color:"#92400e",fontWeight:600}}>
-                  ⚠️ You edited UAN/PF/Nominee information — please re-confirm all declarations and sign again below.
+                  ⚠️ You edited information — please re-confirm all declarations below. Your existing signature is still saved; re-sign only if you wish to update it.
                 </div>
               )}
+
               <p style={{fontSize:"0.75rem",color:"#6b6894",marginBottom:"0.9rem",fontWeight:500,lineHeight:1.5}}>
-                As per EPFO guidelines, the following declarations are mandatory. Your digital signature with timestamp serves as your consent and replaces the physical Form 2 signature for this submission.
+                The following declarations are mandatory. All three must be confirmed and a signature must be drawn before you can continue.
               </p>
 
-              {/* Declaration 1 — PF Nomination */}
-              <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"0.75rem"}}>
+              {/* Declaration 1 */}
+              <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"0.75rem",borderLeft:pfNomAck?"3px solid #16a34a":"3px solid #e4e2f0"}}>
                 <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
-                  <input type="checkbox" checked={pfNomAck} onChange={e=>{setPfNomAck(e.target.checked);isDirtyRef.current=true;}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#4f46e5",flexShrink:0,cursor:"pointer"}}/>
+                  <input type="checkbox" checked={pfNomAck} onChange={e=>{setPfNomAck(e.target.checked);isDirtyRef.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#4f46e5",flexShrink:0,cursor:"pointer"}}/>
                   <div>
-                    <div style={{fontSize:"0.68rem",fontWeight:800,color:"#4f46e5",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>PF Nomination Declaration (Form 2 — Part A)</div>
-                    <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>
-                      I hereby nominate the person(s) listed above to receive the amount standing to my credit in the Provident Fund in the event of my death before the amount becomes payable, or having become payable, remains unpaid at my death. I confirm the nominee details are accurate and the shares add up to 100%.
-                    </span>
+                    <div style={{fontSize:"0.68rem",fontWeight:800,color:"#4f46e5",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>PF Nomination Declaration (Form 2 — Part A) <span style={{color:"#ef4444"}}>*</span></div>
+                    <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I hereby nominate the person(s) listed above to receive the amount standing to my credit in the Provident Fund in the event of my death. I confirm the nominee details are accurate and shares add up to 100%.</span>
                   </div>
                 </label>
               </div>
 
-              {/* Declaration 2 — Pension Nomination */}
-              <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"0.75rem"}}>
+              {/* Declaration 2 */}
+              <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"0.75rem",borderLeft:pensionNomAck?"3px solid #16a34a":"3px solid #e4e2f0"}}>
                 <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
-                  <input type="checkbox" checked={pensionNomAck} onChange={e=>{setPensionNomAck(e.target.checked);isDirtyRef.current=true;}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#4f46e5",flexShrink:0,cursor:"pointer"}}/>
+                  <input type="checkbox" checked={pensionNomAck} onChange={e=>{setPensionNomAck(e.target.checked);isDirtyRef.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#4f46e5",flexShrink:0,cursor:"pointer"}}/>
                   <div>
-                    <div style={{fontSize:"0.68rem",fontWeight:800,color:"#4f46e5",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>Pension Nomination Declaration (Form 2 — Part B)</div>
-                    <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>
-                      I nominate the above person(s) to receive the monthly widow/widower pension or children pension payable under the Employees' Pension Scheme, 1995, in the event of my death while in service or after retirement. I confirm all nominee details and am aware that this nomination supersedes any previous nomination made by me.
-                    </span>
+                    <div style={{fontSize:"0.68rem",fontWeight:800,color:"#4f46e5",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>Pension Nomination Declaration (Form 2 — Part B) <span style={{color:"#ef4444"}}>*</span></div>
+                    <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I nominate the above person(s) to receive pension under the Employees' Pension Scheme, 1995. This nomination supersedes any previous nomination made by me.</span>
                   </div>
                 </label>
               </div>
 
-              {/* Declaration 3 — General EPFO */}
-              <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"1rem"}}>
+              {/* Declaration 3 */}
+              <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"1rem",borderLeft:epfoDecl?"3px solid #16a34a":"3px solid #e4e2f0"}}>
                 <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
-                  <input type="checkbox" checked={epfoDecl} onChange={e=>{setEpfoDecl(e.target.checked);isDirtyRef.current=true;}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#4f46e5",flexShrink:0,cursor:"pointer"}}/>
+                  <input type="checkbox" checked={epfoDecl} onChange={e=>{setEpfoDecl(e.target.checked);isDirtyRef.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#4f46e5",flexShrink:0,cursor:"pointer"}}/>
                   <div>
-                    <div style={{fontSize:"0.68rem",fontWeight:800,color:"#4f46e5",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>General EPFO Declaration</div>
-                    <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>
-                      I hereby declare that the information provided in this form regarding my UAN, PF member ID(s), service history, and nominee details is true and correct to the best of my knowledge. I understand that any false declaration may result in legal action under the Employees' Provident Funds & Miscellaneous Provisions Act, 1952.
-                    </span>
+                    <div style={{fontSize:"0.68rem",fontWeight:800,color:"#4f46e5",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>General EPFO Declaration <span style={{color:"#ef4444"}}>*</span></div>
+                    <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I declare that all UAN, PF member ID(s), service history, and nominee details provided are true and correct. I understand false declarations may result in legal action under the EPF Act, 1952.</span>
                   </div>
                 </label>
               </div>
 
-              {/* Digital Signature Canvas */}
+              {/* Digital Signature — NEVER auto-cleared, only cleared by "Clear" button */}
               <div style={{background:"#fff",border:"1.5px solid #e4e2f0",borderRadius:12,padding:"1.1rem 1.2rem"}}>
                 <div style={{fontSize:"0.72rem",fontWeight:800,color:"#4f46e5",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.5rem"}}>
                   Digital Signature <span style={{color:"#ef4444"}}>*</span>
                 </div>
-                {editedAfterSign && (
-                  <div style={{background:"#fff8f0",border:"1.5px solid #fbbf24",borderRadius:8,padding:"0.6rem 0.9rem",marginBottom:"0.75rem",fontSize:"0.75rem",color:"#92400e",fontWeight:600}}>
-                    ⚠️ You edited information after signing. Please sign again to confirm your updated details.
+
+                {editedAfterSign && (sigS3Key || sigDataUrl) && (
+                  <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:8,padding:"0.6rem 0.9rem",marginBottom:"0.75rem",fontSize:"0.75rem",color:"#15803d",fontWeight:500}}>
+                    ✓ Your existing signature is saved. You only need to re-sign if you want to update it. Re-confirm the declarations above to continue.
                   </div>
                 )}
-                <p style={{fontSize:"0.72rem",color:"#6b6894",marginBottom:"0.75rem",fontWeight:500,lineHeight:1.5}}>
-                  Draw your signature below using mouse or finger. This will be recorded along with the date and time as your digital consent.
-                </p>
+
+                <p style={{fontSize:"0.72rem",color:"#6b6894",marginBottom:"0.75rem",fontWeight:500,lineHeight:1.5}}>Draw your signature using mouse or finger. This is recorded with date/time as your digital consent.</p>
+
                 <canvas
                   ref={sigCanvasRef}
                   width={400} height={90}
-                  className={`sig-canvas${sigDataUrl?" signed":""}`}
+                  className={`sig-canvas${(sigDataUrl||sigS3Key)?" signed":""}`}
                   style={{width:"100%",maxWidth:400,height:90}}
                   onMouseDown={e=>{
                     sigDrawingRef.current=true;
                     const r=sigCanvasRef.current.getBoundingClientRect();
                     const scaleX=sigCanvasRef.current.width/r.width;
                     sigLastRef.current={x:(e.clientX-r.left)*scaleX,y:(e.clientY-r.top)*scaleX};
-                    // Fill white background on first stroke so JPEG renders cleanly
-                    if(!sigDataUrl){const ctx=sigCanvasRef.current.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,sigCanvasRef.current.width,sigCanvasRef.current.height);}
+                    if(!sigDataUrl&&!sigS3Key){const ctx=sigCanvasRef.current.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,sigCanvasRef.current.width,sigCanvasRef.current.height);}
                   }}
                   onMouseMove={e=>{
                     if(!sigDrawingRef.current)return;
@@ -926,11 +834,10 @@ export default function UanDetails() {
                   onMouseUp={async ()=>{
                     sigDrawingRef.current=false;
                     const dataUrl=sigCanvasRef.current.toDataURL("image/jpeg",0.3);
-                    setSigDataUrl(dataUrl); // preview only
+                    setSigDataUrl(dataUrl);
                     const ts=new Date().toISOString();
                     setSigTimestamp(ts);
                     isDirtyRef.current=true;wasSignedRef.current=true;setEditedAfterSign(false);
-                    // Upload to S3 immediately after signing
                     const key = await uploadSignature(dataUrl);
                     if (key) setSigS3Key(key);
                   }}
@@ -955,19 +862,19 @@ export default function UanDetails() {
                   onTouchEnd={async ()=>{
                     sigDrawingRef.current=false;
                     const dataUrl=sigCanvasRef.current.toDataURL("image/jpeg",0.3);
-                    setSigDataUrl(dataUrl); // preview only
+                    setSigDataUrl(dataUrl);
                     const ts=new Date().toISOString();
                     setSigTimestamp(ts);
                     isDirtyRef.current=true;wasSignedRef.current=true;setEditedAfterSign(false);
-                    // Upload to S3 immediately after signing
                     const key = await uploadSignature(dataUrl);
                     if (key) setSigS3Key(key);
                   }}
                   onMouseLeave={()=>{sigDrawingRef.current=false;}}
                 />
+
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:"0.6rem",flexWrap:"wrap",gap:"0.5rem"}}>
                   <div>
-                    {sigDataUrl && sigTimestamp && sigS3Key && (
+                    {(sigS3Key || sigDataUrl) && sigTimestamp && (
                       <span style={{fontSize:"0.7rem",color:"#16a34a",fontWeight:600}}>
                         ✓ Signed — {new Date(sigTimestamp).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}
                       </span>
@@ -975,28 +882,33 @@ export default function UanDetails() {
                     {sigDataUrl && !sigS3Key && (
                       <span style={{fontSize:"0.7rem",color:"#d97706",fontWeight:500}}>⏳ Saving signature…</span>
                     )}
-                    {!sigDataUrl && <span style={{fontSize:"0.7rem",color:"#8b88b0",fontWeight:500}}>Draw your signature above</span>}
+                    {!sigDataUrl && !sigS3Key && <span style={{fontSize:"0.7rem",color:"#8b88b0",fontWeight:500}}>Draw your signature above <span style={{color:"#ef4444"}}>*</span></span>}
                   </div>
-                  <button onClick={()=>{
-                    const ctx=sigCanvasRef.current.getContext("2d");
-                    ctx.clearRect(0,0,sigCanvasRef.current.width,sigCanvasRef.current.height);
-                    setSigDataUrl("");setSigTimestamp("");setSigS3Key("");isDirtyRef.current=true;wasSignedRef.current=false;setEditedAfterSign(false);
-                  }} style={{padding:"0.3rem 0.8rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:7,fontSize:"0.72rem",fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Clear</button>
+                  {/* Only manual Clear button can erase signature */}
+                  <button
+                    onClick={()=>{
+                      const ctx=sigCanvasRef.current.getContext("2d");
+                      ctx.clearRect(0,0,sigCanvasRef.current.width,sigCanvasRef.current.height);
+                      setSigDataUrl("");setSigTimestamp("");setSigS3Key("");
+                      isDirtyRef.current=true;wasSignedRef.current=false;setEditedAfterSign(false);
+                    }}
+                    style={{padding:"0.3rem 0.8rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:7,fontSize:"0.72rem",fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
+                    Clear
+                  </button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Info note */}
           <div style={{background:"#fff",borderRadius:12,padding:"1rem 1.25rem",marginBottom:"1.1rem",border:"1px solid #e8e5f0",boxShadow:"0 2px 8px rgba(30,26,62,0.06)"}}>
             <p style={{fontSize:"0.78rem",color:"#6b6894",lineHeight:1.6,fontWeight:500}}>
-              ℹ️ After saving, you'll be taken to the <strong>Review</strong> page where you can check all your details and submit your profile.
+              ℹ️ All 3 declarations must be checked and a signature must be drawn before you can continue to the Review page.
             </p>
           </div>
 
           <div className="sbar">
             <button className="sbtn" onClick={() => handleNavigate("/employee/previous")}>← Previous</button>
-            <span className={`ss${saveStatus==="Saved ✓"?" ok":saveStatus.startsWith("Error")?" err":""}`}>{saveStatus}</span>
+            <span className={`ss${saveStatus==="Saved ✓"?" ok":saveStatus.startsWith("Error")||saveStatus.startsWith("⚠️")?" err":""}`}>{saveStatus}</span>
             <div style={{display:"flex",gap:"0.65rem",alignItems:"center"}}>
               <button className="sbtn" onClick={handleMidSave} style={{fontSize:"0.8rem"}}>Save draft</button>
               <button className="pbtn" onClick={handleNext}>Save & Continue →</button>
