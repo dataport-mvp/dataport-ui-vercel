@@ -1,4 +1,8 @@
 // pages/employee/personal.js  — Page 1 of 5
+// Fixes:
+// 1. DateField — no calendar, DD/MM/YYYY input, shows "📅 15 March 2023" below
+// 2. Bank account — digit counter below entry + confirm fields
+// 3. page1_edited cascade flag → page 5 re-asks acks when page 1 was edited
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "../../utils/AuthContext";
@@ -12,61 +16,30 @@ const STEP_DONE_BG = "#2a2460";
 const STEP_DONE_CK = "#a78bfa";
 const STEP_CONN    = "#a78bfa";
 
-// ── Gender options — inclusive list ──────────────────────────────────
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+function isoToDisplay(iso) {
+  if (!iso || !iso.includes("-")) return iso || "";
+  const [y, mo, d] = iso.split("-");
+  const idx = parseInt(mo, 10) - 1;
+  const mName = MONTH_NAMES[idx] || mo;
+  return `${parseInt(d,10)} ${mName} ${y}`;
+}
+
 const GENDER_OPTIONS = [
-  "Male",
-  "Female",
-  "Non-binary",
-  "Genderqueer",
-  "Genderfluid",
-  "Agender",
-  "Bigender",
-  "Two-Spirit",
-  "Transgender Male",
-  "Transgender Female",
-  "Intersex",
-  "Prefer not to say",
-  "Other",
+  "Male","Female","Non-binary","Genderqueer","Genderfluid","Agender","Bigender",
+  "Two-Spirit","Transgender Male","Transgender Female","Intersex","Prefer not to say","Other",
 ];
 
-// ── Bank logos (emoji fallback) ───────────────────────────────────────
 const BANK_LIST = [
-  "State Bank of India (SBI)",
-  "HDFC Bank",
-  "ICICI Bank",
-  "Axis Bank",
-  "Kotak Mahindra Bank",
-  "Punjab National Bank (PNB)",
-  "Bank of Baroda",
-  "Canara Bank",
-  "Union Bank of India",
-  "Bank of India",
-  "Indian Bank",
-  "Central Bank of India",
-  "Indian Overseas Bank",
-  "UCO Bank",
-  "Bank of Maharashtra",
-  "Punjab & Sind Bank",
-  "Yes Bank",
-  "IDFC First Bank",
-  "IndusInd Bank",
-  "Federal Bank",
-  "South Indian Bank",
-  "Karnataka Bank",
-  "Karur Vysya Bank",
-  "City Union Bank",
-  "Dhanlaxmi Bank",
-  "Nainital Bank",
-  "RBL Bank",
-  "DCB Bank",
-  "Bandhan Bank",
-  "AU Small Finance Bank",
-  "Ujjivan Small Finance Bank",
-  "Jana Small Finance Bank",
-  "Equitas Small Finance Bank",
-  "ESAF Small Finance Bank",
-  "Suryoday Small Finance Bank",
-  "Other",
+  "State Bank of India (SBI)","HDFC Bank","ICICI Bank","Axis Bank","Kotak Mahindra Bank",
+  "Punjab National Bank (PNB)","Bank of Baroda","Canara Bank","Union Bank of India",
+  "Bank of India","Indian Bank","Central Bank of India","Indian Overseas Bank","UCO Bank",
+  "Bank of Maharashtra","Punjab & Sind Bank","Yes Bank","IDFC First Bank","IndusInd Bank",
+  "Federal Bank","South Indian Bank","Karnataka Bank","Karur Vysya Bank","City Union Bank",
+  "Dhanlaxmi Bank","Nainital Bank","RBL Bank","DCB Bank","Bandhan Bank",
+  "AU Small Finance Bank","Ujjivan Small Finance Bank","Jana Small Finance Bank",
+  "Equitas Small Finance Bank","ESAF Small Finance Bank","Suryoday Small Finance Bank","Other",
 ];
 
 const G = `
@@ -139,6 +112,14 @@ const G = `
   .err-msg { font-size: 0.68rem; color: #ef4444; font-weight: 600; margin-top: 0.2rem; display: block; }
   .fe { font-size: 0.7rem; color: #ef4444; margin-top: 2px; font-weight: 500; }
 
+  .date-input { padding: 0.65rem 0.875rem; background: #ececf9; border: 1.5px solid #b8b4d4;
+    border-radius: 9px; font-family: inherit; font-size: 0.875rem; color: #1e293b;
+    outline: none; width: 100%; cursor: pointer; transition: all 0.18s; }
+  .date-input:focus { border-color: #4f46e5; background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.13); }
+  .date-input::placeholder { color: #b8b4d4; }
+  .date-input.err { border-color: #ef4444 !important; background: #fff8f8 !important; }
+  .date-display { margin-top: 0.22rem; font-size: 0.72rem; color: #4f46e5; font-weight: 600; letter-spacing: 0.2px; }
+
   .photo-wrap { width: 90px; height: 90px; border-radius: 50%; background: #eef2ff;
     border: 2.5px solid #c7d2fe; display: flex; align-items: center;
     justify-content: center; overflow: hidden; flex-shrink: 0; }
@@ -157,32 +138,70 @@ const G = `
     border-radius: 10px; font-family: inherit; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
   .sbtn:hover { background: #f5f4f0; }
 
-  .date-input { padding: 0.65rem 0.875rem; background: #ececf9; border: 1.5px solid #b8b4d4;
-    border-radius: 9px; font-family: inherit; font-size: 0.875rem; color: #1e293b;
-    outline: none; width: 100%; cursor: pointer; transition: all 0.18s; }
-  .date-input:focus { border-color: #4f46e5; background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.13); }
-  .date-input::placeholder { color: #b8b4d4; }
+  .bank-note { font-size: 0.72rem; color: #0d9488; background: #f0fdfa; border: 1px solid #99f6e4;
+    border-radius: 8px; padding: 0.5rem 0.75rem; margin-bottom: 0.85rem; font-weight: 500; line-height: 1.5; }
 
-  .mid-save { display: flex; justify-content: flex-end; margin: 0.5rem 0 1rem; }
-  .mid-save-btn { padding: 0.45rem 1.1rem; background: transparent; color: #4f46e5;
-    border: 1.5px solid #c7d2fe; border-radius: 8px; font-family: inherit;
-    font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
-  .mid-save-btn:hover { background: #eef2ff; border-color: #4f46e5; }
+  /* Digit counter for bank account */
+  .digit-counter { font-size: 0.68rem; margin-top: 0.22rem; font-weight: 600; }
+  .digit-counter.ok { color: #16a34a; }
+  .digit-counter.typing { color: #8b88b0; }
+  .digit-counter.match { color: #16a34a; }
+  .digit-counter.mismatch { color: #ef4444; }
 
   .cmsg { padding: 0.6rem 0.875rem; background: #ececf9; border: 1.5px solid #b8b4d4;
     border-radius: 9px; font-family: inherit; font-size: 0.84rem; color: #1e293b;
     outline: none; width: 100%; resize: vertical; min-height: 72px; transition: all 0.18s; }
   .cmsg:focus { border-color: #4f46e5; background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.13); }
 
-  /* Bank section divider */
-  .bank-note { font-size: 0.72rem; color: #0d9488; background: #f0fdfa; border: 1px solid #99f6e4;
-    border-radius: 8px; padding: 0.5rem 0.75rem; margin-bottom: 0.85rem; font-weight: 500; line-height: 1.5; }
-
   @media (max-width: 640px) {
     .fr { flex-direction: column; } .fi { min-width: 100%; }
     .topbar { flex-direction: column; gap: 0.6rem; align-items: flex-start; position: relative; }
   }
 `;
+
+// ── DateField: no calendar, DD/MM/YYYY, shows month name below ──
+function DateField({ l, v, s, r = true }) {
+  const [raw, setRaw] = useState(() => {
+    if (v && v.includes("-")) { const [y, mo, d] = v.split("-"); return `${d}/${mo}/${y}`; }
+    return v || "";
+  });
+  const [focused, setFocused] = useState(false);
+  useEffect(() => {
+    if (!focused) {
+      if (v && v.includes("-")) { const [y, mo, d] = v.split("-"); setRaw(`${d}/${mo}/${y}`); }
+      else setRaw(v || "");
+    }
+  }, [v, focused]);
+  const handleChange = (e) => {
+    let val = e.target.value.replace(/[^0-9/]/g, "");
+    if (val.length === 2 && raw.length === 1) val = val + "/";
+    if (val.length === 5 && raw.length === 4) val = val + "/";
+    if (val.length > 10) return;
+    setRaw(val);
+    if (val.length === 10) {
+      const [d, mo, y] = val.split("/");
+      if (d && mo && y && y.length === 4) s(`${y}-${mo}-${d}`);
+    } else { s(""); }
+  };
+  const displayDate = (!focused && v && v.includes("-")) ? isoToDisplay(v) : null;
+  return (
+    <div className="fi">
+      <span className="fl">{l}{r && <span style={{color:"#ef4444",marginLeft:2}}>*</span>}</span>
+      <input
+        className="date-input"
+        value={raw}
+        placeholder="DD/MM/YYYY"
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        onChange={handleChange}
+        maxLength={10}
+        inputMode="numeric"
+        autoComplete="off"
+      />
+      {displayDate && <div className="date-display">📅 {displayDate}</div>}
+    </div>
+  );
+}
 
 function ConsentBell({ apiFetch, router }) {
   const [count, setCount] = useState(0);
@@ -351,35 +370,6 @@ function FS({ l, v, s, o, r = true }) {
   );
 }
 
-function DateField({ l, v, s, r = true }) {
-  const [raw, setRaw] = useState(() => {
-    if (v && v.includes("-")) { const [y, mo, d] = v.split("-"); return `${d}/${mo}/${y}`; }
-    return v || "";
-  });
-  const [focused, setFocused] = useState(false);
-  useEffect(() => {
-    if (!focused) {
-      if (v && v.includes("-")) { const [y, mo, d] = v.split("-"); setRaw(`${d}/${mo}/${y}`); }
-      else setRaw(v || "");
-    }
-  }, [v, focused]);
-  const handleChange = (e) => {
-    let val = e.target.value.replace(/[^0-9/]/g, "");
-    if (val.length === 2 && raw.length === 1) val = val + "/";
-    if (val.length === 5 && raw.length === 4) val = val + "/";
-    if (val.length > 10) return;
-    setRaw(val);
-    if (val.length === 10) { const [d, mo, y] = val.split("/"); if (d && mo && y && y.length === 4) s(`${y}-${mo}-${d}`); }
-    else s("");
-  };
-  return (
-    <div className="fi">
-      <span className="fl">{l}{r && <span style={{color:"#ef4444",marginLeft:2}}>*</span>}</span>
-      <input className="date-input" value={raw} placeholder="DD/MM/YYYY" onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} onChange={handleChange} maxLength={10} inputMode="numeric"/>
-    </div>
-  );
-}
-
 export default function PersonalDetails() {
   const router = useRouter();
   const { user, apiFetch, logout, ready } = useAuth();
@@ -389,17 +379,19 @@ export default function PersonalDetails() {
   const [midSaveStatus,setMidSaveStatus] = useState("");
   const [loading,setLoading]             = useState(true);
   const [employeeId,setEmployeeId]       = useState("");
-  const [draftReady,setDraftReady]       = useState(false); // true only after draft confirmed in DB
-  const employeeIdRef                    = useRef(""); // immediately available, no render delay
+  const [draftReady,setDraftReady]       = useState(false);
+  const employeeIdRef                    = useRef("");
   const [profileStatus,setProfileStatus] = useState("");
   const [photoPreview,setPhotoPreview]   = useState(null);
   const [errors,setErrors]               = useState({});
   const isDirtyRef = useRef(false);
+  // page1_edited: set when user makes any change; saves to DB so page 5 re-asks acks
+  const wasEditedRef = useRef(false);
   const fixErr = (key) => setErrors(p => ({ ...p, [key]: false }));
 
   useEffect(() => { if (router.query.tab === "consents") setActiveTab("consents"); }, [router.query.tab]);
 
-  // ── Personal fields ─────────────────────────────────────────────────
+  // ── Personal fields ──
   const [firstName,setFirstName]         = useState("");
   const [middleName,setMiddleName]       = useState("");
   const [lastName,setLastName]           = useState("");
@@ -419,11 +411,11 @@ export default function PersonalDetails() {
   const [nameAsPerAadhaar,setNameAsPerAadhaar] = useState("");
   const [pan,setPan]                     = useState("");
   const [nameAsPerPan,setNameAsPerPan]   = useState("");
-  const [hasPassport,setHasPassport]     = useState("");   // "Yes" | "No" | ""
+  const [hasPassport,setHasPassport]     = useState("");
   const [passport,setPassport]           = useState("");
-  const [passportIssue,setPassportIssue] = useState("");   // YYYY-MM-DD
-  const [passportExpiry,setPassportExpiry] = useState(""); // YYYY-MM-DD
-  const [passportKey,setPassportKey]     = useState("");         // passport document upload
+  const [passportIssue,setPassportIssue] = useState("");
+  const [passportExpiry,setPassportExpiry] = useState("");
+  const [passportKey,setPassportKey]     = useState("");
   const [bloodGroup,setBloodGroup]       = useState("");
   const [maritalStatus,setMaritalStatus] = useState("");
   const [emergName,setEmergName]         = useState("");
@@ -448,19 +440,24 @@ export default function PersonalDetails() {
   const [panKey,setPanKey]               = useState("");
   const [photoKey,setPhotoKey]           = useState("");
 
-  // ── Bank details ─────────────────────────────────────────────────────
+  // ── Bank details ──
   const [bankName,setBankName]           = useState("");
-  const [bankOther,setBankOther]         = useState("");   // custom bank name when "Other" selected
+  const [bankOther,setBankOther]         = useState("");
   const [bankAccountName,setBankAccountName] = useState("");
   const [ifsc,setIfsc]                   = useState("");
   const [branch,setBranch]               = useState("");
-  const [accountNo,setAccountNo]         = useState("");         // raw entry
-  const [accountNoConfirm,setAccountNoConfirm] = useState("");   // confirm field
+  const [accountNo,setAccountNo]         = useState("");       // raw digits being typed
+  const [accountNoConfirm,setAccountNoConfirm] = useState(""); // confirm raw digits
   const [accountType,setAccountType]     = useState("");
-  const [accountFull,setAccountFull]     = useState("");         // full number stored, shown masked
-  const [accountLast4,setAccountLast4]   = useState("");         // last 4 for display
+  const [accountFull,setAccountFull]     = useState("");       // saved full number
+  const [accountLast4,setAccountLast4]   = useState("");
 
-  const dirty = (setter) => (val) => { setter(val); isDirtyRef.current = true; };
+  // dirty setter — marks page as edited for cascade
+  const dirty = (setter) => (val) => {
+    setter(val);
+    isDirtyRef.current = true;
+    wasEditedRef.current = true;
+  };
 
   useEffect(() => {
     if (!ready) return;
@@ -510,7 +507,6 @@ export default function PersonalDetails() {
           if (d.aadhaarKey)   setAadhaarKey(d.aadhaarKey);
           if (d.panKey)       setPanKey(d.panKey);
           if (d.photoKey)     setPhotoKey(d.photoKey);
-          // Bank
           if (d.bankName)        setBankName(d.bankName);
           if (d.bankOther)       setBankOther(d.bankOther);
           if (d.bankAccountName) setBankAccountName(d.bankAccountName);
@@ -541,12 +537,9 @@ export default function PersonalDetails() {
           const createRes = await apiFetch(`${API}/employee`, {
             method: "POST",
             body: JSON.stringify({
-              employee_id: empId,
-              status: "draft",
-              email: user?.email || "",
-              mobile: user?.phone || "0000000000",
-              firstName: "draft",
-              lastName:  "draft",
+              employee_id: empId, status: "draft",
+              email: user?.email || "", mobile: user?.phone || "0000000000",
+              firstName: "draft", lastName: "draft",
             }),
           });
           const rd = await createRes.json().catch(() => ({}));
@@ -588,14 +581,11 @@ export default function PersonalDetails() {
     emergName, emergRel, emergPhone,
     aadhaarKey, panKey, photoKey,
     sameAsCurrent,
-    // Bank — full account number stored securely, displayed masked
     bankName: bankName === "Other" ? (bankOther || bankName) : bankName,
     bankOther,
     bankAccountName, ifsc, branch, accountType,
     accountFull: accountNo || accountFull || "",
-    accountLast4: accountNo.length >= 4
-      ? accountNo.slice(-4)
-      : (accountLast4 || ""),
+    accountLast4: accountNo.length >= 4 ? accountNo.slice(-4) : (accountLast4 || ""),
     currentAddress:   { from:curFrom, door:curDoor, village:curVillage, locality:curLocality, district:curDistrict, state:curState, pin:curPin },
     permanentAddress: {
       from:     sameAsCurrent ? curFrom     : permFrom,
@@ -611,11 +601,23 @@ export default function PersonalDetails() {
   const saveDraft = async () => {
     const empId = employeeId || `emp-${Date.now()}`;
     if (!employeeId) setEmployeeId(empId);
-    const res = await apiFetch(`${API}/employee`, { method:"POST", body:JSON.stringify(buildPayload(empId)) });
+
+    // Fetch fresh copy so we don't overwrite other page data
+    const freshRes = await apiFetch(`${API}/employee/draft`);
+    const fresh = freshRes.ok ? await freshRes.json() : {};
+
+    const payload = {
+      ...fresh,
+      ...buildPayload(empId),
+      // ── Cascade flag: page 1 edited → page 5 must re-ask acks ──
+      page1_edited: wasEditedRef.current ? true : (fresh.page1_edited || false),
+      ...(wasEditedRef.current ? { acknowledgements_review: {} } : {}),
+    };
+
+    const res = await apiFetch(`${API}/employee`, { method:"POST", body:JSON.stringify(payload) });
     if (!res.ok) throw new Error(parseError(await res.json().catch(() => ({}))));
     const rd = await res.json().catch(() => ({}));
     if (rd.employee_id) setEmployeeId(rd.employee_id);
-    // After saving, store full number in accountFull for masked display
     if (accountNo.length >= 4) { setAccountFull(accountNo); setAccountLast4(accountNo.slice(-4)); setAccountNo(""); setAccountNoConfirm(""); }
   };
 
@@ -627,7 +629,7 @@ export default function PersonalDetails() {
     if (!gender)       e.gender = true;
     if (!nationality)  e.nationality = true;
     if (!mobile)       e.mobile = true;
-    if (!aadhar)                                      e.aadhar = true;
+    if (!aadhar)                                         e.aadhar = true;
     if (aadhar && aadhar.length !== 12 && aadhar.length !== 4) e.aadhar = true;
     if (!nameAsPerAadhaar)  e.nameAsPerAadhaar = true;
     if (!pan)           e.pan = true;
@@ -642,14 +644,12 @@ export default function PersonalDetails() {
     if (!aadhaarKey)    e.aadhaarKey = true;
     if (!panKey)        e.panKey = true;
     if (!photoKey)      e.photoKey = true;
-    // Bank — required
     if (!bankName)         e.bankName = true;
     if (bankName==="Other" && !bankOther) e.bankOther = true;
     if (!bankAccountName)  e.bankAccountName = true;
     if (!ifsc)             e.ifsc = true;
     if (!branch)           e.branch = true;
     if (!accountType)      e.accountType = true;
-    // Account number: required if not yet saved (accountLast4 empty) and accountNo not filled
     if (!accountLast4 && !accountNo) e.accountNo = true;
     if (accountNo && accountNo !== accountNoConfirm) e.accountNoConfirm = true;
     if (Object.keys(e).length > 0) {
@@ -671,7 +671,12 @@ export default function PersonalDetails() {
   };
 
   const handleSaveSignout = async () => { try { await saveDraft(); isDirtyRef.current = false; } catch (_) {} logout(); };
-  const handleNavigate = async (path) => { const wasDirty = isDirtyRef.current; if (wasDirty) { try { await saveDraft(); isDirtyRef.current = false; } catch (_) {} } const dest = (path === "/employee/review" && wasDirty) ? "/employee/review?edited=1" : path; router.push(dest); };
+  const handleNavigate = async (path) => {
+    const wasDirty = isDirtyRef.current;
+    if (wasDirty) { try { await saveDraft(); isDirtyRef.current = false; } catch (_) {} }
+    const dest = (path === "/employee/review" && wasDirty) ? "/employee/review?edited=1" : path;
+    router.push(dest);
+  };
   const handleSignout  = async () => { if (isDirtyRef.current) { try { await saveDraft(); } catch (_) {} } logout(); };
 
   const aadhaarDisplay = aadhaarEditing
@@ -714,7 +719,7 @@ export default function PersonalDetails() {
                     {photoPreview ? <img src={photoPreview} alt="profile"/> : <span style={{color:"#8b88b0",fontSize:"0.7rem",fontWeight:600,textAlign:"center",padding:"0 0.5rem"}}>No photo</span>}
                   </div>
                   <div style={{flex:1}}>
-                    <FileUpload label="Upload Profile Photo" category="personal" subKey="photo" employeeId={employeeIdRef.current || employeeId} disabled={!draftReady} apiFetch={apiFetch} value={photoKey} onChange={(k, url) => { const key=typeof k==="string"?k:(k?.key||k?.s3_key||""); setPhotoKey(key); if (url) setPhotoPreview(url); else if (!key) setPhotoPreview(null); isDirtyRef.current = true; }} accept="image/*"/>
+                    <FileUpload label="Upload Profile Photo" category="personal" subKey="photo" employeeId={employeeIdRef.current || employeeId} disabled={!draftReady} apiFetch={apiFetch} value={photoKey} onChange={(k, url) => { const key=typeof k==="string"?k:(k?.key||k?.s3_key||""); setPhotoKey(key); if (url) setPhotoPreview(url); else if (!key) setPhotoPreview(null); dirty(() => {})(""); }} accept="image/*"/>
                     <p style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:4}}>JPG or PNG · max 5MB</p>
                   </div>
                 </div>
@@ -754,8 +759,8 @@ export default function PersonalDetails() {
               <div className="sc amb">
                 <div className="sh"><div className="si amb">🪪</div><span className="st">Personal Information</span></div>
                 <div className="fr">
+                  {/* DOB — no calendar */}
                   <DateField l="Date of Birth" v={dob} s={dirty(setDob)} />
-                  {/* ── Expanded gender dropdown ── */}
                   <FS l="Gender" v={gender} s={dirty(setGender)} o={GENDER_OPTIONS} />
                   <F l="Nationality" v={nationality} s={dirty(setNationality)} />
                 </div>
@@ -772,7 +777,7 @@ export default function PersonalDetails() {
                     </div>
                   </div>
                 </div>
-                {/* ── Passport toggle ── */}
+                {/* Passport */}
                 <div className="fr">
                   <div className="fi">
                     <span className="fl">Do you have a Passport? <span style={{color:"#ef4444"}}>*</span></span>
@@ -782,8 +787,7 @@ export default function PersonalDetails() {
                       ))}
                     </div>
                   </div>
-                  <div className="fi"/>
-                  <div className="fi"/>
+                  <div className="fi"/><div className="fi"/>
                 </div>
                 {hasPassport==="Yes"&&(
                   <>
@@ -792,12 +796,13 @@ export default function PersonalDetails() {
                       <span className="fl">Passport Number <span style={{color:"#ef4444"}}>*</span></span>
                       <input className="in" value={passport} placeholder="e.g. A1234567" maxLength={8} onChange={e=>dirty(setPassport)(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,""))}/>
                     </div>
+                    {/* Passport dates — no calendar */}
                     <DateField l="Issue Date" v={passportIssue} s={dirty(setPassportIssue)} />
                     <DateField l="Expiry Date" v={passportExpiry} s={dirty(setPassportExpiry)} />
                   </div>
                   <div style={{marginTop:"0.15rem"}}>
                     <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Upload Passport <span style={{color:"#ef4444"}}>*</span></span>
-                    <FileUpload label="Upload Passport" category="personal" subKey="passport" employeeId={employeeIdRef.current || employeeId} disabled={!draftReady} apiFetch={apiFetch} value={passportKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setPassportKey(key);isDirtyRef.current=true;fixErr&&fixErr("passportKey");}}/>
+                    <FileUpload label="Upload Passport" category="personal" subKey="passport" employeeId={employeeIdRef.current || employeeId} disabled={!draftReady} apiFetch={apiFetch} value={passportKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setPassportKey(key);dirty(() => {})("");fixErr&&fixErr("passportKey");}}/>
                   </div>
                   </>
                 )}
@@ -834,45 +839,41 @@ export default function PersonalDetails() {
                       onChange={(e) => { const raw = e.target.value.replace(/[^0-9]/g, ""); if (raw.length <= 12) dirty(setAadhar)(raw); }}
                     />
                     {aadhar && aadhar.length !== 12 && aadhar.length !== 4 && <span className="fe">Must be exactly 12 digits ({aadhar.length}/12)</span>}
-
-                    {/* Name as per Aadhaar */}
                     <div style={{marginTop:"0.75rem"}}>
                       <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Name as per Aadhaar <span style={{color:"#ef4444"}}>*</span></span>
                       <input className={`in${errors.nameAsPerAadhaar?" err":""}`} value={nameAsPerAadhaar} placeholder="Exactly as printed on Aadhaar card" onChange={e=>{dirty(setNameAsPerAadhaar)(e.target.value);fixErr("nameAsPerAadhaar");}}/>
                       {errors.nameAsPerAadhaar && <span className="err-msg">Required</span>}
                     </div>
                     <div style={{marginTop:"0.75rem"}}>
-                      <FileUpload label="Upload Aadhaar Card *" category="personal" subKey="aadhaar" employeeId={employeeIdRef.current || employeeId} disabled={!draftReady} apiFetch={apiFetch} value={aadhaarKey} onChange={(k) => { const key=typeof k==="string"?k:(k?.key||k?.s3_key||""); setAadhaarKey(key); isDirtyRef.current = true; }} />
+                      <FileUpload label="Upload Aadhaar Card *" category="personal" subKey="aadhaar" employeeId={employeeIdRef.current || employeeId} disabled={!draftReady} apiFetch={apiFetch} value={aadhaarKey} onChange={(k) => { const key=typeof k==="string"?k:(k?.key||k?.s3_key||""); setAadhaarKey(key); dirty(() => {})(""); }} />
                     </div>
                   </div>
                   {/* PAN */}
                   <div className="fi">
                     <F l="PAN Number" v={pan} s={(v) => { let val = v.toUpperCase(); if (val.length<=5) val=val.replace(/[^A-Z]/g,""); else if (val.length<=9) val=val.slice(0,5)+val.slice(5).replace(/[^0-9]/g,""); else if (val.length<=10) val=val.slice(0,5)+val.slice(5,9)+val.slice(9).replace(/[^A-Z]/g,""); dirty(setPan)(val); }} />
                     {pan && pan.length !== 10 && <span className="fe">Format: AAAAA9999A</span>}
-                    {/* Name as per PAN */}
                     <div style={{marginTop:"0.75rem"}}>
                       <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Name as per PAN <span style={{color:"#ef4444"}}>*</span></span>
                       <input className={`in${errors.nameAsPerPan?" err":""}`} value={nameAsPerPan} placeholder="Exactly as printed on PAN card" onChange={e=>{dirty(setNameAsPerPan)(e.target.value);fixErr("nameAsPerPan");}}/>
                       {errors.nameAsPerPan && <span className="err-msg">Required</span>}
                     </div>
                     <div style={{marginTop:"0.75rem"}}>
-                      <FileUpload label="Upload PAN Card *" category="personal" subKey="pan" employeeId={employeeIdRef.current || employeeId} disabled={!draftReady} apiFetch={apiFetch} value={panKey} onChange={(k) => { const key=typeof k==="string"?k:(k?.key||k?.s3_key||""); setPanKey(key); isDirtyRef.current = true; }} />
+                      <FileUpload label="Upload PAN Card *" category="personal" subKey="pan" employeeId={employeeIdRef.current || employeeId} disabled={!draftReady} apiFetch={apiFetch} value={panKey} onChange={(k) => { const key=typeof k==="string"?k:(k?.key||k?.s3_key||""); setPanKey(key); dirty(() => {})(""); }} />
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* ── Bank Details ─────────────────────────────────────── */}
+              {/* ── Bank Details ── */}
               <div className="sc teal">
                 <div className="sh">
                   <div className="si teal">🏦</div>
                   <span className="st">Bank Account Details</span>
                 </div>
-                <div style={{background:"#f0fdfa",border:"1px solid #99f6e4",borderRadius:8,padding:"0.5rem 0.75rem",marginBottom:"0.85rem",fontSize:"0.72rem",color:"#0d9488",fontWeight:500,lineHeight:1.5}}>
+                <div className="bank-note">
                   🏦 Please verify your bank details carefully — this will be used for salary processing.
                 </div>
                 <div className="fr">
-                  {/* Bank name with dropdown */}
                   <div className="fi">
                     <span className="fl">Bank Name <span style={{color:"#ef4444"}}>*</span></span>
                     <select className={`in${errors.bankName?" err":""}`} value={bankName} onChange={e=>{dirty(setBankName)(e.target.value);if(e.target.value!=="Other")setBankOther("");fixErr("bankName");}} style={{background:bankName?"#fff":"#f2f1f9",color:bankName?"#1a1730":"#8b88b0",appearance:"auto"}}>
@@ -918,61 +919,84 @@ export default function PersonalDetails() {
                     {errors.accountType && <span className="err-msg">Required</span>}
                   </div>
                 </div>
+
+                {/* ── Account Number with digit counter ── */}
                 <div className="fr">
                   <div className="fi">
-                    <span className="fl">
-                      Account Number <span style={{color:"#ef4444"}}>*</span>
-                    </span>
-                    {/* If already saved, show masked + option to update */}
+                    <span className="fl">Account Number <span style={{color:"#ef4444"}}>*</span></span>
                     {accountLast4 && !accountNo ? (
                       <div>
                         <input className="in" value={accountFull ? "•".repeat(accountFull.length-4)+" "+accountFull.slice(-4) : `•••• ${accountLast4}`} disabled style={{letterSpacing:"0.08em",fontFamily:"monospace"}}/>
-                        <button type="button" onClick={()=>{setAccountFull("");setAccountLast4("");isDirtyRef.current=true;}} style={{marginTop:"0.3rem",fontSize:"0.68rem",color:"#4f46e5",background:"none",border:"none",cursor:"pointer",fontWeight:600,padding:0}}>Update account number</button>
+                        <div className="digit-counter ok">✓ Account number saved</div>
+                        <button type="button" onClick={()=>{setAccountFull("");setAccountLast4("");dirty(() => {})("");}} style={{marginTop:"0.3rem",fontSize:"0.68rem",color:"#4f46e5",background:"none",border:"none",cursor:"pointer",fontWeight:600,padding:0}}>Update account number</button>
                       </div>
                     ) : (
-                      <input
-                        className={`in${errors.accountNo?" err":""}`}
-                        value={accountNo.length > 4 ? "•".repeat(accountNo.length - 4) + accountNo.slice(-4) : accountNo}
-                        placeholder="Enter full account number"
-                        inputMode="numeric"
-                        onChange={e=>{
-                          // Strip bullets, merge with existing raw to get actual digits typed
-                          const typed = e.target.value.replace(/[^0-9]/g,"");
-                          dirty(setAccountNo)(typed);
-                          fixErr("accountNo");
-                          if(accountNoConfirm) fixErr("accountNoConfirm");
-                        }}
-                      />
+                      <>
+                        <input
+                          className={`in${errors.accountNo?" err":""}`}
+                          value={accountNo.length > 4 ? "•".repeat(accountNo.length - 4) + accountNo.slice(-4) : accountNo}
+                          placeholder="Enter full account number"
+                          inputMode="numeric"
+                          onChange={e=>{
+                            const typed = e.target.value.replace(/[^0-9]/g,"");
+                            dirty(setAccountNo)(typed);
+                            fixErr("accountNo");
+                            if(accountNoConfirm) fixErr("accountNoConfirm");
+                          }}
+                        />
+                        {/* Digit counter */}
+                        {accountNo.length > 0 && (
+                          <div className={`digit-counter ${accountNo.length >= 9 ? "ok" : "typing"}`}>
+                            {accountNo.length} digit{accountNo.length !== 1 ? "s" : ""} entered
+                            {accountNo.length >= 9 ? " ✓" : ` — most accounts are 9–18 digits`}
+                          </div>
+                        )}
+                        {errors.accountNo && <span className="err-msg">Account number is required</span>}
+                      </>
                     )}
-                    {errors.accountNo && <span className="err-msg">Account number is required</span>}
                   </div>
+
                   <div className="fi">
-                    <span className="fl">
-                      Re-enter Account Number <span style={{color:"#ef4444"}}>*</span>
-                    </span>
+                    <span className="fl">Re-enter Account Number <span style={{color:"#ef4444"}}>*</span></span>
                     {accountLast4 && !accountNo ? (
-                      <input className="in" value={accountFull ? "•".repeat(accountFull.length-4)+" "+accountFull.slice(-4) : `•••• ${accountLast4}`} disabled style={{letterSpacing:"0.08em",fontFamily:"monospace"}}/>
+                      <div>
+                        <input className="in" value={accountFull ? "•".repeat(accountFull.length-4)+" "+accountFull.slice(-4) : `•••• ${accountLast4}`} disabled style={{letterSpacing:"0.08em",fontFamily:"monospace"}}/>
+                        <div className="digit-counter ok">✓ Confirmed</div>
+                      </div>
                     ) : (
-                      <input
-                        className={`in${errors.accountNoConfirm?" err":""}`}
-                        value={accountNoConfirm.length > 4 ? "•".repeat(accountNoConfirm.length - 4) + accountNoConfirm.slice(-4) : accountNoConfirm}
-                        placeholder="Re-enter to confirm"
-                        inputMode="numeric"
-                        onPaste={e=>e.preventDefault()}
-                        onChange={e=>{
-                          const typed = e.target.value.replace(/[^0-9]/g,"");
-                          setAccountNoConfirm(typed);
-                          isDirtyRef.current=true;
-                          fixErr("accountNoConfirm");
-                        }}
-                      />
-                    )}
-                    {errors.accountNoConfirm && <span className="err-msg">Account numbers do not match</span>}
-                    {accountNoConfirm && accountNo && accountNo !== accountNoConfirm && !errors.accountNoConfirm && (
-                      <span className="fe">Numbers don't match yet</span>
-                    )}
-                    {accountNoConfirm && accountNo && accountNo === accountNoConfirm && (
-                      <span style={{fontSize:"0.68rem",color:"#16a34a",marginTop:3,display:"block",fontWeight:600}}>✓ Account numbers match</span>
+                      <>
+                        <input
+                          className={`in${errors.accountNoConfirm?" err":""}`}
+                          value={accountNoConfirm.length > 4 ? "•".repeat(accountNoConfirm.length - 4) + accountNoConfirm.slice(-4) : accountNoConfirm}
+                          placeholder="Re-enter to confirm"
+                          inputMode="numeric"
+                          onPaste={e=>e.preventDefault()}
+                          onChange={e=>{
+                            const typed = e.target.value.replace(/[^0-9]/g,"");
+                            setAccountNoConfirm(typed);
+                            dirty(() => {})("");
+                            fixErr("accountNoConfirm");
+                          }}
+                        />
+                        {/* Confirm digit counter + match status */}
+                        {accountNoConfirm.length > 0 && (
+                          <div className={`digit-counter ${
+                            accountNo && accountNoConfirm && accountNo === accountNoConfirm
+                              ? "match"
+                              : accountNo && accountNoConfirm && accountNo !== accountNoConfirm && accountNoConfirm.length === accountNo.length
+                              ? "mismatch"
+                              : "typing"
+                          }`}>
+                            {accountNoConfirm.length} digit{accountNoConfirm.length !== 1 ? "s" : ""} entered
+                            {accountNo && accountNoConfirm && accountNo === accountNoConfirm && " — ✓ Numbers match"}
+                            {accountNo && accountNoConfirm && accountNo !== accountNoConfirm && accountNoConfirm.length === accountNo.length && " — ✗ Numbers don't match"}
+                          </div>
+                        )}
+                        {errors.accountNoConfirm && <span className="err-msg">Account numbers do not match</span>}
+                        {accountNoConfirm && accountNo && accountNo === accountNoConfirm && !errors.accountNoConfirm && (
+                          <span style={{fontSize:"0.68rem",color:"#16a34a",marginTop:3,display:"block",fontWeight:600}}>✓ Account numbers match</span>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -982,6 +1006,7 @@ export default function PersonalDetails() {
               <div className="sc ind">
                 <div className="sh"><div className="si ind">🏠</div><span className="st">Current Address</span></div>
                 <div className="fr">
+                  {/* Residing from date — no calendar */}
                   <DateField l="Residing From" v={curFrom} s={dirty(setCurFrom)} r={false} />
                   <div className="fi" />
                 </div>
@@ -1001,7 +1026,7 @@ export default function PersonalDetails() {
               <div className="sc cyn">
                 <div className="sh"><div className="si cyn">📍</div><span className="st">Permanent / Native Address</span></div>
                 <div style={{display:"flex",alignItems:"center",gap:"0.6rem",marginBottom:"1rem",padding:"0.65rem 0.875rem",background:"#f0f9ff",border:`1.5px solid ${sameAsCurrent?"#0891b2":"#bae6fd"}`,borderRadius:9,cursor:"pointer",transition:"all 0.15s"}}
-                  onClick={() => { const v = !sameAsCurrent; setSameAsCurrent(v); isDirtyRef.current = true; }}>
+                  onClick={() => { const v = !sameAsCurrent; setSameAsCurrent(v); dirty(() => {})(""); }}>
                   <div style={{width:18,height:18,borderRadius:5,border:`2px solid ${sameAsCurrent?"#0891b2":"#b8b4d4"}`,background:sameAsCurrent?"#0891b2":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.15s"}}>
                     {sameAsCurrent && <span style={{color:"#fff",fontWeight:800,fontSize:"0.7rem"}}>✓</span>}
                   </div>
