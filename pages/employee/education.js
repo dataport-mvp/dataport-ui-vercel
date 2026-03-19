@@ -386,7 +386,7 @@ export default function EducationDetails() {
 
   const handleSaveSignout=async()=>{try{await saveDraft();}catch(_){}logout();};
   const handleMidSave=async()=>{setMidSaveStatus("Saving…");try{await saveDraft();setMidSaveStatus("Saved ✓");setTimeout(()=>setMidSaveStatus(""),2000);}catch(_){setMidSaveStatus("Error");setTimeout(()=>setMidSaveStatus(""),2500);}};
-  const handleNavigate=async(path)=>{if(isDirtyRef.current){try{await saveDraft();}catch(_){}}const dest=path==="/employee/review"?"/employee/review?edited=1":path;router.push(dest);};
+  const handleNavigate=async(path)=>{const wasDirty=isDirtyRef.current;if(wasDirty){try{await saveDraft();}catch(_){}}const dest=(path==="/employee/review"&&wasDirty)?"/employee/review?edited=1":path;router.push(dest);};
   const handlePrevious=async()=>{if(isDirtyRef.current){try{await saveDraft();}catch(_){}}router.push("/employee/personal");};
   const handleSignout=async()=>{if(isDirtyRef.current){try{await saveDraft();}catch(_){}}logout();};
 
