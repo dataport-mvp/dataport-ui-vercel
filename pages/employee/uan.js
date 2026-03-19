@@ -239,12 +239,17 @@ export default function UanDetails() {
     const draw = () => {
       if (!sigCanvasRef.current) return;
       const img = new Image();
+      img.crossOrigin = "anonymous"; // required for drawImage with S3 signed URLs
       img.onload = () => {
         if (!sigCanvasRef.current) return;
         const ctx = sigCanvasRef.current.getContext("2d");
         ctx.fillStyle = "#fff";
         ctx.fillRect(0, 0, sigCanvasRef.current.width, sigCanvasRef.current.height);
         ctx.drawImage(img, 0, 0, sigCanvasRef.current.width, sigCanvasRef.current.height);
+      };
+      img.onerror = () => {
+        // If CORS blocks canvas draw, fall back to showing timestamp only
+        console.warn("Signature image load failed — CORS or URL expired");
       };
       img.src = sigDataUrl;
     };
@@ -319,14 +324,21 @@ export default function UanDetails() {
               const docRes = await apiFetch(`${API}/documents/${d.employee_id}`);
               if (docRes.ok) {
                 const docData = await docRes.json();
-                // Flatten docs to find the signature URL
-                const findUrl = (obj, depth=0) => {
-                  if (!obj || typeof obj !== "object" || depth > 8) return null;
-                  if ((obj.key === d.epfoSignature.s3Key || obj.s3_key === d.epfoSignature.s3Key) && obj.url) return obj.url;
-                  for (const v of Object.values(obj)) { const r = findUrl(v, depth+1); if (r) return r; }
-                  return null;
+                // Build key→url map (same logic as review.js flatten)
+                const urls = {};
+                const flatten = (obj, depth=0) => {
+                  if (!obj || typeof obj !== "object" || depth > 8) return;
+                  if (obj.key && obj.url)     { urls[obj.key]     = obj.url; return; }
+                  if (obj.s3_key && obj.url)  { urls[obj.s3_key]  = obj.url; return; }
+                  if (obj.url && typeof obj.url === "string") {
+                    const k = obj.key || obj.s3_key || obj.fileKey || obj.docKey;
+                    if (k) urls[k] = obj.url;
+                  }
+                  if (Array.isArray(obj)) { obj.forEach(v => flatten(v, depth+1)); return; }
+                  Object.values(obj).forEach(v => flatten(v, depth+1));
                 };
-                const sigUrl = findUrl(docData);
+                flatten(docData);
+                const sigUrl = urls[d.epfoSignature.s3Key];
                 if (sigUrl) setSigDataUrl(sigUrl); // triggers canvas restore useEffect
               }
             } catch(_) {}
