@@ -273,7 +273,11 @@ export default function ReviewPage() {
   const [loading,      setLoading]      = useState(true);
   const [acks,         setAcks]         = useState(Array(ACK_STATEMENTS.length).fill(false));
   const acksRestoredRef = useRef(false);
-  const [profileEdited, setProfileEdited] = useState(false); // true if user came from editing a page
+  const [profileEdited, setProfileEdited] = useState(false);
+  // Capture ?edited=1 synchronously on first render — before router.replace cleans the URL
+  const editedOnMount = useRef(
+    typeof window !== "undefined" && window.location.search.includes("edited=1")
+  );
   const [saveStatus,   setSaveStatus]   = useState("");
   const [submitting,   setSubmitting]   = useState(false);
   const [showSignout,  setShowSignout]  = useState(false);
@@ -287,16 +291,16 @@ export default function ReviewPage() {
     if (user.role !== "employee") { router.replace("/employee/login"); return; }
   }, [ready, user, router]);
 
-  // If user navigated here after editing pages 1-4, reset acks and show re-confirm banner
+  // If user arrived with ?edited=1 — reset acks, show banner, clean URL
   useEffect(() => {
-    if (router.query.edited === "1") {
+    if (editedOnMount.current) {
       setAcks(Array(ACK_STATEMENTS.length).fill(false));
       acksRestoredRef.current = false;
       setProfileEdited(true);
-      // Remove ?edited from URL cleanly without reloading
       router.replace("/employee/review", undefined, { shallow: true });
+      editedOnMount.current = false; // consumed — clear so Back/forward nav works normally
     }
-  }, [router.query.edited]);
+  }, []);
 
   const loadData = useCallback(async () => {
     try {
@@ -304,9 +308,8 @@ export default function ReviewPage() {
       if (dRes.ok) {
         const d = await dRes.json();
         setDraft(d);
-        // Only restore acks if user did NOT come from editing (no ?edited=1 in URL)
-        const isEdited = typeof window !== "undefined" && window.location.search.includes("edited=1");
-        if (!isEdited && d.acknowledgements_review && !acksRestoredRef.current) {
+        // Only restore acks if user did NOT arrive from editing a page
+        if (!editedOnMount.current && d.acknowledgements_review && !acksRestoredRef.current) {
           const restored = ACK_STATEMENTS.map((_, i) => !!d.acknowledgements_review[String(i)]);
           if (restored.some(Boolean)) { setAcks(restored); acksRestoredRef.current = true; }
         }
