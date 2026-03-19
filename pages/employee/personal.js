@@ -273,22 +273,22 @@ function ConsentTab({ apiFetch, profileStatus }) {
   },[apiFetch]);
   useEffect(()=>{load();},[load]);
   useEffect(()=>{const id=setInterval(load,15000);return()=>clearInterval(id);},[load]);
-  const respond=useCallback(async(consentId,decision,msg)=>{
+  const respond=async(consentId,decision)=>{
     setActing(consentId);setActionError(p=>({...p,[consentId]:""}));
     try{
-      const res=await apiFetch(`${API}/consent/respond`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({consent_id:consentId,status:decision==="approved"?"APPROVED":"DECLINED",responded_at:Date.now(),reply_message:msg||""})});
+      const res=await apiFetch(`${API}/consent/respond`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({consent_id:consentId,status:decision==="approved"?"APPROVED":"DECLINED",responded_at:Date.now(),reply_message:replyMsg[consentId]||""})});
       if(res.ok){await load();}else{const errData=await res.json().catch(()=>({}));setActionError(p=>({...p,[consentId]:errData.detail||errData.message||`Error ${res.status}`}));}
     }catch(e){setActionError(p=>({...p,[consentId]:"Network error — please retry"}));}
     setActing(null);
-  },[apiFetch,load]);
-  const withdraw=useCallback(async(consentId)=>{
+  };
+  const withdraw=async(consentId)=>{
     setActing(consentId);setActionError(p=>({...p,[consentId]:""}));
     try{
       const res=await apiFetch(`${API}/consent/withdraw?consent_id=${consentId}`,{method:"POST"});
       if(res.ok){await load();}else{const errData=await res.json().catch(()=>({}));setActionError(p=>({...p,[consentId]:errData.detail||errData.message||`Error ${res.status}`}));}
     }catch(e){setActionError(p=>({...p,[consentId]:"Network error — please retry"}));}
     setActing(null);
-  },[apiFetch,load]);
+  };
   const norm=(c)=>({...c,status:String(c.status||"pending").toLowerCase()});
   if(loading)return <p style={{color:"#8b88b0",padding:"1rem 0",fontSize:"0.875rem"}}>Loading consents…</p>;
   if(!consents.length)return(<div style={{textAlign:"center",padding:"3rem",background:"#fff",borderRadius:14,boxShadow:"0 6px 28px rgba(30,26,62,0.22)"}}>
@@ -297,57 +297,38 @@ function ConsentTab({ apiFetch, profileStatus }) {
     <p style={{fontSize:"0.82rem",color:"#8b88b0",marginTop:6}}>Employers will appear here when they request your data</p>
   </div>);
   const all=consents.map(norm);
-  const pending=all.filter(c=>c.status==="pending");
-  const approved=all.filter(c=>c.status==="approved");
-  const declined=all.filter(c=>c.status==="declined");
-  const revoked=all.filter(c=>c.status==="revoked");
+  const pending=all.filter(c=>c.status==="pending");const approved=all.filter(c=>c.status==="approved");
+  const declined=all.filter(c=>c.status==="declined");const revoked=all.filter(c=>c.status==="revoked");
   const sColor={pending:"#f59e0b",approved:"#16a34a",declined:"#ef4444",revoked:"#94a3b8"};
   const sBg={pending:"#fffbeb",approved:"#f0fdf4",declined:"#fff5f5",revoked:"#f8fafc"};
   const profileNotSubmitted=profileStatus!=="submitted";
-
-  const renderCard=(c)=>(
-    <div key={c.consent_id} style={{border:"1px solid #ebe9f5",borderRadius:12,padding:"1.1rem 1.25rem",marginBottom:"0.65rem",background:"#fff",boxShadow:"0 1px 5px rgba(79,70,229,0.05)"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-        <div style={{flex:1}}>
-          <div style={{fontWeight:700,color:"#1a1730",fontSize:"0.93rem"}}>{c.requestor_name||c.employer_name||c.requestor_email||c.employer_email}</div>
-          {c.message&&<div style={{marginTop:"0.5rem",padding:"0.5rem 0.75rem",background:"#f5f3ff",border:"1px solid #ddd6fe",borderRadius:8}}>
-            <div style={{fontSize:"0.67rem",fontWeight:700,color:"#4f46e5",textTransform:"uppercase",letterSpacing:0.5,marginBottom:3}}>Message</div>
-            <div style={{fontSize:"0.84rem",color:"#6b6894",lineHeight:1.5}}>{c.message}</div>
-          </div>}
-        </div>
-        <span style={{padding:"0.18rem 0.7rem",borderRadius:999,fontSize:"0.7rem",fontWeight:700,color:sColor[c.status]||"#64748b",background:sBg[c.status]||"#f8fafc",whiteSpace:"nowrap",marginLeft:"0.75rem",border:`1px solid ${(sColor[c.status]||"#94a3b8")}33`}}>{c.status.charAt(0).toUpperCase()+c.status.slice(1)}</span>
+  const CC=({c})=>(<div style={{border:"1px solid #ebe9f5",borderRadius:12,padding:"1.1rem 1.25rem",marginBottom:"0.65rem",background:"#fff",boxShadow:"0 1px 5px rgba(79,70,229,0.05)"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+      <div style={{flex:1}}>
+        <div style={{fontWeight:700,color:"#1a1730",fontSize:"0.93rem"}}>{c.requestor_name||c.employer_name||c.requestor_email||c.employer_email}</div>
+        {c.message&&<div style={{marginTop:"0.5rem",padding:"0.5rem 0.75rem",background:"#f5f3ff",border:"1px solid #ddd6fe",borderRadius:8}}>
+          <div style={{fontSize:"0.67rem",fontWeight:700,color:"#4f46e5",textTransform:"uppercase",letterSpacing:0.5,marginBottom:3}}>Message</div>
+          <div style={{fontSize:"0.84rem",color:"#6b6894",lineHeight:1.5}}>{c.message}</div>
+        </div>}
       </div>
-      {actionError[c.consent_id]&&<p style={{fontSize:"0.75rem",color:"#ef4444",marginTop:"0.5rem",fontWeight:600}}>⚠️ {actionError[c.consent_id]}</p>}
-      {c.status==="pending"&&(<div style={{marginTop:"0.8rem"}}>
-        {profileNotSubmitted&&<div style={{fontSize:"0.75rem",color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:"0.5rem 0.75rem",marginBottom:"0.6rem"}}>⚠️ Complete and submit your profile before approving consent requests.</div>}
-        <textarea
-          className="cmsg"
-          placeholder="Optional message to employer…"
-          value={replyMsg[c.consent_id]||""}
-          onChange={e=>{const val=e.target.value;setReplyMsg(p=>({...p,[c.consent_id]:val}));}}
-          style={{marginBottom:"0.5rem"}}
-        />
-        <div style={{display:"flex",gap:"0.5rem"}}>
-          <button disabled={acting===c.consent_id||profileNotSubmitted} onClick={()=>respond(c.consent_id,"approved",replyMsg[c.consent_id]||"")} style={{flex:1,padding:"0.5rem",background:profileNotSubmitted?"#e5e7eb":"#16a34a",color:profileNotSubmitted?"#9ca3af":"#fff",border:"none",borderRadius:8,fontWeight:700,cursor:(acting===c.consent_id||profileNotSubmitted)?"not-allowed":"pointer",fontSize:"0.875rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Approve"}</button>
-          <button disabled={acting===c.consent_id} onClick={()=>respond(c.consent_id,"declined",replyMsg[c.consent_id]||"")} style={{flex:1,padding:"0.5rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:8,fontWeight:700,cursor:acting===c.consent_id?"not-allowed":"pointer",fontSize:"0.875rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Decline"}</button>
-        </div>
-      </div>)}
-      {c.status==="approved"&&(<div style={{marginTop:"0.8rem"}}>
-        <button disabled={acting===c.consent_id} onClick={()=>withdraw(c.consent_id)} style={{padding:"0.45rem 1rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:8,fontWeight:600,cursor:acting===c.consent_id?"not-allowed":"pointer",fontSize:"0.8rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Withdraw consent"}</button>
-        <span style={{fontSize:"0.7rem",color:"#94a3b8",marginLeft:"0.6rem"}}>Employer will immediately lose access</span>
-      </div>)}
+      <span style={{padding:"0.18rem 0.7rem",borderRadius:999,fontSize:"0.7rem",fontWeight:700,color:sColor[c.status]||"#64748b",background:sBg[c.status]||"#f8fafc",whiteSpace:"nowrap",marginLeft:"0.75rem",border:`1px solid ${(sColor[c.status]||"#94a3b8")}33`}}>{c.status.charAt(0).toUpperCase()+c.status.slice(1)}</span>
     </div>
-  );
-
-  const SL=({text,cnt})=><div style={{fontSize:"0.68rem",fontWeight:700,color:"#8b88b0",textTransform:"uppercase",letterSpacing:1,margin:"1.1rem 0 0.5rem"}}>{text}{cnt!==undefined&&` (${cnt})`}</div>;
-  return(
-    <div>
-      {pending.length>0&&<><SL text="Pending" cnt={pending.length}/>{pending.map(c=>renderCard(c))}</>}
-      {approved.length>0&&<><SL text="Approved"/>{approved.map(c=>renderCard(c))}</>}
-      {declined.length>0&&<><SL text="Declined"/>{declined.map(c=>renderCard(c))}</>}
-      {revoked.length>0&&<><SL text="Withdrawn"/>{revoked.map(c=>renderCard(c))}</>}
-    </div>
-  );
+    {actionError[c.consent_id]&&<p style={{fontSize:"0.75rem",color:"#ef4444",marginTop:"0.5rem",fontWeight:600}}>⚠️ {actionError[c.consent_id]}</p>}
+    {c.status==="pending"&&(<div style={{marginTop:"0.8rem"}}>
+      {profileNotSubmitted&&<div style={{fontSize:"0.75rem",color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:"0.5rem 0.75rem",marginBottom:"0.6rem"}}>⚠️ Complete and submit your profile before approving consent requests.</div>}
+      <textarea className="cmsg" placeholder="Optional message to employer…" value={replyMsg[c.consent_id]||""} onChange={e=>setReplyMsg(p=>({...p,[c.consent_id]:e.target.value}))} style={{marginBottom:"0.5rem"}}/>
+      <div style={{display:"flex",gap:"0.5rem"}}>
+        <button disabled={acting===c.consent_id||profileNotSubmitted} onClick={()=>respond(c.consent_id,"approved")} style={{flex:1,padding:"0.5rem",background:profileNotSubmitted?"#e5e7eb":"#16a34a",color:profileNotSubmitted?"#9ca3af":"#fff",border:"none",borderRadius:8,fontWeight:700,cursor:(acting===c.consent_id||profileNotSubmitted)?"not-allowed":"pointer",fontSize:"0.875rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Approve"}</button>
+        <button disabled={acting===c.consent_id} onClick={()=>respond(c.consent_id,"declined")} style={{flex:1,padding:"0.5rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:8,fontWeight:700,cursor:acting===c.consent_id?"not-allowed":"pointer",fontSize:"0.875rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Decline"}</button>
+      </div>
+    </div>)}
+    {c.status==="approved"&&(<div style={{marginTop:"0.8rem"}}>
+      <button disabled={acting===c.consent_id} onClick={()=>withdraw(c.consent_id)} style={{padding:"0.45rem 1rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:8,fontWeight:600,cursor:acting===c.consent_id?"not-allowed":"pointer",fontSize:"0.8rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Withdraw consent"}</button>
+      <span style={{fontSize:"0.7rem",color:"#94a3b8",marginLeft:"0.6rem"}}>Employer will immediately lose access</span>
+    </div>)}
+  </div>);
+  const SL=({text,count})=><div style={{fontSize:"0.68rem",fontWeight:700,color:"#8b88b0",textTransform:"uppercase",letterSpacing:1,margin:"1.1rem 0 0.5rem"}}>{text}{count!==undefined&&` (${count})`}</div>;
+  return(<div>{pending.length>0&&<><SL text="Pending" count={pending.length}/>{pending.map(c=><CC key={c.consent_id} c={c}/>)}</>}{approved.length>0&&<><SL text="Approved"/>{approved.map(c=><CC key={c.consent_id} c={c}/>)}</>}{declined.length>0&&<><SL text="Declined"/>{declined.map(c=><CC key={c.consent_id} c={c}/>)}</>}{revoked.length>0&&<><SL text="Withdrawn"/>{revoked.map(c=><CC key={c.consent_id} c={c}/>)}</>}</div>);
 }
 
 function F({ l, v, s, t = "text", r = true }) {
@@ -690,7 +671,7 @@ export default function PersonalDetails() {
   };
 
   const handleSaveSignout = async () => { try { await saveDraft(); isDirtyRef.current = false; } catch (_) {} logout(); };
-  const handleNavigate = async (path) => { if (isDirtyRef.current) { try { await saveDraft(); isDirtyRef.current = false; } catch (_) {} } const dest = path === "/employee/review" ? "/employee/review?edited=1" : path; router.push(dest); };
+  const handleNavigate = async (path) => { const wasDirty = isDirtyRef.current; if (wasDirty) { try { await saveDraft(); isDirtyRef.current = false; } catch (_) {} } const dest = (path === "/employee/review" && wasDirty) ? "/employee/review?edited=1" : path; router.push(dest); };
   const handleSignout  = async () => { if (isDirtyRef.current) { try { await saveDraft(); } catch (_) {} } logout(); };
 
   const aadhaarDisplay = aadhaarEditing
