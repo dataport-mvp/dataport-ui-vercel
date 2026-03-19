@@ -9,6 +9,16 @@ const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 const ACCENTS = { 1:"#4f46e5", 2:"#d97706", 3:"#7c3aed", 4:"#0891b2", 5:"#16a34a" };
 const STEP_DONE_BG = "#2a2460"; const STEP_DONE_CK = "#a78bfa"; const STEP_CONN = "#a78bfa";
 
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+function isoToDisplay(iso) {
+  if (!iso || !iso.includes("-")) return iso || "";
+  const [y, mo, d] = iso.split("-");
+  const idx = parseInt(mo, 10) - 1;
+  const mName = MONTH_NAMES[idx] || mo;
+  return `${parseInt(d,10)} ${mName} ${y}`;
+}
+
 const G = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -38,10 +48,12 @@ const G = `
   .in:focus{border-color:#4f46e5;background:#fff;box-shadow:0 0 0 3px rgba(79,70,229,0.13);}
   .in.err{border-color:#ef4444!important;background:#fff8f8!important;box-shadow:0 0 0 3px rgba(239,68,68,0.10)!important;}
   .err-msg{font-size:0.68rem;color:#ef4444;font-weight:600;margin-top:0.2rem;display:block;}
+  .date-wrap{position:relative;}
   .date-input{padding:0.65rem 0.875rem;background:#ececf9;border:1.5px solid #b8b4d4;border-radius:9px;font-family:inherit;font-size:0.875rem;color:#1a1730;outline:none;width:100%;transition:all 0.18s;}
   .date-input:focus{border-color:#4f46e5;background:#fff;box-shadow:0 0 0 3px rgba(79,70,229,0.13);}
   .date-input::placeholder{color:#b8b4d4;}
   .date-input.err{border-color:#ef4444!important;background:#fff8f8!important;}
+  .date-display{margin-top:0.22rem;font-size:0.72rem;color:#4f46e5;font-weight:600;letter-spacing:0.2px;}
   .sbar{display:flex;justify-content:space-between;align-items:center;margin-top:1.5rem;padding:1rem 1.5rem;background:#1e1a3e;border-radius:14px;box-shadow:0 4px 20px rgba(15,12,40,0.28);}
   .ss{font-size:0.84rem;color:#9d9bc4;font-weight:500;}.ss.ok{color:#4ade80;}.ss.err{color:#f87171;}
   .pbtn{padding:0.72rem 1.9rem;background:#4f46e5;color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:0.875rem;font-weight:700;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 14px rgba(79,70,229,0.4);}
@@ -123,23 +135,51 @@ function YesNo({ label, value, onChange }) {
   );
 }
 
+// ── DateField: text input DD/MM/YYYY, no calendar, shows month name ──
 function DateField({ l, v, s, r=true, errKey, errors, onFix }) {
   const hasErr = errKey && errors && errors[errKey];
   const [raw,setRaw] = useState(()=>{ if(v&&v.includes("-")){const[y,mo,dd]=v.split("-");return `${dd}/${mo}/${y}`;}return v||"";});
   const [focused,setFocused] = useState(false);
-  useEffect(()=>{ if(!focused){if(v&&v.includes("-")){const[y,mo,dd]=v.split("-");setRaw(`${dd}/${mo}/${y}`);}else setRaw(v||"");}}, [v,focused]);
+
+  useEffect(()=>{
+    if(!focused){
+      if(v&&v.includes("-")){const[y,mo,dd]=v.split("-");setRaw(`${dd}/${mo}/${y}`);}
+      else setRaw(v||"");
+    }
+  },[v,focused]);
+
   const handleChange=(e)=>{
     let val=e.target.value.replace(/[^0-9/]/g,"");
     if(val.length===2&&raw.length===1)val=val+"/";
     if(val.length===5&&raw.length===4)val=val+"/";
     if(val.length>10)return;
     setRaw(val);
-    if(val.length===10){const[dd,mo,y]=val.split("/");if(dd&&mo&&y&&y.length===4){s(`${y}-${mo}-${dd}`);if(onFix&&hasErr)onFix(errKey);}}else{s("");}
+    if(val.length===10){
+      const[dd,mo,y]=val.split("/");
+      if(dd&&mo&&y&&y.length===4){
+        s(`${y}-${mo}-${dd}`);
+        if(onFix&&hasErr)onFix(errKey);
+      }
+    } else { s(""); }
   };
+
+  const displayDate = (!focused && v && v.includes("-")) ? isoToDisplay(v) : null;
+
   return(
     <div className="fi">
       <span className="fl">{l}{r&&<span style={{color:"#ef4444",marginLeft:2}}>*</span>}</span>
-      <input className={`date-input${hasErr?" err":""}`} value={raw} placeholder="DD/MM/YYYY" onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)} onChange={handleChange} maxLength={10} inputMode="numeric"/>
+      <input
+        className={`date-input${hasErr?" err":""}`}
+        value={focused ? raw : raw}
+        placeholder="DD/MM/YYYY"
+        onFocus={()=>setFocused(true)}
+        onBlur={()=>setFocused(false)}
+        onChange={handleChange}
+        maxLength={10}
+        inputMode="numeric"
+        autoComplete="off"
+      />
+      {displayDate && <div className="date-display">📅 {displayDate}</div>}
       {hasErr&&<span className="err-msg">Required</span>}
     </div>
   );
@@ -190,65 +230,46 @@ export default function EducationDetails() {
   const [serverDraft,setServerDraft]=useState(null);
   const [errors,setErrors]=useState({});
   const isDirtyRef=useRef(false);
-  const d=(fn)=>(val)=>{fn(val);isDirtyRef.current=true;};
+  const wasEditedRef=useRef(false);
+  const d=(fn)=>(val)=>{fn(val);isDirtyRef.current=true;wasEditedRef.current=true;};
   const fixErr=(key)=>setErrors(p=>({...p,[key]:false}));
 
-  // ── Qualification toggles ─────────────────────────────────────────
   const [hasUG,setHasUG]=useState("");
   const [hasPG,setHasPG]=useState("");
   const [hasDip,setHasDip]=useState("");
-  // afterTenth: what did user pursue immediately after Class X?
-  // "Intermediate" | "Diploma" | "Both" | ""
   const [afterTenth,setAfterTenth]=useState("");
   const [hasCerts,setHasCerts]=useState("");
   const [hasProfQual,setHasProfQual]=useState("");
-  const [hasArticleship,setHasArticleship]=useState(""); // NEW
+  const [hasArticleship,setHasArticleship]=useState("");
 
-  // ── Class X ──────────────────────────────────────────────────────
   const [xSchool,setXSchool]=useState("");const [xBoard,setXBoard]=useState("");const [xHall,setXHall]=useState("");
   const [xFrom,setXFrom]=useState("");const [xTo,setXTo]=useState("");const [xAddress,setXAddress]=useState("");
   const [xYear,setXYear]=useState("");const [xResultType,setXResultType]=useState("");const [xResultValue,setXResultValue]=useState("");const [xMedium,setXMedium]=useState("");const [xCertKey,setXCertKey]=useState("");
 
-  // ── Intermediate ─────────────────────────────────────────────────
   const [iCollege,setICollege]=useState("");const [iBoard,setIBoard]=useState("");const [iHall,setIHall]=useState("");
   const [iFrom,setIFrom]=useState("");const [iTo,setITo]=useState("");const [iAddress,setIAddress]=useState("");const [iMode,setIMode]=useState("");
   const [iYear,setIYear]=useState("");const [iResultType,setIResultType]=useState("");const [iResultValue,setIResultValue]=useState("");const [iMedium,setIMedium]=useState("");const [iCertKey,setICertKey]=useState("");
 
-  // ── UG ───────────────────────────────────────────────────────────
   const [ugCollege,setUgCollege]=useState("");const [ugUniversity,setUgUniversity]=useState("");const [ugCourse,setUgCourse]=useState("");
-  const [ugSpecialization,setUgSpecialization]=useState(""); // NEW — for MBBS/BDS/LLB/BArch/B.Pharm etc.
+  const [ugSpecialization,setUgSpecialization]=useState("");
   const [ugHall,setUgHall]=useState("");const [ugFrom,setUgFrom]=useState("");const [ugTo,setUgTo]=useState("");const [ugAddress,setUgAddress]=useState("");const [ugMode,setUgMode]=useState("");
   const [ugYear,setUgYear]=useState("");const [ugResultType,setUgResultType]=useState("");const [ugResultValue,setUgResultValue]=useState("");const [ugBacklogs,setUgBacklogs]=useState("");const [ugMedium,setUgMedium]=useState("");
   const [ugProvKey,setUgProvKey]=useState("");const [ugConvoKey,setUgConvoKey]=useState("");
 
-  // ── PG ───────────────────────────────────────────────────────────
   const [pgCollege,setPgCollege]=useState("");const [pgUniversity,setPgUniversity]=useState("");const [pgCourse,setPgCourse]=useState("");
-  const [pgSpecialization,setPgSpecialization]=useState(""); // NEW — for MD/MS/MBA specialization
+  const [pgSpecialization,setPgSpecialization]=useState("");
   const [pgHall,setPgHall]=useState("");const [pgFrom,setPgFrom]=useState("");const [pgTo,setPgTo]=useState("");const [pgAddress,setPgAddress]=useState("");const [pgMode,setPgMode]=useState("");
   const [pgYear,setPgYear]=useState("");const [pgResultType,setPgResultType]=useState("");const [pgResultValue,setPgResultValue]=useState("");const [pgBacklogs,setPgBacklogs]=useState("");const [pgMedium,setPgMedium]=useState("");
   const [pgProvKey,setPgProvKey]=useState("");const [pgConvoKey,setPgConvoKey]=useState("");
 
-  // ── Diploma ──────────────────────────────────────────────────────
   const [dipInstitute,setDipInstitute]=useState("");const [dipBoard,setDipBoard]=useState("");const [dipCourse,setDipCourse]=useState("");
   const [dipFrom,setDipFrom]=useState("");const [dipTo,setDipTo]=useState("");const [dipYear,setDipYear]=useState("");
   const [dipResultType,setDipResultType]=useState("");const [dipResultValue,setDipResultValue]=useState("");const [dipMode,setDipMode]=useState("");const [dipCertKey,setDipCertKey]=useState("");
 
-  // ── Certifications & Professional Qualifications ─────────────────
   const [certs,setCerts]=useState([{name:"",certKey:""}]);
   const [profQuals,setProfQuals]=useState([{type:"",level:"",year:"",certKey:""}]);
-
-  // ── Articleship / Practical Training (CA/CS/CMA) ─────────────────
-  // NEW section
-  const [articleships,setArticleships]=useState([{
-    firm:"", city:"", principalName:"", regNo:"",
-    from:"", to:"", isOngoing:"",
-    type:"",  // "CA Articleship" | "CS Training" | "CMA Training" | "Internship" | "Other"
-    certKey:"",
-  }]);
-
-  // ── Education gap ────────────────────────────────────────────────
-  // NEW — gap between last education and first job
-  const [hasEduGap,setHasEduGap]=useState("");  // "Yes" | "No" | ""
+  const [articleships,setArticleships]=useState([{firm:"",city:"",principalName:"",regNo:"",from:"",to:"",isOngoing:"",type:"",certKey:""}]);
+  const [hasEduGap,setHasEduGap]=useState("");
   const [eduGapReason,setEduGapReason]=useState("");
 
   useEffect(()=>{
@@ -291,7 +312,6 @@ export default function EducationDetails() {
           if(pg.provKey)setPgProvKey(pg.provKey);if(pg.convoKey)setPgConvoKey(pg.convoKey);if(!pg.provKey&&pg.certKey)setPgProvKey(pg.certKey);
 
           if(edu.afterTenth)setAfterTenth(edu.afterTenth);
-          // legacy: if old data had hasDip="Yes" but no afterTenth, infer afterTenth
           else if(edu.hasDip==="Yes"&&dip.institute){setAfterTenth("Diploma");}
           if(edu.hasDip)setHasDip(edu.hasDip); else if(dip.institute)setHasDip("Yes");
           if(edu.hasCerts)setHasCerts(edu.hasCerts);
@@ -304,8 +324,6 @@ export default function EducationDetails() {
           if(certsData.length>0)setCerts(certsData.map(c=>({name:typeof c.name==="string"?c.name:"",certKey:typeof c.certKey==="string"?c.certKey:""})));
           if(profData.length>0)setProfQuals(profData);
           if(artData.length>0)setArticleships(artData);
-
-          // Education gap
           if(edu.hasEduGap)setHasEduGap(edu.hasEduGap);
           if(edu.eduGapReason)setEduGapReason(edu.eduGapReason);
         }
@@ -337,12 +355,10 @@ export default function EducationDetails() {
       if(!ugMode)e.ugMode=true;if(!ugResultType)e.ugResultType=true;if(!ugResultValue)e.ugResultValue=true;if(!ugMedium)e.ugMedium=true;if(!ugBacklogs)e.ugBacklogs=true;if(ugBacklogs!=="Yes"&&!ugProvKey)e.ugProvKey=true;
     }
     if(hasPG==="Yes"){if(!pgCollege)e.pgCollege=true;if(!pgUniversity)e.pgUniversity=true;if(!pgCourse)e.pgCourse=true;if(!pgHall)e.pgHall=true;if(!pgFrom)e.pgFrom=true;if(!pgTo)e.pgTo=true;if(!pgYear)e.pgYear=true;if(!pgAddress)e.pgAddress=true;if(!pgMode)e.pgMode=true;if(!pgResultType)e.pgResultType=true;if(!pgResultValue)e.pgResultValue=true;if(!pgMedium)e.pgMedium=true;if(!pgBacklogs)e.pgBacklogs=true;if(pgBacklogs!=="Yes"&&!pgProvKey)e.pgProvKey=true;}
-    // Additional diploma (separate from afterTenth path) — only if hasDip toggled Yes explicitly
     if(hasDip==="Yes"&&afterTenth!=="Diploma"&&afterTenth!=="Both"){if(!dipInstitute)e.dipInstitute=true;if(!dipBoard)e.dipBoard=true;if(!dipCourse)e.dipCourse=true;if(!dipFrom)e.dipFrom=true;if(!dipTo)e.dipTo=true;if(!dipYear)e.dipYear=true;if(!dipResultType)e.dipResultType=true;if(!dipResultValue)e.dipResultValue=true;if(!dipMode)e.dipMode=true;if(!dipCertKey)e.dipCertKey=true;}
     if(hasCerts==="Yes"){certs.forEach((c,idx)=>{if(!c.name)e[`cert_name_${idx}`]=true;if(!c.certKey)e[`cert_key_${idx}`]=true;});}
     if(hasProfQual==="Yes"){profQuals.forEach((q,idx)=>{if(!q.type)e[`pq_type_${idx}`]=true;if(!q.level)e[`pq_level_${idx}`]=true;if(!q.year)e[`pq_year_${idx}`]=true;});}
     if(hasArticleship==="Yes"){articleships.forEach((a,idx)=>{if(!a.firm)e[`art_firm_${idx}`]=true;if(!a.from)e[`art_from_${idx}`]=true;if(!a.type)e[`art_type_${idx}`]=true;});}
-    // hasDip required only if afterTenth is already answered (additional diploma below is optional)
     if(!hasCerts) e.hasCerts=true;
     if(!hasProfQual) e.hasProfQual=true;
     if(!hasArticleship) e.hasArticleship=true;
@@ -379,6 +395,9 @@ export default function EducationDetails() {
       bankName:dr.bankName,bankAccountName:dr.bankAccountName,ifsc:dr.ifsc,branch:dr.branch,accountType:dr.accountType,accountFull:dr.accountFull,accountLast4:dr.accountLast4,
       uanNumber:dr.uanNumber,nameAsPerUan:dr.nameAsPerUan,mobileLinked:dr.mobileLinked,isActive:dr.isActive,pfRecords:dr.pfRecords,
       acknowledgements_profile:dr.acknowledgements_profile,education:buildEducation(),
+      // ── Cascade flag: page 2 edited → page 5 must re-ask review acks ──
+      page2_edited: wasEditedRef.current ? true : (dr.page2_edited || false),
+      ...(wasEditedRef.current ? { acknowledgements_review: {} } : {}),
     })});
     if(!res.ok)throw new Error(parseError(await res.json().catch(()=>({}))));
     setServerDraft({...dr,education:buildEducation()});isDirtyRef.current=false;
@@ -430,7 +449,7 @@ export default function EducationDetails() {
         <div className="wrap">
           <StepNav current={2} onNavigate={handleNavigate}/>
 
-          {/* ── Class X ──────────────────────────────────────────────────── */}
+          {/* ── Class X ── */}
           <div className="sc ind">
             <div className="sh"><div className="si ind">📚</div><span className="st">Class X — SSC / Matriculation</span></div>
             <div className="fr"><F l="School Name" v={xSchool} s={d(setXSchool)} errKey="xSchool" errors={errors} onFix={fixErr}/><F l="Board Name" v={xBoard} s={d(setXBoard)} errKey="xBoard" errors={errors} onFix={fixErr}/><F l="Hall Ticket / Roll No." v={xHall} s={d(setXHall)} errKey="xHall" errors={errors} onFix={fixErr}/></div>
@@ -444,12 +463,10 @@ export default function EducationDetails() {
             <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Class X Certificate" errKey="xCertKey"/><FileUpload label="Upload Class X Certificate" category="education" subKey="classX" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={xCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setXCertKey(key);isDirtyRef.current=true;fixErr("xCertKey");}}/></div>
           </div>
 
-          {/* ── After Class X — smart path selector ───────────────────────── */}
+          {/* ── After Class X ── */}
           <div className="sc cyn">
             <div className="sh"><div className="si cyn">🔀</div><span className="st">After Class X — What did you pursue? <span style={{color:"#ef4444",fontSize:"0.82rem"}}>*</span></span></div>
-            <p style={{fontSize:"0.76rem",color:"#6b6894",marginBottom:"1rem",fontWeight:500,lineHeight:1.55}}>
-              After completing Class X (10th), what was your next qualification? This determines which sections appear below.
-            </p>
+            <p style={{fontSize:"0.76rem",color:"#6b6894",marginBottom:"1rem",fontWeight:500,lineHeight:1.55}}>After completing Class X (10th), what was your next qualification?</p>
             <div style={{display:"flex",gap:"0.6rem",flexWrap:"wrap"}}>
               {[
                 {v:"Intermediate", label:"Intermediate / 12th", desc:"Regular HSC / Pre-University / +2"},
@@ -458,12 +475,7 @@ export default function EducationDetails() {
               ].map(({v,label,desc})=>(
                 <button key={v} type="button"
                   onClick={()=>{setAfterTenth(v);isDirtyRef.current=true;fixErr("afterTenth");}}
-                  style={{
-                    padding:"0.6rem 1rem",borderRadius:10,cursor:"pointer",textAlign:"left",transition:"all 0.18s",
-                    border:afterTenth===v?"2px solid #0891b2":"1.5px solid #dddaf0",
-                    background:afterTenth===v?"#ecfeff":"#f2f1f9",
-                    minWidth:180,
-                  }}>
+                  style={{padding:"0.6rem 1rem",borderRadius:10,cursor:"pointer",textAlign:"left",transition:"all 0.18s",border:afterTenth===v?"2px solid #0891b2":"1.5px solid #dddaf0",background:afterTenth===v?"#ecfeff":"#f2f1f9",minWidth:180}}>
                   <div style={{fontSize:"0.84rem",fontWeight:700,color:afterTenth===v?"#0891b2":"#1a1730"}}>{label}</div>
                   <div style={{fontSize:"0.68rem",color:"#8b88b0",marginTop:"0.15rem",fontWeight:500}}>{desc}</div>
                 </button>
@@ -472,7 +484,7 @@ export default function EducationDetails() {
             {errors.afterTenth&&<span className="err-msg" style={{marginTop:"0.5rem",display:"block"}}>Please select your path after Class X</span>}
           </div>
 
-          {/* ── Intermediate — shown when afterTenth is Intermediate or Both ── */}
+          {/* ── Intermediate ── */}
           {(afterTenth==="Intermediate"||afterTenth==="Both")&&(
           <div className="sc cyn">
             <div className="sh"><div className="si cyn">🏫</div><span className="st">Intermediate — HSC / 12th</span></div>
@@ -489,11 +501,10 @@ export default function EducationDetails() {
           </div>
           )}
 
-          {/* ── Diploma after 10th — shown when afterTenth is Diploma or Both ── */}
+          {/* ── Diploma after 10th ── */}
           {(afterTenth==="Diploma"||afterTenth==="Both")&&(
           <div className="sc grn">
             <div className="sh"><div className="si grn">🔧</div><span className="st">Diploma — After Class X</span></div>
-            <p style={{fontSize:"0.72rem",color:"#8b88b0",marginBottom:"0.85rem",fontWeight:500,lineHeight:1.5}}>3-year Polytechnic Diploma / ITI / Technical qualification pursued directly after 10th.</p>
             <div className="fr"><F l="Institute Name" v={dipInstitute} s={d(setDipInstitute)} errKey="dipInstitute" errors={errors} onFix={fixErr}/><F l="Board / University" v={dipBoard} s={d(setDipBoard)} errKey="dipBoard" errors={errors} onFix={fixErr}/><F l="Course / Programme" v={dipCourse} s={d(setDipCourse)} errKey="dipCourse" errors={errors} onFix={fixErr}/></div>
             <div className="fr">
               <DateField l="From" v={dipFrom} s={d(setDipFrom)} errKey="dipFrom" errors={errors} onFix={fixErr}/>
@@ -505,16 +516,14 @@ export default function EducationDetails() {
           </div>
           )}
 
-          {/* ── Undergraduate ─────────────────────────────────────────────── */}
+          {/* ── Undergraduate ── */}
           <div className="sc amb">
             <div className="sh"><div className="si amb">🎓</div><span className="st">Undergraduate — UG / Degree</span></div>
-            <p style={{fontSize:"0.72rem",color:"#8b88b0",marginBottom:"0.85rem",fontWeight:500,lineHeight:1.5}}>Covers B.Tech, B.E, BCA, BBA, BCom, BA, BSc, MBBS, BDS, LLB, BArch, B.Pharm, B.Ed, BHM, BFA, and all undergraduate professional degrees.</p>
             <YesNo label="Do you have an Undergraduate degree?" value={hasUG} onChange={(v)=>{setHasUG(v);isDirtyRef.current=true;}}/>
             {hasUG==="Yes"&&(<>
               <div className="fr"><F l="College Name" v={ugCollege} s={d(setUgCollege)} errKey="ugCollege" errors={errors} onFix={fixErr}/><F l="University Name" v={ugUniversity} s={d(setUgUniversity)} errKey="ugUniversity" errors={errors} onFix={fixErr}/><F l="Course / Degree" v={ugCourse} s={d(setUgCourse)} errKey="ugCourse" errors={errors} onFix={fixErr}/></div>
-              {/* Specialization — optional, for MBBS/BDS/LLB/BArch/B.Pharm etc. */}
               <div className="fr">
-                <F l="Specialization / Branch" v={ugSpecialization} s={d(setUgSpecialization)} r={false} errKey="ugSpecialization" errors={errors} onFix={fixErr}/>
+                <F l="Specialization / Branch" v={ugSpecialization} s={d(setUgSpecialization)} r={false}/>
                 <F l="Hall Ticket / Roll No." v={ugHall} s={d(setUgHall)} errKey="ugHall" errors={errors} onFix={fixErr}/>
                 <FS l="Mode" v={ugMode} s={d(setUgMode)} o={["Full-time","Part-time","Distance","Integrated"]} errKey="ugMode" errors={errors} onFix={fixErr}/>
               </div>
@@ -537,16 +546,14 @@ export default function EducationDetails() {
             </>)}
           </div>
 
-          {/* ── Postgraduate ──────────────────────────────────────────────── */}
+          {/* ── Postgraduate ── */}
           <div className="sc vio">
             <div className="sh"><div className="si vio">🧑‍🎓</div><span className="st">Postgraduate — PG / Masters</span></div>
-            <p style={{fontSize:"0.72rem",color:"#8b88b0",marginBottom:"0.85rem",fontWeight:500,lineHeight:1.5}}>Covers MBA, M.Tech, MCA, MCom, MA, MSc, MD, MS, MDS, LLM, M.Pharm, M.Ed, MFA, and all postgraduate professional degrees.</p>
             <YesNo label="Do you have a Postgraduate degree?" value={hasPG} onChange={(v)=>{setHasPG(v);isDirtyRef.current=true;}}/>
             {hasPG==="Yes"&&(<>
               <div className="fr"><F l="College Name" v={pgCollege} s={d(setPgCollege)} errKey="pgCollege" errors={errors} onFix={fixErr}/><F l="University Name" v={pgUniversity} s={d(setPgUniversity)} errKey="pgUniversity" errors={errors} onFix={fixErr}/><F l="Course / Degree" v={pgCourse} s={d(setPgCourse)} errKey="pgCourse" errors={errors} onFix={fixErr}/></div>
-              {/* Specialization — required for MBA, MD, MS etc. */}
               <div className="fr">
-                <F l="Specialization / Branch" v={pgSpecialization} s={d(setPgSpecialization)} r={false} errKey="pgSpecialization" errors={errors} onFix={fixErr}/>
+                <F l="Specialization / Branch" v={pgSpecialization} s={d(setPgSpecialization)} r={false}/>
                 <F l="Hall Ticket / Roll No." v={pgHall} s={d(setPgHall)} errKey="pgHall" errors={errors} onFix={fixErr}/>
                 <FS l="Mode" v={pgMode} s={d(setPgMode)} o={["Full-time","Part-time","Distance","Executive"]} errKey="pgMode" errors={errors} onFix={fixErr}/>
               </div>
@@ -569,20 +576,14 @@ export default function EducationDetails() {
             </>)}
           </div>
 
-          {/* ── Additional Diploma — only shown for Intermediate path users ── */}
-          {/* Diploma path users already filled diploma above — skip this for them */}
+          {/* ── Additional Diploma ── */}
           {afterTenth!=="Diploma"&&(
           <div className="sc grn">
             <div className="sh"><div className="si grn">🔧</div><span className="st">{afterTenth==="Both"?"Additional Diploma / Technical":"Diploma / Technical / Vocational"}</span></div>
-            <p style={{fontSize:"0.72rem",color:"#8b88b0",marginBottom:"0.85rem",fontWeight:500,lineHeight:1.5}}>
-              {afterTenth==="Both"
-                ? "Any additional diploma / certificate course taken after Intermediate or during degree."
-                : "Diploma, ITI, or any technical / vocational qualification not covered above."}
-            </p>
             <div style={{display:"flex",alignItems:"center",gap:"0.5rem",flexWrap:"wrap",marginBottom:"1rem"}}>
               <span style={{fontSize:"0.875rem",color:"#1a1730",fontWeight:600}}>
-                {afterTenth==="Both"?"Do you have an additional diploma?":"Do you have a Diploma or Technical qualification?"}{" "}
-                <span style={{color:"#8b88b0",fontSize:"0.75rem",fontWeight:400}}>(optional)</span>
+                {afterTenth==="Both"?"Do you have an additional diploma?":"Do you have a Diploma or Technical qualification?"}
+                {" "}<span style={{color:"#8b88b0",fontSize:"0.75rem",fontWeight:400}}>(optional)</span>
               </span>
               {["Yes","No"].map(v=>(
                 <button key={v} onClick={()=>{setHasDip(v);isDirtyRef.current=true;fixErr("hasDip");}} style={{padding:"0.32rem 1.1rem",borderRadius:999,border:hasDip===v?"2px solid #4f46e5":"1.5px solid #dddaf0",background:hasDip===v?"#4f46e5":"#f2f1f9",color:hasDip===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
@@ -601,10 +602,9 @@ export default function EducationDetails() {
           </div>
           )}
 
-          {/* ── Professional Qualifications ────────────────────────────────── */}
+          {/* ── Professional Qualifications ── */}
           <div className="sc slt">
             <div className="sh"><div className="si slt">🏛️</div><span className="st">Professional Qualifications</span></div>
-            <p style={{fontSize:"0.76rem",color:"#8b88b0",marginBottom:"0.9rem",fontWeight:500}}>CA, CMA (ICWA), CS, CFA, ACCA, CIMA, FRM, PMP, or any professional body qualification. CA / CMA students can also use this section even without a degree.</p>
             <div style={{display:"flex",alignItems:"center",gap:"0.5rem",flexWrap:"wrap",marginBottom:"1rem"}}>
               <span style={{fontSize:"0.875rem",color:"#1a1730",fontWeight:600}}>Do you have a professional qualification? <span style={{color:"#ef4444"}}>*</span></span>
               {["Yes","No"].map(v=>(
@@ -652,12 +652,9 @@ export default function EducationDetails() {
             </>)}
           </div>
 
-          {/* ── Articleship / Practical Training ─────────────────────────── */}
+          {/* ── Articleship ── */}
           <div className="sc ora">
             <div className="sh"><div className="si ora">📝</div><span className="st">Articleship / Practical Training</span></div>
-            <p style={{fontSize:"0.76rem",color:"#8b88b0",marginBottom:"0.9rem",fontWeight:500,lineHeight:1.5}}>
-              For CA Articleship (ICAI), CS Training (ICSI), CMA Training, medical internships, pharmacy internships, law internships, and any mandatory practical training as part of a professional course.
-            </p>
             <div style={{display:"flex",alignItems:"center",gap:"0.5rem",flexWrap:"wrap",marginBottom:"1rem"}}>
               <span style={{fontSize:"0.875rem",color:"#1a1730",fontWeight:600}}>Do you have any articleship or practical training? <span style={{color:"#ef4444"}}>*</span></span>
               {["Yes","No"].map(v=>(
@@ -710,11 +707,11 @@ export default function EducationDetails() {
             </>)}
           </div>
 
-          {/* ── Professional Certifications ────────────────────────────────── */}
+          {/* ── Certifications ── */}
           <div className="sc ros">
             <div className="sh"><div className="si ros">🏅</div><span className="st">Professional Certifications</span></div>
             <div style={{display:"flex",alignItems:"center",gap:"0.5rem",flexWrap:"wrap",marginBottom:"1rem"}}>
-              <span style={{fontSize:"0.875rem",color:"#1a1730",fontWeight:600}}>Do you have certifications? (AWS, Azure, PMP, CPA, etc.) <span style={{color:"#ef4444"}}>*</span></span>
+              <span style={{fontSize:"0.875rem",color:"#1a1730",fontWeight:600}}>Do you have certifications? <span style={{color:"#ef4444"}}>*</span></span>
               {["Yes","No"].map(v=>(
                 <button key={v} onClick={()=>{setHasCerts(v);isDirtyRef.current=true;fixErr("hasCerts");}} style={{padding:"0.32rem 1.1rem",borderRadius:999,border:hasCerts===v?"2px solid #e11d48":"1.5px solid #dddaf0",background:hasCerts===v?"#e11d48":"#f2f1f9",color:hasCerts===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
               ))}
@@ -745,13 +742,9 @@ export default function EducationDetails() {
             </>)}
           </div>
 
-          {/* ── Education Gap Before First Job ─────────────────────────────── */}
+          {/* ── Education Gap ── */}
           <div className="sc ind">
             <div className="sh"><div className="si ind">⏱</div><span className="st">Education Gap / Break Before First Job <span style={{color:"#ef4444",fontSize:"0.82rem"}}>*</span></span></div>
-            <p style={{fontSize:"0.76rem",color:"#6b6894",marginBottom:"0.9rem",fontWeight:500,lineHeight:1.55}}>
-              Was there any gap between completing your education and joining your first job? This includes breaks for exam preparation, personal reasons, higher education attempts, health reasons, or any other period of non-employment.
-            </p>
-            {/* Required Yes/No toggle */}
             <div style={{display:"flex",gap:"0.65rem",marginBottom:hasEduGap==="Yes"?"0.75rem":"0"}}>
               {["Yes","No"].map(v=>(
                 <button key={v} type="button" onClick={()=>{d(setHasEduGap)(v);if(v==="No")setEduGapReason("");fixErr("hasEduGap");}} style={{padding:"0.45rem 1.6rem",borderRadius:999,border:hasEduGap===v?"2px solid #4f46e5":"1.5px solid #dddaf0",background:hasEduGap===v?"#4f46e5":"#f2f1f9",color:hasEduGap===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.875rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
@@ -761,13 +754,7 @@ export default function EducationDetails() {
             {hasEduGap==="Yes"&&(
               <div style={{marginTop:"0.65rem"}}>
                 <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Reason for Gap <span style={{color:"#ef4444"}}>*</span></span>
-                <textarea
-                  className={`in${errors.eduGapReason?" err":""}`}
-                  style={{minHeight:72,resize:"vertical"}}
-                  value={eduGapReason}
-                  placeholder="Briefly describe the gap period and reason (e.g. UPSC preparation, family obligation, medical recovery, pursuing further education, etc.)"
-                  onChange={e=>{d(setEduGapReason)(e.target.value);fixErr("eduGapReason");}}
-                />
+                <textarea className={`in${errors.eduGapReason?" err":""}`} style={{minHeight:72,resize:"vertical"}} value={eduGapReason} placeholder="Briefly describe the gap period and reason" onChange={e=>{d(setEduGapReason)(e.target.value);fixErr("eduGapReason");}}/>
                 {errors.eduGapReason&&<span className="err-msg">Please describe the reason for the gap</span>}
               </div>
             )}
