@@ -479,9 +479,10 @@ export default function UanDetails() {
   };
 
   const handleNavigate = async (path) => {
-    if (isDirtyRef.current) { try { await saveDraft(); } catch(_) {} }
-    // Tell review page that user came from editing
-    const dest = path === "/employee/review" ? "/employee/review?edited=1" : path;
+    const wasDirty = isDirtyRef.current;
+    if (wasDirty) { try { await saveDraft(); } catch(_) {} }
+    // Only flag as edited if user actually changed something
+    const dest = (path === "/employee/review" && wasDirty) ? "/employee/review?edited=1" : path;
     router.push(dest);
   };
   const handleSignout = async () => {
@@ -499,7 +500,13 @@ export default function UanDetails() {
   };
   const handleNext = async () => {
     setSaveStatus("Saving...");
-    try { await saveDraft(); setSaveStatus("Saved ✓"); router.push("/employee/review?edited=1"); }
+    const wasDirty = isDirtyRef.current;
+    try {
+      await saveDraft();
+      setSaveStatus("Saved ✓");
+      const dest = wasDirty ? "/employee/review?edited=1" : "/employee/review";
+      router.push(dest);
+    }
     catch(err) { setSaveStatus(`Error: ${err.message || "Could not save"}`); }
   };
 
