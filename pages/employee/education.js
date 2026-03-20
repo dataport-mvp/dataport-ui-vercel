@@ -163,14 +163,23 @@ function DateField({ l, v, s, r=true, errKey, errors, onFix }) {
     } else { s(""); }
   };
 
-  const displayDate = (!focused && v && v.includes("-")) ? isoToDisplay(v) : null;
+  const getDisplayValue = () => {
+    if (focused) return raw;
+    if (v && v.includes("-")) {
+      const [y, mo, d] = v.split("-");
+      const idx = parseInt(mo, 10) - 1;
+      const mName = MONTH_NAMES[idx];
+      if (mName) return `${parseInt(d, 10)} ${mName} ${y}`;
+    }
+    return raw;
+  };
 
   return(
     <div className="fi">
       <span className="fl">{l}{r&&<span style={{color:"#ef4444",marginLeft:2}}>*</span>}</span>
       <input
         className={`date-input${hasErr?" err":""}`}
-        value={focused ? raw : raw}
+        value={getDisplayValue()}
         placeholder="DD/MM/YYYY"
         onFocus={()=>setFocused(true)}
         onBlur={()=>setFocused(false)}
@@ -179,7 +188,6 @@ function DateField({ l, v, s, r=true, errKey, errors, onFix }) {
         inputMode="numeric"
         autoComplete="off"
       />
-      {displayDate && <div className="date-display">📅 {displayDate}</div>}
       {hasErr&&<span className="err-msg">Required</span>}
     </div>
   );
@@ -395,6 +403,7 @@ export default function EducationDetails() {
       bankName:dr.bankName,bankAccountName:dr.bankAccountName,ifsc:dr.ifsc,branch:dr.branch,accountType:dr.accountType,accountFull:dr.accountFull,accountLast4:dr.accountLast4,
       uanNumber:dr.uanNumber,nameAsPerUan:dr.nameAsPerUan,mobileLinked:dr.mobileLinked,isActive:dr.isActive,pfRecords:dr.pfRecords,
       acknowledgements_profile:dr.acknowledgements_profile,education:buildEducation(),
+      last_saved_at: Date.now(),
       // ── Cascade flag: page 2 edited → page 5 must re-ask review acks ──
       page2_edited: wasEditedRef.current ? true : (dr.page2_edited || false),
       ...(wasEditedRef.current ? { acknowledgements_review: {} } : {}),
