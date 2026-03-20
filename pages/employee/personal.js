@@ -294,7 +294,10 @@ function ConsentTab({ apiFetch, profileStatus }) {
   const [acting,setActing]=useState(null);
   const [actionError,setActionError]=useState({});
   const [replyMsg,setReplyMsg]=useState({});
+  const textareaFocused=useRef(false);
   const load=useCallback(async()=>{
+    // Skip background poll while user is typing — prevents textarea remount mid-input
+    if(textareaFocused.current)return;
     try{const res=await apiFetch(`${API}/consent/my`);if(res.ok)setConsents(await res.json());}catch(_){}
     setLoading(false);
   },[apiFetch]);
@@ -329,7 +332,7 @@ function ConsentTab({ apiFetch, profileStatus }) {
   const sColor={pending:"#f59e0b",approved:"#16a34a",declined:"#ef4444",revoked:"#94a3b8"};
   const sBg={pending:"#fffbeb",approved:"#f0fdf4",declined:"#fff5f5",revoked:"#f8fafc"};
   const profileNotSubmitted=profileStatus!=="submitted";
-  const CC=({c})=>(<div style={{border:"1px solid #ebe9f5",borderRadius:12,padding:"1.1rem 1.25rem",marginBottom:"0.65rem",background:"#fff",boxShadow:"0 1px 5px rgba(79,70,229,0.05)"}}>
+  const renderCC=(c)=>(<div style={{border:"1px solid #ebe9f5",borderRadius:12,padding:"1.1rem 1.25rem",marginBottom:"0.65rem",background:"#fff",boxShadow:"0 1px 5px rgba(79,70,229,0.05)"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
       <div style={{flex:1}}>
         <div style={{fontWeight:700,color:"#1a1730",fontSize:"0.93rem"}}>{c.requestor_name||c.employer_name||c.requestor_email||c.employer_email}</div>
@@ -343,7 +346,7 @@ function ConsentTab({ apiFetch, profileStatus }) {
     {actionError[c.consent_id]&&<p style={{fontSize:"0.75rem",color:"#ef4444",marginTop:"0.5rem",fontWeight:600}}>⚠️ {actionError[c.consent_id]}</p>}
     {c.status==="pending"&&(<div style={{marginTop:"0.8rem"}}>
       {profileNotSubmitted&&<div style={{fontSize:"0.75rem",color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:"0.5rem 0.75rem",marginBottom:"0.6rem"}}>⚠️ Complete and submit your profile before approving consent requests.</div>}
-      <textarea className="cmsg" placeholder="Optional message to employer…" value={replyMsg[c.consent_id]||""} onChange={e=>{const val=e.target.value;setReplyMsg(p=>({...p,[c.consent_id]:val}));}} style={{marginBottom:"0.5rem"}}/>
+      <textarea className="cmsg" placeholder="Optional message to employer…" value={replyMsg[c.consent_id]||""} onFocus={()=>{textareaFocused.current=true;}} onBlur={()=>{textareaFocused.current=false;}} onChange={e=>{const val=e.target.value;setReplyMsg(p=>({...p,[c.consent_id]:val}));}} style={{marginBottom:"0.5rem"}}/>
       <div style={{display:"flex",gap:"0.5rem"}}>
         <button disabled={acting===c.consent_id||profileNotSubmitted} onClick={()=>respond(c.consent_id,"approved")} style={{flex:1,padding:"0.5rem",background:profileNotSubmitted?"#e5e7eb":"#16a34a",color:profileNotSubmitted?"#9ca3af":"#fff",border:"none",borderRadius:8,fontWeight:700,cursor:(acting===c.consent_id||profileNotSubmitted)?"not-allowed":"pointer",fontSize:"0.875rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Approve"}</button>
         <button disabled={acting===c.consent_id} onClick={()=>respond(c.consent_id,"declined")} style={{flex:1,padding:"0.5rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:8,fontWeight:700,cursor:acting===c.consent_id?"not-allowed":"pointer",fontSize:"0.875rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Decline"}</button>
@@ -355,7 +358,7 @@ function ConsentTab({ apiFetch, profileStatus }) {
     </div>)}
   </div>);
   const SL=({text,count})=><div style={{fontSize:"0.68rem",fontWeight:700,color:"#8b88b0",textTransform:"uppercase",letterSpacing:1,margin:"1.1rem 0 0.5rem"}}>{text}{count!==undefined&&` (${count})`}</div>;
-  return(<div>{pending.length>0&&<><SL text="Pending" count={pending.length}/>{pending.map(c=><CC key={c.consent_id} c={c}/>)}</>}{approved.length>0&&<><SL text="Approved"/>{approved.map(c=><CC key={c.consent_id} c={c}/>)}</>}{declined.length>0&&<><SL text="Declined"/>{declined.map(c=><CC key={c.consent_id} c={c}/>)}</>}{revoked.length>0&&<><SL text="Withdrawn"/>{revoked.map(c=><CC key={c.consent_id} c={c}/>)}</>}</div>);
+  return(<div>{pending.length>0&&<><SL text="Pending" count={pending.length}/>{pending.map(c=><div key={c.consent_id}>{renderCC(c)}</div>)}</>}{approved.length>0&&<><SL text="Approved"/>{approved.map(c=><div key={c.consent_id}>{renderCC(c)}</div>)}</>}{declined.length>0&&<><SL text="Declined"/>{declined.map(c=><div key={c.consent_id}>{renderCC(c)}</div>)}</>}{revoked.length>0&&<><SL text="Withdrawn"/>{revoked.map(c=><div key={c.consent_id}>{renderCC(c)}</div>)}</>}</div>);
 }
 
 function F({ l, v, s, t = "text", r = true }) {
