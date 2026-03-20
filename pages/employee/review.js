@@ -37,6 +37,17 @@ const ACK_STATEMENTS = [
   "I accept full responsibility for keeping my profile updated if any submitted information changes in the future.",
 ];
 
+function ConsentBell({ apiFetch, router }) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    const load = async () => {
+      try { const res = await apiFetch(`${API}/consent/my`); if(res.ok){const data=await res.json();setCount(data.filter(c=>String(c.status||"pending").toLowerCase()==="pending").length);} } catch(_) {}
+    };
+    load(); const id=setInterval(load,15000); return ()=>clearInterval(id);
+  }, [apiFetch]);
+  return (<button style={{position:"relative",width:36,height:36,borderRadius:9,border:"1.5px solid #2d2860",background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",transition:"all 0.2s"}} onClick={()=>router.push("/employee/personal?tab=consents")} title="Consent Requests">🔔{count>0&&<span style={{position:"absolute",top:-5,right:-5,background:"#ef4444",color:"#fff",borderRadius:999,fontSize:"0.6rem",fontWeight:800,minWidth:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 3px",border:"2px solid #1e1a3e"}}>{count}</span>}</button>);
+}
+
 const G = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -478,6 +489,7 @@ export default function ReviewPage() {
           <span className="logo-text">Datagate</span>
           <div className="topbar-right">
             <span className="user-name">👤 {user.name || user.email}</span>
+            <ConsentBell apiFetch={apiFetch} router={router}/>
             <button className="signout-btn" onClick={()=>setShowSignout(true)}>Sign out</button>
           </div>
         </div>
