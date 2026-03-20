@@ -358,7 +358,37 @@ function ConsentTab({ apiFetch, profileStatus }) {
     </div>)}
   </div>);
   const SL=({text,count})=><div style={{fontSize:"0.68rem",fontWeight:700,color:"#8b88b0",textTransform:"uppercase",letterSpacing:1,margin:"1.1rem 0 0.5rem"}}>{text}{count!==undefined&&` (${count})`}</div>;
-  return(<div>{pending.length>0&&<><SL text="Pending" count={pending.length}/>{pending.map(c=><div key={c.consent_id}>{renderCC(c)}</div>)}</>}{approved.length>0&&<><SL text="Approved"/>{approved.map(c=><div key={c.consent_id}>{renderCC(c)}</div>)}</>}{declined.length>0&&<><SL text="Declined"/>{declined.map(c=><div key={c.consent_id}>{renderCC(c)}</div>)}</>}{revoked.length>0&&<><SL text="Withdrawn"/>{revoked.map(c=><div key={c.consent_id}>{renderCC(c)}</div>)}</>}</div>);
+
+  // Audit log — all activity sorted by most recent
+  const toIST=(ts)=>{if(!ts)return"—";try{return new Date(typeof ts==="number"&&ts<1e12?ts*1000:ts).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});}catch{return"—";}};
+  const auditEvents = [...all].sort((a,b)=>(b.responded_at||b.requested_at||0)-(a.responded_at||a.requested_at||0)).map(c=>({
+    employer: c.requestor_name||c.employer_name||c.requestor_email||c.employer_email||"Unknown",
+    action: c.status==="pending"?"Requested access":c.status==="approved"?"You approved access":c.status==="declined"?"You declined":c.status==="revoked"?"You withdrew consent":"Unknown",
+    time: c.responded_at||c.requested_at,
+    color: c.status==="approved"?"#16a34a":c.status==="pending"?"#f59e0b":c.status==="revoked"?"#94a3b8":"#ef4444",
+    consent_id: c.consent_id,
+  }));
+
+  return(<div>
+    {pending.length>0&&<><SL text="Pending" count={pending.length}/>{pending.map(c=><div key={c.consent_id}>{renderCC(c)}</div>)}</>}
+    {approved.length>0&&<><SL text="Approved"/>{approved.map(c=><div key={c.consent_id}>{renderCC(c)}</div>)}</>}
+    {declined.length>0&&<><SL text="Declined"/>{declined.map(c=><div key={c.consent_id}>{renderCC(c)}</div>)}</>}
+    {revoked.length>0&&<><SL text="Withdrawn"/>{revoked.map(c=><div key={c.consent_id}>{renderCC(c)}</div>)}</>}
+    {auditEvents.length>0&&(<>
+      <SL text="Activity Log" count={auditEvents.length}/>
+      <div style={{background:"#fff",border:"1px solid #ebe9f5",borderRadius:12,padding:"0.75rem 1rem"}}>
+        {auditEvents.map((ev,i)=>(
+          <div key={ev.consent_id+i} style={{display:"flex",alignItems:"flex-start",gap:"0.65rem",padding:"0.5rem 0",borderBottom:i<auditEvents.length-1?"1px solid #f5f3ff":"none"}}>
+            <div style={{width:8,height:8,borderRadius:"50%",background:ev.color,flexShrink:0,marginTop:5}}/>
+            <div style={{flex:1}}>
+              <div style={{fontSize:"0.78rem",color:"#1a1730",fontWeight:600}}>{ev.employer}</div>
+              <div style={{fontSize:"0.71rem",color:"#8b88b0",marginTop:1}}>{ev.action} · {toIST(ev.time)}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>)}
+  </div>);
 }
 
 function F({ l, v, s, t = "text", r = true }) {
