@@ -183,22 +183,30 @@ function DateField({ l, v, s, r = true }) {
       if (d && mo && y && y.length === 4) s(`${y}-${mo}-${d}`);
     } else { s(""); }
   };
-  const displayDate = (!focused && v && v.includes("-")) ? isoToDisplay(v) : null;
+  const getDisplayValue = () => {
+    if (focused) return raw;
+    if (v && v.includes("-")) {
+      const [y, mo, d] = v.split("-");
+      const idx = parseInt(mo, 10) - 1;
+      const mName = MONTH_NAMES[idx];
+      if (mName) return `${parseInt(d, 10)} ${mName} ${y}`;
+    }
+    return raw;
+  };
   return (
     <div className="fi">
       <span className="fl">{l}{r && <span style={{color:"#ef4444",marginLeft:2}}>*</span>}</span>
       <input
         className="date-input"
-        value={raw}
+        value={getDisplayValue()}
         placeholder="DD/MM/YYYY"
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         onChange={handleChange}
-        maxLength={10}
+        maxLength={20}
         inputMode="numeric"
         autoComplete="off"
       />
-      {displayDate && <div className="date-display">📅 {displayDate}</div>}
     </div>
   );
 }
@@ -614,6 +622,7 @@ export default function PersonalDetails() {
       ...(wasEditedRef.current ? { acknowledgements_review: {} } : {}),
     };
 
+    payload.last_saved_at = Date.now();
     const res = await apiFetch(`${API}/employee`, { method:"POST", body:JSON.stringify(payload) });
     if (!res.ok) throw new Error(parseError(await res.json().catch(() => ({}))));
     const rd = await res.json().catch(() => ({}));
@@ -938,8 +947,13 @@ export default function PersonalDetails() {
                           placeholder="Enter full account number"
                           inputMode="numeric"
                           onChange={e=>{
-                            const typed = e.target.value.replace(/[^0-9]/g,"");
-                            dirty(setAccountNo)(typed);
+                            // value shown has bullets for masked chars — extract only real new digits
+                            // bullets represent already-stored digits; new chars after bullets are new input
+                            const raw = e.target.value;
+                            const bulletCount = (raw.match(/•/g)||[]).length;
+                            const newChars = raw.replace(/•/g,"").replace(/[^0-9]/g,"");
+                            const result = accountNo.slice(0, bulletCount) + newChars;
+                            dirty(setAccountNo)(result);
                             fixErr("accountNo");
                             if(accountNoConfirm) fixErr("accountNoConfirm");
                           }}
@@ -972,8 +986,11 @@ export default function PersonalDetails() {
                           inputMode="numeric"
                           onPaste={e=>e.preventDefault()}
                           onChange={e=>{
-                            const typed = e.target.value.replace(/[^0-9]/g,"");
-                            setAccountNoConfirm(typed);
+                            const raw2 = e.target.value;
+                            const bulletCount2 = (raw2.match(/•/g)||[]).length;
+                            const newChars2 = raw2.replace(/•/g,"").replace(/[^0-9]/g,"");
+                            const result2 = accountNoConfirm.slice(0, bulletCount2) + newChars2;
+                            setAccountNoConfirm(result2);
                             dirty(() => {})("");
                             fixErr("accountNoConfirm");
                           }}
