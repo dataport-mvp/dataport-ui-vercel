@@ -447,9 +447,22 @@ export default function UanDetails() {
     fetchData();
   }, [ready, user, apiFetch]);
 
+  const clearSigOnNomineeEdit = () => {
+    if (!wasSignedRef.current) return;
+    wasSignedRef.current = false;
+    setSigDataUrl(""); setSigS3Key(""); setSigTimestamp("");
+    setPfNomAck(false); setPensionNomAck(false); setEpfoDecl(false);
+    setEditedAfterSign(false);
+    if (sigCanvasRef.current) {
+      const ctx = sigCanvasRef.current.getContext("2d");
+      ctx.clearRect(0, 0, sigCanvasRef.current.width, sigCanvasRef.current.height);
+    }
+  };
   const updatePf = (i, field, value) => {
     setPfRecords(prev => prev.map((r, idx) => idx === i ? {...r, [field]: value} : r));
-    dirty(() => {})("");
+    isDirtyRef.current = true;
+    wasEditedAfterLoad.current = true;
+    clearSigOnNomineeEdit();
   };
   const addPfRecord    = () => { setPfRecords(prev => [...prev, makePfRecord()]); isDirtyRef.current = true; };
   const removePfRecord = (i) => { if(i === 0) return; setPfRecords(prev => prev.filter((_, idx) => idx !== i)); isDirtyRef.current = true; };
@@ -713,7 +726,7 @@ export default function UanDetails() {
                   <div className="fr">
                     <div className="fi">
                       <span className="fl">Full Name <span style={{color:"#ef4444"}}>*</span></span>
-                      <input className="in" value={nom.name||""} placeholder="As per Aadhaar / PAN" onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],name:e.target.value};return n;});isDirtyRef.current=true;}}/>
+                      <input className="in" value={nom.name||""} placeholder="As per Aadhaar / PAN" onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],name:e.target.value};return n;});isDirtyRef.current=true;clearSigOnNomineeEdit();}}/>
                     </div>
                     <div className="fi">
                       <span className="fl">Date of Birth <span style={{color:"#ef4444"}}>*</span></span>
@@ -723,12 +736,12 @@ export default function UanDetails() {
                           if(v.length>2) v=v.slice(0,2)+"-"+v.slice(2);
                           if(v.length>5) v=v.slice(0,5)+"-"+v.slice(5);
                           v=v.slice(0,10);
-                          setNominees(p=>{const n=[...p];n[idx]={...n[idx],dob:v};return n;});isDirtyRef.current=true;
+                          setNominees(p=>{const n=[...p];n[idx]={...n[idx],dob:v};return n;});isDirtyRef.current=true;clearSigOnNomineeEdit();
                         }}/>
                     </div>
                     <div className="fi">
                       <span className="fl">Relationship <span style={{color:"#ef4444"}}>*</span></span>
-                      <select className="in" value={nom.relation||""} onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],relation:e.target.value,otherRelation:""};return n;});isDirtyRef.current=true;}} style={{background:nom.relation?"#fff":"#f2f1f9",color:nom.relation?"#1a1730":"#8b88b0"}}>
+                      <select className="in" value={nom.relation||""} onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],relation:e.target.value,otherRelation:""};return n;});isDirtyRef.current=true;clearSigOnNomineeEdit();}} style={{background:nom.relation?"#fff":"#f2f1f9",color:nom.relation?"#1a1730":"#8b88b0"}}>
                         <option value="">Select</option>
                         {["Spouse","Son","Daughter","Father","Mother","Brother","Sister","Other"].map(r=><option key={r} value={r}>{r}</option>)}
                       </select>
@@ -737,16 +750,16 @@ export default function UanDetails() {
                   <div className="fr">
                     <div className="fi" style={{minWidth:220}}>
                       <span className="fl">Address <span style={{color:"#ef4444"}}>*</span></span>
-                      <input className="in" value={nom.address||""} onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],address:e.target.value};return n;});isDirtyRef.current=true;}}/>
+                      <input className="in" value={nom.address||""} onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],address:e.target.value};return n;});isDirtyRef.current=true;clearSigOnNomineeEdit();}}/>
                     </div>
                     <div className="fi" style={{maxWidth:140}}>
                       <span className="fl">Share (%) <span style={{color:"#ef4444"}}>*</span></span>
-                      <input className="in" value={nom.share||""} placeholder="e.g. 50" inputMode="numeric" maxLength={3} onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,3);setNominees(p=>{const n=[...p];n[idx]={...n[idx],share:v};return n;});isDirtyRef.current=true;}}/>
+                      <input className="in" value={nom.share||""} placeholder="e.g. 50" inputMode="numeric" maxLength={3} onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,3);setNominees(p=>{const n=[...p];n[idx]={...n[idx],share:v};return n;});isDirtyRef.current=true;clearSigOnNomineeEdit();}}/>
                     </div>
                   </div>
                 </div>
               ))}
-              {nominees.length < 4 && <button className="add-btn" onClick={()=>{setNominees(p=>[...p,makeNominee()]);isDirtyRef.current=true;}}>+ Add Another Nominee</button>}
+              {nominees.length < 4 && <button className="add-btn" onClick={()=>{setNominees(p=>[...p,makeNominee()]);isDirtyRef.current=true;wasSignedRef.current=false;setSigDataUrl("");setSigS3Key("");setSigTimestamp("");setPfNomAck(false);setPensionNomAck(false);setEpfoDecl(false);setEditedAfterSign(false);}}>+ Add Another Nominee</button>}
               {nominees.length > 1 && nominees.reduce((s,n)=>s+(parseInt(n.share)||0),0) !== 100 && (
                 <p style={{fontSize:"0.75rem",color:"#ef4444",fontWeight:600,marginTop:"0.5rem"}}>⚠️ Total share must equal 100%. Current total: {nominees.reduce((s,n)=>s+(parseInt(n.share)||0),0)}%</p>
               )}
