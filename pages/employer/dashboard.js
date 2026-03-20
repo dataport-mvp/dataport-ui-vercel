@@ -49,6 +49,16 @@ const normalizeProfile = (snap = {}) => {
   };
 };
 
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+function isoToDisplay(iso) {
+  if (!iso || !iso.includes("-")) return iso || "";
+  const [y, mo, d] = iso.split("-");
+  const idx = parseInt(mo, 10) - 1;
+  const mName = MONTH_NAMES[idx] || mo;
+  return `${parseInt(d, 10)} ${mName} ${y}`;
+}
+
 function toIST(ts) {
   if (!ts) return "—";
   try {
