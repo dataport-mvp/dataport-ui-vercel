@@ -536,17 +536,19 @@ export default function UanDetails() {
   };
 
   const handleNext = async () => {
-    // Validate: acks + signature mandatory
-    const errs = [];
-    if (!pfNomAck)     errs.push("PF Nomination Declaration");
-    if (!pensionNomAck) errs.push("Pension Nomination Declaration");
-    if (!epfoDecl)     errs.push("General EPFO Declaration");
-    if (!sigS3Key && !sigDataUrl) errs.push("Digital Signature");
+    // Only validate acks + signature when user has UAN
+    if (hasUan === "yes") {
+      const errs = [];
+      if (!pfNomAck)     errs.push("PF Nomination Declaration");
+      if (!pensionNomAck) errs.push("Pension Nomination Declaration");
+      if (!epfoDecl)     errs.push("General EPFO Declaration");
+      if (!sigS3Key && !sigDataUrl) errs.push("Digital Signature");
 
-    if (errs.length > 0) {
-      setSaveStatus(`⚠️ Required: ${errs.join(", ")}`);
-      document.getElementById("epfo-decl-section")?.scrollIntoView({ behavior:"smooth", block:"center" });
-      return;
+      if (errs.length > 0) {
+        setSaveStatus(`⚠️ Required: ${errs.join(", ")}`);
+        document.getElementById("epfo-decl-section")?.scrollIntoView({ behavior:"smooth", block:"center" });
+        return;
+      }
     }
 
     setSaveStatus("Saving...");
@@ -593,7 +595,7 @@ export default function UanDetails() {
             <div className="sh"><div className="si cyn">🏦</div><span className="st">UAN / EPFO Details</span></div>
 
             <div className="yn-row">
-              <span className="yn-lbl">Do you have a UAN (Universal Account Number)?</span>
+              <span className="yn-lbl">Do you have a UAN (Universal Account Number)? <span style={{color:"#ef4444"}}>*</span></span>
               <button className="yn-btn" onClick={() => { setHasUan("yes"); dirty(() => {})(""); }}
                 style={{border:hasUan==="yes"?"2px solid #0891b2":"1.5px solid #dddaf0",background:hasUan==="yes"?"#0891b2":"#f2f1f9",color:hasUan==="yes"?"#fff":"#6b6894"}}>Yes</button>
               <button className="yn-btn" onClick={() => { setHasUan("no"); dirty(() => {})(""); }}
@@ -713,7 +715,7 @@ export default function UanDetails() {
           )}
 
           {/* ── Nominees ── */}
-          {hasUan !== "" && (
+          {hasUan === "yes" && (
             <div className="sc grn" style={{marginBottom:"1.1rem"}}>
               <div className="sh"><div className="si grn">👨‍👩‍👧</div><span className="st">Nominee Details — PF & Pension (Form 2)</span></div>
               <p style={{fontSize:"0.75rem",color:"#6b6894",marginBottom:"0.9rem",fontWeight:500,lineHeight:1.5}}>Nominate beneficiaries for your PF and Pension. Shares must add up to 100%.</p>
@@ -766,8 +768,8 @@ export default function UanDetails() {
             </div>
           )}
 
-          {/* ── EPFO Declarations + Signature ── always required ── */}
-          {true && (
+          {/* ── EPFO Declarations + Signature ── only required when user has UAN ── */}
+          {hasUan === "yes" && (
             <div id="epfo-decl-section" className="sc" style={{marginBottom:"1.1rem",position:"relative",overflow:"hidden"}}>
               <div style={{position:"absolute",top:0,left:0,bottom:0,width:4,borderRadius:"16px 0 0 16px",background:"#4f46e5"}}/>
               <div className="sh"><div className="si" style={{background:"#eef2ff"}}>📜</div><span className="st">EPFO Declarations & Digital Signature</span></div>
@@ -920,11 +922,13 @@ export default function UanDetails() {
             </div>
           )}
 
+          {hasUan === "yes" && (
           <div style={{background:"#fff",borderRadius:12,padding:"1rem 1.25rem",marginBottom:"1.1rem",border:"1px solid #e8e5f0",boxShadow:"0 2px 8px rgba(30,26,62,0.06)"}}>
             <p style={{fontSize:"0.78rem",color:"#6b6894",lineHeight:1.6,fontWeight:500}}>
               ℹ️ All 3 declarations must be checked and a signature must be drawn before you can continue to the Review page.
             </p>
           </div>
+          )}
 
           <div className="sbar">
             <button className="sbtn" onClick={() => handleNavigate("/employee/previous")}>← Previous</button>
