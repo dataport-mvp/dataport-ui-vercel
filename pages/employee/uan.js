@@ -28,6 +28,18 @@ function isoToDisplay(iso) {
   return `${parseInt(d,10)} ${mName} ${y}`;
 }
 
+// Nominee DOB is stored as dd-mm-yyyy (not ISO), convert to "20 June 1998"
+function ddmmyyyyToDisplay(val) {
+  if (!val || val.length !== 10) return val || "";
+  const parts = val.split("-");
+  if (parts.length !== 3) return val;
+  const [dd, mm, yyyy] = parts;
+  const idx = parseInt(mm, 10) - 1;
+  const mName = MONTH_NAMES[idx];
+  if (!mName) return val;
+  return `${parseInt(dd, 10)} ${mName} ${yyyy}`;
+}
+
 const makePfRecord = (companyName = "") => ({
   companyName, hasPf:"", pfMemberId:"", dojEpfo:"", doeEpfo:"", pfTransferred:"",
 });
@@ -256,6 +268,42 @@ function FDate({ l, v, s, r=true, errKey, errors, onFix }) {
       />
       {hasErr&&<span className="err-msg">Required</span>}
     </div>
+  );
+}
+
+// Nominee DOB field — stores dd-mm-yyyy, shows "20 June 1998" when blurred
+function NomineeDobField({ value, onChange }) {
+  const [focused, setFocused] = useState(false);
+  const [raw, setRaw] = useState(value || "");
+
+  useEffect(() => {
+    if (!focused) setRaw(value || "");
+  }, [value, focused]);
+
+  const handleChange = (e) => {
+    let v = e.target.value.replace(/[^\d]/g, "");
+    if (v.length > 2) v = v.slice(0, 2) + "-" + v.slice(2);
+    if (v.length > 5) v = v.slice(0, 5) + "-" + v.slice(5);
+    v = v.slice(0, 10);
+    setRaw(v);
+    onChange(v);
+  };
+
+  const displayVal = focused ? raw : (raw.length === 10 ? ddmmyyyyToDisplay(raw) : raw);
+
+  return (
+    <input
+      className="in"
+      type="text"
+      value={displayVal}
+      placeholder="dd-mm-yyyy"
+      maxLength={focused ? 10 : 20}
+      onFocus={() => { setFocused(true); setRaw(value || ""); }}
+      onBlur={() => setFocused(false)}
+      onChange={handleChange}
+      inputMode="numeric"
+      autoComplete="off"
+    />
   );
 }
 
@@ -681,7 +729,7 @@ export default function UanDetails() {
                           <FDate l="Date of Exit (EPFO)" v={rec.doeEpfo} s={v => updatePf(i, "doeEpfo", v)}/>
                         </div>
                         <div>
-                          <span className="fl" style={{display:"block",marginBottom:"0.4rem"}}>Was PF Transferred?</span>
+                          <span className="fl" style={{display:"block",marginBottom:"0.4rem"}}>Was PF Transferred? <span style={{color:"#ef4444"}}>*</span></span>
                           <div style={{display:"flex",gap:"0.6rem"}}>
                             {["Yes","No"].map(v => (
                               <button key={v} onClick={() => updatePf(i, "pfTransferred", v)} style={{padding:"0.3rem 1.1rem",borderRadius:999,border:rec.pfTransferred===v?"2px solid #7c3aed":"1.5px solid #dddaf0",background:rec.pfTransferred===v?"#7c3aed":"#f2f1f9",color:rec.pfTransferred===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}>{v}</button>
@@ -732,14 +780,7 @@ export default function UanDetails() {
                     </div>
                     <div className="fi">
                       <span className="fl">Date of Birth <span style={{color:"#ef4444"}}>*</span></span>
-                      <input className="in" type="text" value={nom.dob||""} placeholder="dd-mm-yyyy" maxLength={10}
-                        onChange={e=>{
-                          let v=e.target.value.replace(/[^\d]/g,"");
-                          if(v.length>2) v=v.slice(0,2)+"-"+v.slice(2);
-                          if(v.length>5) v=v.slice(0,5)+"-"+v.slice(5);
-                          v=v.slice(0,10);
-                          setNominees(p=>{const n=[...p];n[idx]={...n[idx],dob:v};return n;});isDirtyRef.current=true;clearSigOnNomineeEdit();
-                        }}/>
+                      <NomineeDobField value={nom.dob||""} onChange={v=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],dob:v};return n;});isDirtyRef.current=true;clearSigOnNomineeEdit();}}/>
                     </div>
                     <div className="fi">
                       <span className="fl">Relationship <span style={{color:"#ef4444"}}>*</span></span>
