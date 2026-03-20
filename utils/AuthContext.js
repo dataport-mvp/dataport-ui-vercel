@@ -7,7 +7,7 @@ const INACTIVITY_LIMIT = 60 * 60 * 1000; // 60 minutes
 
 export function AuthProvider({ children }) {
   const accessTokenRef   = useRef(null);
-  const [user, setUser]  = useState(null);
+  const [user, setUser]  = useState(undefined);
   const [ready, setReady] = useState(false);
   const inactivityTimer  = useRef(null);
   const isRefreshing     = useRef(false);
@@ -32,10 +32,8 @@ export function AuthProvider({ children }) {
   const doRefresh = useCallback(async () => {
     const rt = localStorage.getItem("dg_refresh_token");
     if (!rt) return null;
-    // AbortController timeout — prevents Lambda cold start from hanging indefinitely
-    // and force-clearing localStorage (which caused the relogin-on-reload bug)
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 10000); // 10s timeout
+    const timer = setTimeout(() => controller.abort(), 10000);
     try {
       const res = await fetch(`${API}/auth/refresh`, {
         method:  "POST",
@@ -65,13 +63,9 @@ export function AuthProvider({ children }) {
         if (rt && rt !== "undefined" && rt !== "null" && u && u !== "undefined" && u !== "null") {
           const newToken = await doRefresh();
           if (newToken) {
-            // Refresh succeeded — full session restore
             setUser(JSON.parse(u));
             resetInactivityTimer();
           } else {
-            // Refresh failed — Lambda cold start or network error
-            // Restore user from cache so role guards work correctly
-            // The next real API call will 401 and trigger proper re-auth if token is expired
             try {
               const cached = JSON.parse(u);
               if (cached?.email && cached?.role) {
@@ -143,7 +137,6 @@ export function AuthProvider({ children }) {
   }, [resetInactivityTimer]);
 
   const logoutFull = useCallback(async (reason = "explicit") => {
-    // Read role from state OR localStorage — state may be null if refresh failed on load
     const storedUser = localStorage.getItem("dg_user");
     const role = user?.role || (storedUser ? JSON.parse(storedUser)?.role : null);
     const rt   = localStorage.getItem("dg_refresh_token");
