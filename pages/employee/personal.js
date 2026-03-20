@@ -343,7 +343,7 @@ function ConsentTab({ apiFetch, profileStatus }) {
     {actionError[c.consent_id]&&<p style={{fontSize:"0.75rem",color:"#ef4444",marginTop:"0.5rem",fontWeight:600}}>⚠️ {actionError[c.consent_id]}</p>}
     {c.status==="pending"&&(<div style={{marginTop:"0.8rem"}}>
       {profileNotSubmitted&&<div style={{fontSize:"0.75rem",color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:"0.5rem 0.75rem",marginBottom:"0.6rem"}}>⚠️ Complete and submit your profile before approving consent requests.</div>}
-      <textarea className="cmsg" placeholder="Optional message to employer…" value={replyMsg[c.consent_id]||""} onChange={e=>setReplyMsg(p=>({...p,[c.consent_id]:e.target.value}))} style={{marginBottom:"0.5rem"}}/>
+      <textarea className="cmsg" placeholder="Optional message to employer…" value={replyMsg[c.consent_id]||""} onChange={e=>{const val=e.target.value;setReplyMsg(p=>({...p,[c.consent_id]:val}));}} style={{marginBottom:"0.5rem"}}/>
       <div style={{display:"flex",gap:"0.5rem"}}>
         <button disabled={acting===c.consent_id||profileNotSubmitted} onClick={()=>respond(c.consent_id,"approved")} style={{flex:1,padding:"0.5rem",background:profileNotSubmitted?"#e5e7eb":"#16a34a",color:profileNotSubmitted?"#9ca3af":"#fff",border:"none",borderRadius:8,fontWeight:700,cursor:(acting===c.consent_id||profileNotSubmitted)?"not-allowed":"pointer",fontSize:"0.875rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Approve"}</button>
         <button disabled={acting===c.consent_id} onClick={()=>respond(c.consent_id,"declined")} style={{flex:1,padding:"0.5rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:8,fontWeight:700,cursor:acting===c.consent_id?"not-allowed":"pointer",fontSize:"0.875rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Decline"}</button>
@@ -469,8 +469,8 @@ export default function PersonalDetails() {
 
   useEffect(() => {
     if (!ready) return;
-    if (!user) { router.replace("/employee/login"); return; }
-    if (user.role !== "employee") { router.replace("/employee/login"); return; }
+    if (user === null) { router.replace("/employee/login"); return; }
+    if (user && user.role !== "employee") { router.replace("/employee/login"); return; }
   }, [ready, user, router]);
 
   useEffect(() => {
