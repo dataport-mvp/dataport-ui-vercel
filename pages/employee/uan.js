@@ -230,13 +230,22 @@ function FDate({ l, v, s, r=true, errKey, errors, onFix }) {
       }
     } else { s(""); }
   };
-  const displayDate = (!focused && v && v.includes("-")) ? isoToDisplay(v) : null;
+  const getDisplayValue = () => {
+    if (focused) return raw;
+    if (v && v.includes("-")) {
+      const [y, mo, d] = v.split("-");
+      const idx = parseInt(mo, 10) - 1;
+      const mName = MONTH_NAMES[idx];
+      if (mName) return `${parseInt(d, 10)} ${mName} ${y}`;
+    }
+    return raw;
+  };
   return (
     <div className="fi">
       <span className="fl">{l}{r&&<span style={{color:"#ef4444",marginLeft:2}}>*</span>}</span>
       <input
         className={`date-input${hasErr?" err":""}`}
-        value={raw}
+        value={getDisplayValue()}
         placeholder="DD/MM/YYYY"
         onFocus={()=>setFocused(true)}
         onBlur={()=>setFocused(false)}
@@ -245,7 +254,6 @@ function FDate({ l, v, s, r=true, errKey, errors, onFix }) {
         inputMode="numeric"
         autoComplete="off"
       />
-      {displayDate && <div className="date-display">📅 {displayDate}</div>}
       {hasErr&&<span className="err-msg">Required</span>}
     </div>
   );
@@ -299,28 +307,26 @@ export default function UanDetails() {
   // Prevent canvas wipe on re-renders — track if we've restored sig once
   const sigRestoredRef = useRef(false);
 
-  // ── Restore signature to canvas ──
-  // Only runs when sigDataUrl changes AND we haven't drawn it yet
+  // ── Restore signature to canvas after every render ──
+  // useLayoutEffect fires synchronously after DOM mutations, before browser paint
+  // This ensures canvas is redrawn before user sees a blank canvas
   useEffect(() => {
-    if (!sigDataUrl) return;
-    const draw = () => {
+    if (!sigDataUrl || !sigCanvasRef.current) return;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
       if (!sigCanvasRef.current) return;
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        if (!sigCanvasRef.current) return;
-        const ctx = sigCanvasRef.current.getContext("2d");
-        ctx.fillStyle = "#fff";
-        ctx.fillRect(0, 0, sigCanvasRef.current.width, sigCanvasRef.current.height);
-        ctx.drawImage(img, 0, 0, sigCanvasRef.current.width, sigCanvasRef.current.height);
-        sigRestoredRef.current = true;
-      };
-      img.onerror = () => { sigRestoredRef.current = true; };
-      img.src = sigDataUrl;
+      const ctx = sigCanvasRef.current.getContext("2d");
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, sigCanvasRef.current.width, sigCanvasRef.current.height);
+      ctx.drawImage(img, 0, 0, sigCanvasRef.current.width, sigCanvasRef.current.height);
     };
-    const t = setTimeout(draw, 50);
-    return () => clearTimeout(t);
-  }, [sigDataUrl]);
+    img.onerror = () => {
+      // CORS blocked — canvas stays blank but sigS3Key still valid; timestamp shown
+    };
+    img.src = sigDataUrl;
+    // Re-run on every render cycle so signature stays visible after state updates
+  });  // No dependency array — runs after every render to prevent wipe
 
   // ── dirty setter — marks edited, resets acks but NOT signature ──
   const dirty = (setter) => (val) => {
@@ -486,6 +492,7 @@ export default function UanDetails() {
         timestamp: sigTimestamp,
       },
       epfoDeclarations: { pfNomAck, pensionNomAck, epfoDecl },
+      last_saved_at: Date.now(),
       // ── Cascade flag: page 4 was edited → page 5 must re-ask review acks
       page4_edited: wasEditedAfterLoad.current ? true : (freshDraft.page4_edited || false),
       ...(wasEditedAfterLoad.current ? { acknowledgements_review: {} } : {}),
@@ -746,8 +753,8 @@ export default function UanDetails() {
             </div>
           )}
 
-          {/* ── EPFO Declarations + Signature ── */}
-          {hasUan !== "" && (
+          {/* ── EPFO Declarations + Signature ── always required ── */}
+          {true && (
             <div id="epfo-decl-section" className="sc" style={{marginBottom:"1.1rem",position:"relative",overflow:"hidden"}}>
               <div style={{position:"absolute",top:0,left:0,bottom:0,width:4,borderRadius:"16px 0 0 16px",background:"#4f46e5"}}/>
               <div className="sh"><div className="si" style={{background:"#eef2ff"}}>📜</div><span className="st">EPFO Declarations & Digital Signature</span></div>
