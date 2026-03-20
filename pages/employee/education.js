@@ -528,7 +528,7 @@ export default function EducationDetails() {
           {/* ── Undergraduate ── */}
           <div className="sc amb">
             <div className="sh"><div className="si amb">🎓</div><span className="st">Undergraduate — UG / Degree</span></div>
-            <YesNo label="Do you have an Undergraduate degree? *" value={hasUG} onChange={(v)=>{setHasUG(v);isDirtyRef.current=true;}}/>
+            <YesNo label={<>Do you have an Undergraduate degree? <span style={{color:"#ef4444"}}>*</span></>} value={hasUG} onChange={(v)=>{setHasUG(v);isDirtyRef.current=true;}}/>
             {hasUG==="Yes"&&(<>
               <div className="fr"><F l="College Name" v={ugCollege} s={d(setUgCollege)} errKey="ugCollege" errors={errors} onFix={fixErr}/><F l="University Name" v={ugUniversity} s={d(setUgUniversity)} errKey="ugUniversity" errors={errors} onFix={fixErr}/><F l="Course / Degree" v={ugCourse} s={d(setUgCourse)} errKey="ugCourse" errors={errors} onFix={fixErr}/></div>
               <div className="fr">
@@ -558,7 +558,7 @@ export default function EducationDetails() {
           {/* ── Postgraduate ── */}
           <div className="sc vio">
             <div className="sh"><div className="si vio">🧑‍🎓</div><span className="st">Postgraduate — PG / Masters</span></div>
-            <YesNo label="Do you have a Postgraduate degree? *" value={hasPG} onChange={(v)=>{setHasPG(v);isDirtyRef.current=true;}}/>
+            <YesNo label={<>Do you have a Postgraduate degree? <span style={{color:"#ef4444"}}>*</span></>} value={hasPG} onChange={(v)=>{setHasPG(v);isDirtyRef.current=true;}}/>
             {hasPG==="Yes"&&(<>
               <div className="fr"><F l="College Name" v={pgCollege} s={d(setPgCollege)} errKey="pgCollege" errors={errors} onFix={fixErr}/><F l="University Name" v={pgUniversity} s={d(setPgUniversity)} errKey="pgUniversity" errors={errors} onFix={fixErr}/><F l="Course / Degree" v={pgCourse} s={d(setPgCourse)} errKey="pgCourse" errors={errors} onFix={fixErr}/></div>
               <div className="fr">
@@ -591,8 +591,8 @@ export default function EducationDetails() {
             <div className="sh"><div className="si grn">🔧</div><span className="st">{afterTenth==="Both"?"Additional Diploma / Technical":"Diploma / Technical / Vocational"}</span></div>
             <div style={{display:"flex",alignItems:"center",gap:"0.5rem",flexWrap:"wrap",marginBottom:"1rem"}}>
               <span style={{fontSize:"0.875rem",color:"#1a1730",fontWeight:600}}>
-                {afterTenth==="Both"?"Do you have an additional diploma? *":"Do you have a Diploma or Technical qualification? *"}
-                {" "}<span style={{color:"#8b88b0",fontSize:"0.75rem",fontWeight:400}}>(optional)</span>
+                {afterTenth==="Both"?"Do you have an additional diploma?":"Do you have a Diploma or Technical qualification?"}
+                {" "}<span style={{color:"#ef4444"}}>*</span>
               </span>
               {["Yes","No"].map(v=>(
                 <button key={v} onClick={()=>{setHasDip(v);isDirtyRef.current=true;fixErr("hasDip");}} style={{padding:"0.32rem 1.1rem",borderRadius:999,border:hasDip===v?"2px solid #4f46e5":"1.5px solid #dddaf0",background:hasDip===v?"#4f46e5":"#f2f1f9",color:hasDip===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
