@@ -103,32 +103,32 @@ async function printProfile(profile, empHistory, documents, employerName) {
   // Build ordered document list with base64 images
   // Sequence: personal → education → employment → uan
   const DOC_ORDER = [
-    // Personal
-    { key: "photo",        label: "Profile Photo",             group: "personal" },
-    { key: "aadhaar",      label: "Aadhaar Card",              group: "personal" },
-    { key: "pan",          label: "PAN Card",                  group: "personal" },
-    { key: "passport",     label: "Passport",                  group: "personal" },
-    // Education
-    { key: "classX",       label: "Class X Certificate",       group: "education" },
-    { key: "intermediate", label: "Intermediate Certificate",  group: "education" },
-    { key: "diploma",      label: "Diploma Certificate",       group: "education" },
-    { key: "ug_provisional",label:"UG Provisional Marksheet",  group: "education" },
-    { key: "ug_convocation",label:"UG Convocation Certificate",group: "education" },
-    { key: "pg_provisional",label:"PG Provisional Marksheet",  group: "education" },
-    { key: "pg_convocation",label:"PG Convocation Certificate",group: "education" },
-    // Professional
-    { key: /^profqual_/,   label: "Professional Qualification",group: "education" },
-    { key: /^articleship_/,label: "Articleship / Training Letter",group:"education"},
-    { key: /^cert_/,       label: "Certification Certificate", group: "education" },
-    // Employment
-    { key: "cv",           label: "Resume / CV",               group: "general" },
-    { key: "offerLetter",  label: "Offer Letter",              group: "employment" },
-    { key: "payslips",     label: "Payslips",                  group: "employment" },
-    { key: "experience",   label: "Experience / Relieving Letter", group: "employment" },
-    { key: "resignation",  label: "Resignation Acceptance",    group: "employment" },
-    { key: "idCard",       label: "Company ID Card",           group: "employment" },
-    // UAN
-    { key: "uanCard",      label: "UAN Card / Passbook",       group: "uan" },
+    // ── Personal (Page 1) ──────────────────────────────────────────
+    { key: "photo",          label: "Profile Photo",                  group: "personal" },
+    { key: "aadhaar",        label: "Aadhaar Card",                   group: "personal" },
+    { key: "pan",            label: "PAN Card",                       group: "personal" },
+    { key: "passport",       label: "Passport",                       group: "personal" },
+    // ── Education (Page 2) — same order as form ───────────────────
+    { key: "classX",         label: "Class X Certificate",            group: "education" },
+    { key: "intermediate",   label: "Intermediate Certificate",       group: "education" },
+    { key: "diploma",        label: "Diploma Certificate",            group: "education" },
+    { key: "ug_provisional", label: "UG Provisional Marksheet",       group: "education" },
+    { key: "ug_convocation", label: "UG Convocation Certificate",     group: "education" },
+    { key: "pg_provisional", label: "PG Provisional Marksheet",       group: "education" },
+    { key: "pg_convocation", label: "PG Convocation Certificate",     group: "education" },
+    { key: /^profqual_/,     label: "Professional Qualification",     group: "education" },
+    { key: /^articleship_/,  label: "Articleship / Training Letter",  group: "education" },
+    // NOTE: cert_ (Professional Certifications) intentionally excluded from PDF
+    // ── Employment (Page 3) — CV first, then per-employer docs ────
+    { key: "cv",             label: "Resume / CV",                    group: "general" },
+    { key: "offerLetter",    label: "Offer Letter",                   group: "employment" },
+    { key: "payslips",       label: "Payslips (Last 3 Months)",       group: "employment" },
+    { key: "resignation",    label: "Resignation Acceptance",         group: "employment" },
+    { key: "experience",     label: "Experience / Relieving Letter",  group: "employment" },
+    { key: "idCard",         label: "Company ID Card",                group: "employment" },
+    // ── UAN (Page 4) ──────────────────────────────────────────────
+    { key: "uanCard",        label: "UAN Card / Passbook",            group: "uan" },
+    { key: "serviceHistory", label: "Service History Snapshot",       group: "uan" },
   ];
 
   // Flatten all documents
@@ -155,9 +155,10 @@ async function printProfile(profile, empHistory, documents, employerName) {
       if (idx === -1) sortedDocs.push({ ...m, label: orderEntry.label });
     }
   }
-  // Add any not matched
+  // Add any not matched — but never include cert_ (Professional Certifications excluded from PDF)
   for (const item of allDocs) {
     if (!sortedDocs.find(x => x.subKey === item.subKey && x.group === item.group)) {
+      if (/^cert_/.test(item.subKey)) continue; // Professional Certifications excluded
       sortedDocs.push({ ...item, label: item.subKey });
     }
   }
@@ -193,6 +194,8 @@ async function printProfile(profile, empHistory, documents, employerName) {
       row("Course / Degree",      s.course),
       row("Branch / Specialization", s.branch || s.specialization),
       row("Year of Passing",      s.yearOfPassing),
+      row("From",                 isoToDisplay(s.from)),
+      row("To",                   isoToDisplay(s.to)),
       row("Hall Ticket / Roll No.", s.hallTicket),
       row("Result",               s.resultValue ? `${s.resultType || ""} ${s.resultValue}`.trim() : ""),
       row("Mode",                 s.mode),
@@ -765,6 +768,8 @@ function EducationTab({ data }) {
           {s.course&&<KV k="Course / Degree"       v={s.course} />}
           {(s.branch||s.specialization)&&<KV k="Branch / Specialization" v={s.branch||s.specialization} />}
           <KV k="Year of Passing"       v={s.yearOfPassing} />
+          {s.from&&<KV k="From"         v={isoToDisplay(s.from)} />}
+          {s.to&&<KV k="To"             v={isoToDisplay(s.to)} />}
           {s.hallTicket&&<KV k="Hall Ticket / Roll No." v={s.hallTicket} mono />}
           <KV k="Result"                v={s.resultValue?`${s.resultType||""} ${s.resultValue}`.trim():""} />
           {s.mode&&<KV k="Mode"         v={s.mode} />}
