@@ -234,7 +234,7 @@ async function printProfile(profile, empHistory, documents, employerName) {
   <div style="font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;margin-top:4px">Page 1 — Personal Details</div>
 
   ${section("Personal Information", [
-    row("Date of Birth",    d.dob),
+    row("Date of Birth",    isoToDisplay(d.dob)),
     row("Gender",           d.gender),
     row("Nationality",      d.nationality),
     row("Blood Group",      d.bloodGroup),
@@ -253,8 +253,8 @@ async function printProfile(profile, empHistory, documents, employerName) {
     row("Name as per PAN",    d.nameAsPerPan),
     row("Has Passport",       d.hasPassport),
     d.hasPassport === "Yes" ? row("Passport Number",   d.passport)      : "",
-    d.hasPassport === "Yes" ? row("Issue Date",         d.passportIssue) : "",
-    d.hasPassport === "Yes" ? row("Expiry Date",        d.passportExpiry): "",
+    d.hasPassport === "Yes" ? row("Issue Date",         isoToDisplay(d.passportIssue)) : "",
+    d.hasPassport === "Yes" ? row("Expiry Date",        isoToDisplay(d.passportExpiry)): "",
   ].join(""))}
 
   ${section("Emergency Contact", [
@@ -270,7 +270,7 @@ async function printProfile(profile, empHistory, documents, employerName) {
     row("District",        cur.district),
     row("State",           cur.state),
     row("Pincode",         cur.pin),
-    row("Residing From",   cur.from),
+    row("Residing From",   isoToDisplay(cur.from)),
   ].join(""))}
 
   ${(perm.door || perm.state) ? section("Permanent / Native Address", [
@@ -288,7 +288,7 @@ async function printProfile(profile, empHistory, documents, employerName) {
     row("IFSC Code",           d.ifsc),
     row("Branch",              d.branch),
     row("Account Type",        d.accountType),
-    row("Account Number",      d.accountFull ? "•".repeat(Math.max(0,d.accountFull.length-4))+d.accountFull.slice(-4) : (d.accountLast4 ? `••••••••${d.accountLast4}` : "")),
+    row("Account Number",      d.accountFull || (d.accountLast4 ? `••••••••${d.accountLast4}` : "")),
   ].join(""))}
 
   <!-- ══ SECTION 2: EDUCATION ══ -->
@@ -336,9 +336,9 @@ async function printProfile(profile, empHistory, documents, employerName) {
       row("Employee ID",           e.employeeId),
       row("Work Email",            e.workEmail),
       row("Office Address",        e.officeAddress),
-      row("Date of Joining",       e.startDate),
-      i === 0 ? row("Currently Working", e.currentlyWorking === "Yes" ? "Yes — Still Employed" : "No") : row("Date of Leaving", e.endDate),
-      i === 0 && e.currentlyWorking === "No" ? row("Date of Leaving", e.endDate) : "",
+      row("Date of Joining",       isoToDisplay(e.startDate)),
+      i === 0 ? row("Currently Working", e.currentlyWorking === "Yes" ? "Yes — Still Employed" : "No") : row("Date of Leaving", isoToDisplay(e.endDate)),
+      i === 0 && e.currentlyWorking === "No" ? row("Date of Leaving", isoToDisplay(e.endDate)) : "",
       row("Reason for Leaving",    e.reasonForRelieving),
       row("Duties",                e.duties),
       e.employmentType === "Contract" ? row("Vendor Company", e.contractVendor?.company) : "",
@@ -666,7 +666,7 @@ function OverviewTab({ data }) {
       <Sec title="Identity">
         <div className="kv-grid">
           <KV k="Full Name"           v={[data.firstName,data.middleName,data.lastName].filter(Boolean).join(" ")} />
-          <KV k="Date of Birth"       v={data.dob} />
+          <KV k="Date of Birth"       v={isoToDisplay(data.dob)} />
           <KV k="Gender"              v={data.gender} />
           <KV k="Nationality"         v={data.nationality} />
           <KV k="Blood Group"         v={data.bloodGroup} />
@@ -680,8 +680,8 @@ function OverviewTab({ data }) {
           {(data.hasPassport==="Yes"||data.passport)&&<>
             <KV k="Has Passport"  v={data.hasPassport} />
             <KV k="Passport No."  v={data.passport} mono />
-            <KV k="Issue Date"    v={data.passportIssue} />
-            <KV k="Expiry Date"   v={data.passportExpiry} />
+            <KV k="Issue Date"    v={isoToDisplay(data.passportIssue)} />
+            <KV k="Expiry Date"   v={isoToDisplay(data.passportExpiry)} />
           </>}
         </div>
       </Sec>
@@ -710,7 +710,7 @@ function OverviewTab({ data }) {
           <KV k="District"       v={cur.district} />
           <KV k="State"          v={cur.state} />
           <KV k="Pincode"        v={cur.pin} mono />
-          <KV k="Residing From"  v={cur.from} />
+          <KV k="Residing From"  v={isoToDisplay(cur.from)} />
         </div>
       </Sec>
       {(perm.door||perm.state)&&(
@@ -733,7 +733,7 @@ function OverviewTab({ data }) {
             <KV k="IFSC"           v={data.ifsc} mono />
             <KV k="Branch"         v={data.branch} />
             <KV k="Account Type"   v={data.accountType} />
-            <KV k="Account No."    v={data.accountFull?"•".repeat(Math.max(0,data.accountFull.length-4))+data.accountFull.slice(-4):(data.accountLast4?`••••••••${data.accountLast4}`:"")} mono />
+            <KV k="Account No."    v={data.accountFull || (data.accountLast4 ? `••••••••${data.accountLast4}` : "")} mono />
           </div>
         </Sec>
       )}
@@ -797,8 +797,8 @@ function EducationTab({ data }) {
                 <KV k="City"       v={a.city} />
                 <KV k="Principal"  v={a.principalName} />
                 <KV k="Reg. No."   v={a.regNo} mono />
-                <KV k="From"       v={a.from} />
-                <KV k="To"         v={a.to||(a.isOngoing==="Ongoing"?"Ongoing":"")} />
+                <KV k="From"       v={isoToDisplay(a.from)} />
+                <KV k="To"         v={a.to?(isoToDisplay(a.to)):(a.isOngoing==="Ongoing"?"Ongoing":"")} />
               </div>
             </div>
           ))}
@@ -850,11 +850,11 @@ function EmploymentTab({ data, resumeKey, docUrls }) {
             <KV k="Employee ID"     v={e.employeeId} mono />
             <KV k="Work Email"      v={e.workEmail} mono />
             <KV k="Office Address"  v={e.officeAddress} />
-            <KV k="Date of Joining" v={e.startDate} />
+            <KV k="Date of Joining" v={isoToDisplay(e.startDate)} />
             {i===0
               ?<KV k="Currently Working" v={e.currentlyWorking==="Yes"?"Yes — Still Employed":"No"} />
-              :<KV k="Date of Leaving"   v={e.endDate} />}
-            {i===0&&e.currentlyWorking==="No"&&<KV k="Date of Leaving" v={e.endDate} />}
+              :<KV k="Date of Leaving"   v={isoToDisplay(e.endDate)} />}
+            {i===0&&e.currentlyWorking==="No"&&<KV k="Date of Leaving" v={isoToDisplay(e.endDate)} />}
             {e.reasonForRelieving&&<KV k="Reason for Leaving" v={e.reasonForRelieving} />}
             {e.duties&&<KV k="Duties" v={e.duties} />}
             {e.employmentType==="Contract"&&e.contractVendor?.company&&<>
@@ -909,8 +909,8 @@ function UanTab({ data }) {
                 ?<div style={{fontSize:"0.72rem",color:"#0369a1"}}>ℹ PF not maintained by this employer</div>
                 :<div className="kv-grid">
                   <KV k="PF Member ID"    v={pf.pfMemberId} mono />
-                  <KV k="Date of Joining" v={pf.dojEpfo} />
-                  <KV k="Date of Exit"    v={pf.doeEpfo} />
+                  <KV k="Date of Joining" v={isoToDisplay(pf.dojEpfo)} />
+                  <KV k="Date of Exit"    v={isoToDisplay(pf.doeEpfo)} />
                   <KV k="PF Transferred"  v={pf.pfTransferred} />
                 </div>}
             </div>
@@ -1000,8 +1000,8 @@ export default function EmployerDashboard() {
 
   useEffect(() => {
     if (!ready) return;
-    if (!user) { router.replace("/employer/login"); return; }
-    if (user.role !== "employer") { router.replace("/employer/login"); return; }
+    if (user === null) { router.replace("/employer/login"); return; }
+    if (user && user.role !== "employer") { router.replace("/employer/login"); return; }
   }, [ready, user, router]);
 
   // Terms — sessionStorage fast path + DB check
@@ -1231,9 +1231,9 @@ export default function EmployerDashboard() {
                     <div className="hero-email">{selected.employee_email}</div>
                     <div className="hero-badges">
                       <span className={`hb hb-${selected.status}`}>{selected.status.charAt(0).toUpperCase()+selected.status.slice(1)}</span>
-                      {selected.requested_at && <span className="hb hb-info">Requested: {toISTDate(selected.requested_at)}</span>}
-                      {(selected.responded_at||selected.approved_at) && <span className="hb hb-info">Responded: {toISTDate(selected.responded_at||selected.approved_at)}</span>}
-                      {profileData?.snapshot_at && <span className="hb hb-info">Snapshot: {toISTDate(profileData.snapshot_at)}</span>}
+                      {selected.requested_at && <span className="hb hb-info">Requested: {toIST(selected.requested_at)}</span>}
+                      {(selected.responded_at||selected.approved_at) && <span className="hb hb-info">Responded: {toIST(selected.responded_at||selected.approved_at)}</span>}
+                      {profileData?.snapshot_at && <span className="hb hb-info">Snapshot: {toIST(profileData.snapshot_at)}</span>}
                     </div>
                   </div>
                   {selected.request_message && (
