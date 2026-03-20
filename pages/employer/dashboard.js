@@ -1254,9 +1254,7 @@ export default function EmployerDashboard() {
               {reqOk  && <p className="req-msg s">{reqOk}</p>}
               <button className="send-btn" onClick={sendRequest} disabled={reqBusy}>{reqBusy ? "Sending…" : "Send Request"}</button>
             </>) : (<>
-              <textarea className="req-in req-ta" placeholder={"Enter emails — one per line:
-rajan@company.com
-priya@company.com"} style={{minHeight:80}} value={bulkEmails} onChange={e=>setBulkEmails(e.target.value)}/>
+              <textarea className="req-in req-ta" placeholder="Enter emails — one per line&#10;rajan@company.com&#10;priya@company.com" style={{minHeight:80}} value={bulkEmails} onChange={e=>setBulkEmails(e.target.value)}/>
               <textarea className="req-in req-ta" placeholder="Message to all candidates (optional)" value={reqMsg} onChange={e=>setReqMsg(e.target.value)}/>
               <button className="send-btn" onClick={sendBulkRequest} disabled={bulkBusy||!bulkEmails.trim()}>
                 {bulkBusy ? "Sending…" : `Send to ${bulkEmails.split(/[\n,;]+/).filter(e=>e.trim()).length} candidate(s)`}
