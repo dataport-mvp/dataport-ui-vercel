@@ -314,7 +314,7 @@ function ConsentTab({ apiFetch, profileStatus }) {
   const withdraw=async(consentId)=>{
     setActing(consentId);setActionError(p=>({...p,[consentId]:""}));
     try{
-      const res=await apiFetch(`${API}/consent/withdraw?consent_id=${consentId}`,{method:"POST"});
+      const res=await apiFetch(`${API}/consent/withdraw`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({consent_id:consentId})});
       if(res.ok){await load();}else{const errData=await res.json().catch(()=>({}));setActionError(p=>({...p,[consentId]:errData.detail||errData.message||`Error ${res.status}`}));}
     }catch(e){setActionError(p=>({...p,[consentId]:"Network error — please retry"}));}
     setActing(null);
