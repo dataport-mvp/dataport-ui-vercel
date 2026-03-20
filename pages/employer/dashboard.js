@@ -597,6 +597,26 @@ const G = `
     .page { flex-direction:column; }
     .pane { padding:1rem; }
   }
+
+  /* ── Bulk invite ── */
+  .bulk-tab-row { display:flex; border-bottom:1px solid #ede9f8; margin-bottom:0.6rem; }
+  .bulk-tab { flex:1; padding:0.38rem 0; background:none; border:none; border-bottom:2px solid transparent;
+    font-size:0.65rem; font-weight:700; color:#9ca3af; cursor:pointer; font-family:inherit;
+    text-transform:uppercase; letter-spacing:0.5px; margin-bottom:-1px; transition:all 0.12s; }
+  .bulk-tab.on { color:#4f46e5; border-bottom-color:#4f46e5; }
+
+  /* ── Completeness bar ── */
+  .comp-bar-wrap { margin:0.5rem 0 0.75rem; }
+  .comp-bar-label { display:flex; justify-content:space-between; font-size:0.62rem; color:#94a3b8; font-weight:600; margin-bottom:0.3rem; }
+  .comp-bar-bg { height:5px; background:#f1f5f9; border-radius:999px; overflow:hidden; }
+  .comp-bar-fill { height:100%; border-radius:999px; transition:width 0.4s; }
+
+  /* ── Candidate status badge ── */
+  .cand-status { font-size:0.58rem; font-weight:700; padding:1px 6px; border-radius:4px; white-space:nowrap; }
+  .cand-status.submitted  { background:#dcfce7; color:#15803d; }
+  .cand-status.draft      { background:#fef9c3; color:#854d0e; }
+  .cand-status.no-profile { background:#fee2e2; color:#dc2626; }
+  .cand-status.pending    { background:#f1f5f9; color:#64748b; }
 `;
 
 // ── Modals ────────────────────────────────────────────────────────────
@@ -1009,6 +1029,11 @@ export default function EmployerDashboard() {
   const [reqBusy,        setReqBusy]        = useState(false);
   const [reqErr,         setReqErr]         = useState("");
   const [reqOk,          setReqOk]          = useState("");
+  const [reqTab,         setReqTab]         = useState("single"); // "single" | "bulk"
+  const [bulkEmails,     setBulkEmails]     = useState("");
+  const [bulkResults,    setBulkResults]    = useState([]);
+  const [bulkBusy,       setBulkBusy]       = useState(false);
+  const [candStatus,     setCandStatus]     = useState({}); // email → {status,completeness,name}
   const [loadingProf,    setLoadingProf]    = useState(false);
   const [loading,        setLoading]        = useState(true);
   const [printing,       setPrinting]       = useState(false);
@@ -1091,6 +1116,8 @@ export default function EmployerDashboard() {
 
   const selectConsent = useCallback(async (consent) => {
     setSelected(consent); setProfileData(null); setDocuments(null); setActiveTab("Overview");
+    // Fetch candidate profile status for badge (works for all statuses)
+    if (consent.employee_email) fetchCandStatus(consent.employee_email);
     if (consent.status !== "approved") return;
     setLoadingProf(true);
     try {
@@ -1105,6 +1132,43 @@ export default function EmployerDashboard() {
     } catch (_) {}
     setLoadingProf(false);
   }, [apiFetch, loadDocs]);
+
+  // Fetch profile status for a single candidate (for sidebar badge)
+  const fetchCandStatus = async (email) => {
+    if (!email || candStatus[email]) return;
+    try {
+      const r = await apiFetch(`${API}/employee/profile-status?email=${encodeURIComponent(email)}`);
+      if (r.ok) {
+        const d = await r.json();
+        setCandStatus(prev => ({...prev, [email]: d}));
+      }
+    } catch(_) {}
+  };
+
+  // Bulk invite — sends consent requests to multiple emails at once
+  const sendBulkRequest = async () => {
+    const emails = bulkEmails.split(/[
+,;]+/).map(e => e.trim().toLowerCase()).filter(Boolean);
+    if (!emails.length) return;
+    setBulkBusy(true);
+    setBulkResults([]);
+    const results = [];
+    for (const email of emails) {
+      try {
+        const r = await apiFetch(`${API}/consent/request`, {
+          method: "POST",
+          body: JSON.stringify({ employee_email: email, message: reqMsg.trim() || undefined }),
+        });
+        const d = await r.json();
+        results.push({ email, ok: r.ok, msg: r.ok ? "Sent ✓" : (d.detail || `Error ${r.status}`) });
+      } catch(_) {
+        results.push({ email, ok: false, msg: "Network error" });
+      }
+    }
+    setBulkResults(results);
+    setBulkBusy(false);
+    if (results.some(r => r.ok)) loadConsents();
+  };
 
   const sendRequest = async () => {
     setReqErr(""); setReqOk("");
@@ -1180,11 +1244,36 @@ export default function EmployerDashboard() {
 
           <div className="req-panel">
             <div className="panel-label">Request Employee Data</div>
-            <input className="req-in" type="email" placeholder="Employee email address" value={reqEmail} onChange={e => setReqEmail(e.target.value)} onKeyDown={e => e.key==="Enter" && !reqMsg && sendRequest()} />
-            <textarea className="req-in req-ta" placeholder="Message to employee (optional)" value={reqMsg} onChange={e => setReqMsg(e.target.value)} />
-            {reqErr && <p className="req-msg e">{reqErr}</p>}
-            {reqOk  && <p className="req-msg s">{reqOk}</p>}
-            <button className="send-btn" onClick={sendRequest} disabled={reqBusy}>{reqBusy ? "Sending…" : "Send Request"}</button>
+            <div className="bulk-tab-row">
+              <button className={`bulk-tab${reqTab==="single"?" on":""}`} onClick={()=>{setReqTab("single");setBulkResults([]);}}>Single</button>
+              <button className={`bulk-tab${reqTab==="bulk"?" on":""}`} onClick={()=>{setReqTab("bulk");setReqErr("");setReqOk("");}}>Bulk</button>
+            </div>
+            {reqTab==="single" ? (<>
+              <input className="req-in" type="email" placeholder="Employee email address" value={reqEmail} onChange={e => setReqEmail(e.target.value)} onKeyDown={e => e.key==="Enter" && !reqMsg && sendRequest()} />
+              <textarea className="req-in req-ta" placeholder="Message to employee (optional)" value={reqMsg} onChange={e => setReqMsg(e.target.value)} />
+              {reqErr && <p className="req-msg e">{reqErr}</p>}
+              {reqOk  && <p className="req-msg s">{reqOk}</p>}
+              <button className="send-btn" onClick={sendRequest} disabled={reqBusy}>{reqBusy ? "Sending…" : "Send Request"}</button>
+            </>) : (<>
+              <textarea className="req-in req-ta" placeholder={"Enter emails — one per line:
+rajan@company.com
+priya@company.com"} style={{minHeight:80}} value={bulkEmails} onChange={e=>setBulkEmails(e.target.value)}/>
+              <textarea className="req-in req-ta" placeholder="Message to all candidates (optional)" value={reqMsg} onChange={e=>setReqMsg(e.target.value)}/>
+              <button className="send-btn" onClick={sendBulkRequest} disabled={bulkBusy||!bulkEmails.trim()}>
+                {bulkBusy ? "Sending…" : `Send to ${bulkEmails.split(/[
+,;]+/).filter(e=>e.trim()).length} candidate(s)`}
+              </button>
+              {bulkResults.length>0&&(
+                <div style={{marginTop:"0.5rem",maxHeight:120,overflowY:"auto"}}>
+                  {bulkResults.map((r,i)=>(
+                    <div key={i} style={{fontSize:"0.63rem",padding:"2px 0",color:r.ok?"#16a34a":"#ef4444",display:"flex",justifyContent:"space-between"}}>
+                      <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"65%"}}>{r.email}</span>
+                      <span style={{fontWeight:700}}>{r.msg}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>)}
           </div>
 
           <div className="filter-tabs">
@@ -1210,7 +1299,14 @@ export default function EmployerDashboard() {
                 <div key={gcid(c)} className={`c-item${gcid(selected)===gcid(c)?" sel":""}`} onClick={() => selectConsent(c)}>
                   <div className="c-dot" style={{ background: dot }} />
                   <div style={{ flex:1, minWidth:0 }}>
-                    <div className="c-mail">{c.employee_email}</div>
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"0.3rem"}}>
+                      <div className="c-mail" style={{flex:1}}>{c.employee_email}</div>
+                      {candStatus[c.employee_email] && (
+                        <span className={`cand-status ${candStatus[c.employee_email].status==="submitted"?"submitted":candStatus[c.employee_email].status==="draft"?"draft":"no-profile"}`}>
+                          {candStatus[c.employee_email].status==="submitted"?"✓ Done":candStatus[c.employee_email].status==="draft"?"In progress":"Not started"}
+                        </span>
+                      )}
+                    </div>
                     {c.employee_name && c.employee_name !== c.employee_email && <div className="c-nm">{c.employee_name}</div>}
                     <div className="c-dt">{toISTDate(ts)}</div>
                   </div>
@@ -1250,6 +1346,22 @@ export default function EmployerDashboard() {
                       {(selected.responded_at||selected.approved_at) && <span className="hb hb-info">Responded: {toIST(selected.responded_at||selected.approved_at)}</span>}
                       {profileData?.snapshot_at && <span className="hb hb-info">Snapshot: {toIST(profileData.snapshot_at)}</span>}
                     </div>
+                    {candStatus[selected.employee_email] && (()=>{
+                      const cs = candStatus[selected.employee_email];
+                      const pct = cs.completeness || 0;
+                      const col = pct>=80?"#16a34a":pct>=50?"#f59e0b":"#ef4444";
+                      return (
+                        <div className="comp-bar-wrap" style={{minWidth:200}}>
+                          <div className="comp-bar-label">
+                            <span>Profile completeness</span>
+                            <span style={{color:col,fontWeight:700}}>{pct}%</span>
+                          </div>
+                          <div className="comp-bar-bg">
+                            <div className="comp-bar-fill" style={{width:`${pct}%`,background:col}}/>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                   {selected.request_message && (
                     <div className="msg-bubble">
