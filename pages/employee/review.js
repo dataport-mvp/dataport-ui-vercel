@@ -502,6 +502,21 @@ export default function ReviewPage() {
             ℹ️ <strong>Self-reported profile.</strong> Please review every section carefully before submitting — false or misleading information may result in rejection or termination.
           </div>
 
+          {/* Last modified timestamp */}
+          {d.last_saved_at && (
+            <div style={{background:"#fff",border:"1px solid #e8e5f0",borderRadius:10,padding:"0.6rem 1rem",marginBottom:"1.1rem",display:"flex",alignItems:"center",gap:"0.5rem",boxShadow:"0 1px 4px rgba(30,26,62,0.07)"}}>
+              <span style={{fontSize:"0.72rem",color:"#8b88b0"}}>🕐</span>
+              <span style={{fontSize:"0.72rem",color:"#6b6894",fontWeight:500}}>
+                Last modified: <strong style={{color:"#1a1730"}}>{new Date(d.last_saved_at).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}</strong>
+              </span>
+              {d.status === "submitted" && d.submitted_at && (
+                <span style={{marginLeft:"auto",fontSize:"0.72rem",color:"#16a34a",fontWeight:600,background:"#f0fdf4",padding:"0.15rem 0.55rem",borderRadius:6,border:"1px solid #bbf7d0"}}>
+                  ✓ Submitted: {new Date(d.submitted_at).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}
+                </span>
+              )}
+            </div>
+          )}
+
           {missingIssues.length > 0 && (
             <div className="missing-banner">
               <h4>⚠️ {missingIssues.reduce((a,p)=>a+p.fields.length,0)} field{missingIssues.reduce((a,p)=>a+p.fields.length,0)>1?"s":""} still required across {missingIssues.length} page{missingIssues.length>1?"s":""}</h4>
