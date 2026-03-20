@@ -381,11 +381,36 @@ function FS({ l, v, s, o, r = true }) {
   );
 }
 
+
+function DeleteAccountModal({ onConfirm, onCancel, loading }) {
+  const [typed, setTyped] = useState("");
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(15,12,40,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000,backdropFilter:"blur(4px)"}}>
+      <div style={{background:"#fff",borderRadius:18,padding:"2rem",maxWidth:400,width:"90%",boxShadow:"0 24px 60px rgba(15,12,40,0.3)"}}>
+        <div style={{fontSize:34,marginBottom:"0.75rem",textAlign:"center"}}>⚠️</div>
+        <h3 style={{margin:"0 0 0.5rem",color:"#1a1730",fontWeight:800,fontSize:"1.05rem",textAlign:"center"}}>Delete your account?</h3>
+        <p style={{color:"#6b6894",fontSize:"0.84rem",marginBottom:"1rem",lineHeight:1.6,textAlign:"center"}}>This permanently deletes your profile, all documents, and consent history. <strong>This cannot be undone.</strong></p>
+        <p style={{fontSize:"0.78rem",color:"#6b6894",marginBottom:"0.4rem",fontWeight:600}}>Type <strong>DELETE</strong> to confirm:</p>
+        <input
+          style={{width:"100%",padding:"0.65rem 0.875rem",background:"#fff8f8",border:"1.5px solid #fecaca",borderRadius:9,fontFamily:"inherit",fontSize:"0.875rem",color:"#1a1730",outline:"none",marginBottom:"1rem",letterSpacing:"0.05em"}}
+          value={typed} onChange={e=>setTyped(e.target.value.toUpperCase())} placeholder="Type DELETE here"
+        />
+        <div style={{display:"flex",gap:"0.75rem"}}>
+          <button onClick={onCancel} style={{flex:1,padding:"0.7rem",borderRadius:9,border:"1.5px solid #dddaf0",background:"#f7f6fd",cursor:"pointer",fontWeight:600,color:"#6b6894",fontFamily:"inherit",fontSize:"0.875rem"}}>Cancel</button>
+          <button onClick={onConfirm} disabled={typed!=="DELETE"||loading} style={{flex:1,padding:"0.7rem",borderRadius:9,border:"none",background:typed==="DELETE"?"#ef4444":"#fecaca",color:"#fff",cursor:typed==="DELETE"&&!loading?"pointer":"not-allowed",fontWeight:700,fontFamily:"inherit",fontSize:"0.875rem",transition:"background 0.15s"}}>{loading?"Deleting…":"Delete forever"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PersonalDetails() {
   const router = useRouter();
   const { user, apiFetch, logout, ready } = useAuth();
   const [activeTab,setActiveTab]         = useState("profile");
   const [showSignout,setShowSignout]     = useState(false);
+  const [showDeleteModal,setShowDeleteModal] = useState(false);
+  const [deleteLoading,setDeleteLoading]     = useState(false);
   const [saveStatus,setSaveStatus]       = useState("");
   const [midSaveStatus,setMidSaveStatus] = useState("");
   const [loading,setLoading]             = useState(true);
@@ -633,6 +658,25 @@ export default function PersonalDetails() {
     if (accountNo.length >= 4) { setAccountFull(accountNo); setAccountLast4(accountNo.slice(-4)); setAccountNo(""); setAccountNoConfirm(""); }
   };
 
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true);
+    try {
+      const res = await apiFetch(`${API}/employee/account`, { method: "DELETE" });
+      if (res.ok) {
+        logout();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.detail || "Could not delete account. Please try again.");
+        setDeleteLoading(false);
+        setShowDeleteModal(false);
+      }
+    } catch (_) {
+      alert("Network error. Please try again.");
+      setDeleteLoading(false);
+      setShowDeleteModal(false);
+    }
+  };
+
   const handleSave = async () => {
     const e = {};
     if (!firstName)    e.firstName = true;
@@ -703,6 +747,7 @@ export default function PersonalDetails() {
       <style>{G}</style>
       <div className="pg">
         {showSignout && <SignoutModal onConfirm={handleSignout} onCancel={() => setShowSignout(false)} />}
+        {showDeleteModal && <DeleteAccountModal onConfirm={handleDeleteAccount} onCancel={()=>{setShowDeleteModal(false);}} loading={deleteLoading}/>}
 
         <div className="topbar">
           <span className="logo-text">Datagate</span>
@@ -1081,6 +1126,9 @@ export default function PersonalDetails() {
                   <button className="sbtn" onClick={handleMidSave} style={{fontSize:"0.8rem"}}>{midSaveStatus || "Save draft"}</button>
                   <button className="pbtn" onClick={handleSave}>Save & Continue →</button>
                 </div>
+              </div>
+              <div style={{textAlign:"center",marginTop:"0.75rem"}}>
+                <button onClick={()=>setShowDeleteModal(true)} style={{background:"none",border:"none",color:"#ef4444",fontSize:"0.75rem",fontWeight:600,cursor:"pointer",fontFamily:"inherit",textDecoration:"underline",opacity:0.7}}>Delete my account and all data</button>
               </div>
             </>
           )}
