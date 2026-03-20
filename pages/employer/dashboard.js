@@ -1147,8 +1147,7 @@ export default function EmployerDashboard() {
 
   // Bulk invite — sends consent requests to multiple emails at once
   const sendBulkRequest = async () => {
-    const emails = bulkEmails.split(/[
-,;]+/).map(e => e.trim().toLowerCase()).filter(Boolean);
+    const emails = bulkEmails.split(/[\n,;]+/).map(e => e.trim().toLowerCase()).filter(Boolean);
     if (!emails.length) return;
     setBulkBusy(true);
     setBulkResults([]);
@@ -1260,8 +1259,7 @@ rajan@company.com
 priya@company.com"} style={{minHeight:80}} value={bulkEmails} onChange={e=>setBulkEmails(e.target.value)}/>
               <textarea className="req-in req-ta" placeholder="Message to all candidates (optional)" value={reqMsg} onChange={e=>setReqMsg(e.target.value)}/>
               <button className="send-btn" onClick={sendBulkRequest} disabled={bulkBusy||!bulkEmails.trim()}>
-                {bulkBusy ? "Sending…" : `Send to ${bulkEmails.split(/[
-,;]+/).filter(e=>e.trim()).length} candidate(s)`}
+                {bulkBusy ? "Sending…" : `Send to ${bulkEmails.split(/[\n,;]+/).filter(e=>e.trim()).length} candidate(s)`}
               </button>
               {bulkResults.length>0&&(
                 <div style={{marginTop:"0.5rem",maxHeight:120,overflowY:"auto"}}>
