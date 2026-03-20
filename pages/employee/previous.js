@@ -186,13 +186,22 @@ function FDate({ l, v, s, r=true, errKey, errors, onFix }) {
       }
     } else { s(""); }
   };
-  const displayDate = (!focused && v && v.includes("-")) ? isoToDisplay(v) : null;
+  const getDisplayValue = () => {
+    if (focused) return raw;
+    if (v && v.includes("-")) {
+      const [y, mo, d] = v.split("-");
+      const idx = parseInt(mo, 10) - 1;
+      const mName = MONTH_NAMES[idx];
+      if (mName) return `${parseInt(d, 10)} ${mName} ${y}`;
+    }
+    return raw;
+  };
   return (
     <div className="fi">
       <span className="fl">{l}{r&&<span style={{color:"#ef4444",marginLeft:2}}>*</span>}</span>
       <input
         className={`date-input${hasErr?" err":""}`}
-        value={raw}
+        value={getDisplayValue()}
         placeholder="DD/MM/YYYY"
         onFocus={()=>setFocused(true)}
         onBlur={()=>setFocused(false)}
@@ -201,7 +210,6 @@ function FDate({ l, v, s, r=true, errKey, errors, onFix }) {
         inputMode="numeric"
         autoComplete="off"
       />
-      {displayDate && <div className="date-display">📅 {displayDate}</div>}
       {hasErr&&<span className="err-msg">Required</span>}
     </div>
   );
@@ -447,6 +455,7 @@ export default function PreviousCompany() {
         employee_id: employeeId,
         resumeKey,
         hasExperience,
+        last_saved_at: Date.now(),
         // ── Cascade flag: if page 3 was edited, page 5 review acks must be re-done
         page3_edited: wasEdited.current ? true : (existing.page3_edited || false),
         // Reset review acks so page 5 prompts again
@@ -534,7 +543,7 @@ export default function PreviousCompany() {
           <div className="exp-card">
             <div style={{display:"flex",alignItems:"center",gap:"0.6rem",marginBottom:"0.85rem"}}>
               <div style={{width:32,height:32,borderRadius:8,background:"#f5f3ff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.95rem",flexShrink:0}}>💼</div>
-              <span style={{fontSize:"0.93rem",fontWeight:700,color:"#1a1730"}}>Work Experience</span>
+              <span style={{fontSize:"0.93rem",fontWeight:700,color:"#1a1730"}}>Work Experience <span style={{color:"#ef4444",fontSize:"0.82rem"}}>*</span></span>
             </div>
             <p style={{fontSize:"0.82rem",color:"#4b5563",marginBottom:"0.85rem",fontWeight:500,lineHeight:1.55}}>Do you have prior work experience?</p>
             <div style={{display:"flex",gap:"0.65rem"}}>
@@ -695,7 +704,7 @@ export default function PreviousCompany() {
 
             {ACK_DEFS.map(({key,title,question,detail})=>(
               <div key={key} className="decl-item">
-                <p style={{fontSize:"0.68rem",fontWeight:800,color:"#7c3aed",textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:"0.35rem"}}>{title}</p>
+                <p style={{fontSize:"0.68rem",fontWeight:800,color:"#7c3aed",textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:"0.35rem"}}>{title} <span style={{color:"#ef4444"}}>*</span></p>
                 <p className="decl-q">{question}</p>
                 <p className="decl-sub">{detail}</p>
                 <div style={{display:"flex",gap:"0.65rem",marginBottom:ack[key].val==="Yes"?"0.75rem":"0"}}>
@@ -703,7 +712,7 @@ export default function PreviousCompany() {
                     <button key={v} onClick={()=>{setAck({...ack,[key]:{...ack[key],val:v}});markEdited();fixErr(`ack_${key}`);}} style={{padding:"0.3rem 1.1rem",borderRadius:999,border:ack[key].val===v?"2px solid #4f46e5":"1.5px solid #dddaf0",background:ack[key].val===v?"#4f46e5":"#f2f1f9",color:ack[key].val===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
                   ))}
                 </div>
-                {errors[`ack_${key}`]&&<span className="err-msg" style={{marginTop:"0.4rem",display:"block"}}>Please answer this question</span>}
+                {errors[`ack_${key}`]&&<span className="err-msg" style={{marginTop:"0.4rem",display:"block"}}>⚠️ This field is required — please select Yes or No</span>}
                 {ack[key].val==="Yes"&&(
                   <div style={{marginTop:"0.6rem"}}>
                     <TA l="Please provide details" v={ack[key].note} s={v=>setAck({...ack,[key]:{...ack[key],note:v}})} r={false}/>
