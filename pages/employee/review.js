@@ -419,6 +419,7 @@ export default function ReviewPage() {
           pfRecords: safePfRecords,
           status: "submitted",
           submitted_at: Date.now(),
+          last_saved_at: Date.now(),
           acknowledgements_review: acksDict,
           // ── Clear cascade flags on successful submit ──
           page1_edited: false,
