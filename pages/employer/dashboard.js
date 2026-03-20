@@ -444,12 +444,30 @@ const G = `
 
   /* ── Sidebar ── */
   .sidebar {
-    width: 272px; min-width: 272px;
+    width: 300px; min-width: 300px;
     background: #f8f7ff;
     border-right: 2px solid #e8e6f0;
     display: flex; flex-direction: column;
     height: 100vh; position: sticky; top: 0; overflow-y: auto;
   }
+
+  /* ── Request drawer ── */
+  .drawer-overlay { position:fixed; inset:0; background:rgba(15,12,40,0.45); z-index:100; backdrop-filter:blur(2px); }
+  .drawer { position:fixed; top:0; right:0; width:360px; max-width:95vw; height:100vh; background:#fff;
+    box-shadow:-8px 0 40px rgba(15,12,40,0.18); z-index:101; display:flex; flex-direction:column;
+    transform:translateX(100%); transition:transform 0.22s cubic-bezier(0.4,0,0.2,1); }
+  .drawer.open { transform:translateX(0); }
+  .drawer-head { padding:1.1rem 1.3rem; border-bottom:1px solid #ede9f8; display:flex; align-items:center; justify-content:space-between; }
+  .drawer-title { font-size:0.9rem; font-weight:700; color:#1a1035; }
+  .drawer-close { width:28px; height:28px; border-radius:6px; border:1px solid #e5e0f5; background:transparent;
+    color:#9ca3af; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .drawer-close:hover { border-color:#ef4444; color:#ef4444; background:#fef2f2; }
+  .drawer-body { flex:1; overflow-y:auto; padding:1.1rem 1.3rem; }
+  .new-req-btn { width:calc(100% - 2rem); margin:0.75rem 1rem 0; padding:0.55rem;
+    background:linear-gradient(135deg,#6366f1,#4f46e5); color:#fff; border:none; border-radius:8px;
+    font-family:inherit; font-size:0.76rem; font-weight:700; cursor:pointer;
+    box-shadow:0 2px 8px rgba(99,102,241,0.3); transition:opacity 0.15s; letter-spacing:0.1px; }
+  .new-req-btn:hover { opacity:0.9; }
 
   .side-top {
     padding: 1.1rem 1.3rem 1rem;
@@ -1029,6 +1047,7 @@ export default function EmployerDashboard() {
   const [reqBusy,        setReqBusy]        = useState(false);
   const [reqErr,         setReqErr]         = useState("");
   const [reqOk,          setReqOk]          = useState("");
+  const [showDrawer,     setShowDrawer]     = useState(false);
   const [reqTab,         setReqTab]         = useState("single"); // "single" | "bulk"
   const [bulkEmails,     setBulkEmails]     = useState("");
   const [bulkResults,    setBulkResults]    = useState([]);
@@ -1177,7 +1196,7 @@ export default function EmployerDashboard() {
       const r = await apiFetch(`${API}/consent/request`, { method:"POST", body:JSON.stringify({ employee_email:reqEmail.trim().toLowerCase(), message:reqMsg.trim()||undefined }) });
       const data = await r.json();
       if (!r.ok) { setReqErr(parseError(data)); return; }
-      setReqOk("Request sent!"); setReqEmail(""); setReqMsg(""); loadConsents();
+      setReqOk("Request sent!"); setReqEmail(""); setReqMsg(""); loadConsents(); setTimeout(()=>{ setShowDrawer(false); setReqOk(""); }, 1200);
     } catch { setReqErr("Network error"); }
     finally { setReqBusy(false); }
   };
@@ -1241,36 +1260,7 @@ export default function EmployerDashboard() {
             <span className="emp-tag">Employer</span>
           </div>
 
-          <div className="req-panel">
-            <div className="panel-label">Request Employee Data</div>
-            <div className="bulk-tab-row">
-              <button className={`bulk-tab${reqTab==="single"?" on":""}`} onClick={()=>{setReqTab("single");setBulkResults([]);}}>Single</button>
-              <button className={`bulk-tab${reqTab==="bulk"?" on":""}`} onClick={()=>{setReqTab("bulk");setReqErr("");setReqOk("");}}>Bulk</button>
-            </div>
-            {reqTab==="single" ? (<>
-              <input className="req-in" type="email" placeholder="Employee email address" value={reqEmail} onChange={e => setReqEmail(e.target.value)} onKeyDown={e => e.key==="Enter" && !reqMsg && sendRequest()} />
-              <textarea className="req-in req-ta" placeholder="Message to employee (optional)" value={reqMsg} onChange={e => setReqMsg(e.target.value)} />
-              {reqErr && <p className="req-msg e">{reqErr}</p>}
-              {reqOk  && <p className="req-msg s">{reqOk}</p>}
-              <button className="send-btn" onClick={sendRequest} disabled={reqBusy}>{reqBusy ? "Sending…" : "Send Request"}</button>
-            </>) : (<>
-              <textarea className="req-in req-ta" placeholder="Enter emails — one per line&#10;rajan@company.com&#10;priya@company.com" style={{minHeight:80}} value={bulkEmails} onChange={e=>setBulkEmails(e.target.value)}/>
-              <textarea className="req-in req-ta" placeholder="Message to all candidates (optional)" value={reqMsg} onChange={e=>setReqMsg(e.target.value)}/>
-              <button className="send-btn" onClick={sendBulkRequest} disabled={bulkBusy||!bulkEmails.trim()}>
-                {bulkBusy ? "Sending…" : `Send to ${bulkEmails.split(/[\n,;]+/).filter(e=>e.trim()).length} candidate(s)`}
-              </button>
-              {bulkResults.length>0&&(
-                <div style={{marginTop:"0.5rem",maxHeight:120,overflowY:"auto"}}>
-                  {bulkResults.map((r,i)=>(
-                    <div key={i} style={{fontSize:"0.63rem",padding:"2px 0",color:r.ok?"#16a34a":"#ef4444",display:"flex",justifyContent:"space-between"}}>
-                      <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"65%"}}>{r.email}</span>
-                      <span style={{fontWeight:700}}>{r.msg}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>)}
-          </div>
+          <button className="new-req-btn" onClick={()=>setShowDrawer(true)}>＋ New Request</button>
 
           <div className="filter-tabs">
             {[["pending","Pending"],["approved","Approved"],["declined","Declined"]].map(([key,label]) => (
@@ -1311,6 +1301,44 @@ export default function EmployerDashboard() {
             })}
           </div>
         </aside>
+
+        {/* ── Request Drawer ── */}
+        {showDrawer && <div className="drawer-overlay" onClick={()=>setShowDrawer(false)}/>}
+        <div className={`drawer${showDrawer?" open":""}`}>
+          <div className="drawer-head">
+            <span className="drawer-title">Request Employee Data</span>
+            <button className="drawer-close" onClick={()=>setShowDrawer(false)}>✕</button>
+          </div>
+          <div className="drawer-body">
+            <div className="bulk-tab-row" style={{marginBottom:"0.75rem"}}>
+              <button className={`bulk-tab${reqTab==="single"?" on":""}`} onClick={()=>{setReqTab("single");setBulkResults([]);}}>Single</button>
+              <button className={`bulk-tab${reqTab==="bulk"?" on":""}`} onClick={()=>{setReqTab("bulk");setReqErr("");setReqOk("");}}>Bulk</button>
+            </div>
+            {reqTab==="single" ? (<>
+              <input className="req-in" type="email" placeholder="Employee email address" value={reqEmail} onChange={e=>setReqEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!reqMsg&&sendRequest()} style={{width:"100%",marginBottom:"0.5rem"}}/>
+              <textarea className="req-in req-ta" placeholder="Message to employee (optional)" value={reqMsg} onChange={e=>setReqMsg(e.target.value)} style={{width:"100%"}}/>
+              {reqErr && <p className="req-msg e">{reqErr}</p>}
+              {reqOk  && <p className="req-msg s">{reqOk}</p>}
+              <button className="send-btn" style={{marginTop:"0.5rem"}} onClick={()=>{sendRequest();}} disabled={reqBusy}>{reqBusy?"Sending…":"Send Request"}</button>
+            </>) : (<>
+              <textarea className="req-in req-ta" placeholder="Enter emails — one per line&#10;rajan@company.com&#10;priya@company.com" style={{minHeight:100,width:"100%"}} value={bulkEmails} onChange={e=>setBulkEmails(e.target.value)}/>
+              <textarea className="req-in req-ta" placeholder="Message to all candidates (optional)" style={{width:"100%"}} value={reqMsg} onChange={e=>setReqMsg(e.target.value)}/>
+              <button className="send-btn" style={{marginTop:"0.5rem"}} onClick={sendBulkRequest} disabled={bulkBusy||!bulkEmails.trim()}>
+                {bulkBusy?"Sending…":`Send to ${bulkEmails.split(/[\n,;]+/).filter(e=>e.trim()).length} candidate(s)`}
+              </button>
+              {bulkResults.length>0&&(
+                <div style={{marginTop:"0.75rem",background:"#f8f7ff",borderRadius:8,padding:"0.65rem"}}>
+                  {bulkResults.map((r,i)=>(
+                    <div key={i} style={{fontSize:"0.7rem",padding:"3px 0",color:r.ok?"#16a34a":"#ef4444",display:"flex",justifyContent:"space-between",gap:"0.5rem"}}>
+                      <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1}}>{r.email}</span>
+                      <span style={{fontWeight:700,flexShrink:0}}>{r.msg}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>)}
+          </div>
+        </div>
 
         {/* ── Main ── */}
         <main className="main">
