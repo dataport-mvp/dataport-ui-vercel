@@ -634,6 +634,65 @@ const G = `
     text-transform:uppercase; letter-spacing:0.5px; margin-bottom:-1px; transition:all 0.12s; }
   .bulk-tab.on { color:#4f46e5; border-bottom-color:#4f46e5; }
 
+  /* ── Inbox / Messaging ── */
+  .inbox-overlay { position:fixed; inset:0; background:rgba(15,12,40,0.5); z-index:200; backdrop-filter:blur(3px); }
+  .inbox-panel { position:fixed; top:0; right:0; width:680px; max-width:98vw; height:100vh;
+    background:#fff; box-shadow:-8px 0 48px rgba(30,27,75,0.2); z-index:201;
+    display:flex; flex-direction:column; }
+  .inbox-head { padding:1rem 1.4rem; border-bottom:1px solid #ece9f9; display:flex; align-items:center;
+    justify-content:space-between; background:#fff; flex-shrink:0; }
+  .inbox-title { font-size:0.9rem; font-weight:700; color:#1a1035; }
+  .inbox-close { width:28px; height:28px; border-radius:6px; border:1px solid #e5e0f5;
+    background:transparent; color:#9ca3af; font-size:1rem; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; }
+  .inbox-close:hover { border-color:#ef4444; color:#ef4444; background:#fef2f2; }
+  .inbox-body { display:flex; flex:1; overflow:hidden; }
+  .inbox-list { width:240px; min-width:240px; border-right:1px solid #ece9f9; overflow-y:auto;
+    background:#f8f7ff; }
+  .inbox-thread { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+  .thread-item { padding:0.75rem 1rem; cursor:pointer; border-bottom:1px solid #ede9f8;
+    transition:background 0.1s; }
+  .thread-item:hover { background:#eef2ff; }
+  .thread-item.active { background:#eef2ff; border-left:3px solid #4f46e5; }
+  .thread-email { font-size:0.72rem; font-weight:700; color:#1a1035; overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap; }
+  .thread-preview { font-size:0.65rem; color:#94a3b8; margin-top:2px; overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap; }
+  .thread-meta { display:flex; justify-content:space-between; align-items:center; margin-top:3px; }
+  .thread-time { font-size:0.58rem; color:#c4bfdb; }
+  .unread-badge { background:#4f46e5; color:#fff; font-size:0.55rem; font-weight:800;
+    padding:1px 6px; border-radius:999px; }
+  .msg-list { flex:1; overflow-y:auto; padding:1rem 1.25rem; display:flex; flex-direction:column; gap:0.65rem; }
+  .msg-bubble-wrap { display:flex; flex-direction:column; }
+  .msg-bubble-wrap.mine { align-items:flex-end; }
+  .msg-bubble-wrap.theirs { align-items:flex-start; }
+  .msg-bubble { max-width:75%; padding:0.65rem 0.9rem; border-radius:12px; font-size:0.82rem;
+    line-height:1.55; word-break:break-word; }
+  .msg-bubble.mine { background:#4f46e5; color:#fff; border-radius:12px 12px 3px 12px; }
+  .msg-bubble.theirs { background:#f5f3ff; color:#1a1035; border-radius:12px 12px 12px 3px; border:1px solid #ede9f8; }
+  .msg-sender { font-size:0.6rem; color:#94a3b8; margin-bottom:3px; font-weight:600; }
+  .msg-time { font-size:0.58rem; margin-top:3px; }
+  .msg-time.mine { color:rgba(255,255,255,0.6); text-align:right; }
+  .msg-time.theirs { color:#c4bfdb; }
+  .msg-compose { padding:0.85rem 1.25rem; border-top:1px solid #ece9f9; background:#fff; flex-shrink:0; }
+  .msg-input { width:100%; padding:0.6rem 0.875rem; background:#f8f7ff; border:1.5px solid #ddd8f5;
+    border-radius:9px; font-family:inherit; font-size:0.82rem; color:#1a1035; outline:none;
+    resize:none; min-height:70px; max-height:140px; transition:border-color 0.15s; }
+  .msg-input:focus { border-color:#6366f1; background:#fff; box-shadow:0 0 0 3px rgba(99,102,241,0.1); }
+  .msg-send-btn { padding:0.55rem 1.25rem; background:#4f46e5; color:#fff; border:none;
+    border-radius:8px; font-family:inherit; font-size:0.78rem; font-weight:700; cursor:pointer;
+    transition:all 0.15s; box-shadow:0 2px 8px rgba(99,102,241,0.3); }
+  .msg-send-btn:hover:not(:disabled) { background:#4338ca; }
+  .msg-send-btn:disabled { opacity:0.5; cursor:not-allowed; }
+  .inbox-btn { position:relative; width:32px; height:32px; border-radius:8px;
+    border:1px solid rgba(255,255,255,0.15); background:transparent; color:rgba(255,255,255,0.6);
+    font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    transition:all 0.15s; }
+  .inbox-btn:hover { border-color:#a5b4fc; color:#a5b4fc; background:rgba(99,102,241,0.15); }
+  .inbox-badge { position:absolute; top:-4px; right:-4px; background:#ef4444; color:#fff;
+    border-radius:999px; font-size:0.55rem; font-weight:800; min-width:15px; height:15px;
+    display:flex; align-items:center; justify-content:center; padding:0 3px; border:2px solid #1e1b4b; }
+
   /* ── Completeness bar ── */
   .comp-bar-wrap { margin:0.5rem 0 0.75rem; }
   .comp-bar-label { display:flex; justify-content:space-between; font-size:0.62rem; color:#94a3b8; font-weight:600; margin-bottom:0.3rem; }
@@ -1080,6 +1139,17 @@ export default function EmployerDashboard() {
   const [loadingProf,    setLoadingProf]    = useState(false);
   const [loading,        setLoading]        = useState(true);
   const [printing,       setPrinting]       = useState(false);
+  const [showInbox,      setShowInbox]      = useState(false);
+  const [inboxThreads,   setInboxThreads]   = useState([]);
+  const [inboxLoading,   setInboxLoading]   = useState(false);
+  const [activeThread,   setActiveThread]   = useState(null); // consent_id
+  const [threadMsgs,     setThreadMsgs]     = useState([]);
+  const [threadLoading,  setThreadLoading]  = useState(false);
+  const [msgBody,        setMsgBody]        = useState("");
+  const [msgSubject,     setMsgSubject]     = useState("");
+  const [msgSending,     setMsgSending]     = useState(false);
+  const [msgErr,         setMsgErr]         = useState("");
+  const [unreadCount,    setUnreadCount]    = useState(0);
 
   useEffect(() => {
     if (!ready) return;
@@ -1130,7 +1200,12 @@ export default function EmployerDashboard() {
     setLoading(false);
   }, [apiFetch]);
 
-  useEffect(() => { if (ready && user) loadConsents(); }, [ready, user, loadConsents]);
+  useEffect(() => { if (ready && user) { loadConsents(); loadUnreadCount(); } }, [ready, user, loadConsents]);
+  useEffect(() => {
+    if (!ready || !user) return;
+    const id = setInterval(() => { loadUnreadCount(); }, 30000);
+    return () => clearInterval(id);
+  }, [ready, user]);
   useEffect(() => {
     if (!ready || !user) return;
     const id = setInterval(loadConsents, 15000);
@@ -1331,6 +1406,55 @@ export default function EmployerDashboard() {
     finally { setBulkRemindBusy(false); setTimeout(() => setBulkRemindMsg(""), 5000); }
   };
 
+  // ── Inbox functions ──────────────────────────────────────────────
+  const loadInbox = async () => {
+    setInboxLoading(true);
+    try {
+      const r = await apiFetch(`${API}/messages/inbox`);
+      if (r.ok) setInboxThreads(await r.json());
+    } catch(_) {}
+    setInboxLoading(false);
+  };
+
+  const loadThread = async (consentId) => {
+    setActiveThread(consentId); setThreadMsgs([]); setThreadLoading(true); setMsgErr("");
+    try {
+      const r = await apiFetch(`${API}/messages/thread/${consentId}`);
+      if (r.ok) { const d = await r.json(); setThreadMsgs(d.messages || []); }
+    } catch(_) {}
+    setThreadLoading(false);
+    // Refresh unread after reading
+    apiFetch(`${API}/messages/unread-count`).then(r=>r.ok?r.json():null).then(d=>{ if(d) setUnreadCount(d.unread||0); }).catch(()=>{});
+  };
+
+  const sendMessage = async () => {
+    if (!msgBody.trim()) { setMsgErr("Message cannot be empty"); return; }
+    if (!activeThread)   { setMsgErr("No thread selected"); return; }
+    setMsgSending(true); setMsgErr("");
+    try {
+      const r = await apiFetch(`${API}/messages/send`, {
+        method: "POST",
+        body: JSON.stringify({ consent_id: activeThread, body: msgBody.trim(), subject: msgSubject.trim() }),
+      });
+      if (r.ok) {
+        setMsgBody(""); setMsgSubject("");
+        await loadThread(activeThread); // refresh thread
+        loadInbox(); // refresh inbox list
+      } else {
+        const d = await r.json();
+        setMsgErr(d.detail || "Failed to send");
+      }
+    } catch(_) { setMsgErr("Network error"); }
+    setMsgSending(false);
+  };
+
+  const loadUnreadCount = async () => {
+    try {
+      const r = await apiFetch(`${API}/messages/unread-count`);
+      if (r.ok) { const d = await r.json(); setUnreadCount(d.unread || 0); }
+    } catch(_) {}
+  };
+
   const sendRequest = async () => {
     setReqErr(""); setReqOk("");
     if (!reqEmail.trim()) { setReqErr("Email is required"); return; }
@@ -1423,7 +1547,13 @@ export default function EmployerDashboard() {
               <div className="brand-icon">🔒</div>
               <div><div className="brand-name">Datagate</div><div className="brand-sub">Employer Portal</div></div>
             </div>
-            <button className="so-btn" onClick={() => setShowSignout(true)} title="Sign out">⏻</button>
+            <div style={{display:"flex",alignItems:"center",gap:"0.4rem"}}>
+              <button className="inbox-btn" onClick={()=>{setShowInbox(true);loadInbox();}} title="Messages">
+                ✉️
+                {unreadCount > 0 && <span className="inbox-badge">{unreadCount}</span>}
+              </button>
+              <button className="so-btn" onClick={() => setShowSignout(true)} title="Sign out">⏻</button>
+            </div>
           </div>
 
           <div className="user-block">
@@ -1549,6 +1679,117 @@ export default function EmployerDashboard() {
           </div>
         </div>
 
+        {/* ── Inbox Panel ── */}
+        {showInbox && (
+          <>
+            <div className="inbox-overlay" onClick={()=>setShowInbox(false)}/>
+            <div className="inbox-panel">
+              <div className="inbox-head">
+                <div className="inbox-title">✉️ Messages</div>
+                <button className="inbox-close" onClick={()=>setShowInbox(false)}>✕</button>
+              </div>
+              <div className="inbox-body">
+                {/* Thread list */}
+                <div className="inbox-list">
+                  {inboxLoading && <div style={{padding:"1rem",fontSize:"0.72rem",color:"#94a3b8"}}>Loading…</div>}
+                  {!inboxLoading && inboxThreads.length === 0 && (
+                    <div style={{padding:"1.5rem 1rem",textAlign:"center"}}>
+                      <div style={{fontSize:"1.5rem",opacity:0.3,marginBottom:"0.5rem"}}>✉️</div>
+                      <div style={{fontSize:"0.72rem",color:"#94a3b8"}}>No messages yet</div>
+                      <div style={{fontSize:"0.65rem",color:"#c4bfdb",marginTop:"0.3rem"}}>Click "Message candidate" on an approved profile</div>
+                    </div>
+                  )}
+                  {inboxThreads.map(t => (
+                    <div key={t.thread_id}
+                      className={`thread-item${activeThread===t.thread_id?" active":""}`}
+                      onClick={()=>loadThread(t.thread_id)}>
+                      <div className="thread-email">{t.other_party_email}</div>
+                      {t.other_party_name && <div style={{fontSize:"0.62rem",color:"#6b7280",marginTop:1}}>{t.other_party_name}</div>}
+                      <div className="thread-preview">{t.latest_message||"No messages"}</div>
+                      <div className="thread-meta">
+                        <span className="thread-time">{t.latest_at?toISTDate(t.latest_at):""}</span>
+                        {t.unread_count>0 && <span className="unread-badge">{t.unread_count}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Thread messages */}
+                <div className="inbox-thread">
+                  {!activeThread ? (
+                    <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:"0.5rem",padding:"2rem"}}>
+                      <div style={{fontSize:"2rem",opacity:0.15}}>✉️</div>
+                      <div style={{fontSize:"0.8rem",color:"#94a3b8",fontWeight:500}}>Select a conversation</div>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Thread header */}
+                      <div style={{padding:"0.75rem 1.25rem",borderBottom:"1px solid #ece9f9",background:"#faf9ff",flexShrink:0}}>
+                        <div style={{fontSize:"0.78rem",fontWeight:700,color:"#1a1035"}}>
+                          {inboxThreads.find(t=>t.thread_id===activeThread)?.other_party_email || activeThread}
+                        </div>
+                        <div style={{fontSize:"0.62rem",color:"#94a3b8",marginTop:1}}>
+                          {threadMsgs.length} message{threadMsgs.length!==1?"s":""}
+                          {" · "}Consent: {inboxThreads.find(t=>t.thread_id===activeThread)?.consent_status||""}
+                        </div>
+                      </div>
+
+                      {/* Messages */}
+                      <div className="msg-list">
+                        {threadLoading && <div style={{textAlign:"center",fontSize:"0.72rem",color:"#94a3b8",padding:"1rem"}}>Loading messages…</div>}
+                        {!threadLoading && threadMsgs.length === 0 && (
+                          <div style={{textAlign:"center",fontSize:"0.72rem",color:"#94a3b8",padding:"2rem"}}>
+                            No messages yet. Send the first message below.
+                          </div>
+                        )}
+                        {threadMsgs.map((m,i) => {
+                          const mine = m.sender_email === user?.email;
+                          return (
+                            <div key={m.message_id||i} className={`msg-bubble-wrap ${mine?"mine":"theirs"}`}>
+                              {!mine && <div className="msg-sender">{m.sender_name||m.sender_email}</div>}
+                              {m.subject && <div style={{fontSize:"0.65rem",fontWeight:700,color:mine?"rgba(255,255,255,0.7)":"#6366f1",marginBottom:"0.2rem"}}>{m.subject}</div>}
+                              <div className={`msg-bubble ${mine?"mine":"theirs"}`}>{m.body}</div>
+                              <div className={`msg-time ${mine?"mine":"theirs"}`}>
+                                {toISTDate(m.sent_at)}
+                                {mine && m.read_by_recipient && <span style={{marginLeft:4}}>✓✓</span>}
+                                {mine && !m.read_by_recipient && <span style={{marginLeft:4}}>✓</span>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Compose */}
+                      <div className="msg-compose">
+                        <input
+                          placeholder="Subject (optional)"
+                          value={msgSubject}
+                          onChange={e=>setMsgSubject(e.target.value)}
+                          style={{width:"100%",padding:"0.45rem 0.75rem",background:"#f8f7ff",border:"1.5px solid #ddd8f5",borderRadius:7,fontFamily:"inherit",fontSize:"0.75rem",color:"#1a1035",outline:"none",marginBottom:"0.4rem"}}
+                        />
+                        <textarea
+                          className="msg-input"
+                          placeholder="Type a message to the candidate…"
+                          value={msgBody}
+                          onChange={e=>setMsgBody(e.target.value)}
+                          onKeyDown={e=>{if(e.key==="Enter"&&e.ctrlKey){e.preventDefault();sendMessage();}}}
+                        />
+                        {msgErr && <div style={{fontSize:"0.68rem",color:"#ef4444",marginBottom:"0.3rem",fontWeight:600}}>{msgErr}</div>}
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:"0.4rem"}}>
+                          <span style={{fontSize:"0.62rem",color:"#94a3b8"}}>Ctrl+Enter to send</span>
+                          <button className="msg-send-btn" onClick={sendMessage} disabled={msgSending||!msgBody.trim()}>
+                            {msgSending?"Sending…":"Send ↗"}
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
         {/* ── Main ── */}
         <main className="main">
           {!selected ? (
@@ -1636,6 +1877,13 @@ export default function EmployerDashboard() {
                   loadingProf ? <div className="status-card">Loading profile…</div>
                   : !profileData ? <div className="status-card">Could not load profile data.</div>
                   : <>
+                    {/* Quick message button on approved view */}
+                    <div style={{marginBottom:"0.75rem",display:"flex",gap:"0.6rem",alignItems:"center",flexWrap:"wrap"}}>
+                      <button onClick={()=>{setActiveThread(gcid(selected));loadThread(gcid(selected));setShowInbox(true);}}
+                        style={{padding:"0.42rem 1rem",background:"#fff",border:"1.5px solid #6366f1",borderRadius:7,color:"#4f46e5",fontSize:"0.72rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:"0.4rem"}}>
+                        ✉️ Message candidate
+                      </button>
+                    </div>
                     <div className="note-bar">⚠️ <strong>Self-reported data.</strong> All information was filled and submitted by the employee. Documents are uploaded by the candidate and not independently verified by Datagate unless a verified check has been explicitly completed.</div>
                     <div className="tab-nav">
                       {DATA_TABS.map(t => <button key={t} className={`tab-btn${activeTab===t?" on":""}`} onClick={() => setActiveTab(t)}>{t}</button>)}
