@@ -527,7 +527,7 @@ const G = `
   .c-dt { font-size: 0.61rem; color: #9ca3af; margin-top: 2px; }
 
   /* ── Main ── */
-  .main { flex: 1; overflow-y: auto; min-width: 0; background: #f5f4fb; }
+  .main { flex: 1; overflow-y: auto; min-width: 0; background: #eeedf8; }
 
   .top-bar { background: #fff; border-bottom: 1px solid #e8e6f5; padding: 0.9rem 1.75rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
   .top-title { font-size: 0.78rem; font-weight: 500; color: #71717a; }
@@ -568,33 +568,33 @@ const G = `
   .status-card.dec { background: #fef2f2; border-color: #fecaca; color: #dc2626; }
 
   /* ── Tabs ── */
-  .tab-nav { display: flex; background: #fff; border-bottom: 1.5px solid #e8e6f5; border-radius: 9px 9px 0 0; overflow: hidden; }
+  .tab-nav { display: flex; background: #fff; border-bottom: 1.5px solid #d0cbf0; border-radius: 9px 9px 0 0; overflow: hidden; }
   .tab-btn { flex: 1; padding: 0.7rem 0.4rem; background: none; border: none; border-bottom: 2.5px solid transparent; font-family: inherit; font-size: 0.72rem; font-weight: 500; color: #a1a1aa; cursor: pointer; margin-bottom: -1.5px; transition: all 0.12s; white-space: nowrap; }
   .tab-btn:hover { color: #52525b; background: #fafafa; }
   .tab-btn.on { color: #4f46e5; border-bottom-color: #4f46e5; font-weight: 700; background: #fff; }
 
-  .tab-pane { background: #fff; border: 1px solid #e8e6f5; border-top: none; border-radius: 0 0 9px 9px; padding: 1.25rem 1.4rem; margin-bottom: 1.1rem; }
+  .tab-pane { background: #fff; border: 1px solid #ddd9f5; border-top: none; border-radius: 0 0 9px 9px; padding: 1.25rem 1.4rem; margin-bottom: 1.1rem; box-shadow: 0 2px 12px rgba(99,102,241,0.06); }
 
   /* ── KV ── */
   .kv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 0.75rem; }
   .kv { display: flex; flex-direction: column; gap: 3px; }
-  .kv-k { font-size: 0.6rem; font-weight: 600; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.5px; }
+  .kv-k { font-size: 0.6rem; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px; }
   .kv-v { font-size: 0.83rem; color: #18181b; font-weight: 500; word-break: break-word; }
   .kv-v.mono { font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; }
-  .kv-v.nd { color: #d4d4d8; font-style: italic; font-weight: 400; font-size: 0.76rem; }
+  .kv-v.nd { color: #b0b0b8; font-style: italic; font-weight: 400; font-size: 0.76rem; }
 
   .sec { margin-bottom: 1.2rem; }
   .sec:last-child { margin-bottom: 0; }
-  .sec-title { font-size: 0.6rem; font-weight: 700; color: #a1a1aa; text-transform: uppercase; letter-spacing: 1px; padding-bottom: 0.5rem; margin-bottom: 0.75rem; border-bottom: 1px solid #f4f4f5; }
+  .sec-title { font-size: 0.6rem; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; padding-bottom: 0.5rem; margin-bottom: 0.75rem; border-bottom: 1px solid #f4f4f5; }
 
   .nd-box { font-size: 0.76rem; color: #a1a1aa; padding: 0.7rem; background: #fafafa; border-radius: 6px; }
 
-  .emp-card { border: 1px solid #e8e6f5; border-radius: 8px; padding: 1rem 1.1rem; margin-bottom: 0.7rem; position: relative; overflow: hidden; background: #fff; }
+  .emp-card { border: 1px solid #ddd9f5; border-radius: 8px; padding: 1rem 1.1rem; margin-bottom: 0.7rem; position: relative; overflow: hidden; background: #faf9ff; box-shadow: 0 1px 4px rgba(99,102,241,0.07); }
   .emp-card::before { content:''; position:absolute; top:0; left:0; bottom:0; width:3px; background:#6366f1; border-radius:3px 0 0 3px; }
   .emp-title { font-size: 0.65rem; font-weight: 700; color: #4f46e5; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 0.65rem; padding-left: 4px; display: flex; align-items: center; gap: 0.4rem; }
   .curr-pill { background: #dcfce7; color: #15803d; padding: 1px 7px; border-radius: 4px; font-size: 0.58rem; font-weight: 700; }
 
-  .edu-card { border: 1px solid #e8e6f5; border-radius: 8px; padding: 1rem 1.1rem; margin-bottom: 0.7rem; background: #fff; }
+  .edu-card { border: 1px solid #ddd9f5; border-radius: 8px; padding: 1rem 1.1rem; margin-bottom: 0.7rem; background: #faf9ff; box-shadow: 0 1px 4px rgba(99,102,241,0.07); }
   .edu-title { font-size: 0.65rem; font-weight: 700; color: #6366f1; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 0.65rem; }
 
   .sub-div { border-top: 1px solid #f4f4f5; margin-top: 0.7rem; padding-top: 0.7rem; }
@@ -604,7 +604,7 @@ const G = `
 
   /* ── Documents ── */
   .doc-grp-title { font-size: 0.6rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.8px; margin: 0.9rem 0 0.45rem; }
-  .doc-row { display: flex; align-items: center; justify-content: space-between; padding: 0.55rem 0.85rem; background: #fafafa; border: 1px solid #ebebeb; border-radius: 6px; margin-bottom: 0.35rem; }
+  .doc-row { display: flex; align-items: center; justify-content: space-between; padding: 0.55rem 0.85rem; background: #f7f6fe; border: 1px solid #ddd9f5; border-radius: 6px; margin-bottom: 0.35rem; }
   .doc-name { font-size: 0.76rem; font-weight: 600; color: #18181b; }
   .doc-meta { font-size: 0.62rem; color: #a1a1aa; margin-top: 1px; font-family: 'JetBrains Mono', monospace; }
   .doc-view { padding: 0.3rem 0.75rem; background: #4f46e5; color: #fff; border-radius: 5px; font-size: 0.68rem; font-weight: 600; text-decoration: none; white-space: nowrap; transition: background 0.15s; }
@@ -618,6 +618,16 @@ const G = `
 
   /* ── Bulk invite ── */
   .bulk-tab-row { display:flex; border-bottom:1px solid #ede9f8; margin-bottom:0.6rem; }
+
+  /* ── Excel drop zone ── */
+  .xls-drop { border:2px dashed #c7d2fe; border-radius:10px; padding:1rem; text-align:center;
+    background:#f5f3ff; cursor:pointer; transition:all 0.15s; margin-bottom:0.6rem; }
+  .xls-drop:hover, .xls-drop.drag { border-color:#6366f1; background:#eef2ff; }
+  .xls-drop-icon { font-size:1.4rem; margin-bottom:0.3rem; }
+  .xls-drop-txt { font-size:0.72rem; color:#6366f1; font-weight:600; }
+  .xls-drop-sub { font-size:0.63rem; color:#94a3b8; margin-top:2px; }
+  .xls-parsed { font-size:0.68rem; color:#15803d; background:#dcfce7; border-radius:6px;
+    padding:0.4rem 0.65rem; margin-bottom:0.5rem; font-weight:600; }
   .bulk-tab { flex:1; padding:0.38rem 0; background:none; border:none; border-bottom:2px solid transparent;
     font-size:0.65rem; font-weight:700; color:#9ca3af; cursor:pointer; font-family:inherit;
     text-transform:uppercase; letter-spacing:0.5px; margin-bottom:-1px; transition:all 0.12s; }
@@ -1052,6 +1062,8 @@ export default function EmployerDashboard() {
   const [bulkEmails,     setBulkEmails]     = useState("");
   const [bulkResults,    setBulkResults]    = useState([]);
   const [bulkBusy,       setBulkBusy]       = useState(false);
+  const [xlsDragging,    setXlsDragging]    = useState(false);
+  const [xlsParsed,      setXlsParsed]      = useState(""); // "12 emails found from Sheet1"
   const [candStatus,     setCandStatus]     = useState({}); // email → {status,completeness,name}
   const [loadingProf,    setLoadingProf]    = useState(false);
   const [loading,        setLoading]        = useState(true);
@@ -1151,6 +1163,69 @@ export default function EmployerDashboard() {
     } catch (_) {}
     setLoadingProf(false);
   }, [apiFetch, loadDocs]);
+
+  // Load SheetJS once on demand, parse xlsx/csv, extract all emails
+  const parseExcelFile = async (file) => {
+    setXlsParsed("");
+    const ext = file.name.split(".").pop().toLowerCase();
+
+    // CSV — no library needed
+    if (ext === "csv") {
+      const text = await file.text();
+      const emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
+      const found = [...new Set(text.match(emailRegex)||[])].map(e=>e.toLowerCase());
+      if (found.length) {
+        setBulkEmails(found.join("
+"));
+        setXlsParsed(`${found.length} email${found.length>1?"s":""} found from CSV`);
+      } else {
+        setXlsParsed("No emails found in CSV");
+      }
+      return;
+    }
+
+    // Excel — load SheetJS dynamically
+    if (!window.XLSX) {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+        s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+
+    const buf  = await file.arrayBuffer();
+    const wb   = window.XLSX.read(buf, { type: "array" });
+    const emailRegex = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+    const found = new Set();
+    let sheetName = "";
+
+    for (const name of wb.SheetNames) {
+      const ws   = wb.Sheets[name];
+      const rows = window.XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+      for (const row of rows) {
+        for (const cell of row) {
+          const val = String(cell||"").trim().toLowerCase();
+          if (emailRegex.test(val)) { found.add(val); sheetName = name; }
+        }
+      }
+    }
+
+    if (found.size) {
+      setBulkEmails([...found].join("
+"));
+      setXlsParsed(`${found.size} email${found.size>1?"s":""} found from "${sheetName||wb.SheetNames[0]}"`);
+    } else {
+      setXlsParsed("No emails found in the file. Make sure email addresses are in a column.");
+    }
+  };
+
+  const handleXlsDrop = async (e) => {
+    e.preventDefault(); setXlsDragging(false);
+    const file = e.dataTransfer?.files?.[0] || e.target?.files?.[0];
+    if (!file) return;
+    await parseExcelFile(file);
+  };
 
   // Fetch profile status for a single candidate (for sidebar badge)
   const fetchCandStatus = async (email) => {
@@ -1321,7 +1396,23 @@ export default function EmployerDashboard() {
               {reqOk  && <p className="req-msg s">{reqOk}</p>}
               <button className="send-btn" style={{marginTop:"0.5rem"}} onClick={()=>{sendRequest();}} disabled={reqBusy}>{reqBusy?"Sending…":"Send Request"}</button>
             </>) : (<>
-              <textarea className="req-in req-ta" placeholder="Enter emails — one per line&#10;rajan@company.com&#10;priya@company.com" style={{minHeight:100,width:"100%"}} value={bulkEmails} onChange={e=>setBulkEmails(e.target.value)}/>
+              {/* Excel / CSV drop zone */}
+              <div
+                className={`xls-drop${xlsDragging?" drag":""}`}
+                onDragOver={e=>{e.preventDefault();setXlsDragging(true);}}
+                onDragLeave={()=>setXlsDragging(false)}
+                onDrop={handleXlsDrop}
+                onClick={()=>document.getElementById("xls-file-input").click()}
+              >
+                <div className="xls-drop-icon">📊</div>
+                <div className="xls-drop-txt">Drop Excel / CSV here</div>
+                <div className="xls-drop-sub">or click to browse · .xlsx .xls .csv</div>
+                <input id="xls-file-input" type="file" accept=".xlsx,.xls,.csv" style={{display:"none"}}
+                  onChange={handleXlsDrop}/>
+              </div>
+              {xlsParsed && <div className="xls-parsed">✓ {xlsParsed}</div>}
+
+              <textarea className="req-in req-ta" placeholder="Enter emails — one per line&#10;rajan@company.com&#10;priya@company.com" style={{minHeight:80,width:"100%"}} value={bulkEmails} onChange={e=>{setBulkEmails(e.target.value);setXlsParsed("");}}/>
               <textarea className="req-in req-ta" placeholder="Message to all candidates (optional)" style={{width:"100%"}} value={reqMsg} onChange={e=>setReqMsg(e.target.value)}/>
               <button className="send-btn" style={{marginTop:"0.5rem"}} onClick={sendBulkRequest} disabled={bulkBusy||!bulkEmails.trim()}>
                 {bulkBusy?"Sending…":`Send to ${bulkEmails.split(/[\n,;]+/).filter(e=>e.trim()).length} candidate(s)`}
