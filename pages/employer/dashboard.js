@@ -1065,6 +1065,15 @@ export default function EmployerDashboard() {
   const [xlsDragging,    setXlsDragging]    = useState(false);
   const [xlsParsed,      setXlsParsed]      = useState(""); // "12 emails found from Sheet1"
   const [candStatus,     setCandStatus]     = useState({}); // email → {status,completeness,name}
+  const [remindBusy,     setRemindBusy]     = useState(false);
+  const [showPwModal,    setShowPwModal]    = useState(false);
+  const [pwCurrent,      setPwCurrent]      = useState("");
+  const [pwNew,          setPwNew]          = useState("");
+  const [pwConfirm,      setPwConfirm]      = useState("");
+  const [pwErr,          setPwErr]          = useState("");
+  const [pwOk,           setPwOk]           = useState("");
+  const [pwBusy,         setPwBusy]         = useState(false);
+  const [remindMsg,      setRemindMsg]      = useState("");
   const [loadingProf,    setLoadingProf]    = useState(false);
   const [loading,        setLoading]        = useState(true);
   const [printing,       setPrinting]       = useState(false);
@@ -1175,8 +1184,7 @@ export default function EmployerDashboard() {
       const emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
       const found = [...new Set(text.match(emailRegex)||[])].map(e=>e.toLowerCase());
       if (found.length) {
-        setBulkEmails(found.join("
-"));
+        setBulkEmails(found.join("\n"));
         setXlsParsed(`${found.length} email${found.length>1?"s":""} found from CSV`);
       } else {
         setXlsParsed("No emails found in CSV");
@@ -1212,8 +1220,7 @@ export default function EmployerDashboard() {
     }
 
     if (found.size) {
-      setBulkEmails([...found].join("
-"));
+      setBulkEmails([...found].join("\n"));
       setXlsParsed(`${found.size} email${found.size>1?"s":""} found from "${sheetName||wb.SheetNames[0]}"`);
     } else {
       setXlsParsed("No emails found in the file. Make sure email addresses are in a column.");
@@ -1261,6 +1268,40 @@ export default function EmployerDashboard() {
     setBulkResults(results);
     setBulkBusy(false);
     if (results.some(r => r.ok)) loadConsents();
+  };
+
+  const handleChangePassword = async () => {
+    setPwErr(""); setPwOk("");
+    if (!pwCurrent || !pwNew || !pwConfirm) { setPwErr("All fields are required"); return; }
+    if (pwNew !== pwConfirm) { setPwErr("New passwords do not match"); return; }
+    if (pwNew.length < 8) { setPwErr("New password must be at least 8 characters"); return; }
+    setPwBusy(true);
+    try {
+      const r = await apiFetch(`${API}/auth/change-password`, {
+        method: "POST",
+        body: JSON.stringify({ current_password: pwCurrent, new_password: pwNew }),
+      });
+      const d = await r.json();
+      if (!r.ok) { setPwErr(d.detail || "Failed to change password"); return; }
+      setPwOk("Password changed! You will be signed out shortly.");
+      setPwCurrent(""); setPwNew(""); setPwConfirm("");
+      setTimeout(() => { setShowPwModal(false); logout(); }, 2500);
+    } catch(_) { setPwErr("Network error. Please try again."); }
+    finally { setPwBusy(false); }
+  };
+
+  const sendReminder = async (consentId) => {
+    setRemindBusy(true); setRemindMsg("");
+    try {
+      const r = await apiFetch(`${API}/consent/remind`, {
+        method: "POST",
+        body: JSON.stringify({ consent_id: consentId }),
+      });
+      const d = await r.json();
+      setRemindMsg(r.ok ? d.message : (d.detail || "Failed to send reminder"));
+      setTimeout(() => setRemindMsg(""), 4000);
+    } catch(_) { setRemindMsg("Network error"); }
+    setRemindBusy(false);
   };
 
   const sendRequest = async () => {
@@ -1320,6 +1361,34 @@ export default function EmployerDashboard() {
       <div className="page">
         {showSignout && <SignoutModal onConfirm={logout} onCancel={() => setShowSignout(false)} />}
 
+      {/* ── Change Password Modal ── */}
+      {showPwModal && (
+        <div style={{position:"fixed",inset:0,background:"rgba(15,12,40,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000,backdropFilter:"blur(4px)"}}>
+          <div style={{background:"#fff",borderRadius:14,padding:"1.75rem",maxWidth:380,width:"90%",boxShadow:"0 32px 80px rgba(0,0,0,0.2)"}}>
+            <div style={{fontSize:"0.95rem",fontWeight:700,color:"#0f172a",marginBottom:"1rem"}}>Change Password</div>
+            {[["Current password","password",pwCurrent,setPwCurrent],
+              ["New password","password",pwNew,setPwNew],
+              ["Confirm new password","password",pwConfirm,setPwConfirm]].map(([label,type,val,setter])=>(
+              <div key={label} style={{marginBottom:"0.65rem"}}>
+                <div style={{fontSize:"0.65rem",fontWeight:600,color:"#6b7280",marginBottom:"0.3rem",textTransform:"uppercase",letterSpacing:"0.4px"}}>{label}</div>
+                <input type={type} value={val} onChange={e=>setter(e.target.value)}
+                  style={{width:"100%",padding:"0.6rem 0.8rem",border:"1.5px solid #e0dcf5",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",outline:"none",background:"#f8f7ff"}}/>
+              </div>
+            ))}
+            {pwErr && <div style={{fontSize:"0.72rem",color:"#ef4444",marginBottom:"0.6rem",fontWeight:600}}>{pwErr}</div>}
+            {pwOk  && <div style={{fontSize:"0.72rem",color:"#16a34a",marginBottom:"0.6rem",fontWeight:600}}>{pwOk}</div>}
+            <div style={{display:"flex",gap:"0.6rem",marginTop:"0.5rem"}}>
+              <button onClick={()=>{setShowPwModal(false);setPwErr("");setPwOk("");setPwCurrent("");setPwNew("");setPwConfirm("");}}
+                style={{flex:1,padding:"0.6rem",borderRadius:7,border:"1px solid #e5e0f5",background:"#f7f6fd",cursor:"pointer",fontWeight:600,color:"#6b7280",fontFamily:"inherit",fontSize:"0.82rem"}}>Cancel</button>
+              <button onClick={handleChangePassword} disabled={pwBusy}
+                style={{flex:1,padding:"0.6rem",borderRadius:7,border:"none",background:"#4f46e5",color:"#fff",cursor:pwBusy?"not-allowed":"pointer",fontWeight:700,fontFamily:"inherit",fontSize:"0.82rem",opacity:pwBusy?0.6:1}}>
+                {pwBusy?"Saving…":"Change Password"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
         {/* ── Sidebar ── */}
         <aside className="sidebar">
           <div className="side-top">
@@ -1332,7 +1401,10 @@ export default function EmployerDashboard() {
 
           <div className="user-block">
             <div className="user-name-txt">{user.name || user.email}</div>
-            <span className="emp-tag">Employer</span>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:3}}>
+              <span className="emp-tag">Employer</span>
+              <button onClick={()=>setShowPwModal(true)} style={{background:"none",border:"none",fontSize:"0.6rem",color:"#9ca3af",cursor:"pointer",fontFamily:"inherit",fontWeight:600,padding:0,textDecoration:"underline"}}>Change password</button>
+            </div>
           </div>
 
           <button className="new-req-btn" onClick={()=>setShowDrawer(true)}>＋ New Request</button>
@@ -1485,6 +1557,31 @@ export default function EmployerDashboard() {
                     </div>
                   )}
                 </div>
+
+                {/* Item 11 — Returning user badge */}
+                {candStatus[selected.employee_email]?.status === "submitted" && approved.some(c => c.employee_email === selected.employee_email && gcid(c) !== gcid(selected)) && (
+                  <div style={{display:"inline-flex",alignItems:"center",gap:"0.4rem",background:"#eef2ff",border:"1px solid #c7d2fe",padding:"0.3rem 0.75rem",borderRadius:6,marginBottom:"0.6rem"}}>
+                    <span style={{fontSize:"0.68rem",fontWeight:700,color:"#4f46e5"}}>↩ Returning — this candidate has shared their profile before</span>
+                  </div>
+                )}
+
+                {/* Item 3 — Remind button for pending requests */}
+                {selected.status==="pending" && (() => {
+                  const rc = selected.reminder_count || 0;
+                  return (
+                    <div style={{marginBottom:"0.75rem",display:"flex",alignItems:"center",gap:"0.75rem",flexWrap:"wrap"}}>
+                      {rc < 3 ? (
+                        <button onClick={()=>sendReminder(gcid(selected))} disabled={remindBusy}
+                          style={{padding:"0.45rem 1rem",background:"#fff",border:"1.5px solid #6366f1",borderRadius:7,color:"#4f46e5",fontSize:"0.72rem",fontWeight:700,cursor:remindBusy?"not-allowed":"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>
+                          {remindBusy ? "Sending…" : `📧 Send Reminder (${rc}/3 sent)`}
+                        </button>
+                      ) : (
+                        <span style={{fontSize:"0.7rem",color:"#f59e0b",fontWeight:600}}>📧 Max reminders sent (3/3)</span>
+                      )}
+                      {remindMsg && <span style={{fontSize:"0.68rem",color:"#16a34a",fontWeight:600}}>{remindMsg}</span>}
+                    </div>
+                  );
+                })()}
 
                 {selected.status==="pending"  && <div className="status-card">⏳ Waiting for employee to approve your request.</div>}
                 {selected.status==="declined" && <div className="status-card dec">❌ Employee declined this request.</div>}
