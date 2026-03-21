@@ -1342,7 +1342,7 @@ export default function PersonalDetails() {
               {freshnessWarn && (
                 <div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:"0.65rem 1rem",marginBottom:"0.75rem",display:"flex",alignItems:"center",justifyContent:"space-between",gap:"0.75rem"}}>
                   <div style={{fontSize:"0.75rem",color:"#92400e",lineHeight:1.5}}>
-                    <strong>Profile may be outdated</strong> — your profile hasn't been updated in over 6 months. Please review and update your details before sharing with employers.
+                    <strong>⚠️ Your profile data is over 6 months old.</strong> Employers who have approved access will automatically receive your latest data when they view your profile — but please review and update any details that may have changed (address, bank account, etc.) and save to keep everything current.
                   </div>
                   <button onClick={()=>setFreshnessWarn(false)} style={{background:"none",border:"none",color:"#92400e",cursor:"pointer",fontSize:"1rem",flexShrink:0}}>✕</button>
                 </div>
