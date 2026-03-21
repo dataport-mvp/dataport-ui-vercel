@@ -555,6 +555,15 @@ export default function PersonalDetails() {
   const [pwOk,          setPwOk]            = useState("");
   const [pwBusy,        setPwBusy]          = useState(false);
   const [freshnessWarn, setFreshnessWarn]   = useState(false);
+  const [inboxThreads,  setInboxThreads]   = useState([]);
+  const [activeThread,  setActiveThread]   = useState(null);
+  const [threadMsgs,    setThreadMsgs]     = useState([]);
+  const [threadLoading, setThreadLoading]  = useState(false);
+  const [msgBody,       setMsgBody]        = useState("");
+  const [msgSending,    setMsgSending]     = useState(false);
+  const [msgErr,        setMsgErr]         = useState("");
+  const [inboxLoading,  setInboxLoading]   = useState(false);
+  const [inboxUnread,   setInboxUnread]    = useState(0);
   const [completeness,  setCompleteness]    = useState(null); // 0-100 or null=loading
   const [saveStatus,setSaveStatus]       = useState("");
   const [midSaveStatus,setMidSaveStatus] = useState("");
@@ -570,7 +579,48 @@ export default function PersonalDetails() {
   const wasEditedRef = useRef(false);
   const fixErr = (key) => setErrors(p => ({ ...p, [key]: false }));
 
-  useEffect(() => { if (router.query.tab === "consents") setActiveTab("consents"); }, [router.query.tab]);
+  useEffect(() => {
+    if (router.query.tab === "consents") setActiveTab("consents");
+    if (router.query.tab === "inbox")    setActiveTab("inbox");
+  }, [router.query.tab]);
+
+  const loadInbox = async () => {
+    setInboxLoading(true);
+    try {
+      const r = await apiFetch(`${API}/messages/inbox`);
+      if (r.ok) setInboxThreads(await r.json());
+    } catch(_) {}
+    setInboxLoading(false);
+  };
+
+  const loadThread = async (consentId) => {
+    setActiveThread(consentId); setThreadMsgs([]); setThreadLoading(true); setMsgErr("");
+    try {
+      const r = await apiFetch(`${API}/messages/thread/${consentId}`);
+      if (r.ok) { const d = await r.json(); setThreadMsgs(d.messages || []); }
+    } catch(_) {}
+    setThreadLoading(false);
+    apiFetch(`${API}/messages/unread-count`).then(r=>r.ok?r.json():null).then(d=>{ if(d) setInboxUnread(d.unread||0); }).catch(()=>{});
+  };
+
+  const sendReply = async () => {
+    if (!msgBody.trim() || !activeThread) return;
+    setMsgSending(true); setMsgErr("");
+    try {
+      const r = await apiFetch(`${API}/messages/send`, {
+        method: "POST",
+        body: JSON.stringify({ consent_id: activeThread, body: msgBody.trim() }),
+      });
+      if (r.ok) { setMsgBody(""); await loadThread(activeThread); loadInbox(); }
+      else { const d = await r.json(); setMsgErr(d.detail || "Failed to send"); }
+    } catch(_) { setMsgErr("Network error"); }
+    setMsgSending(false);
+  };
+
+  useEffect(() => {
+    if (!ready || !user) return;
+    apiFetch(`${API}/messages/unread-count`).then(r=>r.ok?r.json():null).then(d=>{ if(d) setInboxUnread(d.unread||0); }).catch(()=>{});
+  }, [ready, user, apiFetch]);
 
   // ── Personal fields ──
   const [firstName,setFirstName]         = useState("");
@@ -986,9 +1036,95 @@ export default function PersonalDetails() {
           <div className="tab-row">
             <button className={`tab-btn${activeTab==="profile"?" active":""}`} onClick={() => setActiveTab("profile")}>My Profile</button>
             <button className={`tab-btn${activeTab==="consents"?" active":""}`} onClick={() => setActiveTab("consents")}>Consent Requests</button>
+            <button className={`tab-btn${activeTab==="inbox"?" active":""}`} onClick={() => { setActiveTab("inbox"); loadInbox(); }}>
+              Inbox {inboxUnread>0 && <span style={{background:"#ef4444",color:"#fff",borderRadius:999,fontSize:"0.6rem",fontWeight:800,padding:"1px 6px",marginLeft:4}}>{inboxUnread}</span>}
+            </button>
           </div>
 
-          {activeTab === "consents" ? <ConsentTab apiFetch={apiFetch} profileStatus={profileStatus} /> : (
+          {activeTab === "inbox" ? (
+            <div>
+              <div style={{display:"grid",gridTemplateColumns:"220px 1fr",gap:"0.75rem",minHeight:400}}>
+                {/* Thread list */}
+                <div style={{background:"#fff",borderRadius:12,border:"1px solid #ebe9f5",overflow:"hidden"}}>
+                  <div style={{padding:"0.65rem 0.9rem",borderBottom:"1px solid #ebe9f5",fontSize:"0.65rem",fontWeight:700,color:"#8b88b0",textTransform:"uppercase",letterSpacing:0.8}}>Conversations</div>
+                  {inboxLoading && <div style={{padding:"1rem",fontSize:"0.72rem",color:"#94a3b8"}}>Loading…</div>}
+                  {!inboxLoading && inboxThreads.length===0 && (
+                    <div style={{padding:"2rem 1rem",textAlign:"center"}}>
+                      <div style={{fontSize:"1.5rem",opacity:0.2,marginBottom:"0.5rem"}}>✉️</div>
+                      <div style={{fontSize:"0.72rem",color:"#94a3b8"}}>No messages yet</div>
+                      <div style={{fontSize:"0.62rem",color:"#c4bfdb",marginTop:"0.3rem"}}>Employers will message you here</div>
+                    </div>
+                  )}
+                  {inboxThreads.map(t=>(
+                    <div key={t.thread_id} onClick={()=>loadThread(t.thread_id)}
+                      style={{padding:"0.65rem 0.9rem",cursor:"pointer",borderBottom:"1px solid #f5f3ff",background:activeThread===t.thread_id?"#eef2ff":"#fff",borderLeft:activeThread===t.thread_id?"3px solid #4f46e5":"3px solid transparent",transition:"all 0.1s"}}>
+                      <div style={{fontSize:"0.71rem",fontWeight:700,color:"#1a1730",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.other_party_name||t.other_party_email}</div>
+                      <div style={{fontSize:"0.62rem",color:"#94a3b8",marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.latest_message||"No messages"}</div>
+                      <div style={{display:"flex",justifyContent:"space-between",marginTop:2}}>
+                        <span style={{fontSize:"0.58rem",color:"#c4bfdb"}}>{t.latest_at?new Date(t.latest_at).toLocaleDateString("en-IN"):""}</span>
+                        {t.unread_count>0&&<span style={{background:"#4f46e5",color:"#fff",fontSize:"0.55rem",fontWeight:800,padding:"1px 6px",borderRadius:999}}>{t.unread_count}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Message thread */}
+                <div style={{background:"#fff",borderRadius:12,border:"1px solid #ebe9f5",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+                  {!activeThread ? (
+                    <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:"0.5rem",padding:"3rem"}}>
+                      <div style={{fontSize:"2.5rem",opacity:0.15}}>✉️</div>
+                      <div style={{fontSize:"0.84rem",color:"#94a3b8",fontWeight:500}}>Select a conversation</div>
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{padding:"0.75rem 1.1rem",borderBottom:"1px solid #ebe9f5",background:"#faf9ff",fontSize:"0.75rem",fontWeight:700,color:"#1a1730"}}>
+                        {inboxThreads.find(t=>t.thread_id===activeThread)?.other_party_name||inboxThreads.find(t=>t.thread_id===activeThread)?.other_party_email}
+                        <span style={{fontSize:"0.62rem",color:"#94a3b8",fontWeight:400,marginLeft:8}}>{threadMsgs.length} message{threadMsgs.length!==1?"s":""}</span>
+                      </div>
+                      {/* Messages */}
+                      <div style={{flex:1,overflow:"auto",padding:"0.9rem",display:"flex",flexDirection:"column",gap:"0.6rem",minHeight:200,maxHeight:320}}>
+                        {threadLoading&&<div style={{textAlign:"center",fontSize:"0.72rem",color:"#94a3b8"}}>Loading…</div>}
+                        {!threadLoading&&threadMsgs.length===0&&<div style={{textAlign:"center",fontSize:"0.72rem",color:"#94a3b8",padding:"2rem"}}>No messages yet. Send a reply below.</div>}
+                        {threadMsgs.map((m,i)=>{
+                          const mine = m.sender_role==="employee";
+                          return (
+                            <div key={m.message_id||i} style={{display:"flex",flexDirection:"column",alignItems:mine?"flex-end":"flex-start"}}>
+                              {!mine&&<div style={{fontSize:"0.6rem",color:"#94a3b8",marginBottom:2,fontWeight:600}}>{m.sender_name||m.sender_email}</div>}
+                              {m.subject&&<div style={{fontSize:"0.62rem",fontWeight:700,color:mine?"#4f46e5":"#6366f1",marginBottom:"0.2rem"}}>{m.subject}</div>}
+                              <div style={{maxWidth:"78%",padding:"0.6rem 0.85rem",borderRadius:mine?"12px 12px 3px 12px":"12px 12px 12px 3px",background:mine?"#4f46e5":"#f5f3ff",color:mine?"#fff":"#1a1730",fontSize:"0.82rem",lineHeight:1.55,border:mine?"none":"1px solid #ede9f8"}}>
+                                {m.body}
+                              </div>
+                              <div style={{fontSize:"0.58rem",color:"#c4bfdb",marginTop:2}}>
+                                {new Date(m.sent_at).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"})}
+                                {mine&&<span style={{marginLeft:4}}>{m.read_by_recipient?"✓✓":"✓"}</span>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {/* Reply */}
+                      <div style={{padding:"0.75rem 1rem",borderTop:"1px solid #ebe9f5",background:"#fff"}}>
+                        <textarea
+                          value={msgBody} onChange={e=>setMsgBody(e.target.value)}
+                          onKeyDown={e=>{if(e.key==="Enter"&&e.ctrlKey){e.preventDefault();sendReply();}}}
+                          placeholder="Type your reply… (Ctrl+Enter to send)"
+                          style={{width:"100%",padding:"0.55rem 0.75rem",background:"#f8f7ff",border:"1.5px solid #ddd8f5",borderRadius:9,fontFamily:"inherit",fontSize:"0.82rem",color:"#1a1730",outline:"none",resize:"none",minHeight:60,marginBottom:"0.4rem",transition:"border-color 0.15s"}}
+                        />
+                        {msgErr&&<div style={{fontSize:"0.68rem",color:"#ef4444",marginBottom:"0.3rem",fontWeight:600}}>{msgErr}</div>}
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                          <span style={{fontSize:"0.62rem",color:"#94a3b8"}}>Ctrl+Enter to send</span>
+                          <button onClick={sendReply} disabled={msgSending||!msgBody.trim()}
+                            style={{padding:"0.5rem 1.1rem",background:"#4f46e5",color:"#fff",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:"0.78rem",fontWeight:700,cursor:msgSending||!msgBody.trim()?"not-allowed":"pointer",opacity:msgSending||!msgBody.trim()?0.5:1,transition:"all 0.15s"}}>
+                            {msgSending?"Sending…":"Reply ↗"}
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : activeTab === "consents" ? <ConsentTab apiFetch={apiFetch} profileStatus={profileStatus} /> : (
             <>
               <StepNav current={1} onNavigate={handleNavigate} />
 
