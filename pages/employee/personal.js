@@ -339,6 +339,21 @@ function ConsentTab({ apiFetch, profileStatus }) {
     setActing(null);
   };
   const norm=(c)=>({...c,status:String(c.status||"pending").toLowerCase()});
+
+  // ── ALL hooks must be before any early return (React rules) ──────
+  const [cInnerTab, setCInnerTab] = useState("pending");
+  const [cPage,     setCPage]     = useState(1);
+  const PER_PAGE = 5;
+  const switchInnerTab = (tab) => { setCInnerTab(tab); setCPage(1); };
+
+  const tabMap = {
+    pending:  { list: [], label: "Pending",   color: "#f59e0b", bg: "#fffbeb", icon: "⏳" },
+    approved: { list: [], label: "Approved",  color: "#16a34a", bg: "#f0fdf4", icon: "✅" },
+    declined: { list: [], label: "Declined",  color: "#ef4444", bg: "#fff5f5", icon: "❌" },
+    revoked:  { list: [], label: "Withdrawn", color: "#94a3b8", bg: "#f8fafc", icon: "↩" },
+    activity: { list: [], label: "Activity",  color: "#4f46e5", bg: "#eef2ff", icon: "📋" },
+  };
+
   if(loading)return <p style={{color:"#8b88b0",padding:"1rem 0",fontSize:"0.875rem"}}>Loading consents…</p>;
   if(!consents.length)return(<div style={{textAlign:"center",padding:"3rem",background:"#fff",borderRadius:14,boxShadow:"0 6px 28px rgba(30,26,62,0.22)"}}>
     <div style={{fontSize:38,marginBottom:10}}>📋</div>
@@ -351,6 +366,13 @@ function ConsentTab({ apiFetch, profileStatus }) {
   const sColor={pending:"#f59e0b",approved:"#16a34a",declined:"#ef4444",revoked:"#94a3b8"};
   const sBg={pending:"#fffbeb",approved:"#f0fdf4",declined:"#fff5f5",revoked:"#f8fafc"};
   const profileNotSubmitted=profileStatus!=="submitted";
+
+  // Now populate tabMap lists with real data
+  tabMap.pending.list  = pending;
+  tabMap.approved.list = approved;
+  tabMap.declined.list = declined;
+  tabMap.revoked.list  = revoked;
+
   const renderCC=(c)=>(<div style={{border:"1px solid #ebe9f5",borderRadius:12,padding:"1.1rem 1.25rem",marginBottom:"0.65rem",background:"#fff",boxShadow:"0 1px 5px rgba(79,70,229,0.05)"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
       <div style={{flex:1}}>
@@ -378,21 +400,7 @@ function ConsentTab({ apiFetch, profileStatus }) {
   </div>);
   const toIST=(ts)=>{if(!ts)return"—";try{return new Date(typeof ts==="number"&&ts<1e12?ts*1000:ts).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});}catch{return"—";}};
 
-  // ── Inner tab + pagination state ─────────────────────────────────
-  const [cInnerTab, setCInnerTab] = useState("pending");
-  const [cPage,     setCPage]     = useState(1);
-  const PER_PAGE = 5;
-
-  // Reset to page 1 when tab changes
-  const switchInnerTab = (tab) => { setCInnerTab(tab); setCPage(1); };
-
-  const tabMap = {
-    pending:  { list: pending,  label: "Pending",   color: "#f59e0b", bg: "#fffbeb", icon: "⏳" },
-    approved: { list: approved, label: "Approved",  color: "#16a34a", bg: "#f0fdf4", icon: "✅" },
-    declined: { list: declined, label: "Declined",  color: "#ef4444", bg: "#fff5f5", icon: "❌" },
-    revoked:  { list: revoked,  label: "Withdrawn", color: "#94a3b8", bg: "#f8fafc", icon: "↩" },
-    activity: { list: [],       label: "Activity",  color: "#4f46e5", bg: "#eef2ff", icon: "📋" },
-  };
+  // ── tabMap lists already populated above ──────────────────────────
 
   const auditEvents = [...all].sort((a,b)=>(b.responded_at||b.requested_at||0)-(a.responded_at||a.requested_at||0)).map(c=>({
     employer: c.requestor_name||c.employer_name||c.requestor_email||c.employer_email||"Unknown",
@@ -655,9 +663,9 @@ export default function PersonalDetails() {
             const ts = typeof lastUpdate === "number" && lastUpdate < 1e12 ? lastUpdate * 1000 : lastUpdate;
             if (Date.now() - ts > SIX_MONTHS) setFreshnessWarn(true);
           }
-          if (d.firstName)    setFirstName(d.firstName);
+          if (d.firstName && d.firstName !== "draft")    setFirstName(d.firstName);
           if (d.middleName)   setMiddleName(d.middleName);
-          if (d.lastName)     setLastName(d.lastName);
+          if (d.lastName && d.lastName !== "draft")      setLastName(d.lastName);
           if (d.fatherFirst)  setFatherFirst(d.fatherFirst);
           if (d.fatherMiddle) setFatherMiddle(d.fatherMiddle);
           if (d.fatherLast)   setFatherLast(d.fatherLast);
@@ -718,7 +726,7 @@ export default function PersonalDetails() {
             body: JSON.stringify({
               employee_id: empId, status: "draft",
               email: user?.email || "", mobile: user?.phone || "0000000000",
-              firstName: "draft", lastName: "draft",
+              firstName: "", lastName: "",
             }),
           });
           const rd = await createRes.json().catch(() => ({}));
@@ -1246,6 +1254,8 @@ export default function PersonalDetails() {
                             const bulletCount2 = (raw2.match(/•/g)||[]).length;
                             const newChars2 = raw2.replace(/•/g,"").replace(/[^0-9]/g,"");
                             const result2 = accountNoConfirm.slice(0, bulletCount2) + newChars2;
+                            // Cap confirm to same length as primary — no extra digits allowed
+                            if (accountNo && result2.length > accountNo.length) return;
                             setAccountNoConfirm(result2);
                             dirty(() => {})("");
                             fixErr("accountNoConfirm");
