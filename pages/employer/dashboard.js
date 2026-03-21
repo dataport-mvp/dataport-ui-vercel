@@ -1067,6 +1067,8 @@ export default function EmployerDashboard() {
   const [xlsParsed,      setXlsParsed]      = useState(""); // "12 emails found from Sheet1"
   const [candStatus,     setCandStatus]     = useState({}); // email → {status,completeness,name}
   const [remindBusy,     setRemindBusy]     = useState(false);
+  const [bulkRemindBusy, setBulkRemindBusy] = useState(false);
+  const [bulkRemindMsg,  setBulkRemindMsg]  = useState("");
   const [showPwModal,    setShowPwModal]    = useState(false);
   const [pwCurrent,      setPwCurrent]      = useState("");
   const [pwNew,          setPwNew]          = useState("");
@@ -1305,6 +1307,23 @@ export default function EmployerDashboard() {
     setRemindBusy(false);
   };
 
+  const sendBulkReminder = async () => {
+    setBulkRemindBusy(true); setBulkRemindMsg("");
+    try {
+      const r = await apiFetch(`${API}/consent/remind/bulk`, {
+        method: "POST",
+        body: JSON.stringify({ consent_ids: [] }), // empty = all pending
+      });
+      const d = await r.json();
+      setBulkRemindMsg(r.ok
+        ? (d.sent === 0 ? "No pending candidates to remind" : `✓ Reminders sent to ${d.sent} candidate${d.sent>1?"s":""}`)
+        : (d.detail || "Failed to send reminders")
+      );
+      if (r.ok && d.sent > 0) loadConsents();
+    } catch(_) { setBulkRemindMsg("Network error — check your connection"); }
+    finally { setBulkRemindBusy(false); setTimeout(() => setBulkRemindMsg(""), 5000); }
+  };
+
   const sendRequest = async () => {
     setReqErr(""); setReqOk("");
     if (!reqEmail.trim()) { setReqErr("Email is required"); return; }
@@ -1422,6 +1441,25 @@ export default function EmployerDashboard() {
           <div className="search-wrap">
             <input className="search-in" placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
+
+          {/* ── Bulk remind strip (only shown on pending tab) ── */}
+          {cTab === "pending" && pending.length > 0 && (
+            <div style={{padding:"0.4rem 1.3rem 0.6rem",background:"transparent",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+              <div style={{display:"flex",alignItems:"center",gap:"0.5rem",flexWrap:"wrap"}}>
+                <button
+                  onClick={sendBulkReminder}
+                  disabled={bulkRemindBusy}
+                  style={{flex:1,padding:"0.42rem 0.75rem",background:"rgba(99,102,241,0.18)",border:"1.5px solid rgba(99,102,241,0.4)",borderRadius:7,color:"#a5b4fc",fontSize:"0.65rem",fontWeight:700,cursor:bulkRemindBusy?"not-allowed":"pointer",fontFamily:"inherit",whiteSpace:"nowrap",transition:"all 0.15s",opacity:bulkRemindBusy?0.6:1}}>
+                  {bulkRemindBusy ? "Sending…" : `📧 Remind all (${pending.length})`}
+                </button>
+              </div>
+              {bulkRemindMsg && (
+                <div style={{fontSize:"0.62rem",marginTop:"0.3rem",color:bulkRemindMsg.startsWith("✓")?"#86efac":"#fca5a5",fontWeight:600}}>
+                  {bulkRemindMsg}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="c-list">
             {loading ? <div className="c-empty">Loading…</div>
