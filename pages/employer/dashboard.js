@@ -1301,7 +1301,14 @@ export default function EmployerDashboard() {
         body: JSON.stringify({ consent_id: consentId }),
       });
       const d = await r.json();
-      setRemindMsg(r.ok ? d.message : (d.detail || "Failed to send reminder"));
+      if (r.ok) {
+        setRemindMsg(d.message || "Reminder sent");
+        // Update selected.reminder_count locally so button reflects new count instantly
+        setSelected(prev => prev ? { ...prev, reminder_count: d.reminder_count ?? ((prev.reminder_count||0)+1) } : prev);
+        loadConsents(); // also refresh full list
+      } else {
+        setRemindMsg(d.detail || "Failed to send reminder");
+      }
       setTimeout(() => setRemindMsg(""), 4000);
     } catch(_) { setRemindMsg("Network error"); }
     setRemindBusy(false);
@@ -1570,7 +1577,7 @@ export default function EmployerDashboard() {
                       <span className={`hb hb-${selected.status}`}>{selected.status.charAt(0).toUpperCase()+selected.status.slice(1)}</span>
                       {selected.requested_at && <span className="hb hb-info">Requested: {toIST(selected.requested_at)}</span>}
                       {(selected.responded_at||selected.approved_at) && <span className="hb hb-info">Responded: {toIST(selected.responded_at||selected.approved_at)}</span>}
-                      {profileData?.snapshot_at && <span className="hb hb-info">Snapshot: {toIST(profileData.snapshot_at)}</span>}
+                      {profileData?.snapshot_at && <span className="hb hb-info">📅 Data as of: {toIST(profileData.snapshot_at)}</span>}
                     </div>
                     {candStatus[selected.employee_email] && (()=>{
                       const cs = candStatus[selected.employee_email];
