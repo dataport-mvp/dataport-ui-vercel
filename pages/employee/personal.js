@@ -555,6 +555,7 @@ export default function PersonalDetails() {
   const [pwOk,          setPwOk]            = useState("");
   const [pwBusy,        setPwBusy]          = useState(false);
   const [freshnessWarn, setFreshnessWarn]   = useState(false);
+  const [completeness,  setCompleteness]    = useState(null); // 0-100 or null=loading
   const [saveStatus,setSaveStatus]       = useState("");
   const [midSaveStatus,setMidSaveStatus] = useState("");
   const [loading,setLoading]             = useState(true);
@@ -656,6 +657,13 @@ export default function PersonalDetails() {
         if (res.ok) {
           const d = await res.json();
           if (d.employee_id) { setEmployeeId(d.employee_id); employeeIdRef.current = d.employee_id; setProfileStatus(d.status || "draft"); setDraftReady(true); }
+          // Fetch own completeness score
+          if (user?.email) {
+            apiFetch(`${API}/employee/profile-status?email=${encodeURIComponent(user.email)}`)
+              .then(r => r.ok ? r.json() : null)
+              .then(sc => { if (sc) setCompleteness(sc.completeness ?? 0); })
+              .catch(() => {});
+          }
           // Item 10 — Freshness: warn if profile not updated in 6 months
           const lastUpdate = d.updated_at || d.last_saved_at || d.created_at;
           if (lastUpdate) {
@@ -983,6 +991,39 @@ export default function PersonalDetails() {
           {activeTab === "consents" ? <ConsentTab apiFetch={apiFetch} profileStatus={profileStatus} /> : (
             <>
               <StepNav current={1} onNavigate={handleNavigate} />
+
+              {/* ── Profile Completeness Bar ── */}
+              {completeness !== null && (
+                <div style={{background:"#fff",borderRadius:12,padding:"0.85rem 1.25rem",marginBottom:"1.1rem",boxShadow:"0 4px 16px rgba(30,26,62,0.1)",border:"1px solid rgba(255,255,255,0.85)"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.5rem"}}>
+                    <div style={{fontSize:"0.75rem",fontWeight:700,color:"#1e293b"}}>
+                      Profile Completeness
+                      {profileStatus === "submitted" && <span style={{marginLeft:"0.5rem",background:"#dcfce7",color:"#15803d",fontSize:"0.6rem",fontWeight:700,padding:"2px 8px",borderRadius:4,textTransform:"uppercase",letterSpacing:0.5}}>Submitted ✓</span>}
+                    </div>
+                    <div style={{fontSize:"0.88rem",fontWeight:800,color:completeness>=80?"#16a34a":completeness>=50?"#d97706":"#ef4444"}}>
+                      {completeness}%
+                    </div>
+                  </div>
+                  <div style={{height:8,background:"#f1f5f9",borderRadius:999,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:`${completeness}%`,borderRadius:999,transition:"width 0.6s ease",
+                      background:completeness>=80?"linear-gradient(90deg,#16a34a,#4ade80)":completeness>=50?"linear-gradient(90deg,#d97706,#fbbf24)":"linear-gradient(90deg,#ef4444,#f87171)"}}>
+                    </div>
+                  </div>
+                  {completeness < 100 && (
+                    <div style={{fontSize:"0.65rem",color:"#94a3b8",marginTop:"0.4rem",lineHeight:1.5}}>
+                      {completeness < 30 && "📝 Get started — fill in your name, date of birth and identity documents"}
+                      {completeness >= 30 && completeness < 60 && "📎 Upload your Aadhaar, PAN and add your address to increase your score"}
+                      {completeness >= 60 && completeness < 80 && "🏦 Almost there — add bank details and education to reach 80%"}
+                      {completeness >= 80 && completeness < 100 && "✨ Looking great — submit your profile so employers can access your data"}
+                    </div>
+                  )}
+                  {completeness === 100 && (
+                    <div style={{fontSize:"0.65rem",color:"#16a34a",marginTop:"0.4rem",fontWeight:600}}>
+                      ✅ Profile complete and submitted — employers with approved consent can view your data
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Profile Photo */}
               <div className="sc ind">
