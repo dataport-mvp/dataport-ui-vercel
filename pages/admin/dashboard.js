@@ -1,7 +1,5 @@
 // pages/admin/dashboard.js
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/router";
-import { useAuth } from "../../utils/AuthContext";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
@@ -212,8 +210,59 @@ function toIST(ms) {
 }
 
 export default function AdminDashboard() {
-  const router = useRouter();
-  const { user, ready, logout } = useAuth();
+  // Self-contained auth — no AuthContext needed
+  const [adminUser,  setAdminUser]  = useState(null);
+  const [adminToken, setAdminToken] = useState(null);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPw,    setLoginPw]    = useState("");
+  const [loginErr,   setLoginErr]   = useState("");
+  const [loginBusy,  setLoginBusy]  = useState(false);
+  const [authReady,  setAuthReady]  = useState(false);
+
+  // Rehydrate from localStorage on load
+  useEffect(() => {
+    try {
+      const tok  = localStorage.getItem("dg_admin_token");
+      const usr  = localStorage.getItem("dg_admin_user");
+      if (tok && usr) {
+        const parsed = JSON.parse(usr);
+        if (parsed.role === "admin") {
+          setAdminToken(tok);
+          setAdminUser(parsed);
+        }
+      }
+    } catch(_) {}
+    setAuthReady(true);
+  }, []);
+
+  const handleLogin = async () => {
+    setLoginErr("");
+    if (!loginEmail || !loginPw) { setLoginErr("Email and password required"); return; }
+    setLoginBusy(true);
+    try {
+      const res = await fetch(`${API}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: loginEmail.trim().toLowerCase(), password: loginPw }),
+      });
+      const d = await res.json();
+      if (!res.ok) { setLoginErr(d.detail || "Login failed"); return; }
+      if (d.role !== "admin") { setLoginErr("This portal is for admins only"); return; }
+      const userData = { email: loginEmail.trim().toLowerCase(), role: d.role, name: d.name };
+      localStorage.setItem("dg_admin_token", d.access_token);
+      localStorage.setItem("dg_admin_user", JSON.stringify(userData));
+      setAdminToken(d.access_token);
+      setAdminUser(userData);
+    } catch(_) { setLoginErr("Network error — please try again"); }
+    finally { setLoginBusy(false); }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("dg_admin_token");
+    localStorage.removeItem("dg_admin_user");
+    setAdminToken(null);
+    setAdminUser(null);
+  };
 
   const [tab, setTab]               = useState("overview");
   const [stats, setStats]           = useState(null);
@@ -234,19 +283,15 @@ export default function AdminDashboard() {
   const [noteText, setNoteText]     = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  useEffect(() => {
-    if (ready && (!user || user.role !== "admin")) {
-      router.replace("/");
-    }
-  }, [ready, user, router]);
+  // Auth guard handled by login form below
 
   const apiFetch = useCallback(async (url, opts = {}) => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+    const token = adminToken || (typeof window !== "undefined" ? localStorage.getItem("dg_admin_token") : null);
     return fetch(url, {
       ...opts,
       headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(opts.headers || {}) },
     });
-  }, []);
+  }, [adminToken]);
 
   // Load stats + activity
   const loadOverview = useCallback(async () => {
@@ -293,11 +338,11 @@ export default function AdminDashboard() {
   }, [apiFetch, ticketFilter]);
 
   useEffect(() => {
-    if (!ready || !user || user.role !== "admin") return;
+    if (!adminUser || !adminToken) return;
     if (tab === "overview") loadOverview();
     if (tab === "users")    loadUsers();
     if (tab === "tickets")  loadTickets();
-  }, [tab, ready, user, loadOverview, loadUsers, loadTickets]);
+  }, [tab, adminUser, adminToken, loadOverview, loadUsers, loadTickets]);
 
   useEffect(() => {
     if (tab === "users") loadUsers();
@@ -365,8 +410,57 @@ export default function AdminDashboard() {
     } catch (_) {}
   };
 
-  if (!ready || !user) return null;
-  if (user.role !== "admin") return null;
+  // Show login form if not authenticated
+  if (!authReady) return null;
+
+  if (!adminUser || !adminToken) {
+    return (
+      <>
+        <style>{G}</style>
+        <div style={{minHeight:"100vh",background:"#0a0a0f",display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
+          <div style={{background:"#0f0e1a",border:"1px solid #1e1b2e",borderRadius:"16px",padding:"2rem 2.25rem",width:"100%",maxWidth:"380px"}}>
+            <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"0.85rem",fontWeight:600,color:"#a78bfa",marginBottom:"4px"}}>DATAGATE</div>
+            <div style={{fontSize:"0.6rem",color:"#4b5563",textTransform:"uppercase",letterSpacing:"1.5px",marginBottom:"2rem"}}>Admin Console</div>
+            {loginErr && (
+              <div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:"8px",padding:"0.6rem 0.875rem",fontSize:"0.75rem",color:"#fca5a5",marginBottom:"1rem"}}>
+                {loginErr}
+              </div>
+            )}
+            <div style={{marginBottom:"1rem"}}>
+              <label style={{display:"block",fontSize:"0.6rem",fontWeight:700,color:"#4b5563",textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:"0.4rem"}}>Email</label>
+              <input
+                type="email"
+                value={loginEmail}
+                onChange={e => setLoginEmail(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleLogin()}
+                placeholder="admin@youremail.com"
+                style={{width:"100%",padding:"0.65rem 0.875rem",background:"#13121f",border:"1px solid #1e1b2e",borderRadius:"8px",fontFamily:"inherit",fontSize:"0.875rem",color:"#e2e8f0",outline:"none"}}
+                autoFocus
+              />
+            </div>
+            <div style={{marginBottom:"1.5rem"}}>
+              <label style={{display:"block",fontSize:"0.6rem",fontWeight:700,color:"#4b5563",textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:"0.4rem"}}>Password</label>
+              <input
+                type="password"
+                value={loginPw}
+                onChange={e => setLoginPw(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleLogin()}
+                placeholder="Your admin password"
+                style={{width:"100%",padding:"0.65rem 0.875rem",background:"#13121f",border:"1px solid #1e1b2e",borderRadius:"8px",fontFamily:"inherit",fontSize:"0.875rem",color:"#e2e8f0",outline:"none"}}
+              />
+            </div>
+            <button
+              onClick={handleLogin}
+              disabled={loginBusy}
+              style={{width:"100%",padding:"0.75rem",background:"#7c3aed",color:"#fff",border:"none",borderRadius:"8px",fontFamily:"inherit",fontSize:"0.875rem",fontWeight:700,cursor:loginBusy?"not-allowed":"pointer",opacity:loginBusy?0.6:1,transition:"all 0.15s"}}
+            >
+              {loginBusy ? "Signing in…" : "Sign In →"}
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   const accountStatus = userDetail?.user?.account_status || "active";
 
@@ -398,8 +492,8 @@ export default function AdminDashboard() {
           </nav>
           <div className="side-bottom">
             <div className="admin-tag">Signed in as</div>
-            <div className="admin-email">{user.email}</div>
-            <button className="signout-btn" onClick={() => { logout(); router.replace("/"); }}>
+            <div className="admin-email">{adminUser.email}</div>
+            <button className="signout-btn" onClick={handleLogout}>
               Sign out
             </button>
           </div>
