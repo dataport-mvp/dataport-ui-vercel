@@ -6,49 +6,45 @@ import { parseError } from "../../utils/apiError";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
-function EyeIcon({ open }) {
-  return open ? (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-    </svg>
-  ) : (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-      <line x1="1" y1="1" x2="23" y2="23"/>
-    </svg>
-  );
-}
+const EyeIcon = ({ open }) => open ? (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+  </svg>
+) : (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+    <line x1="1" y1="1" x2="23" y2="23"/>
+  </svg>
+);
 
-function Logo() {
-  return (
-    <svg width="148" height="38" viewBox="0 0 148 38" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display:"block" }}>
+const Logo = () => (
+  <Link href="/" style={{ textDecoration:"none", display:"inline-flex", alignItems:"center", gap:"10px" }}>
+    <svg width="32" height="36" viewBox="0 0 36 40" fill="none">
       <defs>
-        <style>{`
-          @keyframes erp-pulse{0%{r:4;opacity:.6}100%{r:12;opacity:0}}
-          @keyframes erp-dot{0%,100%{r:3.2}50%{r:2.4}}
-          @keyframes erp-p{0%{transform:translateY(0);opacity:0}12%{opacity:1}85%{opacity:1}100%{transform:translateY(19px);opacity:0}}
-          .erpr{animation:erp-pulse 1.8s ease-out infinite;fill:none;stroke:#2563eb;stroke-width:1.2}
-          .erdt{animation:erp-dot 1.8s ease-in-out infinite;fill:#2563eb}
-          .erp1{animation:erp-p 2.2s ease-in-out infinite}
-          .erp2{animation:erp-p 2.2s ease-in-out infinite .74s}
-          .erp3{animation:erp-p 2.2s ease-in-out infinite 1.47s}
-        `}</style>
+        <style>{`@keyframes erl2p{0%{r:4.5;opacity:.5}100%{r:13;opacity:0}}@keyframes erl2d{0%,100%{r:3.5}50%{r:2.6}}@keyframes erl2f{0%{opacity:0;transform:translateY(0)}15%{opacity:1}85%{opacity:1}100%{opacity:0;transform:translateY(22px)}}.erl2pr{animation:erl2p 2s ease-out infinite;fill:none;stroke:#c9a84c;stroke-width:1.2}.erl2dt{animation:erl2d 2s ease-in-out infinite;fill:#c9a84c}.erl2p1{animation:erl2f 2.4s ease-in-out infinite}.erl2p2{animation:erl2f 2.4s ease-in-out infinite .8s}.erl2p3{animation:erl2f 2.4s ease-in-out infinite 1.6s}`}</style>
+        <linearGradient id="erl2g" x1="0" y1="0" x2="36" y2="40" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#2a2a2e"/><stop offset="100%" stopColor="#1a1a1e"/></linearGradient>
       </defs>
-      <path d="M14 1.5 L26 6.5 L26 21 Q26 32 14 38 Q2 32 2 21 L2 6.5 Z" fill="#1e293b"/>
-      <rect x="7" y="16.5" width="4" height="13" rx="1.5" fill="#fff"/>
-      <rect x="16" y="16.5" width="4" height="13" rx="1.5" fill="#fff"/>
-      <path d="M9 16.5 Q14 9.5 20 16.5" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round"/>
-      <circle cx="14" cy="10.5" r="1.6" fill="#2563eb" opacity="0" className="erp1"/>
-      <circle cx="14" cy="10.5" r="1.6" fill="#2563eb" opacity="0" className="erp2"/>
-      <circle cx="14" cy="10.5" r="1.6" fill="#2563eb" opacity="0" className="erp3"/>
-      <circle cx="22" cy="6" className="erdt"/>
-      <circle cx="22" cy="6" className="erpr"/>
-      <text x="33" y="22" fontFamily="'DM Sans',sans-serif" fontSize="14" fontWeight="700" fill="#0f172a" letterSpacing="-0.2">Datagate</text>
-      <text x="34" y="31" fontFamily="'DM Sans',sans-serif" fontSize="6.5" fontWeight="600" fill="#94a3b8" letterSpacing="1">VERIFIED EMPLOYMENT</text>
+      <path d="M18 1L34 8V24Q34 38 18 40Q2 38 2 24V8Z" fill="url(#erl2g)" stroke="#c9a84c" strokeWidth="0.8" strokeOpacity="0.4"/>
+      <rect x="9" y="22" width="5" height="14" rx="2" fill="#c9a84c" opacity="0.9"/>
+      <rect x="22" y="22" width="5" height="14" rx="2" fill="#c9a84c" opacity="0.9"/>
+      <path d="M11.5 22Q18 13 24.5 22" fill="none" stroke="#c9a84c" strokeWidth="4" strokeLinecap="round" opacity="0.9"/>
+      <circle cx="18" cy="14" r="2" fill="#c9a84c" opacity="0" className="erl2p1"/>
+      <circle cx="18" cy="14" r="2" fill="#c9a84c" opacity="0" className="erl2p2"/>
+      <circle cx="18" cy="14" r="2" fill="#c9a84c" opacity="0" className="erl2p3"/>
+      <circle cx="29" cy="8" className="erl2dt"/>
+      <circle cx="29" cy="8" className="erl2pr"/>
     </svg>
-  );
-}
+    <div>
+      <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:"15px", color:"#f5f0e8", letterSpacing:"-0.3px", lineHeight:1 }}>Datagate</div>
+      <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:"7px", color:"#c9a84c", letterSpacing:"1.8px", textTransform:"uppercase", marginTop:"2px" }}>Verified Employment</div>
+    </div>
+  </Link>
+);
+
+const Check = () => (
+  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+);
 
 export default function EmployerLogin() {
   const [isSignup, setIsSignup] = useState(false);
@@ -64,13 +60,13 @@ export default function EmployerLogin() {
   const handle = async () => {
     setError(""); setLoading(true);
     const endpoint = isSignup ? "/auth/register" : "/auth/login";
-    const body = isSignup ? { email, password, name: company, phone: "0000000000", role: "employer" } : { email, password };
+    const body = isSignup ? { email, password, name:company, phone:"0000000000", role:"employer" } : { email, password };
     try {
-      const res  = await fetch(`${API}${endpoint}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const res  = await fetch(`${API}${endpoint}`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
       const data = await res.json();
       if (!res.ok) { setError(parseError(data)); return; }
-      const { access_token, refresh_token, role, name: uName, email: uEmail } = data;
-      login(access_token, refresh_token, { role, name: uName || company || email, email: uEmail || email });
+      const { access_token, refresh_token, role, name:uName, email:uEmail } = data;
+      login(access_token, refresh_token, { role, name:uName||company||email, email:uEmail||email });
       router.push("/employer/dashboard");
     } catch { setError("Network error — please try again"); }
     finally { setLoading(false); }
@@ -79,234 +75,137 @@ export default function EmployerLogin() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@400;500;600;700&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        body{background:#f0f4f8;font-family:'DM Sans',sans-serif}
-
-        .pg{min-height:100vh;display:grid;grid-template-columns:1fr 1fr}
-
-        /* ── Left — cool slate panel ── */
-        .lft{
-          background:#0f172a;
-          display:flex;flex-direction:column;justify-content:space-between;
-          padding:2.5rem 3.5rem;
-        }
-        .lft-body{padding-top:3rem}
-        .tag{
-          font-size:.66rem;font-weight:700;letter-spacing:1.4px;
-          text-transform:uppercase;color:#60a5fa;
-          display:flex;align-items:center;gap:.5rem;margin-bottom:1.25rem;
-        }
-        .tag-line{width:18px;height:1.5px;background:#2563eb;flex-shrink:0}
-        .ttl{
-          font-family:'Instrument Serif',serif;
-          font-size:clamp(2rem,3vw,2.8rem);
-          font-weight:400;line-height:1.2;
-          color:#f1f5f9;letter-spacing:-.4px;margin-bottom:.9rem;
-        }
-        .ttl em{font-style:italic;color:#60a5fa}
-        .dsc{font-size:.875rem;color:#475569;line-height:1.75;margin-bottom:2.5rem;max-width:340px}
-
-        /* Feature checklist */
-        .feats{display:flex;flex-direction:column;gap:.75rem;margin-bottom:3rem}
-        .ft{display:flex;align-items:center;gap:.75rem;font-size:.83rem;color:#64748b}
-        .fck{
-          width:18px;height:18px;border-radius:50%;
-          background:rgba(37,99,235,0.15);border:1px solid rgba(96,165,250,0.25);
-          display:flex;align-items:center;justify-content:center;flex-shrink:0;
-        }
-        .fck svg{color:#60a5fa}
-
-        /* Stats row */
-        .stats{
-          display:grid;grid-template-columns:1fr 1fr;gap:1px;
-          background:rgba(255,255,255,0.06);
-          border:1px solid rgba(255,255,255,0.06);
-          border-radius:12px;overflow:hidden;
-        }
-        .stat{background:#0f172a;padding:1.1rem 1.25rem}
-        .stat-v{font-size:1.4rem;font-weight:700;color:#f1f5f9;letter-spacing:-.5px}
-        .stat-l{font-size:.72rem;color:#475569;margin-top:2px}
-
-        /* Footer */
-        .lft-ft{
-          display:flex;justify-content:space-between;align-items:center;
-          padding-top:1.5rem;border-top:1px solid rgba(255,255,255,0.06);
-        }
-        .fc{font-size:.7rem;color:#1e3a5f}
-        .fl{display:flex;gap:.85rem}
-        .fla{font-size:.7rem;color:#1e3a5f;text-decoration:none;transition:color .15s}
-        .fla:hover{color:#60a5fa}
-
-        /* ── Right — white form panel ── */
-        .rgt{
-          background:#fff;
-          display:flex;align-items:center;justify-content:center;
-          padding:3rem 2.5rem;
-        }
-        .fcd{width:100%;max-width:380px;display:flex;flex-direction:column;gap:1.1rem}
-
-        .fhd{
-          font-family:'Instrument Serif',serif;
-          font-size:1.75rem;font-weight:400;color:#0f172a;letter-spacing:-.3px;
-        }
-        .fsb{font-size:.84rem;color:#94a3b8;margin-top:-.15rem}
-
-        .fld{display:flex;flex-direction:column;gap:.35rem}
-        .flb{font-size:.74rem;font-weight:600;color:#64748b;letter-spacing:.2px}
-        .fin{
-          padding:.75rem .9rem;
-          background:#f8fafc;
-          border:1.5px solid #e2e8f0;
-          border-radius:9px;font-family:'DM Sans',sans-serif;
-          font-size:.875rem;color:#0f172a;outline:none;width:100%;
-          transition:border-color .15s,background .15s;
-        }
-        .fin::placeholder{color:#cbd5e1}
-        .fin:focus{border-color:#2563eb;background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,0.08)}
-        .pw{position:relative}
-        .pw .fin{padding-right:2.5rem}
-        .ey{position:absolute;right:.8rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#cbd5e1;padding:0;transition:color .15s}
-        .ey:hover{color:#94a3b8}
-
-        .er{font-size:.79rem;color:#dc2626;padding:.65rem .9rem;background:#fef2f2;border:1px solid #fecaca;border-radius:8px}
-
-        /* Navy/blue CTA for employer — distinct from employee green */
-        .sub{
-          padding:.85rem;background:#1e293b;color:#fff;border:none;
-          border-radius:9px;font-family:'DM Sans',sans-serif;
-          font-size:.9rem;font-weight:700;cursor:pointer;
-          transition:background .15s;letter-spacing:.1px;
-        }
-        .sub:hover:not(:disabled){background:#0f172a}
-        .sub:disabled{opacity:.5;cursor:not-allowed}
-
-        .fgt{text-align:center}
-        .fgt a{font-size:.79rem;color:#2563eb;text-decoration:none}
-        .fgt a:hover{text-decoration:underline}
-
-        .dvr{display:flex;align-items:center;gap:.7rem}
-        .dvl{flex:1;height:1px;background:#f1f5f9}
-        .dvt{font-size:.7rem;color:#cbd5e1}
-
-        .tgl{text-align:center;font-size:.84rem;color:#94a3b8}
-        .tgb{color:#2563eb;cursor:pointer;font-weight:700;background:none;border:none;font-family:inherit;font-size:inherit}
-        .tgb:hover{text-decoration:underline}
-
-        .cft{display:flex;justify-content:center;gap:1.25rem;padding-top:.15rem}
-        .cft a{font-size:.69rem;color:#94a3b8;text-decoration:none;transition:color .15s}
-        .cft a:hover{color:#2563eb;text-decoration:underline}
-
-        @media(max-width:900px){
-          .pg{grid-template-columns:1fr}
-          .lft{display:none}
-          .rgt{padding:2.5rem 1.5rem}
-        }
+        body{background:#0e0e10;font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased}
+        .er-pg{min-height:100vh;display:grid;grid-template-columns:1fr 1fr}
+        .er-lft{background:#0c0c0e;border-right:1px solid #1a1a1e;display:flex;flex-direction:column;justify-content:space-between;padding:2.5rem 3rem}
+        .er-body{flex:1;display:flex;flex-direction:column;justify-content:center;padding:3rem 0}
+        .er-badge{display:inline-flex;align-items:center;gap:.5rem;font-size:.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#c9a84c;margin-bottom:1.5rem}
+        .er-badge-line{width:18px;height:1.5px;background:#c9a84c}
+        .er-h2{font-family:'Playfair Display',serif;font-size:clamp(1.8rem,2.8vw,2.6rem);font-weight:600;line-height:1.2;color:#f5f0e8;letter-spacing:-.4px;margin-bottom:1rem}
+        .er-h2 em{font-style:italic;color:#c9a84c}
+        .er-desc{font-size:.875rem;color:#504a44;line-height:1.8;margin-bottom:2.5rem;max-width:340px}
+        .er-feats{display:flex;flex-direction:column;gap:.8rem;margin-bottom:2.5rem}
+        .er-ft{display:flex;align-items:center;gap:.75rem;font-size:.83rem;color:#504a44}
+        .er-fck{width:18px;height:18px;border-radius:50%;flex-shrink:0;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);display:flex;align-items:center;justify-content:center;color:#c9a84c}
+        .er-stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#1a1a1e;border:1px solid #1a1a1e;border-radius:14px;overflow:hidden}
+        .er-stat{background:#141416;padding:1.1rem 1.25rem}
+        .er-stat-v{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:600;color:#c9a84c;letter-spacing:-.3px;line-height:1}
+        .er-stat-l{font-size:.72rem;color:#3a3530;margin-top:4px;line-height:1.4}
+        .er-ft-bar{padding-top:1.5rem;border-top:1px solid #1a1a1e;display:flex;justify-content:space-between;align-items:center}
+        .er-fc{font-size:.69rem;color:#2a2a30}
+        .er-fl{display:flex;gap:1rem}
+        .er-fla{font-size:.69rem;color:#2a2a30;text-decoration:none;transition:color .15s}
+        .er-fla:hover{color:#c9a84c}
+        .er-rgt{background:#0e0e10;display:flex;align-items:center;justify-content:center;padding:3rem 2.5rem}
+        .er-form{width:100%;max-width:390px;display:flex;flex-direction:column;gap:1.25rem}
+        .er-fhd{font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:600;color:#f5f0e8;letter-spacing:-.4px}
+        .er-fsb{font-size:.84rem;color:#504a44;margin-top:-.2rem}
+        .er-fld{display:flex;flex-direction:column;gap:.4rem}
+        .er-flb{font-size:.72rem;font-weight:600;color:#504a44;letter-spacing:.3px;text-transform:uppercase}
+        .er-fin{padding:.78rem 1rem;background:#141416;border:1.5px solid #1a1a1e;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.875rem;color:#f5f0e8;outline:none;width:100%;transition:border-color .15s,background .15s}
+        .er-fin::placeholder{color:#2a2a30}
+        .er-fin:focus{border-color:rgba(201,168,76,.5);background:#161618;box-shadow:0 0 0 3px rgba(201,168,76,.06)}
+        .er-pw{position:relative}
+        .er-pw .er-fin{padding-right:2.75rem}
+        .er-ey{position:absolute;right:.85rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#3a3530;padding:0;transition:color .15s}
+        .er-ey:hover{color:#c9a84c}
+        .er-err{font-size:.79rem;color:#fca5a5;padding:.65rem 1rem;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:9px}
+        .er-sub{padding:.9rem;background:#c9a84c;color:#0e0e10;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .15s}
+        .er-sub:hover:not(:disabled){background:#e8c96a;transform:translateY(-1px)}
+        .er-sub:disabled{opacity:.4;cursor:not-allowed}
+        .er-fgt{text-align:center}
+        .er-fgt a{font-size:.79rem;color:#504a44;text-decoration:none;transition:color .15s}
+        .er-fgt a:hover{color:#c9a84c}
+        .er-dvr{display:flex;align-items:center;gap:.75rem}
+        .er-dvl{flex:1;height:1px;background:#1a1a1e}
+        .er-dvt{font-size:.7rem;color:#2a2a30}
+        .er-tgl{text-align:center;font-size:.84rem;color:#504a44}
+        .er-tgb{color:#c9a84c;cursor:pointer;font-weight:700;background:none;border:none;font-family:inherit;font-size:inherit}
+        .er-tgb:hover{text-decoration:underline}
+        .er-cft{display:flex;justify-content:center;gap:1.5rem;padding-top:.25rem}
+        .er-cft a{font-size:.69rem;color:#2a2a30;text-decoration:none;transition:color .15s}
+        .er-cft a:hover{color:#c9a84c}
+        .er-terms-note{font-size:.72rem;color:#3a3530;line-height:1.6;padding:.75rem 1rem;background:#141416;border:1px solid #1a1a1e;border-radius:9px;text-align:center}
+        .er-terms-note a{color:#c9a84c;text-decoration:none}
+        .er-terms-note a:hover{text-decoration:underline}
+        @media(max-width:900px){.er-pg{grid-template-columns:1fr}.er-lft{display:none}.er-rgt{padding:3rem 1.5rem;min-height:100vh}}
       `}</style>
 
-      <div className="pg">
-        {/* Left */}
-        <div className="lft">
-          <Link href="/" style={{ textDecoration:"none" }}><Logo/></Link>
-
-          <div className="lft-body">
-            <div className="tag"><span className="tag-line"/>Employer Portal</div>
-            <h2 className="ttl">Hire with<br/><em>verified confidence.</em></h2>
-            <p className="dsc">Access pre-verified employee records instantly. Structured BGV data delivered the moment a candidate approves — no chasing, no paperwork.</p>
-
-            <div className="feats">
-              {[
-                "Request employee consent in one click",
-                "View verified Aadhaar, PAN, education, employment",
-                "EPFO-linked employment history included",
-                "Full consent audit trail — DPDP compliant",
-              ].map(f => (
-                <div className="ft" key={f}>
-                  <div className="fck">
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
-                  </div>
-                  {f}
-                </div>
+      <div className="er-pg">
+        <div className="er-lft">
+          <Logo />
+          <div className="er-body">
+            <div className="er-badge"><span className="er-badge-line"/>Employer Portal</div>
+            <h2 className="er-h2">Hire with<br/><em>verified confidence.</em></h2>
+            <p className="er-desc">Access pre-verified employee records instantly. Structured BGV data delivered the moment a candidate approves — no chasing, no paperwork.</p>
+            <div className="er-feats">
+              {["Request employee consent in one click","Verified Aadhaar, PAN, education, employment","EPFO-linked employment history included","Full consent audit trail — DPDP compliant"].map(f => (
+                <div className="er-ft" key={f}><div className="er-fck"><Check /></div>{f}</div>
               ))}
             </div>
-
-            <div className="stats">
-              <div className="stat">
-                <div className="stat-v">1-click</div>
-                <div className="stat-l">Consent request to candidate</div>
-              </div>
-              <div className="stat">
-                <div className="stat-v">Instant</div>
-                <div className="stat-l">Data on approval</div>
-              </div>
-              <div className="stat">
-                <div className="stat-v">Zero</div>
-                <div className="stat-l">Document chasing</div>
-              </div>
-              <div className="stat">
-                <div className="stat-v">100%</div>
-                <div className="stat-l">Employee-consented</div>
-              </div>
+            <div className="er-stats">
+              {[["1-click","Consent request"],["Instant","Data on approval"],["Zero","Document chasing"],["100%","Employee-consented"]].map(([v,l]) => (
+                <div className="er-stat" key={l}><div className="er-stat-v">{v}</div><div className="er-stat-l">{l}</div></div>
+              ))}
             </div>
           </div>
-
-          <div className="lft-ft">
-            <span className="fc">© 2026 Datagate</span>
-            <div className="fl">
-              <a href="/privacy" target="_blank" rel="noopener noreferrer" className="fla">Privacy Policy</a>
-              <a href="/employer/terms" target="_blank" rel="noopener noreferrer" className="fla">Employer Terms</a>
+          <div className="er-ft-bar">
+            <span className="er-fc">© 2026 Datagate</span>
+            <div className="er-fl">
+              <a href="/privacy" className="er-fla">Privacy</a>
+              <a href="/employer/terms" className="er-fla">Terms</a>
             </div>
           </div>
         </div>
 
-        {/* Right */}
-        <div className="rgt">
-          <div className="fcd">
+        <div className="er-rgt">
+          <div className="er-form">
             <div>
-              <div className="fhd">{isSignup ? "Create account" : "Welcome back"}</div>
-              <div className="fsb">{isSignup ? "Start hiring with verified data" : "Sign in to your employer account"}</div>
+              <div className="er-fhd">{isSignup ? "Create account" : "Welcome back"}</div>
+              <div className="er-fsb">{isSignup ? "Start hiring with verified data" : "Sign in to your employer account"}</div>
             </div>
-
             {isSignup && (
-              <div className="fld">
-                <label className="flb">Company Name</label>
-                <input className="fin" placeholder="Acme Technologies Pvt Ltd" value={company} onChange={e => setCompany(e.target.value)}/>
+              <div className="er-fld">
+                <label className="er-flb">Company Name</label>
+                <input className="er-fin" placeholder="Acme Technologies Pvt Ltd" value={company} onChange={e => setCompany(e.target.value)}/>
               </div>
             )}
-
-            <div className="fld">
-              <label className="flb">Work Email</label>
-              <input className="fin" type="email" placeholder="hr@company.com" value={email} onChange={e => setEmail(e.target.value)}/>
+            <div className="er-fld">
+              <label className="er-flb">Work Email</label>
+              <input className="er-fin" type="email" placeholder="hr@company.com" value={email} onChange={e => setEmail(e.target.value)}/>
             </div>
-
-            <div className="fld">
-              <label className="flb">Password</label>
-              <div className="pw">
-                <input className="fin" type={showPwd ? "text" : "password"} placeholder="Min. 8 characters" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && handle()}/>
-                <button className="ey" type="button" onClick={() => setShowPwd(v => !v)} tabIndex={-1}><EyeIcon open={showPwd}/></button>
+            <div className="er-fld">
+              <label className="er-flb">Password</label>
+              <div className="er-pw">
+                <input className="er-fin" type={showPwd?"text":"password"} placeholder="Min. 8 characters" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key==="Enter" && handle()}/>
+                <button className="er-ey" type="button" onClick={() => setShowPwd(v=>!v)} tabIndex={-1}><EyeIcon open={showPwd}/></button>
               </div>
             </div>
-
-            {error && <div className="er">{error}</div>}
-
-            <button className="sub" onClick={handle} disabled={loading}>
-              {loading ? "Please wait…" : isSignup ? "Create account" : "Sign in"}
+            {error && <div className="er-err">{error}</div>}
+            <button className="er-sub" onClick={handle} disabled={loading}>
+              {loading ? "Please wait…" : isSignup ? "Create employer account" : "Sign in"}
             </button>
-
-            {!isSignup && <div className="fgt"><a href="/forgot-password">Forgot password?</a></div>}
-
-            <div className="dvr"><div className="dvl"/><span className="dvt">or</span><div className="dvl"/></div>
-
-            <div className="tgl">
+            {!isSignup && <div className="er-fgt"><a href="/forgot-password">Forgot password?</a></div>}
+            {isSignup && (
+              <div className="er-terms-note">
+                By creating an account you agree to our{" "}
+                <a href="/employer/terms" target="_blank">Employer Terms</a> and{" "}
+                <a href="/privacy" target="_blank">Privacy Policy</a>.
+                Employee data must only be used for legitimate hiring purposes.
+              </div>
+            )}
+            <div className="er-dvr"><div className="er-dvl"/><span className="er-dvt">or</span><div className="er-dvl"/></div>
+            <div className="er-tgl">
               {isSignup ? "Already have an account? " : "Don't have an account? "}
-              <button className="tgb" onClick={() => { setIsSignup(v => !v); setError(""); setShowPwd(false); }}>
+              <button className="er-tgb" onClick={() => { setIsSignup(v=>!v); setError(""); setShowPwd(false); }}>
                 {isSignup ? "Sign in" : "Sign up"}
               </button>
             </div>
-
-            <div className="cft">
-              <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
-              <a href="/employer/terms" target="_blank" rel="noopener noreferrer">Employer Terms</a>
+            <div className="er-cft">
+              <a href="/privacy">Privacy Policy</a>
+              <a href="/employer/terms">Employer Terms</a>
             </div>
           </div>
         </div>

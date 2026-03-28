@@ -6,49 +6,63 @@ import { parseError } from "../../utils/apiError";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
-function EyeIcon({ open }) {
-  return open ? (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-    </svg>
-  ) : (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-      <line x1="1" y1="1" x2="23" y2="23"/>
-    </svg>
-  );
-}
+const EyeIcon = ({ open }) => open ? (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+  </svg>
+) : (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+    <line x1="1" y1="1" x2="23" y2="23"/>
+  </svg>
+);
 
-function Logo() {
-  return (
-    <svg width="148" height="38" viewBox="0 0 148 38" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display:"block" }}>
-      <defs>
-        <style>{`
-          @keyframes emp-pulse{0%{r:4;opacity:.6}100%{r:12;opacity:0}}
-          @keyframes emp-dot{0%,100%{r:3.2}50%{r:2.4}}
-          @keyframes emp-p{0%{transform:translateY(0);opacity:0}12%{opacity:1}85%{opacity:1}100%{transform:translateY(19px);opacity:0}}
-          .epr{animation:emp-pulse 1.8s ease-out infinite;fill:none;stroke:#16a34a;stroke-width:1.2}
-          .edt{animation:emp-dot 1.8s ease-in-out infinite;fill:#16a34a}
-          .ep1{animation:emp-p 2.2s ease-in-out infinite}
-          .ep2{animation:emp-p 2.2s ease-in-out infinite .74s}
-          .ep3{animation:emp-p 2.2s ease-in-out infinite 1.47s}
-        `}</style>
-      </defs>
-      <path d="M14 1.5 L26 6.5 L26 21 Q26 32 14 38 Q2 32 2 21 L2 6.5 Z" fill="#1a1a1a"/>
-      <rect x="7" y="16.5" width="4" height="13" rx="1.5" fill="#fff"/>
-      <rect x="16" y="16.5" width="4" height="13" rx="1.5" fill="#fff"/>
-      <path d="M9 16.5 Q14 9.5 20 16.5" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round"/>
-      <circle cx="14" cy="10.5" r="1.6" fill="#16a34a" opacity="0" className="ep1"/>
-      <circle cx="14" cy="10.5" r="1.6" fill="#16a34a" opacity="0" className="ep2"/>
-      <circle cx="14" cy="10.5" r="1.6" fill="#16a34a" opacity="0" className="ep3"/>
-      <circle cx="22" cy="6" className="edt"/>
-      <circle cx="22" cy="6" className="epr"/>
-      <text x="33" y="22" fontFamily="'DM Sans',sans-serif" fontSize="14" fontWeight="700" fill="#1a1a1a" letterSpacing="-0.2">Datagate</text>
-      <text x="34" y="31" fontFamily="'DM Sans',sans-serif" fontSize="6.5" fontWeight="600" fill="#bbb" letterSpacing="1">VERIFIED EMPLOYMENT</text>
-    </svg>
-  );
-}
+const Shield = () => (
+  <svg width="32" height="36" viewBox="0 0 36 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <style>{`
+        @keyframes eml-p{0%{r:4.5;opacity:.5}100%{r:13;opacity:0}}
+        @keyframes eml-d{0%,100%{r:3.5}50%{r:2.6}}
+        @keyframes eml-f{0%{opacity:0;transform:translateY(0)}15%{opacity:1}85%{opacity:1}100%{opacity:0;transform:translateY(22px)}}
+        .eml-pr{animation:eml-p 2s ease-out infinite;fill:none;stroke:#c9a84c;stroke-width:1.2}
+        .eml-dt{animation:eml-d 2s ease-in-out infinite;fill:#c9a84c}
+        .eml-p1{animation:eml-f 2.4s ease-in-out infinite}
+        .eml-p2{animation:eml-f 2.4s ease-in-out infinite .8s}
+        .eml-p3{animation:eml-f 2.4s ease-in-out infinite 1.6s}
+      `}</style>
+      <linearGradient id="emlg" x1="0" y1="0" x2="36" y2="40" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#2a2a2e"/>
+        <stop offset="100%" stopColor="#1a1a1e"/>
+      </linearGradient>
+    </defs>
+    <path d="M18 1L34 8V24Q34 38 18 40Q2 38 2 24V8Z" fill="url(#emlg)" stroke="#c9a84c" strokeWidth="0.8" strokeOpacity="0.4"/>
+    <rect x="9" y="22" width="5" height="14" rx="2" fill="#c9a84c" opacity="0.9"/>
+    <rect x="22" y="22" width="5" height="14" rx="2" fill="#c9a84c" opacity="0.9"/>
+    <path d="M11.5 22Q18 13 24.5 22" fill="none" stroke="#c9a84c" strokeWidth="4" strokeLinecap="round" opacity="0.9"/>
+    <circle cx="18" cy="14" r="2" fill="#c9a84c" opacity="0" className="eml-p1"/>
+    <circle cx="18" cy="14" r="2" fill="#c9a84c" opacity="0" className="eml-p2"/>
+    <circle cx="18" cy="14" r="2" fill="#c9a84c" opacity="0" className="eml-p3"/>
+    <circle cx="29" cy="8" className="eml-dt"/>
+    <circle cx="29" cy="8" className="eml-pr"/>
+  </svg>
+);
+
+const Logo = () => (
+  <Link href="/" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "10px" }}>
+    <Shield />
+    <div>
+      <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:"15px", color:"#f5f0e8", letterSpacing:"-0.3px", lineHeight:1 }}>Datagate</div>
+      <div style={{ fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:"7px", color:"#c9a84c", letterSpacing:"1.8px", textTransform:"uppercase", marginTop:"2px" }}>Verified Employment</div>
+    </div>
+  </Link>
+);
+
+const CheckIcon = () => (
+  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12"/>
+  </svg>
+);
 
 export default function EmployeeLogin() {
   const [isSignup, setIsSignup] = useState(false);
@@ -62,19 +76,19 @@ export default function EmployeeLogin() {
   const { login } = useAuth();
   const router = useRouter();
 
-  const handlePhone = (val) => setPhone(val.replace(/\D/g, "").slice(0, 10));
+  const handlePhone = (val) => setPhone(val.replace(/\D/g,"").slice(0,10));
 
   const handle = async () => {
     setError(""); setLoading(true);
     if (isSignup && phone.length !== 10) { setError("Phone must be 10 digits"); setLoading(false); return; }
     const endpoint = isSignup ? "/auth/register" : "/auth/login";
-    const body = isSignup ? { email, password, name, phone, role: "employee" } : { email, password };
+    const body = isSignup ? { email, password, name, phone, role:"employee" } : { email, password };
     try {
-      const res  = await fetch(`${API}${endpoint}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const res  = await fetch(`${API}${endpoint}`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
       const data = await res.json();
       if (!res.ok) { setError(parseError(data)); return; }
-      const { access_token, refresh_token, role, name: uName, email: uEmail } = data;
-      login(access_token, refresh_token, { role, name: uName || name || email, email: uEmail || email, phone });
+      const { access_token, refresh_token, role, name:uName, email:uEmail } = data;
+      login(access_token, refresh_token, { role, name:uName||name||email, email:uEmail||email, phone });
       router.push("/employee/personal");
     } catch { setError("Network error — please try again"); }
     finally { setLoading(false); }
@@ -83,247 +97,254 @@ export default function EmployeeLogin() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@400;500;600;700&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        body{background:#f7f6f2;font-family:'DM Sans',sans-serif}
+        body{background:#0e0e10;font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased}
 
-        .pg{min-height:100vh;display:grid;grid-template-columns:1fr 1fr}
+        .emp-pg{min-height:100vh;display:grid;grid-template-columns:1fr 1fr}
 
-        /* ── Left — warm off-white panel ── */
-        .lft{
-          background:#f7f6f2;
+        /* ── Left panel ── */
+        .emp-lft{
+          background:#0c0c0e;border-right:1px solid #1a1a1e;
           display:flex;flex-direction:column;justify-content:space-between;
-          padding:2.5rem 3.5rem;
-          border-right:1px solid #e8e4dc;
+          padding:2.5rem 3rem;
         }
-        .lft-body{padding-top:3rem}
-        .tag{
-          font-size:.66rem;font-weight:700;letter-spacing:1.4px;
-          text-transform:uppercase;color:#16a34a;
-          display:flex;align-items:center;gap:.5rem;margin-bottom:1.25rem;
+        .emp-body{flex:1;display:flex;flex-direction:column;justify-content:center;padding:3rem 0}
+        .emp-badge{
+          display:inline-flex;align-items:center;gap:.5rem;
+          font-size:.65rem;font-weight:700;letter-spacing:1.5px;
+          text-transform:uppercase;color:#c9a84c;margin-bottom:1.5rem;
         }
-        .tag-line{width:18px;height:1.5px;background:#16a34a;flex-shrink:0}
-        .ttl{
-          font-family:'Instrument Serif',serif;
-          font-size:clamp(2rem,3vw,2.8rem);
-          font-weight:400;line-height:1.2;
-          color:#1a1a1a;letter-spacing:-.4px;margin-bottom:.9rem;
+        .emp-badge-line{width:18px;height:1.5px;background:#c9a84c}
+        .emp-h2{
+          font-family:'Playfair Display',serif;
+          font-size:clamp(1.8rem,2.8vw,2.6rem);
+          font-weight:600;line-height:1.2;
+          color:#f5f0e8;letter-spacing:-.4px;margin-bottom:1rem;
         }
-        .ttl em{font-style:italic;color:#16a34a}
-        .dsc{font-size:.875rem;color:#777;line-height:1.75;margin-bottom:2.5rem;max-width:340px}
+        .emp-h2 em{font-style:italic;color:#c9a84c}
+        .emp-desc{font-size:.875rem;color:#504a44;line-height:1.8;margin-bottom:2.5rem;max-width:340px}
 
         /* Steps */
-        .stps{display:flex;flex-direction:column;gap:1rem;margin-bottom:3rem}
-        .stp{display:flex;align-items:flex-start;gap:.85rem}
-        .stn{
-          width:26px;height:26px;border-radius:7px;
-          background:#fff;border:1.5px solid #e8e4dc;
+        .emp-steps{display:flex;flex-direction:column;gap:1.1rem;margin-bottom:2.5rem}
+        .emp-step{display:flex;align-items:flex-start;gap:.9rem}
+        .emp-sn{
+          width:28px;height:28px;border-radius:8px;flex-shrink:0;
+          background:rgba(201,168,76,0.08);
+          border:1px solid rgba(201,168,76,0.2);
           display:flex;align-items:center;justify-content:center;
-          font-size:.72rem;font-weight:700;color:#1a1a1a;flex-shrink:0;
+          font-size:.72rem;font-weight:700;color:#c9a84c;
         }
-        .stb-t{font-size:.83rem;font-weight:700;color:#1a1a1a;margin-bottom:2px}
-        .stb-d{font-size:.77rem;color:#999;line-height:1.5}
+        .emp-st{font-size:.84rem;font-weight:700;color:#a09888;margin-bottom:2px}
+        .emp-sd{font-size:.77rem;color:#3a3530;line-height:1.55}
 
-        /* Illustration */
-        .illus{
-          background:#fff;border:1.5px solid #e8e4dc;border-radius:16px;
-          padding:1.75rem;
-          display:flex;flex-direction:column;gap:.75rem;
+        /* Flow card */
+        .emp-flow{
+          background:#141416;border:1px solid #222228;
+          border-radius:14px;padding:1.5rem;
         }
-        .illus-label{font-size:.65rem;font-weight:700;color:#ccc;text-transform:uppercase;letter-spacing:1px}
-        .illus-flow{display:flex;align-items:center;gap:.5rem}
-        .illus-node{
-          flex:1;background:#f7f6f2;border:1px solid #e8e4dc;
-          border-radius:8px;padding:.6rem .75rem;
-          font-size:.72rem;font-weight:600;color:#555;text-align:center;
+        .emp-flow-lbl{font-size:.63rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#3a3530;margin-bottom:.85rem}
+        .emp-flow-row{display:flex;align-items:center;gap:.5rem;margin-bottom:.6rem}
+        .emp-fn{
+          flex:1;background:#0e0e10;border:1px solid #1a1a1e;
+          border-radius:8px;padding:.5rem .7rem;
+          font-size:.72rem;font-weight:600;color:#504a44;text-align:center;
         }
-        .illus-arrow{color:#ccc;font-size:.85rem;flex-shrink:0}
-        .illus-consent{
+        .emp-fa{color:#3a3530;font-size:.85rem;flex-shrink:0}
+        .emp-consent{
           display:flex;align-items:center;gap:.5rem;
-          background:#f0fdf4;border:1px solid #bbf7d0;
-          border-radius:8px;padding:.5rem .75rem;
+          background:rgba(201,168,76,0.06);
+          border:1px solid rgba(201,168,76,0.15);
+          border-radius:8px;padding:.55rem .75rem;
         }
-        .consent-dot{width:7px;height:7px;border-radius:50%;background:#16a34a;flex-shrink:0}
-        .illus-consent span{font-size:.72rem;font-weight:600;color:#15803d}
+        .emp-cdot{width:7px;height:7px;border-radius:50%;background:#c9a84c;flex-shrink:0;animation:pulse-dot 2s ease-in-out infinite}
+        @keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:0.4}}
+        .emp-consent span{font-size:.72rem;font-weight:600;color:#c9a84c}
 
         /* Footer */
-        .lft-ft{
+        .emp-ft{
+          padding-top:1.5rem;border-top:1px solid #1a1a1e;
           display:flex;justify-content:space-between;align-items:center;
-          padding-top:1.5rem;border-top:1px solid #e8e4dc;
         }
-        .fc{font-size:.7rem;color:#ccc}
-        .fl{display:flex;gap:.85rem}
-        .fla{font-size:.7rem;color:#ccc;text-decoration:none;transition:color .15s}
-        .fla:hover{color:#16a34a}
+        .emp-fc{font-size:.69rem;color:#2a2a30}
+        .emp-fl{display:flex;gap:1rem}
+        .emp-fla{font-size:.69rem;color:#2a2a30;text-decoration:none;transition:color .15s}
+        .emp-fla:hover{color:#c9a84c}
 
-        /* ── Right — white form panel ── */
-        .rgt{
-          background:#fff;
+        /* ── Right — form panel ── */
+        .emp-rgt{
+          background:#0e0e10;
           display:flex;align-items:center;justify-content:center;
           padding:3rem 2.5rem;
-          border-left:1px solid #f0ede6;
         }
-        .fcd{width:100%;max-width:380px;display:flex;flex-direction:column;gap:1.1rem}
+        .emp-form{width:100%;max-width:390px;display:flex;flex-direction:column;gap:1.25rem}
 
-        .fhd{
-          font-family:'Instrument Serif',serif;
-          font-size:1.75rem;font-weight:400;color:#1a1a1a;letter-spacing:-.3px;
+        .emp-fhd{
+          font-family:'Playfair Display',serif;
+          font-size:1.8rem;font-weight:600;color:#f5f0e8;letter-spacing:-.4px;
         }
-        .fsb{font-size:.84rem;color:#999;margin-top:-.15rem}
+        .emp-fsb{font-size:.84rem;color:#504a44;margin-top:-.2rem}
 
-        .fld{display:flex;flex-direction:column;gap:.35rem}
-        .flb{font-size:.74rem;font-weight:600;color:#888;letter-spacing:.2px}
-        .fin{
-          padding:.75rem .9rem;
-          background:#fafaf8;
-          border:1.5px solid #e8e4dc;
-          border-radius:9px;font-family:'DM Sans',sans-serif;
-          font-size:.875rem;color:#1a1a1a;outline:none;width:100%;
+        .emp-fld{display:flex;flex-direction:column;gap:.4rem}
+        .emp-flb{font-size:.72rem;font-weight:600;color:#504a44;letter-spacing:.3px;text-transform:uppercase}
+        .emp-fin{
+          padding:.78rem 1rem;
+          background:#141416;
+          border:1.5px solid #1a1a1e;
+          border-radius:10px;
+          font-family:'DM Sans',sans-serif;
+          font-size:.875rem;color:#f5f0e8;
+          outline:none;width:100%;
           transition:border-color .15s,background .15s;
         }
-        .fin::placeholder{color:#ccc}
-        .fin:focus{border-color:#16a34a;background:#fff;box-shadow:0 0 0 3px rgba(22,163,74,0.08)}
-        .pw{position:relative}
-        .pw .fin{padding-right:2.5rem}
-        .ey{position:absolute;right:.8rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#ccc;padding:0;transition:color .15s}
-        .ey:hover{color:#888}
-        .pht{font-size:.69rem;color:#ccc}
-
-        .er{font-size:.79rem;color:#dc2626;padding:.65rem .9rem;background:#fef2f2;border:1px solid #fecaca;border-radius:8px}
-
-        /* Green CTA for employee */
-        .sub{
-          padding:.85rem;background:#16a34a;color:#fff;border:none;
-          border-radius:9px;font-family:'DM Sans',sans-serif;
-          font-size:.9rem;font-weight:700;cursor:pointer;
-          transition:background .15s;letter-spacing:.1px;
+        .emp-fin::placeholder{color:#2a2a30}
+        .emp-fin:focus{border-color:rgba(201,168,76,.5);background:#161618;box-shadow:0 0 0 3px rgba(201,168,76,.06)}
+        .emp-pw{position:relative}
+        .emp-pw .emp-fin{padding-right:2.75rem}
+        .emp-ey{
+          position:absolute;right:.85rem;top:50%;transform:translateY(-50%);
+          background:none;border:none;cursor:pointer;color:#3a3530;padding:0;
+          transition:color .15s;
         }
-        .sub:hover:not(:disabled){background:#15803d}
-        .sub:disabled{opacity:.5;cursor:not-allowed}
+        .emp-ey:hover{color:#c9a84c}
+        .emp-pht{font-size:.68rem;color:#2a2a30}
 
-        .fgt{text-align:center}
-        .fgt a{font-size:.79rem;color:#16a34a;text-decoration:none}
-        .fgt a:hover{text-decoration:underline}
+        .emp-err{
+          font-size:.79rem;color:#fca5a5;padding:.65rem 1rem;
+          background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);
+          border-radius:9px;
+        }
 
-        .dvr{display:flex;align-items:center;gap:.7rem}
-        .dvl{flex:1;height:1px;background:#f0ede6}
-        .dvt{font-size:.7rem;color:#ccc}
+        .emp-sub{
+          padding:.9rem;
+          background:#c9a84c;color:#0e0e10;border:none;
+          border-radius:10px;font-family:'DM Sans',sans-serif;
+          font-size:.9rem;font-weight:700;cursor:pointer;
+          transition:all .15s;letter-spacing:.1px;
+        }
+        .emp-sub:hover:not(:disabled){background:#e8c96a;transform:translateY(-1px)}
+        .emp-sub:disabled{opacity:.4;cursor:not-allowed}
 
-        .tgl{text-align:center;font-size:.84rem;color:#888}
-        .tgb{color:#16a34a;cursor:pointer;font-weight:700;background:none;border:none;font-family:inherit;font-size:inherit}
-        .tgb:hover{text-decoration:underline}
+        .emp-fgt{text-align:center}
+        .emp-fgt a{font-size:.79rem;color:#504a44;text-decoration:none;transition:color .15s}
+        .emp-fgt a:hover{color:#c9a84c}
 
-        .cft{display:flex;justify-content:center;padding-top:.15rem}
-        .cft a{font-size:.69rem;color:#888;text-decoration:none;transition:color .15s}
-        .cft a:hover{color:#16a34a;text-decoration:underline}
+        .emp-dvr{display:flex;align-items:center;gap:.75rem}
+        .emp-dvl{flex:1;height:1px;background:#1a1a1e}
+        .emp-dvt{font-size:.7rem;color:#2a2a30}
+
+        .emp-tgl{text-align:center;font-size:.84rem;color:#504a44}
+        .emp-tgb{color:#c9a84c;cursor:pointer;font-weight:700;background:none;border:none;font-family:inherit;font-size:inherit}
+        .emp-tgb:hover{text-decoration:underline}
+
+        .emp-cft{display:flex;justify-content:center;padding-top:.25rem}
+        .emp-cft a{font-size:.69rem;color:#2a2a30;text-decoration:none;transition:color .15s}
+        .emp-cft a:hover{color:#c9a84c}
 
         @media(max-width:900px){
-          .pg{grid-template-columns:1fr}
-          .lft{display:none}
-          .rgt{padding:2.5rem 1.5rem}
+          .emp-pg{grid-template-columns:1fr}
+          .emp-lft{display:none}
+          .emp-rgt{padding:3rem 1.5rem;min-height:100vh}
         }
       `}</style>
 
-      <div className="pg">
+      <div className="emp-pg">
         {/* Left */}
-        <div className="lft">
-          <Link href="/" style={{ textDecoration:"none" }}><Logo/></Link>
+        <div className="emp-lft">
+          <Logo />
+          <div className="emp-body">
+            <div className="emp-badge"><span className="emp-badge-line"/>Employee Portal</div>
+            <h2 className="emp-h2">Your career data,<br/><em>your control.</em></h2>
+            <p className="emp-desc">Build a verified employment profile once. Share it securely with any employer — with your consent, every single time.</p>
 
-          <div className="lft-body">
-            <div className="tag"><span className="tag-line"/>Employee Portal</div>
-            <h2 className="ttl">Your career data,<br/><em>your control.</em></h2>
-            <p className="dsc">Build a verified employment profile once. Share it securely with any employer — with your consent, every single time.</p>
-
-            <div className="stps">
+            <div className="emp-steps">
               {[
-                ["1","Create your profile",   "Personal, education, employment and documents — filled once, forever."],
-                ["2","Upload documents",       "Aadhaar, PAN, certificates — encrypted and stored securely."],
-                ["3","Approve and share",      "Every employer request needs your approval. You decide who sees what."],
+                ["1","Create your profile","Personal, education, employment — filled once, forever."],
+                ["2","Upload documents","Aadhaar, PAN, certificates — encrypted and stored securely."],
+                ["3","Approve and share","Every employer request needs your approval. You decide."],
               ].map(([n,t,d]) => (
-                <div className="stp" key={n}>
-                  <div className="stn">{n}</div>
-                  <div><div className="stb-t">{t}</div><div className="stb-d">{d}</div></div>
+                <div className="emp-step" key={n}>
+                  <div className="emp-sn">{n}</div>
+                  <div><div className="emp-st">{t}</div><div className="emp-sd">{d}</div></div>
                 </div>
               ))}
             </div>
 
-            {/* Data flow illustration */}
-            <div className="illus">
-              <div className="illus-label">How data flows</div>
-              <div className="illus-flow">
-                <div className="illus-node">Your Profile</div>
-                <span className="illus-arrow">→</span>
-                <div className="illus-node">Employer Request</div>
-                <span className="illus-arrow">→</span>
-                <div className="illus-node">Your Approval</div>
+            <div className="emp-flow">
+              <div className="emp-flow-lbl">How your data flows</div>
+              <div className="emp-flow-row">
+                <div className="emp-fn">Your Profile</div>
+                <span className="emp-fa">→</span>
+                <div className="emp-fn">Employer Request</div>
+                <span className="emp-fa">→</span>
+                <div className="emp-fn">Your Approval</div>
               </div>
-              <div className="illus-consent">
-                <div className="consent-dot"/>
+              <div className="emp-consent">
+                <div className="emp-cdot"/>
                 <span>Data only moves after your explicit consent</span>
               </div>
             </div>
           </div>
-
-          <div className="lft-ft">
-            <span className="fc">© 2026 Datagate</span>
-            <div className="fl">
-              <a href="/privacy" target="_blank" rel="noopener noreferrer" className="fla">Privacy Policy</a>
+          <div className="emp-ft">
+            <span className="emp-fc">© 2026 Datagate</span>
+            <div className="emp-fl">
+              <a href="/privacy" className="emp-fla">Privacy Policy</a>
             </div>
           </div>
         </div>
 
         {/* Right */}
-        <div className="rgt">
-          <div className="fcd">
+        <div className="emp-rgt">
+          <div className="emp-form">
             <div>
-              <div className="fhd">{isSignup ? "Create account" : "Welcome back"}</div>
-              <div className="fsb">{isSignup ? "Start your verified employment journey" : "Sign in to your employee account"}</div>
+              <div className="emp-fhd">{isSignup ? "Create account" : "Welcome back"}</div>
+              <div className="emp-fsb">{isSignup ? "Start your verified employment journey" : "Sign in to your employee account"}</div>
             </div>
 
             {isSignup && (<>
-              <div className="fld">
-                <label className="flb">Full Name</label>
-                <input className="fin" placeholder="Manoj Kumar" value={name} onChange={e => setName(e.target.value)}/>
+              <div className="emp-fld">
+                <label className="emp-flb">Full Name</label>
+                <input className="emp-fin" placeholder="Manoj Kumar" value={name} onChange={e => setName(e.target.value)}/>
               </div>
-              <div className="fld">
-                <label className="flb">Mobile Number</label>
-                <input className="fin" placeholder="9876543210" value={phone} onChange={e => handlePhone(e.target.value)} inputMode="numeric" maxLength={10}/>
-                <span className="pht">{phone.length}/10 digits</span>
+              <div className="emp-fld">
+                <label className="emp-flb">Mobile Number</label>
+                <input className="emp-fin" placeholder="9876543210" value={phone} onChange={e => handlePhone(e.target.value)} inputMode="numeric" maxLength={10}/>
+                <span className="emp-pht">{phone.length}/10 digits</span>
               </div>
             </>)}
 
-            <div className="fld">
-              <label className="flb">Email Address</label>
-              <input className="fin" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)}/>
+            <div className="emp-fld">
+              <label className="emp-flb">Email Address</label>
+              <input className="emp-fin" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)}/>
             </div>
 
-            <div className="fld">
-              <label className="flb">Password</label>
-              <div className="pw">
-                <input className="fin" type={showPwd ? "text" : "password"} placeholder="Min. 8 characters" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && handle()}/>
-                <button className="ey" type="button" onClick={() => setShowPwd(v => !v)} tabIndex={-1}><EyeIcon open={showPwd}/></button>
+            <div className="emp-fld">
+              <label className="emp-flb">Password</label>
+              <div className="emp-pw">
+                <input className="emp-fin" type={showPwd?"text":"password"} placeholder="Min. 8 characters" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key==="Enter" && handle()}/>
+                <button className="emp-ey" type="button" onClick={() => setShowPwd(v=>!v)} tabIndex={-1}><EyeIcon open={showPwd}/></button>
               </div>
             </div>
 
-            {error && <div className="er">{error}</div>}
+            {error && <div className="emp-err">{error}</div>}
 
-            <button className="sub" onClick={handle} disabled={loading}>
+            <button className="emp-sub" onClick={handle} disabled={loading}>
               {loading ? "Please wait…" : isSignup ? "Create account" : "Sign in"}
             </button>
 
-            {!isSignup && <div className="fgt"><a href="/forgot-password">Forgot password?</a></div>}
+            {!isSignup && <div className="emp-fgt"><a href="/forgot-password">Forgot password?</a></div>}
 
-            <div className="dvr"><div className="dvl"/><span className="dvt">or</span><div className="dvl"/></div>
+            <div className="emp-dvr"><div className="emp-dvl"/><span className="emp-dvt">or</span><div className="emp-dvl"/></div>
 
-            <div className="tgl">
+            <div className="emp-tgl">
               {isSignup ? "Already have an account? " : "Don't have an account? "}
-              <button className="tgb" onClick={() => { setIsSignup(v => !v); setError(""); setShowPwd(false); }}>
+              <button className="emp-tgb" onClick={() => { setIsSignup(v=>!v); setError(""); setShowPwd(false); }}>
                 {isSignup ? "Sign in" : "Sign up"}
               </button>
             </div>
 
-            <div className="cft">
-              <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+            <div className="emp-cft">
+              <a href="/privacy">Privacy Policy</a>
             </div>
           </div>
         </div>

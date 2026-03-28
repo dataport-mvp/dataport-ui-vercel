@@ -1,113 +1,215 @@
-// pages/employer/terms.js — Employer Data Access & Sharing Agreement
-// Public page — no auth required
 import Link from "next/link";
 
-const G = `
-  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; color: #1e293b; }
-  .topbar { background: #0f172a; padding: 0.85rem 2rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.07); }
-  .logo { font-size: 1.15rem; font-weight: 800; color: #f8fafc; letter-spacing: -0.3px; text-decoration: none; }
-  .back { font-size: 0.82rem; color: #64748b; text-decoration: none; font-weight: 500; }
-  .back:hover { color: #94a3b8; }
-  .wrap { max-width: 780px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
-  .badge { display: inline-block; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 999px; font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.75rem; margin-bottom: 1rem; }
-  h1 { font-size: 1.75rem; font-weight: 800; color: #0f172a; margin-bottom: 0.4rem; }
-  .subtitle { font-size: 0.875rem; color: #64748b; margin-bottom: 2.5rem; }
-  h2 { font-size: 1rem; font-weight: 700; color: #0f172a; margin: 2rem 0 0.6rem; }
-  p { font-size: 0.875rem; color: #475569; line-height: 1.75; margin-bottom: 0.75rem; }
-  ul { padding-left: 1.25rem; margin-bottom: 0.75rem; }
-  li { font-size: 0.875rem; color: #475569; line-height: 1.75; margin-bottom: 0.25rem; }
-  .divider { border: none; border-top: 1.5px solid #e2e8f0; margin: 2rem 0; }
-  .highlight { background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 10px; padding: 1rem 1.25rem; margin: 1.5rem 0; }
-  .highlight p { margin: 0; color: #92400e; font-size: 0.82rem; }
-  .contact-box { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 1.25rem 1.5rem; margin-top: 2rem; }
-  .contact-box p { margin: 0; color: #374151; }
-  a { color: #2563eb; }
-`;
+const LAST_UPDATED = "22 March 2026";
 
 export default function EmployerTerms() {
   return (
     <>
-      <style>{G}</style>
-      <div className="topbar">
-        <a href="/" className="logo">Datagate</a>
-        <Link href="/" className="back">← Back to home</Link>
-      </div>
-      <div className="wrap">
-        <div className="badge">Last updated: March 2026</div>
-        <h1>Data Access & Sharing Agreement</h1>
-        <p className="subtitle">For Employers and Agencies — datagate.co.in</p>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@400;500;600;700&display=swap');
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        body{background:#0e0e10;color:#f5f0e8;font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased}
+        .t-nav{
+          position:sticky;top:0;z-index:100;
+          display:flex;align-items:center;justify-content:space-between;
+          padding:.9rem 3rem;
+          background:rgba(14,14,16,0.96);
+          backdrop-filter:blur(16px);
+          border-bottom:1px solid #1a1a1e;
+        }
+        .t-back{display:inline-flex;align-items:center;gap:.5rem;font-size:.8rem;font-weight:600;color:#504a44;text-decoration:none;transition:color .15s}
+        .t-back:hover{color:#c9a84c}
+        .t-logo{font-family:'DM Sans',sans-serif;font-weight:700;font-size:15px;color:#f5f0e8;text-decoration:none}
+        .t-wrap{max-width:760px;margin:0 auto;padding:5rem 3rem 8rem}
+        .t-eyebrow{font-size:.66rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#c9a84c;display:flex;align-items:center;gap:.6rem;margin-bottom:1.25rem}
+        .t-eyebrow::before{content:'';width:20px;height:1.5px;background:#c9a84c}
+        .t-h1{font-family:'Playfair Display',serif;font-size:clamp(2rem,4vw,3rem);font-weight:600;color:#f5f0e8;letter-spacing:-.5px;margin-bottom:.75rem;line-height:1.15}
+        .t-meta{font-size:.8rem;color:#3a3530;margin-bottom:3rem;padding-bottom:2rem;border-bottom:1px solid #1a1a1e}
+        .t-toc{background:#141416;border:1px solid #1a1a1e;border-radius:14px;padding:1.5rem 1.75rem;margin-bottom:3rem}
+        .t-toc-title{font-size:.72rem;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#504a44;margin-bottom:1rem}
+        .t-toc-list{display:flex;flex-direction:column;gap:.4rem}
+        .t-toc-item{font-size:.82rem;color:#504a44;text-decoration:none;transition:color .15s}
+        .t-toc-item:hover{color:#c9a84c}
+        .t-highlight{background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.15);border-left:3px solid #c9a84c;border-radius:0 10px 10px 0;padding:.85rem 1.1rem;margin:.85rem 0;font-size:.84rem;color:#a09888;line-height:1.75}
+        .t-highlight strong{color:#c9a84c}
+        .t-warn{background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-left:3px solid #ef4444;border-radius:0 10px 10px 0;padding:.85rem 1.1rem;margin:.85rem 0;font-size:.84rem;color:#a09888;line-height:1.75}
+        .t-warn strong{color:#fca5a5}
+        .t-sec{margin-bottom:3rem}
+        .t-sec-h{font-family:'Playfair Display',serif;font-size:1.25rem;font-weight:600;color:#f5f0e8;margin-bottom:1rem;padding-bottom:.6rem;border-bottom:1px solid #1a1a1e;letter-spacing:-.2px}
+        .t-p{font-size:.88rem;color:#a09888;line-height:1.85;margin-bottom:.85rem}
+        .t-p:last-child{margin-bottom:0}
+        .t-ul{padding-left:1.25rem;margin-bottom:.85rem}
+        .t-ul li{font-size:.88rem;color:#a09888;line-height:1.85;margin-bottom:.35rem}
+        .t-ul li::marker{color:#c9a84c}
+        .t-contact{background:#141416;border:1px solid #1a1a1e;border-radius:14px;padding:1.75rem;margin-top:2rem}
+        .t-contact-title{font-size:.85rem;font-weight:700;color:#f5f0e8;margin-bottom:.75rem}
+        .t-contact p{font-size:.84rem;color:#504a44;line-height:1.75}
+        .t-contact a{color:#c9a84c;text-decoration:none}
+        .t-contact a:hover{text-decoration:underline}
+        a{color:#c9a84c}
+        @media(max-width:768px){.t-nav{padding:.9rem 1.25rem}.t-wrap{padding:3rem 1.5rem 6rem}}
+      `}</style>
 
-        <p>This Data Access & Sharing Agreement ("Agreement") governs your access to employee profile data on Datagate as an employer or agency. By accepting this Agreement, you confirm that your organisation will comply with its terms.</p>
+      <nav className="t-nav">
+        <Link href="/" className="t-back">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Back to Datagate
+        </Link>
+        <Link href="/" className="t-logo">Datagate</Link>
+      </nav>
 
-        <div className="highlight">
-          <p>⚠️ <strong>Important:</strong> All employee profile data on Datagate is self-reported by the employee. Datagate does not independently verify the accuracy of self-reported information unless a separately contracted verification service has been completed. You are responsible for conducting any additional verification required by your organisation.</p>
+      <div className="t-wrap">
+        <div className="t-eyebrow">Legal</div>
+        <h1 className="t-h1">Employer Terms &amp; Data Sharing Agreement</h1>
+        <p className="t-meta">Last updated: {LAST_UPDATED} · Effective from: {LAST_UPDATED}</p>
+
+        <div className="t-toc">
+          <div className="t-toc-title">Table of Contents</div>
+          <div className="t-toc-list">
+            {[["1","Acceptance of Terms"],["2","Definitions"],["3","Permitted Use of Data"],["4","Prohibited Use of Data"],["5","Your Obligations as Data Processor"],["6","Consent Framework"],["7","Data Security Requirements"],["8","Data Retention and Deletion"],["9","Liability and Indemnification"],["10","Termination"],["11","Governing Law"],["12","Contact"]].map(([n,t]) => (
+              <a key={n} href={`#t${n}`} className="t-toc-item">{n}. {t}</a>
+            ))}
+          </div>
         </div>
 
-        <h2>1. Definitions</h2>
-        <p>"Employee Data" means any personal information, documents, or profile data belonging to an employee that is shared with you via the Datagate platform following the employee's explicit consent.</p>
-        <p>"You" or "Employer" means the organisation or agency accessing employee data on Datagate.</p>
-        <p>"Datagate" means the platform operated by Datagate Technologies.</p>
+        <div className="t-highlight">
+          <strong>Summary:</strong> As an employer on Datagate, you may only use employee data for the legitimate hiring purpose for which it was shared. You cannot store, copy, sell, or share employee data without further consent. When an employee withdraws consent, you must immediately cease using their data. Violation of these terms is a breach of DPDP Act 2023 and your liability.
+        </div>
 
-        <h2>2. Consent Requirement</h2>
-        <p>You may only access an employee's profile data after that employee has explicitly approved your consent request on the Datagate platform. Attempting to access, infer, or reconstruct employee data without valid consent is strictly prohibited.</p>
+        <div className="t-sec" id="t1">
+          <div className="t-sec-h">1. Acceptance of Terms</div>
+          <p className="t-p">By creating an employer account on Datagate or accessing any employee profile data, you ("Employer", "you") agree to be bound by these Employer Terms and Data Sharing Agreement ("Agreement"). If you do not agree, do not create an account or access employee data.</p>
+          <p className="t-p">These terms constitute a legally binding agreement between you and Datagate Technologies ("Datagate"). These terms are in addition to, and not in place of, applicable Indian law including the DPDP Act, 2023, Information Technology Act, 2000, and any regulations thereunder.</p>
+        </div>
 
-        <h2>3. Permitted Use</h2>
-        <p>You may use Employee Data only for:</p>
-        <ul>
-          <li>Background verification of a candidate you are actively considering for employment</li>
-          <li>Onboarding purposes for a candidate who has accepted an offer from your organisation</li>
-          <li>Any other specific purpose clearly stated to the employee at the time of the consent request</li>
-        </ul>
+        <div className="t-sec" id="t2">
+          <div className="t-sec-h">2. Definitions</div>
+          <ul className="t-ul">
+            <li><strong style={{color:"#f5f0e8"}}>"Employee Data"</strong> means any personal data of an employee shared with you through the Datagate platform following employee consent, including identity documents, employment history, education records, and uploaded files.</li>
+            <li><strong style={{color:"#f5f0e8"}}>"Consent"</strong> means the explicit, timestamped, purpose-specific approval granted by an employee through the Datagate platform to share their data with you.</li>
+            <li><strong style={{color:"#f5f0e8"}}>"Data Fiduciary"</strong> means Datagate Technologies, which determines the purpose and means of processing personal data.</li>
+            <li><strong style={{color:"#f5f0e8"}}>"Data Processor"</strong> means you, the Employer, who processes employee data on behalf of and subject to the instructions of the data fiduciary and the employee's consent.</li>
+          </ul>
+        </div>
 
-        <h2>4. Prohibited Use</h2>
-        <p>You must not:</p>
-        <ul>
-          <li>Use Employee Data for marketing, profiling, or any purpose beyond what was stated at consent</li>
-          <li>Share, sell, transfer, or disclose Employee Data to any third party without fresh employee consent</li>
-          <li>Retain Employee Data beyond the period necessary for the stated purpose</li>
-          <li>Combine Employee Data from Datagate with data from other sources to create profiles without consent</li>
-        </ul>
+        <div className="t-sec" id="t3">
+          <div className="t-sec-h">3. Permitted Use of Data</div>
+          <p className="t-p">You may use Employee Data solely for the following purposes:</p>
+          <ul className="t-ul">
+            <li>Background verification of candidates you are actively considering for employment</li>
+            <li>Employee onboarding processes for candidates who have accepted an offer of employment</li>
+            <li>Compliance with Indian labour law requirements related to the specific employment</li>
+            <li>Any other purpose explicitly stated in your consent request and approved by the employee</li>
+          </ul>
+        </div>
 
-        <h2>5. Data Storage Obligations</h2>
-        <p>If you store any Employee Data received from Datagate in your own systems:</p>
-        <ul>
-          <li>You become a Data Processor under India's DPDP Act 2023 for that data</li>
-          <li>You are solely responsible for its secure storage, access controls, and processing</li>
-          <li>You must delete the data upon the employee's request or upon consent withdrawal</li>
-          <li>You must notify Datagate and the affected employee of any data breach involving this data</li>
-        </ul>
+        <div className="t-sec" id="t4">
+          <div className="t-sec-h">4. Prohibited Use of Data</div>
+          <div className="t-warn">
+            <strong>Strictly prohibited.</strong> Any violation may constitute a breach of DPDP Act 2023 and applicable law, for which you bear full liability.
+          </div>
+          <p className="t-p">You must NOT:</p>
+          <ul className="t-ul">
+            <li>Store Employee Data in your own systems beyond the period necessary for the stated purpose</li>
+            <li>Share Employee Data with any third party including subsidiaries, affiliates, or recruitment agencies, without fresh consent from the employee</li>
+            <li>Use Employee Data for any purpose other than that stated in the consent request</li>
+            <li>Use Employee Data for marketing, profiling, or any commercial purpose unrelated to the stated hiring</li>
+            <li>Retain copies of Employee Data after the employee withdraws consent</li>
+            <li>Retain copies of Employee Data if the candidate is rejected and the hiring process is concluded</li>
+            <li>Use Aadhaar numbers for any purpose beyond verification of identity for the stated hiring purpose</li>
+            <li>Sell, license, or otherwise transfer Employee Data to any party</li>
+          </ul>
+        </div>
 
-        <h2>6. Consent Withdrawal</h2>
-        <p>An employee may withdraw their consent at any time. Upon withdrawal notification from Datagate:</p>
-        <ul>
-          <li>You must immediately cease use of the employee's data</li>
-          <li>You must delete any copies stored in your own systems within 30 days</li>
-          <li>Access to the employee's profile on Datagate will be revoked automatically</li>
-        </ul>
+        <div className="t-sec" id="t5">
+          <div className="t-sec-h">5. Your Obligations as Data Processor</div>
+          <p className="t-p">As a data processor under the DPDP Act, 2023, you agree to:</p>
+          <ul className="t-ul">
+            <li>Process Employee Data only on documented instructions from Datagate and in accordance with employee consent</li>
+            <li>Ensure that persons authorised to process Employee Data are bound by appropriate confidentiality obligations</li>
+            <li>Implement appropriate technical and organisational measures to protect Employee Data</li>
+            <li>Not engage sub-processors without Datagate's prior written consent</li>
+            <li>Delete all Employee Data within 30 days of consent withdrawal or conclusion of the hiring process, whichever is earlier</li>
+            <li>Notify Datagate within 72 hours of becoming aware of any breach involving Employee Data</li>
+            <li>Cooperate with any audit or investigation by Datagate or regulatory authorities</li>
+          </ul>
+        </div>
 
-        <h2>7. Aadhaar Data</h2>
-        <p>Aadhaar numbers displayed on Datagate are masked — only the last 4 digits are visible. You must not attempt to reconstruct, infer, or obtain the full Aadhaar number by any means. Use of Aadhaar data is governed by UIDAI regulations and the Aadhaar Act 2016.</p>
+        <div className="t-sec" id="t6">
+          <div className="t-sec-h">6. Consent Framework</div>
+          <ul className="t-ul">
+            <li>Each consent request must include a specific, honest statement of purpose</li>
+            <li>You must not misrepresent your identity, company, or purpose when requesting consent</li>
+            <li>When an employee withdraws consent on the Datagate platform, you will receive a notification by email. You must immediately cease all use of their data and delete any copies within 30 days</li>
+            <li>Withdrawal of consent does not affect the lawfulness of processing based on consent before withdrawal</li>
+            <li>You may not penalise or retaliate against an employee for withdrawing consent</li>
+          </ul>
+        </div>
 
-        <h2>8. Security Requirements</h2>
-        <p>You must implement appropriate technical and organisational security measures to protect Employee Data, including access controls limiting data visibility to only those staff members with a legitimate need.</p>
+        <div className="t-sec" id="t7">
+          <div className="t-sec-h">7. Data Security Requirements</div>
+          <p className="t-p">If you download or export any Employee Data from the Datagate platform, you must:</p>
+          <ul className="t-ul">
+            <li>Store it only in systems with access controls limiting access to authorised personnel</li>
+            <li>Encrypt any stored copies using industry-standard encryption</li>
+            <li>Maintain logs of who in your organisation accessed the data and when</li>
+            <li>Not store it on personal devices, personal email, or unencrypted file storage</li>
+          </ul>
+        </div>
 
-        <h2>9. Compliance with Laws</h2>
-        <p>You confirm that your organisation complies with all applicable data protection and privacy laws including but not limited to the Digital Personal Data Protection Act 2023, the Information Technology Act 2000, and applicable UIDAI guidelines.</p>
+        <div className="t-sec" id="t8">
+          <div className="t-sec-h">8. Data Retention and Deletion</div>
+          <ul className="t-ul">
+            <li>You must delete all copies of Employee Data within 30 days of: (a) employee withdrawal of consent, (b) conclusion of the hiring process (offer accepted or rejected), or (c) your account termination</li>
+            <li>Deletion must be complete — including from email, local storage, backups, and any third-party systems</li>
+            <li>Datagate may request a written confirmation of deletion. You must provide this within 7 days of request</li>
+          </ul>
+        </div>
 
-        <h2>10. Liability</h2>
-        <p>Datagate is not liable for any misuse of Employee Data by your organisation after it has been shared pursuant to a valid employee consent. You indemnify Datagate against any claims, penalties, or losses arising from your breach of this Agreement.</p>
+        <div className="t-sec" id="t9">
+          <div className="t-sec-h">9. Liability and Indemnification</div>
+          <p className="t-p">You agree to indemnify, defend, and hold harmless Datagate Technologies, its officers, directors, and employees from any claims, damages, losses, and expenses (including legal fees) arising from:</p>
+          <ul className="t-ul">
+            <li>Your breach of this Agreement</li>
+            <li>Your violation of the DPDP Act, 2023 or any other applicable law</li>
+            <li>Any misuse of Employee Data</li>
+            <li>Any security breach resulting from your failure to implement adequate safeguards</li>
+          </ul>
+          <div className="t-highlight">
+            <strong>Important:</strong> When an employee withdraws consent and you receive the withdrawal notification email, your liability for any continued use of their data is entirely yours. Datagate's audit trail documenting the notification timestamp serves as evidence of notification.
+          </div>
+        </div>
 
-        <h2>11. Termination of Access</h2>
-        <p>Datagate reserves the right to suspend or terminate your access to the platform if you are found to be in breach of this Agreement or any applicable law.</p>
+        <div className="t-sec" id="t10">
+          <div className="t-sec-h">10. Termination</div>
+          <p className="t-p">Datagate may suspend or terminate your employer account without notice if you:</p>
+          <ul className="t-ul">
+            <li>Violate any provision of this Agreement</li>
+            <li>Use Employee Data for unauthorised purposes</li>
+            <li>Misrepresent your identity or purpose to employees</li>
+            <li>Fail to delete Employee Data as required</li>
+          </ul>
+          <p className="t-p">Upon termination, all your access to Employee Data through the platform is immediately revoked. Your obligations regarding previously accessed Employee Data survive termination.</p>
+        </div>
 
-        <hr className="divider" />
+        <div className="t-sec" id="t11">
+          <div className="t-sec-h">11. Governing Law</div>
+          <p className="t-p">This Agreement is governed by the laws of India. Any dispute arising from this Agreement shall be subject to the exclusive jurisdiction of the courts in India. The parties agree to first attempt resolution through good-faith negotiation before initiating legal proceedings.</p>
+        </div>
 
-        <div className="contact-box">
-          <p><strong>Questions about this Agreement?</strong><br />
-          Email us at <a href="mailto:legal@datagate.co.in">legal@datagate.co.in</a><br />
-          We will respond within 7 business days.</p>
+        <div className="t-sec" id="t12">
+          <div className="t-sec-h">12. Changes to These Terms</div>
+          <p className="t-p">We may update these terms periodically. Material changes will be communicated by email and in-platform notice with at least 14 days' notice. Continued use of the platform after the effective date constitutes acceptance.</p>
+        </div>
+
+        <div className="t-contact">
+          <div className="t-contact-title">Questions or Concerns</div>
+          <p>For questions about these terms or to report a violation:</p>
+          <br/>
+          <p>Email: <a href="mailto:support@datagate.co.in">support@datagate.co.in</a></p>
+          <p>Response time: Within 5 business days</p>
+          <br/>
+          <p style={{fontSize:".78rem",color:"#3a3530"}}>Disputes related to data processing may also be escalated to the Data Protection Board of India once constituted under the DPDP Act, 2023.</p>
         </div>
       </div>
     </>
