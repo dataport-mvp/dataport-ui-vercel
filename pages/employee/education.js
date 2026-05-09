@@ -6,8 +6,8 @@ import { parseError } from "../../utils/apiError";
 import FileUpload from "../../components/FileUpload";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
-const ACCENTS = { 1:"#4f46e5", 2:"#d97706", 3:"#7c3aed", 4:"#0891b2", 5:"#16a34a" };
-const STEP_DONE_BG = "#2a2460"; const STEP_DONE_CK = "#a78bfa"; const STEP_CONN = "#a78bfa";
+const ACCENTS = { 1:"#0d6e6e", 2:"#d97706", 3:"#7c3aed", 4:"#0891b2", 5:"#16a34a" };
+const STEP_DONE_BG = "#0a4a4a"; const STEP_DONE_CK = "#5eead4"; const STEP_CONN = "#0d6e6e";
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
@@ -20,23 +20,23 @@ function isoToDisplay(iso) {
 }
 
 const G = `
-  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-  body{background:#cdd2ed;font-family:'Plus Jakarta Sans',sans-serif;}
-  .pg{min-height:100vh;background:#cdd2ed;padding-bottom:3rem;}
+  body{background:#f5f4f0;font-family:'DM Sans',sans-serif;}
+  .pg{min-height:100vh;background:#f5f4f0;padding-bottom:3rem;}
   .wrap{max-width:860px;margin:auto;padding:0 1.25rem;}
-  .topbar{background:#1e1a3e;border-bottom:1px solid #2d2860;padding:0.85rem 1.75rem;display:flex;justify-content:space-between;align-items:center;margin-bottom:1.75rem;position:sticky;top:0;z-index:50;box-shadow:0 4px 20px rgba(15,12,40,0.4);}
-  .logo-text{font-size:1.3rem;font-weight:800;color:#a78bfa;letter-spacing:-0.5px;}
+  .topbar{background:#18151f;border-bottom:1px solid #2a2535;padding:0.85rem 1.75rem;display:flex;justify-content:space-between;align-items:center;margin-bottom:1.75rem;position:sticky;top:0;z-index:50;box-shadow:0 4px 20px rgba(15,12,40,0.4);}
+  .logo-text{font-size:1.3rem;font-weight:800;color:#0d6e6e;letter-spacing:-0.5px;}
   .topbar-right{display:flex;align-items:center;gap:0.75rem;}
-  .user-name{font-size:0.84rem;color:#9d9bc4;font-weight:500;}
-  .signout-btn{padding:0.38rem 1rem;border:1.5px solid #2d2860;border-radius:8px;background:transparent;color:#9d9bc4;font-size:0.82rem;cursor:pointer;font-weight:600;font-family:inherit;transition:all 0.2s;}
+  .user-name{font-size:0.84rem;color:#8b92a8;font-weight:500;}
+  .signout-btn{padding:0.38rem 1rem;border:1.5px solid #2a2535;border-radius:8px;background:transparent;color:#8b92a8;font-size:0.82rem;cursor:pointer;font-weight:600;font-family:inherit;transition:all 0.2s;}
   .signout-btn:hover{border-color:#ef4444;color:#ef4444;}
-  .bell-btn{position:relative;width:36px;height:36px;border-radius:9px;border:1.5px solid #2d2860;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;transition:all 0.2s;}
-  .bell-btn:hover{border-color:#a78bfa;background:rgba(167,139,250,0.1);}
-  .bell-badge{position:absolute;top:-5px;right:-5px;background:#ef4444;color:#fff;border-radius:999px;font-size:0.6rem;font-weight:800;min-width:16px;height:16px;display:flex;align-items:center;justify-content:center;padding:0 3px;border:2px solid #1e1a3e;}
+  .bell-btn{position:relative;width:36px;height:36px;border-radius:9px;border:1.5px solid #2a2535;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;transition:all 0.2s;}
+  .bell-btn:hover{border-color:#0d6e6e;background:rgba(167,139,250,0.1);}
+  .bell-badge{position:absolute;top:-5px;right:-5px;background:#ef4444;color:#fff;border-radius:999px;font-size:0.6rem;font-weight:800;min-width:16px;height:16px;display:flex;align-items:center;justify-content:center;padding:0 3px;border:2px solid #18151f;}
   .sc{background:#fff;border-radius:16px;padding:1.5rem 1.6rem;margin-bottom:1.1rem;box-shadow:0 6px 28px rgba(30,26,62,0.22),0 2px 8px rgba(30,26,62,0.12);border:1px solid rgba(255,255,255,0.85);position:relative;overflow:hidden;}
   .sc::before{content:'';position:absolute;top:0;left:0;bottom:0;width:4px;border-radius:16px 0 0 16px;}
-  .sc.ind::before{background:#4f46e5;}.sc.cyn::before{background:#0891b2;}.sc.amb::before{background:#d97706;}.sc.ros::before{background:#e11d48;}.sc.vio::before{background:#7c3aed;}.sc.grn::before{background:#16a34a;}.sc.slt::before{background:#475569;}.sc.ora::before{background:#ea580c;}
+  .sc.ind::before{background:#0d6e6e;}.sc.cyn::before{background:#0891b2;}.sc.amb::before{background:#d97706;}.sc.ros::before{background:#e11d48;}.sc.vio::before{background:#7c3aed;}.sc.grn::before{background:#16a34a;}.sc.slt::before{background:#475569;}.sc.ora::before{background:#ea580c;}
   .sh{display:flex;align-items:center;gap:0.6rem;margin-bottom:1.15rem;}
   .si{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.95rem;flex-shrink:0;}
   .si.ind{background:#eef2ff;}.si.cyn{background:#ecfeff;}.si.amb{background:#fffbeb;}.si.ros{background:#fff1f2;}.si.vio{background:#f5f3ff;}.si.grn{background:#f0fdf4;}.si.slt{background:#f1f5f9;}.si.ora{background:#fff7ed;}
@@ -44,24 +44,24 @@ const G = `
   .fr{display:flex;gap:0.9rem;flex-wrap:wrap;margin-bottom:0.85rem;}.fr:last-child{margin-bottom:0;}
   .fi{display:flex;flex-direction:column;gap:0.28rem;flex:1;min-width:138px;}
   .fl{font-size:0.7rem;font-weight:700;color:#8b88b0;letter-spacing:0.55px;text-transform:uppercase;}
-  .in{padding:0.65rem 0.875rem;background:#ececf9;border:1.5px solid #b8b4d4;border-radius:9px;font-family:inherit;font-size:0.875rem;color:#1a1730;outline:none;width:100%;transition:all 0.18s;}
-  .in:focus{border-color:#4f46e5;background:#fff;box-shadow:0 0 0 3px rgba(79,70,229,0.13);}
+  .in{padding:0.65rem 0.875rem;background:#f5f4f0;border:1.5px solid #d8d4e3;border-radius:9px;font-family:inherit;font-size:0.875rem;color:#1a1730;outline:none;width:100%;transition:all 0.18s;}
+  .in:focus{border-color:#0d6e6e;background:#fff;box-shadow:0 0 0 3px rgba(13,110,110,0.13);}
   .in.err{border-color:#ef4444!important;background:#fff8f8!important;box-shadow:0 0 0 3px rgba(239,68,68,0.10)!important;}
   .err-msg{font-size:0.68rem;color:#ef4444;font-weight:600;margin-top:0.2rem;display:block;}
   .date-wrap{position:relative;}
-  .date-input{padding:0.65rem 0.875rem;background:#ececf9;border:1.5px solid #b8b4d4;border-radius:9px;font-family:inherit;font-size:0.875rem;color:#1a1730;outline:none;width:100%;transition:all 0.18s;}
-  .date-input:focus{border-color:#4f46e5;background:#fff;box-shadow:0 0 0 3px rgba(79,70,229,0.13);}
-  .date-input::placeholder{color:#b8b4d4;}
+  .date-input{padding:0.65rem 0.875rem;background:#f5f4f0;border:1.5px solid #d8d4e3;border-radius:9px;font-family:inherit;font-size:0.875rem;color:#1a1730;outline:none;width:100%;transition:all 0.18s;}
+  .date-input:focus{border-color:#0d6e6e;background:#fff;box-shadow:0 0 0 3px rgba(13,110,110,0.13);}
+  .date-input::placeholder{color:#d8d4e3;}
   .date-input.err{border-color:#ef4444!important;background:#fff8f8!important;}
-  .date-display{margin-top:0.22rem;font-size:0.72rem;color:#4f46e5;font-weight:600;letter-spacing:0.2px;}
-  .sbar{display:flex;justify-content:space-between;align-items:center;margin-top:1.5rem;padding:1rem 1.5rem;background:#1e1a3e;border-radius:14px;box-shadow:0 4px 20px rgba(15,12,40,0.28);}
-  .ss{font-size:0.84rem;color:#9d9bc4;font-weight:500;}.ss.ok{color:#4ade80;}.ss.err{color:#f87171;}
-  .pbtn{padding:0.72rem 1.9rem;background:#4f46e5;color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:0.875rem;font-weight:700;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 14px rgba(79,70,229,0.4);}
-  .pbtn:hover{background:#4338ca;transform:translateY(-1px);}
-  .sbtn{padding:0.72rem 1.5rem;background:transparent;color:#9d9bc4;border:1.5px solid #2d2860;border-radius:10px;font-family:inherit;font-size:0.875rem;font-weight:600;cursor:pointer;transition:all 0.2s;}
-  .sbtn:hover{border-color:#a78bfa;color:#a78bfa;}
+  .date-display{margin-top:0.22rem;font-size:0.72rem;color:#0d6e6e;font-weight:600;letter-spacing:0.2px;}
+  .sbar{display:flex;justify-content:space-between;align-items:center;margin-top:1.5rem;padding:1rem 1.5rem;background:#18151f;border-radius:14px;box-shadow:0 4px 20px rgba(15,12,40,0.28);}
+  .ss{font-size:0.84rem;color:#8b92a8;font-weight:500;}.ss.ok{color:#4ade80;}.ss.err{color:#f87171;}
+  .pbtn{padding:0.72rem 1.9rem;background:#0d6e6e;color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:0.875rem;font-weight:700;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 14px rgba(13,110,110,0.4);}
+  .pbtn:hover{background:#0f8a8a;transform:translateY(-1px);}
+  .sbtn{padding:0.72rem 1.5rem;background:transparent;color:#8b92a8;border:1.5px solid #2a2535;border-radius:10px;font-family:inherit;font-size:0.875rem;font-weight:600;cursor:pointer;transition:all 0.2s;}
+  .sbtn:hover{border-color:#0d6e6e;color:#0d6e6e;}
   .cert-box{background:#f0effe;border:1.5px solid #dddaf0;border-radius:10px;padding:1rem;margin-bottom:0.6rem;}
-  .add-btn{padding:0.42rem 1.1rem;background:#eef2ff;color:#4f46e5;border:1.5px solid #c7d2fe;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;margin-top:0.65rem;}
+  .add-btn{padding:0.42rem 1.1rem;background:#eef2ff;color:#0d6e6e;border:1.5px solid #c7d2fe;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;margin-top:0.65rem;}
   .rm-btn{padding:0.28rem 0.7rem;background:#fff5f5;color:#ef4444;border:1.5px solid #fecaca;border-radius:6px;font-size:0.75rem;font-weight:600;cursor:pointer;font-family:inherit;}
   .att-split{display:flex;gap:0.9rem;flex-wrap:wrap;margin-top:0.85rem;}
   .att-box{flex:1;min-width:200px;background:#f0effe;border:1.5px solid #dddaf0;border-radius:10px;padding:0.9rem 1rem;}
@@ -129,7 +129,7 @@ function YesNo({ label, value, onChange }) {
     <div style={{display:"flex",alignItems:"center",gap:"1rem",marginBottom:"1rem",flexWrap:"wrap"}}>
       <span style={{fontSize:"0.875rem",color:"#1a1730",fontWeight:600}}>{label}</span>
       {["Yes","No"].map(v=>(
-        <button key={v} onClick={()=>onChange(v)} style={{padding:"0.32rem 1.1rem",borderRadius:999,border:value===v?"2px solid #4f46e5":"1.5px solid #dddaf0",background:value===v?"#4f46e5":"#f2f1f9",color:value===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
+        <button key={v} onClick={()=>onChange(v)} style={{padding:"0.32rem 1.1rem",borderRadius:999,border:value===v?"2px solid #0d6e6e":"1.5px solid #dddaf0",background:value===v?"#0d6e6e":"#f2f1f9",color:value===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
       ))}
     </div>
   );
@@ -431,7 +431,7 @@ export default function EducationDetails() {
   };
 
   if(!ready||!user)return null;
-  if(loading)return(<div style={{minHeight:"100vh",background:"#cdd2ed",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#8b88b0",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:500}}>Loading education details…</p></div>);
+  if(loading)return(<div style={{minHeight:"100vh",background:"#f5f4f0",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#8b88b0",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>Loading education details…</p></div>);
 
   const UL=({lbl,required=true,errKey:ek})=>(<>
     <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>{lbl}{required&&<span style={{color:"#ef4444",marginLeft:2}}>*</span>}</span>
@@ -595,7 +595,7 @@ export default function EducationDetails() {
                 {" "}<span style={{color:"#ef4444"}}>*</span>
               </span>
               {["Yes","No"].map(v=>(
-                <button key={v} onClick={()=>{setHasDip(v);isDirtyRef.current=true;fixErr("hasDip");}} style={{padding:"0.32rem 1.1rem",borderRadius:999,border:hasDip===v?"2px solid #4f46e5":"1.5px solid #dddaf0",background:hasDip===v?"#4f46e5":"#f2f1f9",color:hasDip===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
+                <button key={v} onClick={()=>{setHasDip(v);isDirtyRef.current=true;fixErr("hasDip");}} style={{padding:"0.32rem 1.1rem",borderRadius:999,border:hasDip===v?"2px solid #0d6e6e":"1.5px solid #dddaf0",background:hasDip===v?"#0d6e6e":"#f2f1f9",color:hasDip===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
               ))}
             </div>
             {hasDip==="Yes"&&(<>
@@ -617,7 +617,7 @@ export default function EducationDetails() {
             <div style={{display:"flex",alignItems:"center",gap:"0.5rem",flexWrap:"wrap",marginBottom:"1rem"}}>
               <span style={{fontSize:"0.875rem",color:"#1a1730",fontWeight:600}}>Do you have a professional qualification? <span style={{color:"#ef4444"}}>*</span></span>
               {["Yes","No"].map(v=>(
-                <button key={v} onClick={()=>{setHasProfQual(v);isDirtyRef.current=true;fixErr("hasProfQual");}} style={{padding:"0.32rem 1.1rem",borderRadius:999,border:hasProfQual===v?"2px solid #4f46e5":"1.5px solid #dddaf0",background:hasProfQual===v?"#4f46e5":"#f2f1f9",color:hasProfQual===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
+                <button key={v} onClick={()=>{setHasProfQual(v);isDirtyRef.current=true;fixErr("hasProfQual");}} style={{padding:"0.32rem 1.1rem",borderRadius:999,border:hasProfQual===v?"2px solid #0d6e6e":"1.5px solid #dddaf0",background:hasProfQual===v?"#0d6e6e":"#f2f1f9",color:hasProfQual===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
               ))}
             </div>
             {errors.hasProfQual&&<span className="err-msg" style={{marginTop:"-0.5rem",marginBottom:"0.5rem",display:"block"}}>Please answer this question</span>}
@@ -701,7 +701,7 @@ export default function EducationDetails() {
                       <span className="fl">Status</span>
                       <div style={{display:"flex",gap:"0.55rem",marginTop:"0.15rem"}}>
                         {["Ongoing","Completed"].map(v=>(
-                          <button key={v} type="button" onClick={()=>updateArticleship(idx,"isOngoing",v)} style={{flex:1,padding:"0.55rem 0",borderRadius:9,border:a.isOngoing===v?"2px solid #ea580c":"1.5px solid #b8b4d4",background:a.isOngoing===v?"#ea580c":"#ececf9",color:a.isOngoing===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.78rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}>{v}</button>
+                          <button key={v} type="button" onClick={()=>updateArticleship(idx,"isOngoing",v)} style={{flex:1,padding:"0.55rem 0",borderRadius:9,border:a.isOngoing===v?"2px solid #ea580c":"1.5px solid #d8d4e3",background:a.isOngoing===v?"#ea580c":"#f5f4f0",color:a.isOngoing===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.78rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}>{v}</button>
                         ))}
                       </div>
                     </div>
@@ -756,7 +756,7 @@ export default function EducationDetails() {
             <div className="sh"><div className="si ind">⏱</div><span className="st">Education Gap / Break Before First Job <span style={{color:"#ef4444",fontSize:"0.82rem"}}>*</span></span></div>
             <div style={{display:"flex",gap:"0.65rem",marginBottom:hasEduGap==="Yes"?"0.75rem":"0"}}>
               {["Yes","No"].map(v=>(
-                <button key={v} type="button" onClick={()=>{d(setHasEduGap)(v);if(v==="No")setEduGapReason("");fixErr("hasEduGap");}} style={{padding:"0.45rem 1.6rem",borderRadius:999,border:hasEduGap===v?"2px solid #4f46e5":"1.5px solid #dddaf0",background:hasEduGap===v?"#4f46e5":"#f2f1f9",color:hasEduGap===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.875rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
+                <button key={v} type="button" onClick={()=>{d(setHasEduGap)(v);if(v==="No")setEduGapReason("");fixErr("hasEduGap");}} style={{padding:"0.45rem 1.6rem",borderRadius:999,border:hasEduGap===v?"2px solid #0d6e6e":"1.5px solid #dddaf0",background:hasEduGap===v?"#0d6e6e":"#f2f1f9",color:hasEduGap===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.875rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
               ))}
             </div>
             {errors.hasEduGap&&<span className="err-msg" style={{marginTop:"0.4rem",display:"block"}}>Please answer this question before continuing</span>}

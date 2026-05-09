@@ -4,16 +4,16 @@ import { useRouter } from "next/router";
 import { useAuth } from "../../utils/AuthContext";
 
 const G = `
-  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #cdd2ed; font-family: 'Plus Jakarta Sans', sans-serif; }
-  .pg { min-height: 100vh; background: #cdd2ed; display: flex; flex-direction: column; }
+  body { background: #f5f4f0; font-family: 'DM Sans', sans-serif; }
+  .pg { min-height: 100vh; background: #f5f4f0; display: flex; flex-direction: column; }
 
-  .topbar { background: #1e1a3e; border-bottom: 1px solid #2d2860; padding: 0.85rem 1.75rem;
+  .topbar { background: #18151f; border-bottom: 1px solid #2a2535; padding: 0.85rem 1.75rem;
     display: flex; justify-content: space-between; align-items: center;
     box-shadow: 0 4px 20px rgba(15,12,40,0.4); }
-  .logo-text { font-size: 1.3rem; font-weight: 800; color: #a78bfa; letter-spacing: -0.5px; }
-  .user-name { font-size: 0.84rem; color: #9d9bc4; font-weight: 500; }
+  .logo-text { font-size: 1.3rem; font-weight: 800; color: #0d6e6e; letter-spacing: -0.5px; }
+  .user-name { font-size: 0.84rem; color: #8b92a8; font-weight: 500; }
 
   .body { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem 1.25rem; }
 
@@ -49,7 +49,7 @@ const G = `
   .btn-secondary { padding: 0.75rem 2rem; background: transparent; color: #6b6894;
     border: 1.5px solid #dddaf0; border-radius: 12px; font-family: inherit;
     font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-  .btn-secondary:hover { border-color: #a78bfa; color: #7c3aed; }
+  .btn-secondary:hover { border-color: #0d6e6e; color: #7c3aed; }
 
   @media(max-width:480px){
     .card { padding: 2rem 1.25rem; }

@@ -16,9 +16,9 @@ import { useAuth } from "../../utils/AuthContext";
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
 const STEP_SHADOW  = "rgba(22,163,74,0.35)";
-const STEP_DONE_BG = "#2a2460";
-const STEP_DONE_CK = "#a78bfa";
-const STEP_CONN    = "#a78bfa";
+const STEP_DONE_BG = "#0a4a4a";
+const STEP_DONE_CK = "#5eead4";
+const STEP_CONN    = "#0d6e6e";
 
 const STEPS = [
   { n:1, label:"Personal",   icon:"👤", path:"/employee/personal"  },
@@ -27,7 +27,7 @@ const STEPS = [
   { n:4, label:"UAN",        icon:"🏦", path:"/employee/uan"       },
   { n:5, label:"Review",     icon:"📋", path:"/employee/review"    },
 ];
-const ACCENTS = { 1:"#4f46e5", 2:"#d97706", 3:"#7c3aed", 4:"#0891b2", 5:"#16a34a" };
+const ACCENTS = { 1:"#0d6e6e", 2:"#d97706", 3:"#7c3aed", 4:"#0891b2", 5:"#16a34a" };
 
 const ACK_STATEMENTS = [
   "I confirm that I have reviewed all information across all sections of this profile and it is accurate and complete to the best of my knowledge.",
@@ -45,25 +45,25 @@ function ConsentBell({ apiFetch, router }) {
     };
     load(); const id=setInterval(load,15000); return ()=>clearInterval(id);
   }, [apiFetch]);
-  return (<button style={{position:"relative",width:36,height:36,borderRadius:9,border:"1.5px solid #2d2860",background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",transition:"all 0.2s"}} onClick={()=>router.push("/employee/personal?tab=consents")} title="Consent Requests">🔔{count>0&&<span style={{position:"absolute",top:-5,right:-5,background:"#ef4444",color:"#fff",borderRadius:999,fontSize:"0.6rem",fontWeight:800,minWidth:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 3px",border:"2px solid #1e1a3e"}}>{count}</span>}</button>);
+  return (<button style={{position:"relative",width:36,height:36,borderRadius:9,border:"1.5px solid #2a2535",background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",transition:"all 0.2s"}} onClick={()=>router.push("/employee/personal?tab=consents")} title="Consent Requests">🔔{count>0&&<span style={{position:"absolute",top:-5,right:-5,background:"#ef4444",color:"#fff",borderRadius:999,fontSize:"0.6rem",fontWeight:800,minWidth:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 3px",border:"2px solid #18151f"}}>{count}</span>}</button>);
 }
 
 const G = `
-  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #cdd2ed; font-family: 'Plus Jakarta Sans', sans-serif; }
-  .pg  { min-height: 100vh; background: #cdd2ed; padding-bottom: 3rem; }
+  body { background: #f5f4f0; font-family: 'DM Sans', sans-serif; }
+  .pg  { min-height: 100vh; background: #f5f4f0; padding-bottom: 3rem; }
   .wrap { max-width: 860px; margin: auto; padding: 0 1.25rem; }
 
-  .topbar { background: #1e1a3e; border-bottom: 1px solid #2d2860; padding: 0.85rem 1.75rem;
+  .topbar { background: #18151f; border-bottom: 1px solid #2a2535; padding: 0.85rem 1.75rem;
     display: flex; justify-content: space-between; align-items: center;
     margin-bottom: 1.75rem; position: sticky; top: 0; z-index: 50;
     box-shadow: 0 4px 20px rgba(15,12,40,0.4); }
-  .logo-text { font-size: 1.3rem; font-weight: 800; color: #a78bfa; letter-spacing: -0.5px; }
+  .logo-text { font-size: 1.3rem; font-weight: 800; color: #0d6e6e; letter-spacing: -0.5px; }
   .topbar-right { display: flex; align-items: center; gap: 0.75rem; }
-  .user-name { font-size: 0.84rem; color: #9d9bc4; font-weight: 500; }
-  .signout-btn { padding: 0.38rem 1rem; border: 1.5px solid #2d2860; border-radius: 8px;
-    background: transparent; color: #9d9bc4; font-size: 0.82rem; cursor: pointer;
+  .user-name { font-size: 0.84rem; color: #8b92a8; font-weight: 500; }
+  .signout-btn { padding: 0.38rem 1rem; border: 1.5px solid #2a2535; border-radius: 8px;
+    background: transparent; color: #8b92a8; font-size: 0.82rem; cursor: pointer;
     font-weight: 600; font-family: inherit; transition: all 0.2s; }
   .signout-btn:hover { border-color: #fca5a5; color: #ef4444; background: rgba(239,68,68,0.08); }
 
@@ -71,7 +71,7 @@ const G = `
     margin-bottom: 1.1rem; box-shadow: 0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12);
     border: 1px solid rgba(255,255,255,0.85); position: relative; overflow: hidden; }
   .sc::before { content:''; position:absolute; top:0; left:0; bottom:0; width:4px; border-radius:16px 0 0 16px; }
-  .sc.ind::before { background:#4f46e5; }
+  .sc.ind::before { background:#0d6e6e; }
   .sc.amb::before { background:#d97706; }
   .sc.vio::before { background:#7c3aed; }
   .sc.cyn::before { background:#0891b2; }
@@ -88,15 +88,15 @@ const G = `
   .kv { display:flex; flex-direction:column; gap:0.15rem; }
   .kv-label { font-size:0.67rem; font-weight:700; color:#8b88b0; letter-spacing:0.55px; text-transform:uppercase; }
   .kv-val { font-size:0.875rem; font-weight:600; color:#1a1730; }
-  .kv-val.empty { color:#b8b4d4; font-style:italic; font-weight:400; }
+  .kv-val.empty { color:#d8d4e3; font-style:italic; font-weight:400; }
 
-  .edit-link { font-size:0.72rem; font-weight:700; color:#4f46e5; cursor:pointer; margin-left:auto;
+  .edit-link { font-size:0.72rem; font-weight:700; color:#0d6e6e; cursor:pointer; margin-left:auto;
     background:none; border:none; font-family:inherit; padding:0.2rem 0.6rem; border-radius:6px; transition:all 0.15s; }
   .edit-link:hover { background:#eef2ff; }
 
   .att-chip { display:inline-flex; align-items:center; gap:0.35rem; padding:0.28rem 0.75rem;
     background:#eef2ff; border:1.5px solid #c7d2fe; border-radius:999px;
-    font-size:0.72rem; font-weight:700; color:#4f46e5; cursor:pointer; text-decoration:none;
+    font-size:0.72rem; font-weight:700; color:#0d6e6e; cursor:pointer; text-decoration:none;
     transition:all 0.15s; white-space:nowrap; }
   .att-chip:hover { background:#e0e7ff; border-color:#818cf8; }
   .att-chip.missing { background:#fff5f5; border-color:#fecaca; color:#ef4444; cursor:default; }
@@ -107,12 +107,12 @@ const G = `
   .missing-banner h4 { color:#92400e; font-size:0.875rem; font-weight:800; margin-bottom:0.5rem; }
   .missing-item { display:flex; align-items:center; gap:0.5rem; padding:0.3rem 0;
     font-size:0.82rem; color:#78350f; font-weight:600; cursor:pointer; }
-  .missing-item:hover { color:#4f46e5; text-decoration:underline; }
+  .missing-item:hover { color:#0d6e6e; text-decoration:underline; }
 
   .ack-box { display:flex; align-items:flex-start; gap:0.75rem; padding:0.8rem 0; border-bottom:1px solid #f0eef8; }
   .ack-box:last-child { border-bottom:none; }
-  .ack-check { width:20px; height:20px; border-radius:5px; border:2px solid #b8b4d4;
-    background:#ececf9; cursor:pointer; flex-shrink:0; margin-top:1px;
+  .ack-check { width:20px; height:20px; border-radius:5px; border:2px solid #d8d4e3;
+    background:#f5f4f0; cursor:pointer; flex-shrink:0; margin-top:1px;
     display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
   .ack-check.checked { background:#16a34a; border-color:#16a34a; }
   .ack-text { font-size:0.84rem; color:#3d3a5c; line-height:1.55; font-weight:500; }
@@ -121,19 +121,19 @@ const G = `
     letter-spacing:0.5px; margin:0.9rem 0 0.5rem; padding-top:0.9rem; border-top:1px solid #f0eef8; }
 
   .sbar { display:flex; justify-content:space-between; align-items:center;
-    margin-top:1.5rem; padding:1rem 1.5rem; background:#1e1a3e;
+    margin-top:1.5rem; padding:1rem 1.5rem; background:#18151f;
     border-radius:12px; box-shadow:0 6px 28px rgba(30,26,62,0.22); border:1px solid rgba(255,255,255,0.1); }
-  .ss { font-size:0.84rem; color:#9d9bc4; font-weight:500; }
+  .ss { font-size:0.84rem; color:#8b92a8; font-weight:500; }
   .ss.ok { color:#4ade80; } .ss.err { color:#f87171; }
   .pbtn { padding:0.72rem 1.9rem; background:#16a34a; color:#fff; border:none;
     border-radius:10px; font-family:inherit; font-size:0.875rem; font-weight:700;
     cursor:pointer; transition:all 0.2s; box-shadow:0 4px 14px rgba(22,163,74,0.28); }
   .pbtn:hover:not(:disabled) { background:#15803d; transform:translateY(-1px); }
   .pbtn:disabled { opacity:0.6; cursor:not-allowed; }
-  .sbtn { padding:0.72rem 1.5rem; background:transparent; color:#9d9bc4;
-    border:1.5px solid #2d2860; border-radius:10px; font-family:inherit;
+  .sbtn { padding:0.72rem 1.5rem; background:transparent; color:#8b92a8;
+    border:1.5px solid #2a2535; border-radius:10px; font-family:inherit;
     font-size:0.875rem; font-weight:600; cursor:pointer; transition:all 0.2s; }
-  .sbtn:hover { color:#a78bfa; border-color:#a78bfa; }
+  .sbtn:hover { color:#0d6e6e; border-color:#0d6e6e; }
 
   @media(max-width:640px){
     .grid { grid-template-columns:1fr 1fr; }
@@ -457,8 +457,8 @@ export default function ReviewPage() {
 
   if (!ready || !user) return null;
   if (loading) return (
-    <div style={{minHeight:"100vh",background:"#cdd2ed",display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <p style={{color:"#8b88b0",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:500}}>Loading your profile…</p>
+    <div style={{minHeight:"100vh",background:"#f5f4f0",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <p style={{color:"#8b88b0",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>Loading your profile…</p>
     </div>
   );
 
@@ -695,7 +695,7 @@ export default function ReviewPage() {
             )}
             {edu.hasEduGap && (
               <div style={{marginTop:"0.9rem",paddingTop:"0.9rem",borderTop:"1px solid #f0eef8"}}>
-                <div style={{fontSize:"0.72rem",fontWeight:700,color:"#4f46e5",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.4rem"}}>Education Gap Before First Job</div>
+                <div style={{fontSize:"0.72rem",fontWeight:700,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.4rem"}}>Education Gap Before First Job</div>
                 <div className="grid">
                   <KV label="Had Education Gap" value={edu.hasEduGap}/>
                   {edu.eduGapReason&&<KV label="Reason" value={edu.eduGapReason}/>}
@@ -709,7 +709,7 @@ export default function ReviewPage() {
             <SectionHead icon="💼" title="Employment History" colorClass="vio" onEdit={()=>{handleInlineEdit();router.push("/employee/previous");}}/>
             {d.resumeKey && <div style={{marginBottom:"0.85rem"}}><div className="att-grid"><AttChip label="Latest Resume / CV" docKey={d.resumeKey} urls={docUrls}/></div></div>}
             {empHistory.length === 0 ? (
-              <p style={{color:"#b8b4d4",fontSize:"0.875rem",fontStyle:"italic"}}>No employment history added.</p>
+              <p style={{color:"#d8d4e3",fontSize:"0.875rem",fontStyle:"italic"}}>No employment history added.</p>
             ) : empHistory.map((e, idx) => (
               <div key={e.company_id||idx} style={{marginBottom:"0.9rem",paddingBottom:"0.9rem",borderBottom:"1px solid #f0eef8"}}>
                 <div style={{fontSize:"0.72rem",fontWeight:700,color:"#7c3aed",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.5rem"}}>

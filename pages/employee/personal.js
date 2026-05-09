@@ -11,10 +11,10 @@ import FileUpload from "../../components/FileUpload";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
-const ACCENTS = { 1:"#4f46e5", 2:"#d97706", 3:"#7c3aed", 4:"#0891b2", 5:"#16a34a" };
-const STEP_DONE_BG = "#2a2460";
-const STEP_DONE_CK = "#a78bfa";
-const STEP_CONN    = "#a78bfa";
+const ACCENTS = { 1:"#0d6e6e", 2:"#d97706", 3:"#7c3aed", 4:"#0891b2", 5:"#16a34a" };
+const STEP_DONE_BG = "#0a4a4a";
+const STEP_DONE_CK = "#5eead4";
+const STEP_CONN    = "#0d6e6e";
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
@@ -43,57 +43,57 @@ const BANK_LIST = [
 ];
 
 const G = `
-  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #cdd2ed; font-family: 'Plus Jakarta Sans', sans-serif; }
-  .pg { min-height: 100vh; background: #cdd2ed; padding-bottom: 3rem; }
+  body { background: #f5f4f0; font-family: 'DM Sans', sans-serif; }
+  .pg { min-height: 100vh; background: #f5f4f0; padding-bottom: 3rem; }
   .wrap { max-width: 860px; margin: auto; padding: 0 1.25rem; }
 
-  .topbar { background: #1e1a3e; border-bottom: 1px solid #2d2860; padding: 0.85rem 1.75rem;
+  .topbar { background: #18151f; border-bottom: 1px solid #2a2535; padding: 0.85rem 1.75rem;
     display: flex; justify-content: space-between; align-items: center;
     margin-bottom: 1.75rem; position: sticky; top: 0; z-index: 50;
     box-shadow: 0 4px 20px rgba(15,12,40,0.4); }
-  .logo-text { font-size: 1.3rem; font-weight: 800; color: #a78bfa; letter-spacing: -0.5px; }
+  .logo-text { font-size: 1.3rem; font-weight: 800; color: #0d6e6e; letter-spacing: -0.5px; }
   .topbar-right { display: flex; align-items: center; gap: 0.75rem; }
-  .user-name { font-size: 0.84rem; color: #9d9bc4; font-weight: 500; }
-  .signout-btn { padding: 0.38rem 1rem; border: 1.5px solid #2d2860; border-radius: 8px;
-    background: transparent; color: #9d9bc4; font-size: 0.82rem; cursor: pointer;
+  .user-name { font-size: 0.84rem; color: #8b92a8; font-weight: 500; }
+  .signout-btn { padding: 0.38rem 1rem; border: 1.5px solid #2a2535; border-radius: 8px;
+    background: transparent; color: #8b92a8; font-size: 0.82rem; cursor: pointer;
     font-weight: 600; font-family: inherit; transition: all 0.2s; }
   .signout-btn:hover { border-color: #fca5a5; color: #ef4444; background: rgba(239,68,68,0.08); }
 
   .bell-btn { position: relative; width: 36px; height: 36px; border-radius: 9px;
-    border: 1.5px solid #2d2860; background: transparent; cursor: pointer;
+    border: 1.5px solid #2a2535; background: transparent; cursor: pointer;
     display: flex; align-items: center; justify-content: center; font-size: 1rem;
     transition: all 0.2s; }
-  .bell-btn:hover { border-color: #a78bfa; background: rgba(167,139,250,0.1); }
+  .bell-btn:hover { border-color: #0d6e6e; background: rgba(167,139,250,0.1); }
   .bell-badge { position: absolute; top: -5px; right: -5px; background: #ef4444; color: #fff;
     border-radius: 999px; font-size: 0.6rem; font-weight: 800; min-width: 16px; height: 16px;
-    display: flex; align-items: center; justify-content: center; padding: 0 3px; border: 2px solid #1e1a3e; }
+    display: flex; align-items: center; justify-content: center; padding: 0 3px; border: 2px solid #18151f; }
 
   /* Settings gear */
   .gear-wrap { position: relative; }
-  .gear-btn { width: 36px; height: 36px; border-radius: 9px; border: 1.5px solid #2d2860;
+  .gear-btn { width: 36px; height: 36px; border-radius: 9px; border: 1.5px solid #2a2535;
     background: transparent; cursor: pointer; display: flex; align-items: center;
-    justify-content: center; font-size: 1rem; transition: all 0.2s; color: #9d9bc4; }
-  .gear-btn:hover { border-color: #a78bfa; background: rgba(167,139,250,0.1); color: #a78bfa; }
-  .gear-btn.open { border-color: #a78bfa; background: rgba(167,139,250,0.15); color: #a78bfa; }
-  .gear-dropdown { position: absolute; top: calc(100% + 8px); right: 0; background: #1e1a3e;
-    border: 1px solid #2d2860; border-radius: 10px; padding: 0.35rem;
+    justify-content: center; font-size: 1rem; transition: all 0.2s; color: #8b92a8; }
+  .gear-btn:hover { border-color: #0d6e6e; background: rgba(167,139,250,0.1); color: #0d6e6e; }
+  .gear-btn.open { border-color: #0d6e6e; background: rgba(167,139,250,0.15); color: #0d6e6e; }
+  .gear-dropdown { position: absolute; top: calc(100% + 8px); right: 0; background: #18151f;
+    border: 1px solid #2a2535; border-radius: 10px; padding: 0.35rem;
     min-width: 180px; z-index: 200; box-shadow: 0 8px 32px rgba(15,12,40,0.5);
     animation: fadeDown 0.12s ease; }
   @keyframes fadeDown { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
   .gear-item { display: flex; align-items: center; gap: 0.6rem; width: 100%; padding: 0.55rem 0.75rem;
     border: none; background: none; cursor: pointer; border-radius: 7px; font-family: inherit;
-    font-size: 0.78rem; font-weight: 600; color: #9d9bc4; text-align: left; transition: all 0.12s; }
-  .gear-item:hover { background: rgba(167,139,250,0.12); color: #a78bfa; }
+    font-size: 0.78rem; font-weight: 600; color: #8b92a8; text-align: left; transition: all 0.12s; }
+  .gear-item:hover { background: rgba(167,139,250,0.12); color: #0d6e6e; }
   .gear-item.danger:hover { background: rgba(239,68,68,0.1); color: #ef4444; }
-  .gear-divider { height: 1px; background: #2d2860; margin: 0.25rem 0; }
+  .gear-divider { height: 1px; background: #2a2535; margin: 0.25rem 0; }
 
   .tab-row { display: flex; border-bottom: 2px solid #e8e5f0; margin-bottom: 1.75rem; }
   .tab-btn { padding: 0.6rem 1.4rem; border: none; background: none; font-family: inherit;
     font-size: 0.875rem; color: #94a3b8; cursor: pointer; border-bottom: 2.5px solid transparent;
     margin-bottom: -2px; font-weight: 600; transition: all 0.2s; }
-  .tab-btn.active { color: #4f46e5; border-bottom-color: #4f46e5; }
+  .tab-btn.active { color: #0d6e6e; border-bottom-color: #0d6e6e; }
   .tab-btn:hover:not(.active) { color: #475569; }
 
   .sc { background: #ffffff; border-radius: 16px; padding: 1.5rem 1.6rem;
@@ -101,7 +101,7 @@ const G = `
     border: 1px solid rgba(255,255,255,0.85); position: relative; overflow: hidden; }
   .sc::before { content: ''; position: absolute; top: 0; left: 0; bottom: 0;
     width: 4px; border-radius: 16px 0 0 16px; }
-  .sc.ind::before { background: #4f46e5; }
+  .sc.ind::before { background: #0d6e6e; }
   .sc.cyn::before { background: #0891b2; }
   .sc.amb::before { background: #d97706; }
   .sc.ros::before { background: #e11d48; }
@@ -122,22 +122,22 @@ const G = `
   .fr:last-child { margin-bottom: 0; }
   .fi { display: flex; flex-direction: column; gap: 0.28rem; flex: 1; min-width: 138px; }
   .fl { font-size: 0.7rem; font-weight: 700; color: #8b88b0; letter-spacing: 0.55px; text-transform: uppercase; }
-  .in { padding: 0.65rem 0.875rem; background: #ececf9; border: 1.5px solid #b8b4d4;
+  .in { padding: 0.65rem 0.875rem; background: #f5f4f0; border: 1.5px solid #d8d4e3;
     border-radius: 9px; font-family: inherit; font-size: 0.875rem; color: #1e293b;
     outline: none; width: 100%; transition: all 0.18s; }
-  .in:focus { border-color: #4f46e5; background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.13); }
+  .in:focus { border-color: #0d6e6e; background: #fff; box-shadow: 0 0 0 3px rgba(13,110,110,0.13); }
   .in:disabled { background: #ece9f5; color: #a0aec0; cursor: not-allowed; }
   .in.err { border-color: #ef4444 !important; background: #fff8f8 !important; box-shadow: 0 0 0 3px rgba(239,68,68,0.10) !important; }
   .err-msg { font-size: 0.68rem; color: #ef4444; font-weight: 600; margin-top: 0.2rem; display: block; }
   .fe { font-size: 0.7rem; color: #ef4444; margin-top: 2px; font-weight: 500; }
 
-  .date-input { padding: 0.65rem 0.875rem; background: #ececf9; border: 1.5px solid #b8b4d4;
+  .date-input { padding: 0.65rem 0.875rem; background: #f5f4f0; border: 1.5px solid #d8d4e3;
     border-radius: 9px; font-family: inherit; font-size: 0.875rem; color: #1e293b;
     outline: none; width: 100%; cursor: pointer; transition: all 0.18s; }
-  .date-input:focus { border-color: #4f46e5; background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.13); }
-  .date-input::placeholder { color: #b8b4d4; }
+  .date-input:focus { border-color: #0d6e6e; background: #fff; box-shadow: 0 0 0 3px rgba(13,110,110,0.13); }
+  .date-input::placeholder { color: #d8d4e3; }
   .date-input.err { border-color: #ef4444 !important; background: #fff8f8 !important; }
-  .date-display { margin-top: 0.22rem; font-size: 0.72rem; color: #4f46e5; font-weight: 600; letter-spacing: 0.2px; }
+  .date-display { margin-top: 0.22rem; font-size: 0.72rem; color: #0d6e6e; font-weight: 600; letter-spacing: 0.2px; }
 
   .photo-wrap { width: 90px; height: 90px; border-radius: 50%; background: #eef2ff;
     border: 2.5px solid #c7d2fe; display: flex; align-items: center;
@@ -145,15 +145,15 @@ const G = `
   .photo-wrap img { width: 100%; height: 100%; object-fit: cover; }
 
   .sbar { display: flex; justify-content: space-between; align-items: center;
-    margin-top: 1.5rem; padding: 1rem 1.5rem; background: #1e1a3e;
+    margin-top: 1.5rem; padding: 1rem 1.5rem; background: #18151f;
     border-radius: 12px; box-shadow: 0 6px 28px rgba(30,26,62,0.22); border: 1px solid rgba(255,255,255,0.85); }
-  .ss { font-size: 0.84rem; color: #9d9bc4; font-weight: 500; }
+  .ss { font-size: 0.84rem; color: #8b92a8; font-weight: 500; }
   .ss.ok { color: #16a34a; } .ss.err { color: #ef4444; }
-  .pbtn { padding: 0.72rem 1.9rem; background: #4f46e5; color: #fff; border: none;
+  .pbtn { padding: 0.72rem 1.9rem; background: #0d6e6e; color: #fff; border: none;
     border-radius: 10px; font-family: inherit; font-size: 0.875rem; font-weight: 700;
-    cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 14px rgba(79,70,229,0.28); }
-  .pbtn:hover { background: #4338ca; transform: translateY(-1px); }
-  .sbtn { padding: 0.72rem 1.5rem; background: transparent; color: #9d9bc4; border: 1.5px solid #2d2860;
+    cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 14px rgba(13,110,110,0.28); }
+  .pbtn:hover { background: #0f8a8a; transform: translateY(-1px); }
+  .sbtn { padding: 0.72rem 1.5rem; background: transparent; color: #8b92a8; border: 1.5px solid #2a2535;
     border-radius: 10px; font-family: inherit; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
   .sbtn:hover { background: #f5f4f0; }
 
@@ -167,10 +167,10 @@ const G = `
   .digit-counter.match { color: #16a34a; }
   .digit-counter.mismatch { color: #ef4444; }
 
-  .cmsg { padding: 0.6rem 0.875rem; background: #ececf9; border: 1.5px solid #b8b4d4;
+  .cmsg { padding: 0.6rem 0.875rem; background: #f5f4f0; border: 1.5px solid #d8d4e3;
     border-radius: 9px; font-family: inherit; font-size: 0.84rem; color: #1e293b;
     outline: none; width: 100%; resize: vertical; min-height: 72px; transition: all 0.18s; }
-  .cmsg:focus { border-color: #4f46e5; background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.13); }
+  .cmsg:focus { border-color: #0d6e6e; background: #fff; box-shadow: 0 0 0 3px rgba(13,110,110,0.13); }
 
   @media (max-width: 640px) {
     .fr { flex-direction: column; } .fi { min-width: 100%; }
@@ -351,7 +351,7 @@ function ConsentTab({ apiFetch, profileStatus }) {
     approved: { list: [], label: "Approved",  color: "#16a34a", bg: "#f0fdf4", icon: "✅" },
     declined: { list: [], label: "Declined",  color: "#ef4444", bg: "#fff5f5", icon: "❌" },
     revoked:  { list: [], label: "Withdrawn", color: "#94a3b8", bg: "#f8fafc", icon: "↩" },
-    activity: { list: [], label: "Activity",  color: "#4f46e5", bg: "#eef2ff", icon: "📋" },
+    activity: { list: [], label: "Activity",  color: "#0d6e6e", bg: "#eef2ff", icon: "📋" },
   };
 
   if(loading)return <p style={{color:"#8b88b0",padding:"1rem 0",fontSize:"0.875rem"}}>Loading consents…</p>;
@@ -373,12 +373,12 @@ function ConsentTab({ apiFetch, profileStatus }) {
   tabMap.declined.list = declined;
   tabMap.revoked.list  = revoked;
 
-  const renderCC=(c)=>(<div style={{border:"1px solid #ebe9f5",borderRadius:12,padding:"1.1rem 1.25rem",marginBottom:"0.65rem",background:"#fff",boxShadow:"0 1px 5px rgba(79,70,229,0.05)"}}>
+  const renderCC=(c)=>(<div style={{border:"1px solid #ebe9f5",borderRadius:12,padding:"1.1rem 1.25rem",marginBottom:"0.65rem",background:"#fff",boxShadow:"0 1px 5px rgba(13,110,110,0.05)"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
       <div style={{flex:1}}>
         <div style={{fontWeight:700,color:"#1a1730",fontSize:"0.93rem"}}>{c.requestor_name||c.employer_name||c.requestor_email||c.employer_email}</div>
         {c.message&&<div style={{marginTop:"0.5rem",padding:"0.5rem 0.75rem",background:"#f5f3ff",border:"1px solid #ddd6fe",borderRadius:8}}>
-          <div style={{fontSize:"0.67rem",fontWeight:700,color:"#4f46e5",textTransform:"uppercase",letterSpacing:0.5,marginBottom:3}}>Message</div>
+          <div style={{fontSize:"0.67rem",fontWeight:700,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:0.5,marginBottom:3}}>Message</div>
           <div style={{fontSize:"0.84rem",color:"#6b6894",lineHeight:1.5}}>{c.message}</div>
         </div>}
       </div>
@@ -389,7 +389,7 @@ function ConsentTab({ apiFetch, profileStatus }) {
       {profileNotSubmitted&&<div style={{fontSize:"0.75rem",color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:"0.5rem 0.75rem",marginBottom:"0.6rem"}}>⚠️ Complete and submit your profile before approving consent requests.</div>}
       <textarea className="cmsg" placeholder="Optional message to employer…" value={replyMsg[c.consent_id]||""} onFocus={()=>{textareaFocused.current=true;}} onBlur={()=>{textareaFocused.current=false;}} onChange={e=>{const val=e.target.value;setReplyMsg(p=>({...p,[c.consent_id]:val}));}} style={{marginBottom:"0.5rem"}}/>
       <div style={{display:"flex",gap:"0.5rem"}}>
-        <button disabled={acting===c.consent_id||profileNotSubmitted} onClick={()=>respond(c.consent_id,"approved")} style={{flex:1,padding:"0.5rem",background:profileNotSubmitted?"#e5e7eb":"#16a34a",color:profileNotSubmitted?"#9ca3af":"#fff",border:"none",borderRadius:8,fontWeight:700,cursor:(acting===c.consent_id||profileNotSubmitted)?"not-allowed":"pointer",fontSize:"0.875rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Approve"}</button>
+        <button disabled={acting===c.consent_id||profileNotSubmitted} onClick={()=>respond(c.consent_id,"approved")} style={{flex:1,padding:"0.5rem",background:profileNotSubmitted?"#e5e7eb":"#16a34a",color:profileNotSubmitted?"#8b92a8":"#fff",border:"none",borderRadius:8,fontWeight:700,cursor:(acting===c.consent_id||profileNotSubmitted)?"not-allowed":"pointer",fontSize:"0.875rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Approve"}</button>
         <button disabled={acting===c.consent_id} onClick={()=>respond(c.consent_id,"declined")} style={{flex:1,padding:"0.5rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:8,fontWeight:700,cursor:acting===c.consent_id?"not-allowed":"pointer",fontSize:"0.875rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Decline"}</button>
       </div>
     </div>)}
@@ -481,15 +481,15 @@ function ConsentTab({ apiFetch, profileStatus }) {
       {totalPages > 1 && (
         <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"0.4rem",marginTop:"1rem"}}>
           <button onClick={()=>setCPage(p=>Math.max(1,p-1))} disabled={cPage===1}
-            style={{padding:"0.35rem 0.75rem",borderRadius:7,border:"1.5px solid #e4e2ed",background:"#fff",cursor:cPage===1?"not-allowed":"pointer",fontSize:"0.75rem",fontWeight:600,color:cPage===1?"#c4bfdb":"#4f46e5",fontFamily:"inherit"}}>← Prev</button>
+            style={{padding:"0.35rem 0.75rem",borderRadius:7,border:"1.5px solid #e4e2ed",background:"#fff",cursor:cPage===1?"not-allowed":"pointer",fontSize:"0.75rem",fontWeight:600,color:cPage===1?"#c4bfdb":"#0d6e6e",fontFamily:"inherit"}}>← Prev</button>
           {Array.from({length:totalPages},(_,i)=>i+1).map(p=>(
             <button key={p} onClick={()=>setCPage(p)}
-              style={{width:30,height:30,borderRadius:7,border:`1.5px solid ${cPage===p?"#4f46e5":"#e4e2ed"}`,background:cPage===p?"#4f46e5":"#fff",cursor:"pointer",fontSize:"0.75rem",fontWeight:700,color:cPage===p?"#fff":"#6b6894",fontFamily:"inherit"}}>
+              style={{width:30,height:30,borderRadius:7,border:`1.5px solid ${cPage===p?"#0d6e6e":"#e4e2ed"}`,background:cPage===p?"#0d6e6e":"#fff",cursor:"pointer",fontSize:"0.75rem",fontWeight:700,color:cPage===p?"#fff":"#6b6894",fontFamily:"inherit"}}>
               {p}
             </button>
           ))}
           <button onClick={()=>setCPage(p=>Math.min(totalPages,p+1))} disabled={cPage===totalPages}
-            style={{padding:"0.35rem 0.75rem",borderRadius:7,border:"1.5px solid #e4e2ed",background:"#fff",cursor:cPage===totalPages?"not-allowed":"pointer",fontSize:"0.75rem",fontWeight:600,color:cPage===totalPages?"#c4bfdb":"#4f46e5",fontFamily:"inherit"}}>Next →</button>
+            style={{padding:"0.35rem 0.75rem",borderRadius:7,border:"1.5px solid #e4e2ed",background:"#fff",cursor:cPage===totalPages?"not-allowed":"pointer",fontSize:"0.75rem",fontWeight:600,color:cPage===totalPages?"#c4bfdb":"#0d6e6e",fontFamily:"inherit"}}>Next →</button>
         </div>
       )}
     </div>
@@ -968,7 +968,7 @@ export default function PersonalDetails() {
     : (aadhar.length >= 4 ? `XXXX XXXX ${aadhar.slice(-4)}` : aadhar);
 
   if (!ready || !user) return null;
-  if (loading) return (<div style={{minHeight:"100vh",background:"#cdd2ed",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#8b88b0",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:500}}>Loading your profile…</p></div>);
+  if (loading) return (<div style={{minHeight:"100vh",background:"#f5f4f0",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#8b88b0",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>Loading your profile…</p></div>);
 
   return (
     <>
@@ -995,7 +995,7 @@ export default function PersonalDetails() {
                 <button onClick={()=>{setShowPwChange(false);setPwErr("");setPwOk("");setPwCurrent("");setPwNew("");setPwConfirm("");}}
                   style={{flex:1,padding:"0.6rem",borderRadius:7,border:"1px solid #e5e0f5",background:"#f7f6fd",cursor:"pointer",fontWeight:600,color:"#6b7280",fontFamily:"inherit",fontSize:"0.82rem"}}>Cancel</button>
                 <button onClick={handleChangePassword} disabled={pwBusy}
-                  style={{flex:1,padding:"0.6rem",borderRadius:7,border:"none",background:"#4f46e5",color:"#fff",cursor:pwBusy?"not-allowed":"pointer",fontWeight:700,fontFamily:"inherit",fontSize:"0.82rem",opacity:pwBusy?0.6:1}}>
+                  style={{flex:1,padding:"0.6rem",borderRadius:7,border:"none",background:"#0d6e6e",color:"#fff",cursor:pwBusy?"not-allowed":"pointer",fontWeight:700,fontFamily:"inherit",fontSize:"0.82rem",opacity:pwBusy?0.6:1}}>
                   {pwBusy?"Saving…":"Change Password"}
                 </button>
               </div>
@@ -1057,12 +1057,12 @@ export default function PersonalDetails() {
                   )}
                   {inboxThreads.map(t=>(
                     <div key={t.thread_id} onClick={()=>loadThread(t.thread_id)}
-                      style={{padding:"0.65rem 0.9rem",cursor:"pointer",borderBottom:"1px solid #f5f3ff",background:activeThread===t.thread_id?"#eef2ff":"#fff",borderLeft:activeThread===t.thread_id?"3px solid #4f46e5":"3px solid transparent",transition:"all 0.1s"}}>
+                      style={{padding:"0.65rem 0.9rem",cursor:"pointer",borderBottom:"1px solid #f5f3ff",background:activeThread===t.thread_id?"#eef2ff":"#fff",borderLeft:activeThread===t.thread_id?"3px solid #0d6e6e":"3px solid transparent",transition:"all 0.1s"}}>
                       <div style={{fontSize:"0.71rem",fontWeight:700,color:"#1a1730",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.other_party_name||t.other_party_email}</div>
                       <div style={{fontSize:"0.62rem",color:"#94a3b8",marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.latest_message||"No messages"}</div>
                       <div style={{display:"flex",justifyContent:"space-between",marginTop:2}}>
                         <span style={{fontSize:"0.58rem",color:"#c4bfdb"}}>{t.latest_at?new Date(t.latest_at).toLocaleDateString("en-IN"):""}</span>
-                        {t.unread_count>0&&<span style={{background:"#4f46e5",color:"#fff",fontSize:"0.55rem",fontWeight:800,padding:"1px 6px",borderRadius:999}}>{t.unread_count}</span>}
+                        {t.unread_count>0&&<span style={{background:"#0d6e6e",color:"#fff",fontSize:"0.55rem",fontWeight:800,padding:"1px 6px",borderRadius:999}}>{t.unread_count}</span>}
                       </div>
                     </div>
                   ))}
@@ -1090,8 +1090,8 @@ export default function PersonalDetails() {
                           return (
                             <div key={m.message_id||i} style={{display:"flex",flexDirection:"column",alignItems:mine?"flex-end":"flex-start"}}>
                               {!mine&&<div style={{fontSize:"0.6rem",color:"#94a3b8",marginBottom:2,fontWeight:600}}>{m.sender_name||m.sender_email}</div>}
-                              {m.subject&&<div style={{fontSize:"0.62rem",fontWeight:700,color:mine?"#4f46e5":"#6366f1",marginBottom:"0.2rem"}}>{m.subject}</div>}
-                              <div style={{maxWidth:"78%",padding:"0.6rem 0.85rem",borderRadius:mine?"12px 12px 3px 12px":"12px 12px 12px 3px",background:mine?"#4f46e5":"#f5f3ff",color:mine?"#fff":"#1a1730",fontSize:"0.82rem",lineHeight:1.55,border:mine?"none":"1px solid #ede9f8"}}>
+                              {m.subject&&<div style={{fontSize:"0.62rem",fontWeight:700,color:mine?"#0d6e6e":"#6366f1",marginBottom:"0.2rem"}}>{m.subject}</div>}
+                              <div style={{maxWidth:"78%",padding:"0.6rem 0.85rem",borderRadius:mine?"12px 12px 3px 12px":"12px 12px 12px 3px",background:mine?"#0d6e6e":"#f5f3ff",color:mine?"#fff":"#1a1730",fontSize:"0.82rem",lineHeight:1.55,border:mine?"none":"1px solid #ede9f8"}}>
                                 {m.body}
                               </div>
                               <div style={{fontSize:"0.58rem",color:"#c4bfdb",marginTop:2}}>
@@ -1114,7 +1114,7 @@ export default function PersonalDetails() {
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                           <span style={{fontSize:"0.62rem",color:"#94a3b8"}}>Ctrl+Enter to send</span>
                           <button onClick={sendReply} disabled={msgSending||!msgBody.trim()}
-                            style={{padding:"0.5rem 1.1rem",background:"#4f46e5",color:"#fff",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:"0.78rem",fontWeight:700,cursor:msgSending||!msgBody.trim()?"not-allowed":"pointer",opacity:msgSending||!msgBody.trim()?0.5:1,transition:"all 0.15s"}}>
+                            style={{padding:"0.5rem 1.1rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:"0.78rem",fontWeight:700,cursor:msgSending||!msgBody.trim()?"not-allowed":"pointer",opacity:msgSending||!msgBody.trim()?0.5:1,transition:"all 0.15s"}}>
                             {msgSending?"Sending…":"Reply ↗"}
                           </button>
                         </div>
@@ -1233,7 +1233,7 @@ export default function PersonalDetails() {
                     <span className="fl">Do you have a Passport? <span style={{color:"#ef4444"}}>*</span></span>
                     <div style={{display:"flex",gap:"0.55rem",marginTop:"0.15rem"}}>
                       {["Yes","No"].map(v=>(
-                        <button key={v} type="button" onClick={()=>{dirty(setHasPassport)(v);if(v==="No"){setPassport("");setPassportIssue("");setPassportExpiry("");}}} style={{flex:1,padding:"0.62rem 0",borderRadius:9,border:hasPassport===v?"2px solid #4f46e5":"1.5px solid #b8b4d4",background:hasPassport===v?"#4f46e5":"#ececf9",color:hasPassport===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}>{v}</button>
+                        <button key={v} type="button" onClick={()=>{dirty(setHasPassport)(v);if(v==="No"){setPassport("");setPassportIssue("");setPassportExpiry("");}}} style={{flex:1,padding:"0.62rem 0",borderRadius:9,border:hasPassport===v?"2px solid #0d6e6e":"1.5px solid #d8d4e3",background:hasPassport===v?"#0d6e6e":"#f5f4f0",color:hasPassport===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}>{v}</button>
                       ))}
                     </div>
                   </div>
@@ -1378,7 +1378,7 @@ export default function PersonalDetails() {
                       <div>
                         <input className="in" value={accountFull ? "•".repeat(accountFull.length-4)+" "+accountFull.slice(-4) : `•••• ${accountLast4}`} disabled style={{letterSpacing:"0.08em",fontFamily:"monospace"}}/>
                         <div className="digit-counter ok">✓ Account number saved</div>
-                        <button type="button" onClick={()=>{setAccountFull("");setAccountLast4("");dirty(() => {})("");}} style={{marginTop:"0.3rem",fontSize:"0.68rem",color:"#4f46e5",background:"none",border:"none",cursor:"pointer",fontWeight:600,padding:0}}>Update account number</button>
+                        <button type="button" onClick={()=>{setAccountFull("");setAccountLast4("");dirty(() => {})("");}} style={{marginTop:"0.3rem",fontSize:"0.68rem",color:"#0d6e6e",background:"none",border:"none",cursor:"pointer",fontWeight:600,padding:0}}>Update account number</button>
                       </div>
                     ) : (
                       <>
@@ -1487,7 +1487,7 @@ export default function PersonalDetails() {
                 <div className="sh"><div className="si cyn">📍</div><span className="st">Permanent / Native Address</span></div>
                 <div style={{display:"flex",alignItems:"center",gap:"0.6rem",marginBottom:"1rem",padding:"0.65rem 0.875rem",background:"#f0f9ff",border:`1.5px solid ${sameAsCurrent?"#0891b2":"#bae6fd"}`,borderRadius:9,cursor:"pointer",transition:"all 0.15s"}}
                   onClick={() => { const v = !sameAsCurrent; setSameAsCurrent(v); dirty(() => {})(""); }}>
-                  <div style={{width:18,height:18,borderRadius:5,border:`2px solid ${sameAsCurrent?"#0891b2":"#b8b4d4"}`,background:sameAsCurrent?"#0891b2":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.15s"}}>
+                  <div style={{width:18,height:18,borderRadius:5,border:`2px solid ${sameAsCurrent?"#0891b2":"#d8d4e3"}`,background:sameAsCurrent?"#0891b2":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.15s"}}>
                     {sameAsCurrent && <span style={{color:"#fff",fontWeight:800,fontSize:"0.7rem"}}>✓</span>}
                   </div>
                   <span style={{fontSize:"0.84rem",fontWeight:600,color:"#0c4a6e"}}>Same as current address</span>

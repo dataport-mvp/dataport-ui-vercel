@@ -159,7 +159,7 @@ function ConsentCard({ consent, acting, onApprove, onDecline, resolved, disabled
     pending: "#f59e0b",
     approved: "#16a34a",
     declined: "#ef4444",
-  }[consent.status] || "#94a3b8";
+  }[consent.status] || "#b8b3c2";
 
   return (
     <div style={styles.card}>
@@ -216,32 +216,32 @@ function formatDateTime(ts) {
 }
 
 const styles = {
-  page: { minHeight: "100vh", background: "#f8fafc", fontFamily: "'Inter', sans-serif" },
+  page: { minHeight: "100vh", background: "#f5f4f0", fontFamily: "'DM Sans', sans-serif" },
   container: { maxWidth: 680, margin: "0 auto", padding: "1.5rem 1rem" },
   header: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" },
-  logo: { fontSize: 20, fontWeight: 800, color: "#2563eb" },
+  logo: { fontSize: 20, fontWeight: 800, color: "#0d6e6e" },
   headerRight: { display: "flex", alignItems: "center", gap: "1rem" },
-  userName: { fontSize: 14, color: "#374151", fontWeight: 500 },
-  logoutBtn: { background: "none", border: "1.5px solid #e2e8f0", color: "#64748b", padding: "0.4rem 0.9rem", borderRadius: 6, fontSize: 13, cursor: "pointer" },
-  title: { fontSize: 26, fontWeight: 800, color: "#0f172a", margin: "0 0 4px" },
-  sub: { fontSize: 14, color: "#64748b", margin: "0 0 1.5rem" },
+  userName: { fontSize: 14, color: "#18151f", fontWeight: 500 },
+  logoutBtn: { background: "none", border: "1.5px solid #e2e8f0", color: "#7a7386", padding: "0.4rem 0.9rem", borderRadius: 6, fontSize: 13, cursor: "pointer" },
+  title: { fontSize: 26, fontWeight: 800, color: "#18151f", margin: "0 0 4px" },
+  sub: { fontSize: 14, color: "#7a7386", margin: "0 0 1.5rem" },
   section: { display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1.5rem" },
-  sectionLabel: { fontSize: 12, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 },
+  sectionLabel: { fontSize: 12, fontWeight: 700, color: "#b8b3c2", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 },
   card: { background: "#fff", borderRadius: 12, padding: "1.25rem", boxShadow: "0 1px 8px rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", gap: "0.75rem" },
   cardTop: { display: "flex", alignItems: "flex-start", justifyContent: "space-between" },
-  companyName: { fontSize: 16, fontWeight: 700, color: "#0f172a" },
-  cardMeta: { fontSize: 12, color: "#94a3b8", marginTop: 2 },
+  companyName: { fontSize: 16, fontWeight: 700, color: "#18151f" },
+  cardMeta: { fontSize: 12, color: "#b8b3c2", marginTop: 2 },
   badge: { padding: "0.25rem 0.75rem", borderRadius: 999, fontSize: 12, fontWeight: 600, color: "#fff" },
-  message: { fontSize: 14, color: "#475569", fontStyle: "italic", margin: 0, background: "#f8fafc", borderRadius: 8, padding: "0.75rem" },
-  timeMeta: { fontSize: 12, color: "#94a3b8", margin: "-2px 0 0" },
+  message: { fontSize: 14, color: "#475569", fontStyle: "italic", margin: 0, background: "#f5f4f0", borderRadius: 8, padding: "0.75rem" },
+  timeMeta: { fontSize: 12, color: "#b8b3c2", margin: "-2px 0 0" },
   cardActions: { display: "flex", gap: "0.75rem" },
   approveBtn: { flex: 1, padding: "0.65rem", background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" },
   declineBtn: { flex: 1, padding: "0.65rem", background: "#fff", color: "#ef4444", border: "1.5px solid #ef4444", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer" },
   emptyState: { display: "flex", flexDirection: "column", alignItems: "center", padding: "4rem 2rem", textAlign: "center", gap: "0.5rem" },
   blocker: { marginBottom: "0.9rem", padding: "0.7rem", borderRadius: 8, border: "1px solid #fed7aa", background: "#fff7ed", color: "#9a3412", fontSize: 13 },
   emptyIcon: { fontSize: 40 },
-  emptyText: { fontSize: 16, fontWeight: 600, color: "#374151", margin: 0 },
-  emptySub: { fontSize: 14, color: "#94a3b8", margin: 0 },
+  emptyText: { fontSize: 16, fontWeight: 600, color: "#18151f", margin: 0 },
+  emptySub: { fontSize: 14, color: "#b8b3c2", margin: 0 },
   editLink: { marginTop: "1rem" },
-  link: { color: "#2563eb", fontSize: 14, textDecoration: "none" },
+  link: { color: "#0d6e6e", fontSize: 14, textDecoration: "none" },
 };
