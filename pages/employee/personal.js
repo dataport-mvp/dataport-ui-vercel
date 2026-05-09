@@ -45,11 +45,11 @@ const BANK_LIST = [
 const G = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #f5f4f0; font-family: 'DM Sans', sans-serif; }
-  .pg { min-height: 100vh; background: #f5f4f0; padding-bottom: 3rem; }
+  body { background: #f0ece6; font-family: 'DM Sans', sans-serif; }
+  .pg { min-height: 100vh; background: #f0ece6; padding-bottom: 3rem; }
   .wrap { max-width: 860px; margin: auto; padding: 0 1.25rem; }
 
-  .topbar { background: #18151f; border-bottom: 1px solid #2a2535; padding: 0.85rem 1.75rem;
+  .topbar { background: #111; border-bottom: 1px solid #2a2535; padding: 0.85rem 1.75rem;
     display: flex; justify-content: space-between; align-items: center;
     margin-bottom: 1.75rem; position: sticky; top: 0; z-index: 50;
     box-shadow: 0 4px 20px rgba(15,12,40,0.4); }
@@ -77,7 +77,7 @@ const G = `
     justify-content: center; font-size: 1rem; transition: all 0.2s; color: #8b92a8; }
   .gear-btn:hover { border-color: #0d6e6e; background: rgba(167,139,250,0.1); color: #0d6e6e; }
   .gear-btn.open { border-color: #0d6e6e; background: rgba(167,139,250,0.15); color: #0d6e6e; }
-  .gear-dropdown { position: absolute; top: calc(100% + 8px); right: 0; background: #18151f;
+  .gear-dropdown { position: absolute; top: calc(100% + 8px); right: 0; background: #111;
     border: 1px solid #2a2535; border-radius: 10px; padding: 0.35rem;
     min-width: 180px; z-index: 200; box-shadow: 0 8px 32px rgba(15,12,40,0.5);
     animation: fadeDown 0.12s ease; }
@@ -122,7 +122,7 @@ const G = `
   .fr:last-child { margin-bottom: 0; }
   .fi { display: flex; flex-direction: column; gap: 0.28rem; flex: 1; min-width: 138px; }
   .fl { font-size: 0.7rem; font-weight: 700; color: #8b88b0; letter-spacing: 0.55px; text-transform: uppercase; }
-  .in { padding: 0.65rem 0.875rem; background: #f5f4f0; border: 1.5px solid #d8d4e3;
+  .in { padding: 0.65rem 0.875rem; background: #f0ece6; border: 1.5px solid #d8d4e3;
     border-radius: 9px; font-family: inherit; font-size: 0.875rem; color: #1e293b;
     outline: none; width: 100%; transition: all 0.18s; }
   .in:focus { border-color: #0d6e6e; background: #fff; box-shadow: 0 0 0 3px rgba(13,110,110,0.13); }
@@ -131,7 +131,7 @@ const G = `
   .err-msg { font-size: 0.68rem; color: #ef4444; font-weight: 600; margin-top: 0.2rem; display: block; }
   .fe { font-size: 0.7rem; color: #ef4444; margin-top: 2px; font-weight: 500; }
 
-  .date-input { padding: 0.65rem 0.875rem; background: #f5f4f0; border: 1.5px solid #d8d4e3;
+  .date-input { padding: 0.65rem 0.875rem; background: #f0ece6; border: 1.5px solid #d8d4e3;
     border-radius: 9px; font-family: inherit; font-size: 0.875rem; color: #1e293b;
     outline: none; width: 100%; cursor: pointer; transition: all 0.18s; }
   .date-input:focus { border-color: #0d6e6e; background: #fff; box-shadow: 0 0 0 3px rgba(13,110,110,0.13); }
@@ -145,7 +145,7 @@ const G = `
   .photo-wrap img { width: 100%; height: 100%; object-fit: cover; }
 
   .sbar { display: flex; justify-content: space-between; align-items: center;
-    margin-top: 1.5rem; padding: 1rem 1.5rem; background: #18151f;
+    margin-top: 1.5rem; padding: 1rem 1.5rem; background: #111;
     border-radius: 12px; box-shadow: 0 6px 28px rgba(30,26,62,0.22); border: 1px solid rgba(255,255,255,0.85); }
   .ss { font-size: 0.84rem; color: #8b92a8; font-weight: 500; }
   .ss.ok { color: #16a34a; } .ss.err { color: #ef4444; }
@@ -155,7 +155,7 @@ const G = `
   .pbtn:hover { background: #0f8a8a; transform: translateY(-1px); }
   .sbtn { padding: 0.72rem 1.5rem; background: transparent; color: #8b92a8; border: 1.5px solid #2a2535;
     border-radius: 10px; font-family: inherit; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-  .sbtn:hover { background: #f5f4f0; }
+  .sbtn:hover { background: #f0ece6; }
 
   .bank-note { font-size: 0.72rem; color: #0d9488; background: #f0fdfa; border: 1px solid #99f6e4;
     border-radius: 8px; padding: 0.5rem 0.75rem; margin-bottom: 0.85rem; font-weight: 500; line-height: 1.5; }
@@ -167,7 +167,7 @@ const G = `
   .digit-counter.match { color: #16a34a; }
   .digit-counter.mismatch { color: #ef4444; }
 
-  .cmsg { padding: 0.6rem 0.875rem; background: #f5f4f0; border: 1.5px solid #d8d4e3;
+  .cmsg { padding: 0.6rem 0.875rem; background: #f0ece6; border: 1.5px solid #d8d4e3;
     border-radius: 9px; font-family: inherit; font-size: 0.84rem; color: #1e293b;
     outline: none; width: 100%; resize: vertical; min-height: 72px; transition: all 0.18s; }
   .cmsg:focus { border-color: #0d6e6e; background: #fff; box-shadow: 0 0 0 3px rgba(13,110,110,0.13); }

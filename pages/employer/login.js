@@ -90,7 +90,7 @@ export default function EmployerLogin() {
         .fla:hover{color:#0d6e6e}
 
         /* ── RIGHT ── */
-        .rgt{background:#fff;display:flex;align-items:center;justify-content:center;padding:3rem 2.5rem}
+        .rgt{background:#f5f2ee;display:flex;align-items:center;justify-content:center;padding:3rem 2.5rem}
         .form{width:100%;max-width:390px;animation:fadeUp .5s ease both}
 
         .form-back{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#b8b3c2;margin-bottom:2rem;cursor:pointer;text-decoration:none;transition:color .15s}
@@ -100,14 +100,14 @@ export default function EmployerLogin() {
         .fhd{font-family:'Cormorant Garamond',serif;font-size:1.85rem;font-weight:600;color:#18151f;letter-spacing:-.3px;line-height:1.1;margin-bottom:4px}
         .fsb{font-size:.83rem;color:#b8b3c2;margin-bottom:1.75rem}
 
-        .tabs{display:flex;background:#f8f7fa;border:1.5px solid #ede9f5;border-radius:9px;padding:3px;gap:3px;margin-bottom:1.4rem}
+        .tabs{display:flex;background:#ede9e4;border:1.5px solid #c8c2b8;border-radius:9px;padding:3px;gap:3px;margin-bottom:1.4rem}
         .tab{flex:1;padding:7px;border:none;border-radius:7px;font-family:inherit;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:#b8b3c2}
-        .tab.on{background:#fff;color:#18151f;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+        .tab.on{background:#fff;color:#111;border:1.5px solid #c8c2b8;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 
         .fld{display:flex;flex-direction:column;gap:.35rem;margin-bottom:.9rem}
         .flb{font-size:.67rem;font-weight:700;color:#7a7386;letter-spacing:.4px;text-transform:uppercase}
         .flb span{color:#0d6e6e}
-        .fin{padding:.78rem 1rem;background:#f8f7fa;border:1.5px solid #ede9f5;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.875rem;color:#18151f;outline:none;width:100%;transition:all .15s}
+        .fin{padding:.78rem 1rem;background:#fff;border:1.5px solid #c8c2b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.875rem;color:#18151f;outline:none;width:100%;transition:all .15s}
         .fin::placeholder{color:#d8d4e3}
         .fin:focus{border-color:#0d6e6e;background:#fff;box-shadow:0 0 0 3px rgba(13,110,110,.06)}
         .pw-wrap{position:relative}
@@ -121,8 +121,8 @@ export default function EmployerLogin() {
         .terms-note a{color:#0d6e6e;text-decoration:none}
         .terms-note a:hover{text-decoration:underline}
 
-        .sub{padding:.88rem;background:#18151f;color:#fff;border:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .15s;width:100%;margin-bottom:.75rem}
-        .sub:hover:not(:disabled){background:#0d6e6e;transform:translateY(-1px)}
+        .sub{padding:.88rem;background:#0d6e6e;box-shadow:0 4px 16px rgba(13,110,110,.3);color:#fff;border:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .15s;width:100%;margin-bottom:.75rem}
+        .sub:hover:not(:disabled){background:#0a5656;transform:translateY(-1px)}
         .sub:disabled{opacity:.45;cursor:not-allowed;transform:none}
 
         .fgt{text-align:center;margin-bottom:.75rem}

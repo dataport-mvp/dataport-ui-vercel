@@ -51,11 +51,11 @@ function ConsentBell({ apiFetch, router }) {
 const G = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #f5f4f0; font-family: 'DM Sans', sans-serif; }
-  .pg  { min-height: 100vh; background: #f5f4f0; padding-bottom: 3rem; }
+  body { background: #f0ece6; font-family: 'DM Sans', sans-serif; }
+  .pg  { min-height: 100vh; background: #f0ece6; padding-bottom: 3rem; }
   .wrap { max-width: 860px; margin: auto; padding: 0 1.25rem; }
 
-  .topbar { background: #18151f; border-bottom: 1px solid #2a2535; padding: 0.85rem 1.75rem;
+  .topbar { background: #111; border-bottom: 1px solid #2a2535; padding: 0.85rem 1.75rem;
     display: flex; justify-content: space-between; align-items: center;
     margin-bottom: 1.75rem; position: sticky; top: 0; z-index: 50;
     box-shadow: 0 4px 20px rgba(15,12,40,0.4); }
@@ -71,7 +71,7 @@ const G = `
     margin-bottom: 1.1rem; box-shadow: 0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12);
     border: 1px solid rgba(255,255,255,0.85); position: relative; overflow: hidden; }
   .sc::before { content:''; position:absolute; top:0; left:0; bottom:0; width:4px; border-radius:16px 0 0 16px; }
-  .sc.ind::before { background:#0d6e6e; }
+  .sc.ind::before { background:#0d6e6e;box-shadow:0 4px 14px rgba(13,110,110,.35); }
   .sc.amb::before { background:#d97706; }
   .sc.vio::before { background:#7c3aed; }
   .sc.cyn::before { background:#0891b2; }
@@ -112,7 +112,7 @@ const G = `
   .ack-box { display:flex; align-items:flex-start; gap:0.75rem; padding:0.8rem 0; border-bottom:1px solid #f0eef8; }
   .ack-box:last-child { border-bottom:none; }
   .ack-check { width:20px; height:20px; border-radius:5px; border:2px solid #d8d4e3;
-    background:#f5f4f0; cursor:pointer; flex-shrink:0; margin-top:1px;
+    background:#f0ece6; cursor:pointer; flex-shrink:0; margin-top:1px;
     display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
   .ack-check.checked { background:#16a34a; border-color:#16a34a; }
   .ack-text { font-size:0.84rem; color:#3d3a5c; line-height:1.55; font-weight:500; }
@@ -121,7 +121,7 @@ const G = `
     letter-spacing:0.5px; margin:0.9rem 0 0.5rem; padding-top:0.9rem; border-top:1px solid #f0eef8; }
 
   .sbar { display:flex; justify-content:space-between; align-items:center;
-    margin-top:1.5rem; padding:1rem 1.5rem; background:#18151f;
+    margin-top:1.5rem; padding:1rem 1.5rem; background:#111;
     border-radius:12px; box-shadow:0 6px 28px rgba(30,26,62,0.22); border:1px solid rgba(255,255,255,0.1); }
   .ss { font-size:0.84rem; color:#8b92a8; font-weight:500; }
   .ss.ok { color:#4ade80; } .ss.err { color:#f87171; }

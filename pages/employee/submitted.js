@@ -6,10 +6,10 @@ import { useAuth } from "../../utils/AuthContext";
 const G = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #f5f4f0; font-family: 'DM Sans', sans-serif; }
-  .pg { min-height: 100vh; background: #f5f4f0; display: flex; flex-direction: column; }
+  body { background: #f0ece6; font-family: 'DM Sans', sans-serif; }
+  .pg { min-height: 100vh; background: #f0ece6; display: flex; flex-direction: column; }
 
-  .topbar { background: #18151f; border-bottom: 1px solid #2a2535; padding: 0.85rem 1.75rem;
+  .topbar { background: #111; border-bottom: 1px solid #2a2535; padding: 0.85rem 1.75rem;
     display: flex; justify-content: space-between; align-items: center;
     box-shadow: 0 4px 20px rgba(15,12,40,0.4); }
   .logo-text { font-size: 1.3rem; font-weight: 800; color: #0d6e6e; letter-spacing: -0.5px; }

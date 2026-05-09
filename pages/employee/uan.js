@@ -47,10 +47,10 @@ const makePfRecord = (companyName = "") => ({
 const G = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #f5f4f0; font-family: 'DM Sans', sans-serif; }
-  .pg  { min-height: 100vh; background: #f5f4f0; padding-bottom: 3rem; }
+  body { background: #f0ece6; font-family: 'DM Sans', sans-serif; }
+  .pg  { min-height: 100vh; background: #f0ece6; padding-bottom: 3rem; }
   .wrap { max-width: 860px; margin: auto; padding: 0 1.25rem; }
-  .topbar { background: #18151f; border-bottom: 1px solid #2a2535; padding: 0.85rem 1.75rem;
+  .topbar { background: #111; border-bottom: 1px solid #2a2535; padding: 0.85rem 1.75rem;
     display: flex; justify-content: space-between; align-items: center;
     margin-bottom: 1.75rem; position: sticky; top: 0; z-index: 50;
     box-shadow: 0 4px 20px rgba(15,12,40,0.4); }
@@ -83,14 +83,14 @@ const G = `
   .fr:last-child { margin-bottom:0; }
   .fi { display:flex; flex-direction:column; gap:0.28rem; flex:1; min-width:138px; }
   .fl { font-size:0.7rem; font-weight:700; color:#8b88b0; letter-spacing:0.55px; text-transform:uppercase; }
-  .in { padding:0.65rem 0.875rem; background:#f5f4f0; border:1.5px solid #d8d4e3;
+  .in { padding:0.65rem 0.875rem; background:#f0ece6; border:1.5px solid #d8d4e3;
     border-radius:9px; font-family:inherit; font-size:0.875rem; color:#1e293b;
     outline:none; width:100%; transition:all 0.18s; }
   .in:focus { border-color:#0891b2; background:#fff; box-shadow:0 0 0 3px rgba(8,145,178,0.13); }
   .in:disabled { background:#ece9f5; color:#a0aec0; cursor:not-allowed; }
   .in.err { border-color:#ef4444 !important; background:#fff8f8 !important; }
   .err-msg { font-size:0.68rem; color:#ef4444; font-weight:600; margin-top:0.2rem; display:block; }
-  .date-input { padding:0.65rem 0.875rem; background:#f5f4f0; border:1.5px solid #d8d4e3;
+  .date-input { padding:0.65rem 0.875rem; background:#f0ece6; border:1.5px solid #d8d4e3;
     border-radius:9px; font-family:inherit; font-size:0.875rem; color:#1e293b;
     outline:none; width:100%; transition:all 0.18s; }
   .date-input:focus { border-color:#0891b2; background:#fff; box-shadow:0 0 0 3px rgba(8,145,178,0.13); }
@@ -113,7 +113,7 @@ const G = `
   .rm-btn { padding:0.28rem 0.7rem; background:#fff5f5; color:#ef4444; border:1.5px solid #fecaca;
     border-radius:7px; font-size:0.75rem; font-weight:600; cursor:pointer; font-family:inherit; }
   .sbar { display:flex; justify-content:space-between; align-items:center;
-    margin-top:1.5rem; padding:1rem 1.5rem; background:#18151f;
+    margin-top:1.5rem; padding:1rem 1.5rem; background:#111;
     border-radius:12px; box-shadow:0 6px 28px rgba(30,26,62,0.22); border:1px solid rgba(255,255,255,0.1); }
   .ss { font-size:0.84rem; color:#8b92a8; font-weight:500; }
   .ss.ok { color:#4ade80; } .ss.err { color:#f87171; }
