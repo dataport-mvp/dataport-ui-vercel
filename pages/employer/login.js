@@ -70,23 +70,23 @@ export default function EmployerLogin() {
         .badge::before{content:'';width:16px;height:1.5px;background:#0d6e6e}
         .h2{font-family:'Cormorant Garamond',serif;font-size:clamp(1.8rem,2.8vw,2.5rem);font-weight:600;line-height:1.2;color:#f5f0f8;letter-spacing:-.3px;margin-bottom:.9rem}
         .h2 em{font-style:italic;color:#0f8a8a}
-        .desc{font-size:.875rem;color:#5a5468;line-height:1.8;margin-bottom:2rem;max-width:340px}
+        .desc{font-size:.875rem;color:rgba(255,255,255,.55);line-height:1.8;margin-bottom:2rem;max-width:340px}
 
         /* Features — same as current */
         .feats{display:flex;flex-direction:column;gap:.8rem;margin-bottom:2rem}
-        .ft-row{display:flex;align-items:center;gap:.7rem;font-size:.83rem;color:#4a4458}
-        .ftck{width:18px;height:18px;border-radius:50%;flex-shrink:0;background:rgba(13,110,110,0.1);border:1px solid rgba(13,110,110,0.2);display:flex;align-items:center;justify-content:center;color:#0d6e6e}
+        .ft-row{display:flex;align-items:center;gap:.7rem;font-size:.83rem;color:rgba(255,255,255,.6)}
+        .ftck{width:18px;height:18px;border-radius:50%;flex-shrink:0;background:rgba(13,110,110,.2);border:1px solid rgba(13,110,110,.4);display:flex;align-items:center;justify-content:center;color:#0d6e6e}
 
         /* Stats — same as current */
-        .stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.04);border-radius:12px;overflow:hidden}
-        .stat{background:#18151f;padding:1.1rem 1.25rem}
+        .stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden}
+        .stat{background:#1e1a14;padding:1.1rem 1.25rem}
         .stat-v{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:600;color:#0d6e6e;line-height:1;margin-bottom:3px}
-        .stat-l{font-size:.71rem;color:#3d3847;line-height:1.4}
+        .stat-l{font-size:.71rem;color:rgba(255,255,255,.4);line-height:1.4}
 
-        .lft-ft{padding-top:1.5rem;border-top:1px solid rgba(255,255,255,0.04);display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1}
-        .fc{font-size:.68rem;color:#2a2535}
+        .lft-ft{padding-top:1.5rem;border-top:1px solid rgba(255,255,255,.12);display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1}
+        .fc{font-size:.68rem;color:rgba(255,255,255,.35)}
         .fl{display:flex;gap:1rem}
-        .fla{font-size:.68rem;color:#2a2535;text-decoration:none;transition:color .15s}
+        .fla{font-size:.68rem;color:rgba(255,255,255,.35);text-decoration:none;transition:color .15s}
         .fla:hover{color:#0d6e6e}
 
         /* ── RIGHT ── */
@@ -167,7 +167,7 @@ export default function EmployerLogin() {
                 .lgf2E{animation:lgfE 2.6s ease-in-out infinite .87s}
                 .lgf3E{animation:lgfE 2.6s ease-in-out infinite 1.74s}
               `}</style></defs>
-              <path d="M18 1.5L33 8V23Q33 36.5 18 39Q3 36.5 3 23V8Z" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" strokeWidth="0.8"/>
+              <path d="M18 1.5L33 8V23Q33 36.5 18 39Q3 36.5 3 23V8Z" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.2)" strokeWidth="0.8"/>
               <rect x="9.5" y="22" width="4.5" height="13" rx="1.8" fill="#0d6e6e"/>
               <rect x="22" y="22" width="4.5" height="13" rx="1.8" fill="#0d6e6e"/>
               <path d="M11.5 22Q18 13.5 24.5 22" fill="none" stroke="#0d6e6e" strokeWidth="3.8" strokeLinecap="round"/>
