@@ -196,6 +196,16 @@ function DateField({ l, v, s, r = true }) {
     if (val.length === 2 && raw.length === 1) val = val + "/";
     if (val.length === 5 && raw.length === 4) val = val + "/";
     if (val.length > 10) return;
+    // Validate day and month as user types
+    const parts = val.split("/");
+    if (parts[0] && parts[0].length === 2) {
+      const day = parseInt(parts[0], 10);
+      if (day < 1 || day > 31) return;
+    }
+    if (parts[1] && parts[1].length === 2) {
+      const month = parseInt(parts[1], 10);
+      if (month < 1 || month > 12) return;
+    }
     setRaw(val);
     if (val.length === 10) {
       const [d, mo, y] = val.split("/");
@@ -1183,6 +1193,11 @@ export default function PersonalDetails() {
                   <F l="Middle Name" v={middleName} s={dirty(setMiddleName)} r={false} />
                   <F l="Last Name"   v={lastName}   s={dirty(setLastName)} />
                 </div>
+                {(firstName || lastName) && (
+                  <div style={{marginTop:"0.5rem",padding:"0.5rem 0.875rem",background:"#e0f0ee",border:"1px solid #a8d5ce",borderRadius:8,fontSize:"0.82rem",fontWeight:700,color:"#0a5656",letterSpacing:"0.2px"}}>
+                    👤 {[firstName, middleName, lastName].filter(Boolean).join(" ")}
+                  </div>
+                )}
               </div>
 
               {/* Father's Name */}
@@ -1193,6 +1208,11 @@ export default function PersonalDetails() {
                   <F l="Middle Name" v={fatherMiddle} s={dirty(setFatherMiddle)} r={false} />
                   <F l="Last Name"   v={fatherLast}   s={dirty(setFatherLast)} />
                 </div>
+                {(fatherFirst || fatherLast) && (
+                  <div style={{marginTop:"0.5rem",padding:"0.5rem 0.875rem",background:"#f5f3ff",border:"1px solid #ddd6fe",borderRadius:8,fontSize:"0.82rem",fontWeight:700,color:"#6d28d9",letterSpacing:"0.2px"}}>
+                    👨 {[fatherFirst, fatherMiddle, fatherLast].filter(Boolean).join(" ")}
+                  </div>
+                )}
               </div>
 
               {/* Mother's Name */}
@@ -1203,6 +1223,11 @@ export default function PersonalDetails() {
                   <F l="Middle Name" v={motherMiddle} s={dirty(setMotherMiddle)} r={false} />
                   <F l="Last Name"   v={motherLast}   s={dirty(setMotherLast)} />
                 </div>
+                {(motherFirst || motherLast) && (
+                  <div style={{marginTop:"0.5rem",padding:"0.5rem 0.875rem",background:"#fff1f2",border:"1px solid #fecdd3",borderRadius:8,fontSize:"0.82rem",fontWeight:700,color:"#be123c",letterSpacing:"0.2px"}}>
+                    👩 {[motherFirst, motherMiddle, motherLast].filter(Boolean).join(" ")}
+                  </div>
+                )}
               </div>
 
               {/* Personal Info */}
@@ -1300,7 +1325,7 @@ export default function PersonalDetails() {
                   </div>
                   {/* PAN */}
                   <div className="fi">
-                    <F l="PAN Number" v={pan} s={(v) => { let val = v.toUpperCase(); if (val.length<=5) val=val.replace(/[^A-Z]/g,""); else if (val.length<=9) val=val.slice(0,5)+val.slice(5).replace(/[^0-9]/g,""); else if (val.length<=10) val=val.slice(0,5)+val.slice(5,9)+val.slice(9).replace(/[^A-Z]/g,""); dirty(setPan)(val); }} />
+                    <F l="PAN Number" v={pan} s={(v) => { let val = v.toUpperCase().slice(0,10); if (val.length<=5) val=val.replace(/[^A-Z]/g,""); else if (val.length<=9) val=val.slice(0,5)+val.slice(5).replace(/[^0-9]/g,""); else val=val.slice(0,5)+val.slice(5,9)+val.slice(9).replace(/[^A-Z]/g,""); dirty(setPan)(val); }} />
                     {pan && pan.length !== 10 && <span className="fe">Format: AAAAA9999A</span>}
                     <div style={{marginTop:"0.75rem"}}>
                       <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Name as per PAN <span style={{color:"#ef4444"}}>*</span></span>
