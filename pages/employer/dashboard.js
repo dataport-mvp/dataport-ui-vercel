@@ -1136,6 +1136,7 @@ export default function EmployerDashboard() {
   const [loading,        setLoading]        = useState(true);
   const [printing,       setPrinting]       = useState(false);
   const [showInbox,      setShowInbox]      = useState(false);
+  const [mainTab,       setMainTab]        = useState("Overview");
   const [inboxThreads,   setInboxThreads]   = useState([]);
   const [inboxLoading,   setInboxLoading]   = useState(false);
   const [activeThread,   setActiveThread]   = useState(null); // consent_id
@@ -1490,413 +1491,495 @@ export default function EmployerDashboard() {
   const search = cTab==="pending" ? spPending : cTab==="approved" ? spApproved : spDeclined;
   const setSearch = cTab==="pending" ? setSpPending : cTab==="approved" ? setSpApproved : setSpDeclined;
 
-  const snap    = profileData?.profile_snapshot;
-  const empName = snap ? [snap.firstName, snap.lastName].filter(Boolean).join(" ")||selected?.employee_email : selected?.employee_email;
-
-  const docUrls = {};
-  if (documents) {
-    for (const [, docs] of Object.entries(documents)) {
-      for (const [, doc] of Object.entries(docs)) {
-        if (doc.s3_key) docUrls[doc.s3_key] = doc.url;
-      }
-    }
-  }
-
-  return (
+return (
     <>
       <style>{G}</style>
-      <div className="page">
-        {showSignout && <SignoutModal onConfirm={logout} onCancel={() => setShowSignout(false)} />}
+
+      {showSignout && <SignoutModal onConfirm={logout} onCancel={() => setShowSignout(false)} />}
 
       {/* ── Change Password Modal ── */}
       {showPwModal && (
-        <div style={{position:"fixed",inset:0,background:"rgba(15,12,40,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000,backdropFilter:"blur(4px)"}}>
-          <div style={{background:"#fff",borderRadius:14,padding:"1.75rem",maxWidth:380,width:"90%",boxShadow:"0 32px 80px rgba(0,0,0,0.2)"}}>
-            <div style={{fontSize:"0.95rem",fontWeight:700,color:"#0f172a",marginBottom:"1rem"}}>Change Password</div>
-            {[["Current password","password",pwCurrent,setPwCurrent],
-              ["New password","password",pwNew,setPwNew],
-              ["Confirm new password","password",pwConfirm,setPwConfirm]].map(([label,type,val,setter])=>(
+        <div style={{position:"fixed",inset:0,background:"rgba(17,13,10,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000,backdropFilter:"blur(4px)"}}>
+          <div style={{background:"#fff",borderRadius:14,padding:"1.75rem",maxWidth:380,width:"90%",boxShadow:"0 32px 80px rgba(0,0,0,0.2)",border:"1px solid #c8c2b8"}}>
+            <div style={{fontSize:"0.95rem",fontWeight:700,color:"#111",marginBottom:"1rem"}}>Change Password</div>
+            {[["Current password","password",pwCurrent,setPwCurrent],["New password","password",pwNew,setPwNew],["Confirm new password","password",pwConfirm,setPwConfirm]].map(([label,type,val,setter])=>(
               <div key={label} style={{marginBottom:"0.65rem"}}>
-                <div style={{fontSize:"0.65rem",fontWeight:600,color:"#6b7280",marginBottom:"0.3rem",textTransform:"uppercase",letterSpacing:"0.4px"}}>{label}</div>
-                <input type={type} value={val} onChange={e=>setter(e.target.value)}
-                  style={{width:"100%",padding:"0.6rem 0.8rem",border:"1.5px solid #c8c2b8",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",outline:"none",background:"#f5f2ee"}}/>
+                <div style={{fontSize:"0.65rem",fontWeight:600,color:"#7a6e64",marginBottom:"0.3rem",textTransform:"uppercase",letterSpacing:"0.4px"}}>{label}</div>
+                <input type={type} value={val} onChange={e=>setter(e.target.value)} style={{width:"100%",padding:"0.6rem 0.8rem",border:"1.5px solid #c8c2b8",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",outline:"none",background:"#f5f2ee"}}/>
               </div>
             ))}
             {pwErr && <div style={{fontSize:"0.72rem",color:"#ef4444",marginBottom:"0.6rem",fontWeight:600}}>{pwErr}</div>}
             {pwOk  && <div style={{fontSize:"0.72rem",color:"#16a34a",marginBottom:"0.6rem",fontWeight:600}}>{pwOk}</div>}
             <div style={{display:"flex",gap:"0.6rem",marginTop:"0.5rem"}}>
-              <button onClick={()=>{setShowPwModal(false);setPwErr("");setPwOk("");setPwCurrent("");setPwNew("");setPwConfirm("");}}
-                style={{flex:1,padding:"0.6rem",borderRadius:7,border:"1px solid #c8c2b8",background:"#f5f2ee",cursor:"pointer",fontWeight:600,color:"#6b7280",fontFamily:"inherit",fontSize:"0.82rem"}}>Cancel</button>
-              <button onClick={handleChangePassword} disabled={pwBusy}
-                style={{flex:1,padding:"0.6rem",borderRadius:7,border:"none",background:"#0d6e6e",color:"#fff",cursor:pwBusy?"not-allowed":"pointer",fontWeight:700,fontFamily:"inherit",fontSize:"0.82rem",opacity:pwBusy?0.6:1}}>
-                {pwBusy?"Saving…":"Change Password"}
-              </button>
+              <button onClick={()=>{setShowPwModal(false);setPwErr("");setPwOk("");setPwCurrent("");setPwNew("");setPwConfirm("");}} style={{flex:1,padding:"0.6rem",borderRadius:7,border:"1px solid #c8c2b8",background:"#f5f2ee",cursor:"pointer",fontWeight:600,color:"#7a6e64",fontFamily:"inherit",fontSize:"0.82rem"}}>Cancel</button>
+              <button onClick={handleChangePassword} disabled={pwBusy} style={{flex:1,padding:"0.6rem",borderRadius:7,border:"none",background:"#0d6e6e",color:"#fff",cursor:pwBusy?"not-allowed":"pointer",fontWeight:700,fontFamily:"inherit",fontSize:"0.82rem",opacity:pwBusy?0.6:1}}>{pwBusy?"Saving…":"Change Password"}</button>
             </div>
           </div>
         </div>
       )}
 
-        {/* ── Sidebar ── */}
-        <aside className="sidebar">
-          <div className="side-top">
-            <div className="brand-wrap">
-              <div className="brand-icon">🔒</div>
-              <div><div className="brand-name">Datagate</div><div className="brand-sub">Employer Portal</div></div>
+      {/* ── Inbox Panel ── */}
+      {showInbox && (
+        <>
+          <div className="inbox-overlay" onClick={()=>setShowInbox(false)}/>
+          <div className="inbox-panel">
+            <div className="inbox-head">
+              <div className="inbox-title">✉️ Messages</div>
+              <button className="inbox-close" onClick={()=>setShowInbox(false)}>✕</button>
             </div>
-            <div style={{display:"flex",alignItems:"center",gap:"0.4rem"}}>
-              <button className="inbox-btn" onClick={()=>{setShowInbox(true);loadInbox();}} title="Messages">
-                ✉️
-                {unreadCount > 0 && <span className="inbox-badge">{unreadCount}</span>}
-              </button>
-              <button className="so-btn" onClick={() => setShowSignout(true)} title="Sign out">⏻</button>
-            </div>
-          </div>
-
-          <div className="user-block">
-            <div className="user-name-txt">{user.name || user.email}</div>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:3}}>
-              <span className="emp-tag">Employer</span>
-              <button onClick={()=>setShowPwModal(true)} style={{background:"none",border:"none",fontSize:"0.6rem",color:"rgba(255,255,255,0.4)",cursor:"pointer",fontFamily:"inherit",fontWeight:600,padding:0,textDecoration:"underline"}}>Change password</button>
-            </div>
-          </div>
-
-          <button className="new-req-btn" onClick={()=>setShowDrawer(true)}>＋ New Request</button>
-
-          <div className="filter-tabs">
-            {[["pending","Pending"],["approved","Approved"],["declined","Declined"]].map(([key,label]) => (
-              <button key={key} className={`ft-btn${cTab===key?" on":""}`} onClick={() => setCTab(key)}>
-                {label}
-                {counts[key] > 0 && <span className="ft-cnt">{counts[key]}</span>}
-              </button>
-            ))}
-          </div>
-
-          <div className="search-wrap">
-            <input className="search-in" placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)} />
-          </div>
-
-          {/* ── Bulk remind strip (only shown on pending tab) ── */}
-          {cTab === "pending" && pending.length > 0 && (
-            <div style={{padding:"0.4rem 1.3rem 0.6rem",background:"transparent",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
-              <div style={{display:"flex",alignItems:"center",gap:"0.5rem",flexWrap:"wrap"}}>
-                <button
-                  onClick={sendBulkReminder}
-                  disabled={bulkRemindBusy}
-                  style={{flex:1,padding:"0.42rem 0.75rem",background:"rgba(13,110,110,0.18)",border:"1.5px solid rgba(13,110,110,0.4)",borderRadius:7,color:"#5eead4",fontSize:"0.65rem",fontWeight:700,cursor:bulkRemindBusy?"not-allowed":"pointer",fontFamily:"inherit",whiteSpace:"nowrap",transition:"all 0.15s",opacity:bulkRemindBusy?0.6:1}}>
-                  {bulkRemindBusy ? "Sending…" : `📧 Remind all (${pending.length})`}
-                </button>
-              </div>
-              {bulkRemindMsg && (
-                <div style={{fontSize:"0.62rem",marginTop:"0.3rem",color:bulkRemindMsg.startsWith("✓")?"#86efac":"#fca5a5",fontWeight:600}}>
-                  {bulkRemindMsg}
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="c-list">
-            {loading ? <div className="c-empty">Loading…</div>
-            : list.length === 0 ? <div className="c-empty">{search ? "No matches" : `No ${cTab} requests`}</div>
-            : list.map(c => {
-              const dot = c.status==="approved" ? "#16a34a" : c.status==="pending" ? "#f59e0b" : "#ef4444";
-              const ts  = c.status==="approved" ? (c.responded_at||c.approved_at) : (c.requested_at||c.created_at);
-              return (
-                <div key={gcid(c)} className={`c-item${gcid(selected)===gcid(c)?" sel":""}`} onClick={() => selectConsent(c)}>
-                  <div className="c-dot" style={{ background: dot }} />
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"0.3rem"}}>
-                      <div className="c-mail" style={{flex:1}}>{c.employee_email}</div>
-                      {candStatus[c.employee_email] && (
-                        <span className={`cand-status ${candStatus[c.employee_email].status==="submitted"?"submitted":candStatus[c.employee_email].status==="draft"?"draft":"no-profile"}`}>
-                          {candStatus[c.employee_email].status==="submitted"?"✓ Done":candStatus[c.employee_email].status==="draft"?"In progress":"Not started"}
-                        </span>
-                      )}
+            <div className="inbox-body">
+              <div className="inbox-list">
+                {inboxLoading && <div style={{padding:"1rem",fontSize:"0.72rem",color:"#a09890"}}>Loading…</div>}
+                {!inboxLoading && inboxThreads.length===0 && <div style={{padding:"2rem 1rem",textAlign:"center"}}><div style={{fontSize:"1.5rem",opacity:.2,marginBottom:"0.5rem"}}>✉️</div><div style={{fontSize:"0.72rem",color:"#a09890"}}>No messages yet</div></div>}
+                {inboxThreads.map(t=>(
+                  <div key={t.thread_id} className={`thread-item${activeThread===t.thread_id?" active":""}`} onClick={()=>loadThread(t.thread_id)}>
+                    <div className="thread-email">{t.other_party_email}</div>
+                    {t.other_party_name&&<div style={{fontSize:"0.62rem",color:"#7a6e64",marginTop:1}}>{t.other_party_name}</div>}
+                    <div className="thread-preview">{t.latest_message||"No messages"}</div>
+                    <div className="thread-meta">
+                      <span className="thread-time">{t.latest_at?toISTDate(t.latest_at):""}</span>
+                      {t.unread_count>0&&<span className="unread-badge">{t.unread_count}</span>}
                     </div>
-                    {c.employee_name && c.employee_name !== c.employee_email && <div className="c-nm">{c.employee_name}</div>}
-                    <div className="c-dt">{toISTDate(ts)}</div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        </aside>
-
-        {/* ── Request Drawer ── */}
-        {showDrawer && <div className="drawer-overlay" onClick={()=>setShowDrawer(false)}/>}
-        <div className={`drawer${showDrawer?" open":""}`}>
-          <div className="drawer-head">
-            <span className="drawer-title">Request Employee Data</span>
-            <button className="drawer-close" onClick={()=>setShowDrawer(false)}>✕</button>
-          </div>
-          <div className="drawer-body">
-            <div className="bulk-tab-row" style={{marginBottom:"0.75rem"}}>
-              <button className={`bulk-tab${reqTab==="single"?" on":""}`} onClick={()=>{setReqTab("single");setBulkResults([]);}}>Single</button>
-              <button className={`bulk-tab${reqTab==="bulk"?" on":""}`} onClick={()=>{setReqTab("bulk");setReqErr("");setReqOk("");}}>Bulk</button>
-            </div>
-            {reqTab==="single" ? (<>
-              <input className="req-in" type="email" placeholder="Employee email address" value={reqEmail} onChange={e=>setReqEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!reqMsg&&sendRequest()} style={{width:"100%",marginBottom:"0.5rem"}}/>
-              <textarea className="req-in req-ta" placeholder="Message to employee (optional)" value={reqMsg} onChange={e=>setReqMsg(e.target.value)} style={{width:"100%"}}/>
-              {reqErr && <p className="req-msg e">{reqErr}</p>}
-              {reqOk  && <p className="req-msg s">{reqOk}</p>}
-              <button className="send-btn" style={{marginTop:"0.5rem"}} onClick={()=>{sendRequest();}} disabled={reqBusy}>{reqBusy?"Sending…":"Send Request"}</button>
-            </>) : (<>
-              {/* Excel / CSV drop zone */}
-              <div
-                className={`xls-drop${xlsDragging?" drag":""}`}
-                onDragOver={e=>{e.preventDefault();setXlsDragging(true);}}
-                onDragLeave={()=>setXlsDragging(false)}
-                onDrop={handleXlsDrop}
-                onClick={()=>document.getElementById("xls-file-input").click()}
-              >
-                <div className="xls-drop-icon">📊</div>
-                <div className="xls-drop-txt">Drop Excel / CSV here</div>
-                <div className="xls-drop-sub">or click to browse · .xlsx .xls .csv</div>
-                <input id="xls-file-input" type="file" accept=".xlsx,.xls,.csv" style={{display:"none"}}
-                  onChange={handleXlsDrop}/>
+                ))}
               </div>
-              {xlsParsed && <div className="xls-parsed">✓ {xlsParsed}</div>}
-
-              <textarea className="req-in req-ta" placeholder="Enter emails — one per line&#10;rajan@company.com&#10;priya@company.com" style={{minHeight:80,width:"100%"}} value={bulkEmails} onChange={e=>{setBulkEmails(e.target.value);setXlsParsed("");}}/>
-              <textarea className="req-in req-ta" placeholder="Message to all candidates (optional)" style={{width:"100%"}} value={reqMsg} onChange={e=>setReqMsg(e.target.value)}/>
-              <button className="send-btn" style={{marginTop:"0.5rem"}} onClick={sendBulkRequest} disabled={bulkBusy||!bulkEmails.trim()}>
-                {bulkBusy?"Sending…":`Send to ${bulkEmails.split(/[\n,;]+/).filter(e=>e.trim()).length} candidate(s)`}
-              </button>
-              {bulkResults.length>0&&(
-                <div style={{marginTop:"0.75rem",background:"#f5f2ee",borderRadius:8,padding:"0.65rem"}}>
-                  {bulkResults.map((r,i)=>(
-                    <div key={i} style={{fontSize:"0.7rem",padding:"3px 0",color:r.ok?"#16a34a":"#ef4444",display:"flex",justifyContent:"space-between",gap:"0.5rem"}}>
-                      <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1}}>{r.email}</span>
-                      <span style={{fontWeight:700,flexShrink:0}}>{r.msg}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>)}
-          </div>
-        </div>
-
-        {/* ── Inbox Panel ── */}
-        {showInbox && (
-          <>
-            <div className="inbox-overlay" onClick={()=>setShowInbox(false)}/>
-            <div className="inbox-panel">
-              <div className="inbox-head">
-                <div className="inbox-title">✉️ Messages</div>
-                <button className="inbox-close" onClick={()=>setShowInbox(false)}>✕</button>
-              </div>
-              <div className="inbox-body">
-                {/* Thread list */}
-                <div className="inbox-list">
-                  {inboxLoading && <div style={{padding:"1rem",fontSize:"0.72rem",color:"#94a3b8"}}>Loading…</div>}
-                  {!inboxLoading && inboxThreads.length === 0 && (
-                    <div style={{padding:"1.5rem 1rem",textAlign:"center"}}>
-                      <div style={{fontSize:"1.5rem",opacity:0.3,marginBottom:"0.5rem"}}>✉️</div>
-                      <div style={{fontSize:"0.72rem",color:"#94a3b8"}}>No messages yet</div>
-                      <div style={{fontSize:"0.65rem",color:"#c4bfdb",marginTop:"0.3rem"}}>Click "Message candidate" on an approved profile</div>
-                    </div>
-                  )}
-                  {inboxThreads.map(t => (
-                    <div key={t.thread_id}
-                      className={`thread-item${activeThread===t.thread_id?" active":""}`}
-                      onClick={()=>loadThread(t.thread_id)}>
-                      <div className="thread-email">{t.other_party_email}</div>
-                      {t.other_party_name && <div style={{fontSize:"0.62rem",color:"#6b7280",marginTop:1}}>{t.other_party_name}</div>}
-                      <div className="thread-preview">{t.latest_message||"No messages"}</div>
-                      <div className="thread-meta">
-                        <span className="thread-time">{t.latest_at?toISTDate(t.latest_at):""}</span>
-                        {t.unread_count>0 && <span className="unread-badge">{t.unread_count}</span>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Thread messages */}
-                <div className="inbox-thread">
-                  {!activeThread ? (
-                    <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:"0.5rem",padding:"2rem"}}>
-                      <div style={{fontSize:"2rem",opacity:0.15}}>✉️</div>
-                      <div style={{fontSize:"0.8rem",color:"#94a3b8",fontWeight:500}}>Select a conversation</div>
-                    </div>
-                  ) : (
-                    <>
-                      {/* Thread header */}
-                      <div style={{padding:"0.75rem 1.25rem",borderBottom:"1px solid #ece9f9",background:"#faf9ff",flexShrink:0}}>
-                        <div style={{fontSize:"0.78rem",fontWeight:700,color:"#1a1035"}}>
-                          {inboxThreads.find(t=>t.thread_id===activeThread)?.other_party_email || activeThread}
-                        </div>
-                        <div style={{fontSize:"0.62rem",color:"#94a3b8",marginTop:1}}>
-                          {threadMsgs.length} message{threadMsgs.length!==1?"s":""}
-                          {" · "}Consent: {inboxThreads.find(t=>t.thread_id===activeThread)?.consent_status||""}
-                        </div>
-                      </div>
-
-                      {/* Messages */}
-                      <div className="msg-list">
-                        {threadLoading && <div style={{textAlign:"center",fontSize:"0.72rem",color:"#94a3b8",padding:"1rem"}}>Loading messages…</div>}
-                        {!threadLoading && threadMsgs.length === 0 && (
-                          <div style={{textAlign:"center",fontSize:"0.72rem",color:"#94a3b8",padding:"2rem"}}>
-                            No messages yet. Send the first message below.
-                          </div>
-                        )}
-                        {threadMsgs.map((m,i) => {
-                          const mine = m.sender_email === user?.email;
-                          return (
-                            <div key={m.message_id||i} className={`msg-bubble-wrap ${mine?"mine":"theirs"}`}>
-                              {!mine && <div className="msg-sender">{m.sender_name||m.sender_email}</div>}
-                              {m.subject && <div style={{fontSize:"0.65rem",fontWeight:700,color:mine?"rgba(255,255,255,0.7)":"#0d6e6e",marginBottom:"0.2rem"}}>{m.subject}</div>}
-                              <div className={`msg-bubble ${mine?"mine":"theirs"}`}>{m.body}</div>
-                              <div className={`msg-time ${mine?"mine":"theirs"}`}>
-                                {toISTDate(m.sent_at)}
-                                {mine && m.read_by_recipient && <span style={{marginLeft:4}}>✓✓</span>}
-                                {mine && !m.read_by_recipient && <span style={{marginLeft:4}}>✓</span>}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* Compose */}
-                      <div className="msg-compose">
-                        <input
-                          placeholder="Subject (optional)"
-                          value={msgSubject}
-                          onChange={e=>setMsgSubject(e.target.value)}
-                          style={{width:"100%",padding:"0.45rem 0.75rem",background:"#f5f2ee",border:"1.5px solid #ddd8f5",borderRadius:7,fontFamily:"inherit",fontSize:"0.75rem",color:"#1a1035",outline:"none",marginBottom:"0.4rem"}}
-                        />
-                        <textarea
-                          className="msg-input"
-                          placeholder="Type a message to the candidate…"
-                          value={msgBody}
-                          onChange={e=>setMsgBody(e.target.value)}
-                          onKeyDown={e=>{if(e.key==="Enter"&&e.ctrlKey){e.preventDefault();sendMessage();}}}
-                        />
-                        {msgErr && <div style={{fontSize:"0.68rem",color:"#ef4444",marginBottom:"0.3rem",fontWeight:600}}>{msgErr}</div>}
-                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:"0.4rem"}}>
-                          <span style={{fontSize:"0.62rem",color:"#94a3b8"}}>Ctrl+Enter to send</span>
-                          <button className="msg-send-btn" onClick={sendMessage} disabled={msgSending||!msgBody.trim()}>
-                            {msgSending?"Sending…":"Send ↗"}
-                          </button>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* ── Main ── */}
-        <main className="main">
-          {!selected ? (
-            <div className="empty-view">
-              <div className="empty-ico">👥</div>
-              <div className="empty-h">Select a request</div>
-              <div className="empty-s">Approved consents show the full verified profile here</div>
-            </div>
-          ) : (
-            <>
-              <div className="top-bar">
-                <div className="top-title"><strong>{empName}</strong> — {selected.employee_email}</div>
-                {selected.status==="approved" && profileData && (
-                  <button className="print-btn" onClick={handlePrint} disabled={printing}>
-                    {printing ? "⏳ Preparing…" : "🖨 Print / Export PDF"}
-                  </button>
-                )}
-              </div>
-
-              <div className="pane">
-                <div className="hero-card">
-                  <div>
-                    <div className="hero-name">{empName}</div>
-                    <div className="hero-email">{selected.employee_email}</div>
-                    <div className="hero-badges">
-                      <span className={`hb hb-${selected.status}`}>{selected.status.charAt(0).toUpperCase()+selected.status.slice(1)}</span>
-                      {selected.requested_at && <span className="hb hb-info">Requested: {toIST(selected.requested_at)}</span>}
-                      {(selected.responded_at||selected.approved_at) && <span className="hb hb-info">Responded: {toIST(selected.responded_at||selected.approved_at)}</span>}
-                      {profileData?.snapshot_at && <span className="hb hb-info">📅 Data as of: {toIST(profileData.snapshot_at)}</span>}
-                    </div>
-                    {candStatus[selected.employee_email] && (()=>{
-                      const cs = candStatus[selected.employee_email];
-                      const pct = cs.completeness || 0;
-                      const col = pct>=80?"#16a34a":pct>=50?"#f59e0b":"#ef4444";
-                      return (
-                        <div className="comp-bar-wrap" style={{minWidth:200}}>
-                          <div className="comp-bar-label">
-                            <span>Profile completeness</span>
-                            <span style={{color:col,fontWeight:700}}>{pct}%</span>
-                          </div>
-                          <div className="comp-bar-bg">
-                            <div className="comp-bar-fill" style={{width:`${pct}%`,background:col}}/>
-                          </div>
-                        </div>
-                      );
-                    })()}
+              <div className="inbox-thread">
+                {!activeThread?(
+                  <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:"0.5rem",padding:"2rem"}}>
+                    <div style={{fontSize:"2rem",opacity:.15}}>✉️</div>
+                    <div style={{fontSize:"0.8rem",color:"#a09890",fontWeight:500}}>Select a conversation</div>
                   </div>
-                  {selected.request_message && (
-                    <div className="msg-bubble">
-                      <div className="msg-lbl">Your message</div>
-                      <div className="msg-txt">{selected.request_message}</div>
+                ):(
+                  <>
+                    <div style={{padding:"0.75rem 1.25rem",borderBottom:"1px solid #c8c2b8",background:"#f5f2ee",flexShrink:0}}>
+                      <div style={{fontSize:"0.78rem",fontWeight:700,color:"#111"}}>{inboxThreads.find(t=>t.thread_id===activeThread)?.other_party_email||activeThread}</div>
+                      <div style={{fontSize:"0.62rem",color:"#a09890",marginTop:1}}>{threadMsgs.length} message{threadMsgs.length!==1?"s":""}</div>
                     </div>
-                  )}
-                </div>
-
-                {/* Item 11 — Returning user badge */}
-                {candStatus[selected.employee_email]?.status === "submitted" && approved.some(c => c.employee_email === selected.employee_email && gcid(c) !== gcid(selected)) && (
-                  <div style={{display:"inline-flex",alignItems:"center",gap:"0.4rem",background:"#f0f9f9",border:"1px solid rgba(13,110,110,0.25)",padding:"0.3rem 0.75rem",borderRadius:6,marginBottom:"0.6rem"}}>
-                    <span style={{fontSize:"0.68rem",fontWeight:700,color:"#0d6e6e"}}>↩ Returning — this candidate has shared their profile before</span>
-                  </div>
-                )}
-
-                {/* Item 3 — Remind button for pending requests */}
-                {selected.status==="pending" && (() => {
-                  const rc = selected.reminder_count || 0;
-                  return (
-                    <div style={{marginBottom:"0.75rem",display:"flex",alignItems:"center",gap:"0.75rem",flexWrap:"wrap"}}>
-                      {rc < 3 ? (
-                        <button onClick={()=>sendReminder(gcid(selected))} disabled={remindBusy}
-                          style={{padding:"0.45rem 1rem",background:"#fff",border:"1.5px solid #0d6e6e",borderRadius:7,color:"#0d6e6e",fontSize:"0.72rem",fontWeight:700,cursor:remindBusy?"not-allowed":"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>
-                          {remindBusy ? "Sending…" : `📧 Send Reminder (${rc}/3 sent)`}
-                        </button>
-                      ) : (
-                        <span style={{fontSize:"0.7rem",color:"#f59e0b",fontWeight:600}}>📧 Max reminders sent (3/3)</span>
-                      )}
-                      {remindMsg && <span style={{fontSize:"0.68rem",color:"#16a34a",fontWeight:600}}>{remindMsg}</span>}
+                    <div className="msg-list">
+                      {threadLoading&&<div style={{textAlign:"center",fontSize:"0.72rem",color:"#a09890",padding:"1rem"}}>Loading…</div>}
+                      {!threadLoading&&threadMsgs.length===0&&<div style={{textAlign:"center",fontSize:"0.72rem",color:"#a09890",padding:"2rem"}}>No messages yet.</div>}
+                      {threadMsgs.map((m,i)=>{
+                        const mine=m.sender_email===user?.email;
+                        return(
+                          <div key={m.message_id||i} className={`msg-bubble-wrap ${mine?"mine":"theirs"}`}>
+                            {!mine&&<div className="msg-sender">{m.sender_name||m.sender_email}</div>}
+                            <div className={`msg-bubble ${mine?"mine":"theirs"}`}>{m.body}</div>
+                            <div className={`msg-time ${mine?"mine":"theirs"}`}>{toISTDate(m.sent_at)}{mine&&m.read_by_recipient&&<span style={{marginLeft:4}}>✓✓</span>}{mine&&!m.read_by_recipient&&<span style={{marginLeft:4}}>✓</span>}</div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })()}
-
-                {selected.status==="pending"  && <div className="status-card">⏳ Waiting for employee to approve your request.</div>}
-                {selected.status==="declined" && <div className="status-card dec">❌ Employee declined this request.</div>}
-
-                {selected.status==="approved" && (
-                  loadingProf ? <div className="status-card">Loading profile…</div>
-                  : !profileData ? <div className="status-card">Could not load profile data.</div>
-                  : <>
-                    {/* Quick message button on approved view */}
-                    <div style={{marginBottom:"0.75rem",display:"flex",gap:"0.6rem",alignItems:"center",flexWrap:"wrap"}}>
-                      <button onClick={()=>{setActiveThread(gcid(selected));loadThread(gcid(selected));setShowInbox(true);}}
-                        style={{padding:"0.42rem 1rem",background:"#fff",border:"1.5px solid #0d6e6e",borderRadius:7,color:"#0d6e6e",fontSize:"0.72rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:"0.4rem"}}>
-                        ✉️ Message candidate
-                      </button>
-                    </div>
-                    <div className="note-bar">⚠️ <strong>Self-reported data.</strong> All information was filled and submitted by the employee. Documents are uploaded by the candidate and not independently verified by Datagate unless a verified check has been explicitly completed.</div>
-                    <div className="tab-nav">
-                      {DATA_TABS.map(t => <button key={t} className={`tab-btn${activeTab===t?" on":""}`} onClick={() => setActiveTab(t)}>{t}</button>)}
-                    </div>
-                    <div className="tab-pane">
-                      {activeTab==="Overview"   && <OverviewTab   data={profileData.profile_snapshot} />}
-                      {activeTab==="Education"  && <EducationTab  data={profileData.profile_snapshot?.education} />}
-                      {activeTab==="Employment" && <EmploymentTab data={profileData.employment_snapshot} resumeKey={profileData.profile_snapshot?.resumeKey} docUrls={docUrls} />}
-                      {activeTab==="UAN & PF"   && <UanTab        data={profileData.profile_snapshot} />}
-                      {activeTab==="Documents"  && <DocumentsTab  documents={documents} loading={docsLoading} />}
+                    <div className="msg-compose">
+                      <input placeholder="Subject (optional)" value={msgSubject} onChange={e=>setMsgSubject(e.target.value)} style={{width:"100%",padding:"0.45rem 0.75rem",background:"#f5f2ee",border:"1.5px solid #c8c2b8",borderRadius:7,fontFamily:"inherit",fontSize:"0.75rem",color:"#111",outline:"none",marginBottom:"0.4rem"}}/>
+                      <textarea className="msg-input" placeholder="Type a message…" value={msgBody} onChange={e=>setMsgBody(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&e.ctrlKey){e.preventDefault();sendMessage();}}}/>
+                      {msgErr&&<div style={{fontSize:"0.68rem",color:"#ef4444",marginBottom:"0.3rem",fontWeight:600}}>{msgErr}</div>}
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:"0.4rem"}}>
+                        <span style={{fontSize:"0.62rem",color:"#a09890"}}>Ctrl+Enter to send</span>
+                        <button className="msg-send-btn" onClick={sendMessage} disabled={msgSending||!msgBody.trim()}>{msgSending?"Sending…":"Send ↗"}</button>
+                      </div>
                     </div>
                   </>
                 )}
               </div>
-            </>
-          )}
-        </main>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── Request Drawer ── */}
+      {showDrawer&&<div className="drawer-overlay" onClick={()=>setShowDrawer(false)}/>}
+      <div className={`drawer${showDrawer?" open":""}`}>
+        <div className="drawer-head">
+          <span className="drawer-title">Send BGV Request</span>
+          <button className="drawer-close" onClick={()=>setShowDrawer(false)}>✕</button>
+        </div>
+        <div className="drawer-body">
+          <div className="bulk-tab-row" style={{marginBottom:"0.75rem"}}>
+            <button className={`bulk-tab${reqTab==="single"?" on":""}`} onClick={()=>{setReqTab("single");setBulkResults([]);}}>Single</button>
+            <button className={`bulk-tab${reqTab==="bulk"?" on":""}`} onClick={()=>{setReqTab("bulk");setReqErr("");setReqOk("");}}>Bulk</button>
+          </div>
+          {reqTab==="single"?(<>
+            <div style={{fontSize:"0.65rem",fontWeight:700,color:"#7a6e64",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>Candidate Email *</div>
+            <input className="req-in" type="email" placeholder="candidate@company.com" value={reqEmail} onChange={e=>setReqEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!reqMsg&&sendRequest()} style={{width:"100%",marginBottom:"0.65rem"}}/>
+            <div style={{fontSize:"0.65rem",fontWeight:700,color:"#7a6e64",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>Message (Optional)</div>
+            <textarea className="req-in req-ta" placeholder="Add context for the candidate…" value={reqMsg} onChange={e=>setReqMsg(e.target.value)} style={{width:"100%"}}/>
+            {reqErr&&<p className="req-msg e">{reqErr}</p>}
+            {reqOk&&<p className="req-msg s">{reqOk}</p>}
+            <button className="send-btn" style={{marginTop:"0.75rem"}} onClick={sendRequest} disabled={reqBusy}>{reqBusy?"Sending…":"Send consent request →"}</button>
+          </>):(<>
+            <div className={`xls-drop${xlsDragging?" drag":""}`} onDragOver={e=>{e.preventDefault();setXlsDragging(true);}} onDragLeave={()=>setXlsDragging(false)} onDrop={handleXlsDrop} onClick={()=>document.getElementById("xls-file-input").click()}>
+              <div className="xls-drop-icon">📊</div>
+              <div className="xls-drop-txt">Drop Excel / CSV here</div>
+              <div className="xls-drop-sub">or click to browse · .xlsx .xls .csv</div>
+              <input id="xls-file-input" type="file" accept=".xlsx,.xls,.csv" style={{display:"none"}} onChange={handleXlsDrop}/>
+            </div>
+            {xlsParsed&&<div className="xls-parsed">✓ {xlsParsed}</div>}
+            <textarea className="req-in req-ta" placeholder={"Enter emails — one per line\nrajan@company.com\npriya@company.com"} style={{minHeight:80,width:"100%"}} value={bulkEmails} onChange={e=>{setBulkEmails(e.target.value);setXlsParsed("");}}/>
+            <textarea className="req-in req-ta" placeholder="Message to all candidates (optional)" style={{width:"100%"}} value={reqMsg} onChange={e=>setReqMsg(e.target.value)}/>
+            <button className="send-btn" style={{marginTop:"0.5rem"}} onClick={sendBulkRequest} disabled={bulkBusy||!bulkEmails.trim()}>{bulkBusy?"Sending…":`Send to ${bulkEmails.split(/[\n,;]+/).filter(e=>e.trim()).length} candidate(s)`}</button>
+            {bulkResults.length>0&&(
+              <div style={{marginTop:"0.75rem",background:"#f5f2ee",borderRadius:8,padding:"0.65rem"}}>
+                {bulkResults.map((r,i)=>(<div key={i} style={{fontSize:"0.7rem",padding:"3px 0",color:r.ok?"#16a34a":"#ef4444",display:"flex",justifyContent:"space-between",gap:"0.5rem"}}><span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1}}>{r.email}</span><span style={{fontWeight:700,flexShrink:0}}>{r.msg}</span></div>))}
+              </div>
+            )}
+          </>)}
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════
+          MAIN LAYOUT
+      ══════════════════════════════════════════════════════════════ */}
+      <div style={{minHeight:"100vh",background:"#f0ece6",display:"flex",flexDirection:"column"}}>
+
+        {/* ── TOP NAVBAR ── */}
+        <div style={{background:"#fff",borderBottom:"1px solid #c8c2b8",padding:"0 1.5rem",height:52,display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:40,boxShadow:"0 1px 6px rgba(17,13,10,0.06)"}}>
+          {/* Left: brand + nav tabs */}
+          <div style={{display:"flex",alignItems:"center",gap:"1.5rem"}}>
+            <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+              <div style={{width:28,height:28,background:"#0d6e6e",borderRadius:7,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                <svg width="13" height="15" viewBox="0 0 24 28" fill="none"><rect x="5" y="15" width="4" height="9" rx="1.5" fill="white"/><rect x="15" y="15" width="4" height="9" rx="1.5" fill="white"/><path d="M7 15Q12 8 17 15" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"/></svg>
+              </div>
+              <div>
+                <div style={{fontSize:13,fontWeight:800,color:"#111",letterSpacing:"-.3px",lineHeight:1}}>Datagate</div>
+                <div style={{fontSize:9,color:"#a09890",letterSpacing:"1px",textTransform:"uppercase"}}>Employer Dashboard</div>
+              </div>
+            </div>
+            {/* Nav tabs */}
+            {["Overview","Candidates","Consents","Reports"].map(tab=>(
+              <button key={tab} onClick={()=>setMainTab(tab)}
+                style={{padding:"0 4px",height:52,background:"none",border:"none",borderBottom:`2.5px solid ${mainTab===tab?"#0d6e6e":"transparent"}`,fontSize:"0.8rem",fontWeight:mainTab===tab?700:500,color:mainTab===tab?"#0d6e6e":"#7a6e64",cursor:"pointer",fontFamily:"inherit",transition:"all .12s",marginBottom:-1}}>
+                {tab}
+                {tab==="Candidates"&&consents.length>0&&<span style={{marginLeft:5,background:"#0d6e6e",color:"#fff",fontSize:"0.58rem",fontWeight:800,padding:"1px 5px",borderRadius:999}}>{consents.length}</span>}
+                {tab==="Consents"&&pending.length>0&&<span style={{marginLeft:5,background:"#d97706",color:"#fff",fontSize:"0.58rem",fontWeight:800,padding:"1px 5px",borderRadius:999}}>{pending.length}</span>}
+              </button>
+            ))}
+          </div>
+          {/* Right: inbox + user + signout */}
+          <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+            <button onClick={()=>{setShowInbox(true);loadInbox();}} style={{position:"relative",width:32,height:32,borderRadius:7,border:"1px solid #c8c2b8",background:"#f5f2ee",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.9rem"}}>
+              ✉️{unreadCount>0&&<span style={{position:"absolute",top:-4,right:-4,background:"#dc2626",color:"#fff",borderRadius:999,fontSize:"0.55rem",fontWeight:800,minWidth:15,height:15,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 3px",border:"2px solid #fff"}}>{unreadCount}</span>}
+            </button>
+            <div style={{padding:"4px 10px",border:"1px solid #c8c2b8",borderRadius:6,background:"#f5f2ee",display:"flex",alignItems:"center",gap:6}}>
+              <div style={{width:22,height:22,borderRadius:"50%",background:"#0d6e6e",color:"#fff",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{(user.name||user.email||"E").slice(0,2).toUpperCase()}</div>
+              <span style={{fontSize:12,fontWeight:600,color:"#111"}}>{user.name||user.email}</span>
+              <span style={{fontSize:9,fontWeight:700,background:"#e0f0ee",color:"#0a5656",padding:"1px 6px",borderRadius:4,textTransform:"uppercase",letterSpacing:.5}}>Employer</span>
+            </div>
+            <button onClick={()=>setShowPwModal(true)} style={{padding:"5px 10px",border:"1px solid #c8c2b8",borderRadius:6,background:"#f5f2ee",fontSize:11,fontWeight:600,color:"#7a6e64",cursor:"pointer",fontFamily:"inherit"}}>Change password</button>
+            <button onClick={()=>setShowSignout(true)} style={{padding:"5px 10px",border:"1.5px solid #fca5a5",borderRadius:6,background:"#fef2f2",fontSize:11,fontWeight:700,color:"#dc2626",cursor:"pointer",fontFamily:"inherit"}}>Sign out</button>
+            <button onClick={()=>setShowDrawer(true)} style={{padding:"6px 14px",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:7,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 8px rgba(13,110,110,.3)"}}>+ Request BGV</button>
+          </div>
+        </div>
+
+        {/* ══ OVERVIEW TAB ══ */}
+        {mainTab==="Overview" && (
+          <div style={{padding:"1.25rem 1.75rem",flex:1}}>
+
+            {/* 5 stat cards */}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:"0.5px",background:"#c8c2b8",border:"1px solid #c8c2b8",borderRadius:10,overflow:"hidden",marginBottom:"1.25rem"}}>
+              {[
+                {label:"Total Requests",   val:consents.length,         sub:"Lifetime BGV sent",      col:"#111"},
+                {label:"Approved",         val:approved.length,         sub:"Profiles shared",        col:"#0d6e6e"},
+                {label:"Pending",          val:pending.length,          sub:"Awaiting employee",      col:"#d97706"},
+                {label:"Completed BGV",    val:approved.length,         sub:"Reports generated",      col:"#2563eb"},
+                {label:"Declined",         val:declined.length,         sub:"By candidates",          col:"#dc2626"},
+              ].map(s=>(
+                <div key={s.label} style={{background:"#fff",padding:"12px 16px",position:"relative"}}>
+                  <div style={{position:"absolute",top:0,left:0,right:0,height:2.5,background:s.col}}/>
+                  <div style={{fontSize:9,fontWeight:700,letterSpacing:"1px",textTransform:"uppercase",color:"#a09890",marginBottom:4}}>{s.label}</div>
+                  <div style={{fontSize:22,fontWeight:800,color:s.col,letterSpacing:-1,lineHeight:1}}>{loading?"…":s.val}</div>
+                  <div style={{fontSize:10,color:"#a09890",marginTop:2}}>{s.sub}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{display:"grid",gridTemplateColumns:"1fr 340px",gap:"1.25rem"}}>
+              {/* Left col */}
+              <div style={{display:"flex",flexDirection:"column",gap:"1.25rem"}}>
+
+                {/* Recent Candidates */}
+                <div style={{background:"#fff",border:"1px solid #c8c2b8",borderRadius:10,overflow:"hidden"}}>
+                  <div style={{padding:"10px 16px",borderBottom:"1px solid #e8e2da",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                    <div style={{fontSize:10,fontWeight:700,letterSpacing:".8px",textTransform:"uppercase",color:"#7a6e64"}}>Recent Candidates</div>
+                    <button onClick={()=>setMainTab("Candidates")} style={{fontSize:11,color:"#0d6e6e",fontWeight:600,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>View all →</button>
+                  </div>
+                  <div style={{padding:"4px 0"}}>
+                    {loading&&<div style={{padding:"1rem",fontSize:"0.75rem",color:"#a09890"}}>Loading…</div>}
+                    {!loading&&consents.length===0&&<div style={{padding:"1.5rem",textAlign:"center",fontSize:"0.75rem",color:"#a09890"}}>No candidates yet. Send your first BGV request.</div>}
+                    {[...consents].sort((a,b)=>(b.requested_at||b.created_at||0)-(a.requested_at||a.created_at||0)).slice(0,6).map(c=>{
+                      const col=c.status==="approved"?"#0d6e6e":c.status==="pending"?"#d97706":"#dc2626";
+                      const bg=c.status==="approved"?"#e0f0ee":c.status==="pending"?"#fef9c3":"#fef2f2";
+                      const initials=(c.employee_name||c.employee_email||"?").slice(0,2).toUpperCase();
+                      const colors=["#0d6e6e","#2563eb","#7c3aed","#d97706","#dc2626","#16a34a"];
+                      const avatarCol=colors[(c.employee_email||"").charCodeAt(0)%colors.length];
+                      return(
+                        <div key={gcid(c)} onClick={()=>{setMainTab("Candidates");selectConsent(c);}} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 16px",cursor:"pointer",borderBottom:"1px solid #f5f2ee",transition:"background .1s"}}
+                          onMouseEnter={e=>e.currentTarget.style.background="#faf8f5"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                          <div style={{width:32,height:32,borderRadius:8,background:avatarCol,color:"#fff",fontSize:11,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{initials}</div>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontSize:12,fontWeight:700,color:"#111",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.employee_name||c.employee_email}</div>
+                            <div style={{fontSize:10,color:"#a09890",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.employee_email}</div>
+                          </div>
+                          <span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:8,background:bg,color:col,textTransform:"uppercase",letterSpacing:.5,border:`0.5px solid ${col}33`}}>{c.status}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Bottom row: Consent Breakdown + BGV Status + Activity Feed */}
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"1rem"}}>
+                  {/* Consent Breakdown */}
+                  <div style={{background:"#fff",border:"1px solid #c8c2b8",borderRadius:10,padding:"12px 14px"}}>
+                    <div style={{fontSize:9,fontWeight:700,letterSpacing:"1px",textTransform:"uppercase",color:"#7a6e64",marginBottom:10}}>Consent Breakdown</div>
+                    {[["Approved",approved.length,"#0d6e6e"],["Pending",pending.length,"#d97706"],["Declined",declined.length,"#dc2626"]].map(([label,val,col])=>{
+                      const pct=consents.length>0?Math.round((val/consents.length)*100):0;
+                      return(
+                        <div key={label} style={{marginBottom:8}}>
+                          <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
+                            <span style={{color:"#5a5248",fontWeight:500}}>{label}</span>
+                            <span style={{fontWeight:700,color:col}}>{val} <span style={{color:"#a09890",fontWeight:400}}>({pct}%)</span></span>
+                          </div>
+                          <div style={{height:4,background:"#f0ece6",borderRadius:2,overflow:"hidden"}}>
+                            <div style={{height:"100%",width:`${pct}%`,background:col,borderRadius:2,transition:"width .4s"}}/>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* BGV Status */}
+                  <div style={{background:"#fff",border:"1px solid #c8c2b8",borderRadius:10,padding:"12px 14px"}}>
+                    <div style={{fontSize:9,fontWeight:700,letterSpacing:"1px",textTransform:"uppercase",color:"#7a6e64",marginBottom:10}}>BGV Status</div>
+                    {[
+                      ["Verified",approved.filter(c=>candStatus[c.employee_email]?.status==="submitted").length,"#0d6e6e"],
+                      ["In progress",pending.length,"#d97706"],
+                      ["Not started",consents.filter(c=>!candStatus[c.employee_email]).length,"#a09890"],
+                    ].map(([label,val,col])=>(
+                      <div key={label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,fontSize:11}}>
+                        <span style={{color:"#5a5248"}}>{label}</span>
+                        <div style={{display:"flex",alignItems:"center",gap:6}}>
+                          <div style={{width:50,height:4,background:"#f0ece6",borderRadius:2,overflow:"hidden"}}>
+                            <div style={{height:"100%",width:consents.length>0?`${Math.round((val/consents.length)*100)}%`:"0%",background:col,borderRadius:2}}/>
+                          </div>
+                          <span style={{fontWeight:700,color:col,minWidth:16,textAlign:"right"}}>{val}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Activity Feed */}
+                  <div style={{background:"#fff",border:"1px solid #c8c2b8",borderRadius:10,padding:"12px 14px"}}>
+                    <div style={{fontSize:9,fontWeight:700,letterSpacing:"1px",textTransform:"uppercase",color:"#7a6e64",marginBottom:10}}>Activity Feed</div>
+                    {consents.length===0&&<div style={{fontSize:11,color:"#a09890"}}>No activity yet</div>}
+                    {[...consents].sort((a,b)=>(b.responded_at||b.requested_at||0)-(a.responded_at||a.requested_at||0)).slice(0,4).map(c=>{
+                      const col=c.status==="approved"?"#0d6e6e":c.status==="pending"?"#d97706":"#dc2626";
+                      const txt=c.status==="approved"?`${c.employee_email} approved request`:c.status==="declined"?`${c.employee_email} declined`:`BGV request sent to ${c.employee_email}`;
+                      return(
+                        <div key={gcid(c)} style={{display:"flex",gap:7,marginBottom:7,alignItems:"flex-start"}}>
+                          <div style={{width:6,height:6,borderRadius:"50%",background:col,flexShrink:0,marginTop:4}}/>
+                          <div style={{fontSize:10,color:"#5a5248",lineHeight:1.45,flex:1}}>{txt}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right col: Send BGV Request form */}
+              <div style={{background:"#fff",border:"1px solid #c8c2b8",borderRadius:10,overflow:"hidden",alignSelf:"start"}}>
+                <div style={{padding:"10px 16px",borderBottom:"1px solid #e8e2da"}}>
+                  <div style={{fontSize:10,fontWeight:700,letterSpacing:".8px",textTransform:"uppercase",color:"#7a6e64"}}>Send BGV Request</div>
+                </div>
+                <div style={{padding:"14px 16px"}}>
+                  <div style={{fontSize:"0.65rem",fontWeight:700,color:"#7a6e64",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>Candidate Email *</div>
+                  <input className="req-in" type="email" placeholder="candidate@company.com" value={reqEmail} onChange={e=>setReqEmail(e.target.value)} style={{width:"100%",marginBottom:"0.75rem"}}/>
+                  <div style={{fontSize:"0.65rem",fontWeight:700,color:"#7a6e64",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>Message (Optional)</div>
+                  <textarea className="req-in req-ta" placeholder="Add context for the candidate…" value={reqMsg} onChange={e=>setReqMsg(e.target.value)} style={{width:"100%",marginBottom:"0.75rem"}}/>
+                  {reqErr&&<p className="req-msg e" style={{marginBottom:"0.5rem"}}>{reqErr}</p>}
+                  {reqOk&&<p className="req-msg s" style={{marginBottom:"0.5rem"}}>{reqOk}</p>}
+                  <button className="send-btn" onClick={sendRequest} disabled={reqBusy} style={{width:"100%"}}>{reqBusy?"Sending…":"Send consent request →"}</button>
+                  <div style={{marginTop:"0.75rem",borderTop:"1px solid #e8e2da",paddingTop:"0.75rem"}}>
+                    <button onClick={()=>setShowDrawer(true)} style={{width:"100%",padding:"7px",background:"#f5f2ee",border:"1px solid #c8c2b8",borderRadius:7,fontSize:11,fontWeight:600,color:"#7a6e64",cursor:"pointer",fontFamily:"inherit"}}>📊 Bulk invite (Excel / CSV)</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ══ CANDIDATES TAB ══ */}
+        {mainTab==="Candidates" && (
+          <div style={{display:"flex",flex:1,overflow:"hidden"}}>
+            {/* Sidebar */}
+            <div style={{width:280,minWidth:280,background:"#111",display:"flex",flexDirection:"column",height:"calc(100vh - 52px)",position:"sticky",top:52,overflow:"hidden"}}>
+              <div style={{padding:"0.65rem 1.3rem 0.3rem"}}>
+                <div className="filter-tabs">
+                  {[["pending","Pending"],["approved","Approved"],["declined","Declined"]].map(([key,label])=>(
+                    <button key={key} className={`ft-btn${cTab===key?" on":""}`} onClick={()=>setCTab(key)}>
+                      {label}{counts[key]>0&&<span className="ft-cnt">{counts[key]}</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{padding:"0.4rem 1.3rem 0.3rem"}}>
+                <input className="search-in" placeholder="Search…" value={search} onChange={e=>setSearch(e.target.value)}/>
+              </div>
+              {cTab==="pending"&&pending.length>0&&(
+                <div style={{padding:"0.3rem 1.3rem 0.5rem",borderBottom:"1px solid rgba(255,255,255,0.07)"}}>
+                  <button onClick={sendBulkReminder} disabled={bulkRemindBusy} style={{width:"100%",padding:"0.42rem 0.75rem",background:"rgba(13,110,110,0.18)",border:"1.5px solid rgba(13,110,110,0.4)",borderRadius:7,color:"#5eead4",fontSize:"0.65rem",fontWeight:700,cursor:bulkRemindBusy?"not-allowed":"pointer",fontFamily:"inherit"}}>
+                    {bulkRemindBusy?"Sending…":`📧 Remind all (${pending.length})`}
+                  </button>
+                  {bulkRemindMsg&&<div style={{fontSize:"0.62rem",marginTop:"0.3rem",color:bulkRemindMsg.startsWith("✓")?"#86efac":"#fca5a5",fontWeight:600}}>{bulkRemindMsg}</div>}
+                </div>
+              )}
+              <div className="c-list" style={{flex:1,overflowY:"auto"}}>
+                {loading?<div className="c-empty">Loading…</div>
+                :list.length===0?<div className="c-empty">{search?"No matches":`No ${cTab} requests`}</div>
+                :list.map(c=>{
+                  const dot=c.status==="approved"?"#16a34a":c.status==="pending"?"#f59e0b":"#ef4444";
+                  const ts=c.status==="approved"?(c.responded_at||c.approved_at):(c.requested_at||c.created_at);
+                  return(
+                    <div key={gcid(c)} className={`c-item${gcid(selected)===gcid(c)?" sel":""}`} onClick={()=>selectConsent(c)}>
+                      <div className="c-dot" style={{background:dot}}/>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"0.3rem"}}>
+                          <div className="c-mail" style={{flex:1}}>{c.employee_email}</div>
+                          {candStatus[c.employee_email]&&(
+                            <span className={`cand-status ${candStatus[c.employee_email].status==="submitted"?"submitted":candStatus[c.employee_email].status==="draft"?"draft":"no-profile"}`}>
+                              {candStatus[c.employee_email].status==="submitted"?"✓ Done":candStatus[c.employee_email].status==="draft"?"In progress":"Not started"}
+                            </span>
+                          )}
+                        </div>
+                        {c.employee_name&&c.employee_name!==c.employee_email&&<div className="c-nm">{c.employee_name}</div>}
+                        <div className="c-dt">{toISTDate(ts)}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Main profile panel */}
+            <main className="main" style={{flex:1,overflowY:"auto",background:"#f0ece6"}}>
+              {!selected?(
+                <div className="empty-view">
+                  <div className="empty-ico">👥</div>
+                  <div className="empty-h">Select a candidate</div>
+                  <div className="empty-s">Approved consents show the full verified profile here</div>
+                </div>
+              ):(
+                <>
+                  <div className="top-bar">
+                    <div className="top-title"><strong>{empName}</strong> — {selected.employee_email}</div>
+                    {selected.status==="approved"&&profileData&&(
+                      <button className="print-btn" onClick={handlePrint} disabled={printing}>{printing?"⏳ Preparing…":"🖨 Print / Export PDF"}</button>
+                    )}
+                  </div>
+                  <div className="pane">
+                    <div className="hero-card">
+                      <div>
+                        <div className="hero-name">{empName}</div>
+                        <div className="hero-email">{selected.employee_email}</div>
+                        <div className="hero-badges">
+                          <span className={`hb hb-${selected.status}`}>{selected.status.charAt(0).toUpperCase()+selected.status.slice(1)}</span>
+                          {selected.requested_at&&<span className="hb hb-info">Requested: {toIST(selected.requested_at)}</span>}
+                          {(selected.responded_at||selected.approved_at)&&<span className="hb hb-info">Responded: {toIST(selected.responded_at||selected.approved_at)}</span>}
+                          {profileData?.snapshot_at&&<span className="hb hb-info">📅 Data as of: {toIST(profileData.snapshot_at)}</span>}
+                        </div>
+                        {candStatus[selected.employee_email]&&(()=>{
+                          const cs=candStatus[selected.employee_email];const pct=cs.completeness||0;const col=pct>=80?"#16a34a":pct>=50?"#f59e0b":"#ef4444";
+                          return(<div className="comp-bar-wrap" style={{minWidth:200}}><div className="comp-bar-label"><span>Profile completeness</span><span style={{color:col,fontWeight:700}}>{pct}%</span></div><div className="comp-bar-bg"><div className="comp-bar-fill" style={{width:`${pct}%`,background:col}}/></div></div>);
+                        })()}
+                      </div>
+                      {selected.request_message&&(<div className="msg-bubble"><div className="msg-lbl">Your message</div><div className="msg-txt">{selected.request_message}</div></div>)}
+                    </div>
+
+                    {selected.status==="pending"&&(()=>{const rc=selected.reminder_count||0;return(
+                      <div style={{marginBottom:"0.75rem",display:"flex",alignItems:"center",gap:"0.75rem",flexWrap:"wrap"}}>
+                        {rc<3?(<button onClick={()=>sendReminder(gcid(selected))} disabled={remindBusy} style={{padding:"0.45rem 1rem",background:"#fff",border:"1.5px solid #0d6e6e",borderRadius:7,color:"#0d6e6e",fontSize:"0.72rem",fontWeight:700,cursor:remindBusy?"not-allowed":"pointer",fontFamily:"inherit"}}>{remindBusy?"Sending…":`📧 Send Reminder (${rc}/3 sent)`}</button>):(<span style={{fontSize:"0.7rem",color:"#f59e0b",fontWeight:600}}>📧 Max reminders sent (3/3)</span>)}
+                        {remindMsg&&<span style={{fontSize:"0.68rem",color:"#16a34a",fontWeight:600}}>{remindMsg}</span>}
+                      </div>
+                    );})()}
+
+                    {selected.status==="pending"&&<div className="status-card">⏳ Waiting for employee to approve your request.</div>}
+                    {selected.status==="declined"&&<div className="status-card dec">❌ Employee declined this request.</div>}
+
+                    {selected.status==="approved"&&(
+                      loadingProf?<div className="status-card">Loading profile…</div>
+                      :!profileData?<div className="status-card">Could not load profile data.</div>
+                      :<>
+                        <div style={{marginBottom:"0.75rem",display:"flex",gap:"0.6rem",alignItems:"center",flexWrap:"wrap"}}>
+                          <button onClick={()=>{setActiveThread(gcid(selected));loadThread(gcid(selected));setShowInbox(true);}} style={{padding:"0.42rem 1rem",background:"#fff",border:"1.5px solid #0d6e6e",borderRadius:7,color:"#0d6e6e",fontSize:"0.72rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:"0.4rem"}}>✉️ Message candidate</button>
+                        </div>
+                        <div className="note-bar">⚠️ <strong>Self-reported data.</strong> All information was filled and submitted by the employee. Not independently verified by Datagate unless a verified check has been explicitly completed.</div>
+                        <div className="tab-nav">{DATA_TABS.map(t=><button key={t} className={`tab-btn${activeTab===t?" on":""}`} onClick={()=>setActiveTab(t)}>{t}</button>)}</div>
+                        <div className="tab-pane">
+                          {activeTab==="Overview"&&<OverviewTab data={profileData.profile_snapshot}/>}
+                          {activeTab==="Education"&&<EducationTab data={profileData.profile_snapshot?.education}/>}
+                          {activeTab==="Employment"&&<EmploymentTab data={profileData.employment_snapshot} resumeKey={profileData.profile_snapshot?.resumeKey} docUrls={docUrls}/>}
+                          {activeTab==="UAN & PF"&&<UanTab data={profileData.profile_snapshot}/>}
+                          {activeTab==="Documents"&&<DocumentsTab documents={documents} loading={docsLoading}/>}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+            </main>
+          </div>
+        )}
+
+        {/* ══ CONSENTS TAB ══ */}
+        {mainTab==="Consents" && (
+          <div style={{padding:"1.25rem 1.75rem"}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"1rem",maxWidth:700,marginBottom:"1.5rem"}}>
+              {[["Pending",pending.length,"#d97706","#fef9c3"],["Approved",approved.length,"#0d6e6e","#e0f0ee"],["Declined",declined.length,"#dc2626","#fef2f2"]].map(([label,val,col,bg])=>(
+                <div key={label} style={{background:bg,border:`1px solid ${col}33`,borderRadius:10,padding:"12px 16px",textAlign:"center"}}>
+                  <div style={{fontSize:24,fontWeight:800,color:col}}>{val}</div>
+                  <div style={{fontSize:11,fontWeight:600,color:col,marginTop:2}}>{label}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{background:"#fff",border:"1px solid #c8c2b8",borderRadius:10,overflow:"hidden"}}>
+              <div style={{padding:"10px 16px",borderBottom:"1px solid #e8e2da",display:"flex",gap:"0.5rem"}}>
+                {[["pending","Pending"],["approved","Approved"],["declined","Declined"]].map(([key,label])=>(
+                  <button key={key} onClick={()=>setCTab(key)} style={{padding:"5px 14px",borderRadius:6,border:`1.5px solid ${cTab===key?"#0d6e6e":"#c8c2b8"}`,background:cTab===key?"#0d6e6e":"#f5f2ee",color:cTab===key?"#fff":"#7a6e64",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                    {label} {counts[key]>0&&`(${counts[key]})`}
+                  </button>
+                ))}
+              </div>
+              {list.length===0?(<div style={{padding:"2rem",textAlign:"center",color:"#a09890",fontSize:"0.82rem"}}>No {cTab} requests</div>):(
+                list.map(c=>{
+                  const col=c.status==="approved"?"#0d6e6e":c.status==="pending"?"#d97706":"#dc2626";
+                  return(
+                    <div key={gcid(c)} onClick={()=>{setMainTab("Candidates");selectConsent(c);}} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 16px",borderBottom:"1px solid #f5f2ee",cursor:"pointer"}}
+                      onMouseEnter={e=>e.currentTarget.style.background="#faf8f5"} onMouseLeave={e=>e.currentTarget.style.background="#fff"}>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:13,fontWeight:700,color:"#111"}}>{c.employee_name||c.employee_email}</div>
+                        <div style={{fontSize:11,color:"#a09890"}}>{c.employee_email} · {toISTDate(c.requested_at||c.created_at)}</div>
+                        {c.request_message&&<div style={{fontSize:11,color:"#5a5248",fontStyle:"italic",marginTop:2}}>"{c.request_message}"</div>}
+                      </div>
+                      <span style={{fontSize:10,fontWeight:700,padding:"2px 10px",borderRadius:8,background:`${col}15`,color:col,textTransform:"uppercase",border:`0.5px solid ${col}44`}}>{c.status}</span>
+                      <span style={{fontSize:11,color:"#0d6e6e",fontWeight:600}}>View →</span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ══ REPORTS TAB ══ */}
+        {mainTab==="Reports" && (
+          <div style={{padding:"1.25rem 1.75rem"}}>
+            <div style={{background:"#fff",border:"1px solid #c8c2b8",borderRadius:10,padding:"2rem",textAlign:"center",maxWidth:500}}>
+              <div style={{fontSize:"2rem",marginBottom:"0.75rem",opacity:.3}}>📊</div>
+              <div style={{fontSize:"0.95rem",fontWeight:700,color:"#111",marginBottom:"0.3rem"}}>BGV Reports</div>
+              <div style={{fontSize:"0.8rem",color:"#a09890"}}>Detailed verification reports will appear here once candidates complete their profiles and consent is approved.</div>
+            </div>
+          </div>
+        )}
+
       </div>
     </>
   );

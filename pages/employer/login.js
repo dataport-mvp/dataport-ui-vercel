@@ -55,38 +55,38 @@ export default function EmployerLogin() {
 
         /* ── LEFT — deep ink, exact same as current live site ── */
         .lft{
-          background:#18151f;
+          background:#0d6e6e;
           display:flex;flex-direction:column;
           padding:2.5rem 3rem;
           position:relative;overflow:hidden;
         }
-        .lft::before{content:'';position:absolute;bottom:-100px;left:-60px;width:350px;height:350px;border-radius:50%;background:rgba(13,110,110,0.06);pointer-events:none}
-        .lft::after{content:'';position:absolute;top:-60px;right:-60px;width:250px;height:250px;border-radius:50%;background:rgba(13,110,110,0.04);pointer-events:none}
+        .lft::before{content:'';position:absolute;bottom:-100px;left:-60px;width:350px;height:350px;border-radius:50%;background:rgba(255,255,255,0.06);pointer-events:none}
+        .lft::after{content:'';position:absolute;top:-60px;right:-60px;width:250px;height:250px;border-radius:50%;background:rgba(255,255,255,0.04);pointer-events:none}
 
         .lft-logo{display:inline-flex;align-items:center;gap:9px;text-decoration:none;position:relative;z-index:1}
 
         .lft-body{flex:1;display:flex;flex-direction:column;justify-content:center;padding:2rem 0;position:relative;z-index:1}
-        .badge{display:inline-flex;align-items:center;gap:.45rem;font-size:.64rem;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#0d6e6e;margin-bottom:1.5rem}
-        .badge::before{content:'';width:16px;height:1.5px;background:#0d6e6e}
-        .h2{font-family:'Cormorant Garamond',serif;font-size:clamp(1.8rem,2.8vw,2.5rem);font-weight:600;line-height:1.2;color:#f5f0f8;letter-spacing:-.3px;margin-bottom:.9rem}
-        .h2 em{font-style:italic;color:#0f8a8a}
-        .desc{font-size:.875rem;color:rgba(255,255,255,.55);line-height:1.8;margin-bottom:2rem;max-width:340px}
+        .badge{display:inline-flex;align-items:center;gap:.45rem;font-size:.64rem;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:rgba(255,255,255,.9);margin-bottom:1.5rem}
+        .badge::before{content:'';width:16px;height:1.5px;background:rgba(255,255,255,.9)}
+        .h2{font-family:'Cormorant Garamond',serif;font-size:clamp(1.8rem,2.8vw,2.5rem);font-weight:600;line-height:1.2;color:#fff;letter-spacing:-.3px;margin-bottom:.9rem}
+        .h2 em{font-style:italic;color:rgba(255,255,255,.85)}
+        .desc{font-size:.875rem;color:rgba(255,255,255,.8);line-height:1.8;margin-bottom:2rem;max-width:340px}
 
         /* Features — same as current */
         .feats{display:flex;flex-direction:column;gap:.8rem;margin-bottom:2rem}
-        .ft-row{display:flex;align-items:center;gap:.7rem;font-size:.83rem;color:rgba(255,255,255,.6)}
-        .ftck{width:18px;height:18px;border-radius:50%;flex-shrink:0;background:rgba(13,110,110,.2);border:1px solid rgba(13,110,110,.4);display:flex;align-items:center;justify-content:center;color:#0d6e6e}
+        .ft-row{display:flex;align-items:center;gap:.7rem;font-size:.83rem;color:rgba(255,255,255,.85)}
+        .ftck{width:18px;height:18px;border-radius:50%;flex-shrink:0;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;color:#fff}
 
         /* Stats — same as current */
-        .stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden}
-        .stat{background:#1e1a14;padding:1.1rem 1.25rem}
-        .stat-v{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:600;color:#0d6e6e;line-height:1;margin-bottom:3px}
-        .stat-l{font-size:.71rem;color:rgba(255,255,255,.4);line-height:1.4}
+        .stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:12px;overflow:hidden}
+        .stat{background:rgba(0,0,0,.15);padding:1.1rem 1.25rem}
+        .stat-v{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:600;color:#fff;line-height:1;margin-bottom:3px}
+        .stat-l{font-size:.71rem;color:rgba(255,255,255,.7);line-height:1.4}
 
-        .lft-ft{padding-top:1.5rem;border-top:1px solid rgba(255,255,255,.12);display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1}
-        .fc{font-size:.68rem;color:rgba(255,255,255,.35)}
+        .lft-ft{padding-top:1.5rem;border-top:1px solid rgba(255,255,255,.25);display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1}
+        .fc{font-size:.68rem;color:rgba(255,255,255,.7)}
         .fl{display:flex;gap:1rem}
-        .fla{font-size:.68rem;color:rgba(255,255,255,.35);text-decoration:none;transition:color .15s}
+        .fla{font-size:.68rem;color:rgba(255,255,255,.7);text-decoration:none;transition:color .15s}
         .fla:hover{color:#0d6e6e}
 
         /* ── RIGHT ── */
@@ -178,8 +178,8 @@ export default function EmployerLogin() {
               <circle cx="28.5" cy="7.5" className="lgprE"/>
             </svg>
             <div>
-              <div style={{fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"14px",color:"#f5f0f8",letterSpacing:"-0.3px",lineHeight:1}}>Datagate</div>
-              <div style={{fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:"6.5px",color:"#0d6e6e",letterSpacing:"2px",textTransform:"uppercase",marginTop:"3px"}}>Verified Employment</div>
+              <div style={{fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"14px",color:"#fff",letterSpacing:"-0.3px",lineHeight:1}}>Datagate</div>
+              <div style={{fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:"6.5px",color:"rgba(255,255,255,.8)",letterSpacing:"2px",textTransform:"uppercase",marginTop:"3px"}}>Verified Employment</div>
             </div>
           </Link>
 
