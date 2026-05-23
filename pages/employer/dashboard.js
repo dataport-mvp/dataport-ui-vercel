@@ -1692,7 +1692,7 @@ return (
               ))}
             </div>
 
-            <div style={{display:"grid",gridTemplateColumns:"1fr 340px",gap:"1.25rem"}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 280px",gap:"1.25rem"}}>
               {/* Left col */}
               <div style={{display:"flex",flexDirection:"column",gap:"1.25rem"}}>
 
@@ -1712,7 +1712,7 @@ return (
                       const colors=["#0d6e6e","#2563eb","#7c3aed","#d97706","#dc2626","#16a34a"];
                       const avatarCol=colors[(c.employee_email||"").charCodeAt(0)%colors.length];
                       return(
-                        <div key={gcid(c)} onClick={()=>{setMainTab("Candidates");selectConsent(c);}} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 16px",cursor:"pointer",borderBottom:"1px solid #f5f2ee",transition:"background .1s"}}
+                        <div key={gcid(c)} onClick={()=>{ selectConsent(c); setMainTab("Candidates"); }} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 16px",cursor:"pointer",borderBottom:"1px solid #f5f2ee",transition:"background .1s"}}
                           onMouseEnter={e=>e.currentTarget.style.background="#faf8f5"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                           <div style={{width:32,height:32,borderRadius:8,background:avatarCol,color:"#fff",fontSize:11,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{initials}</div>
                           <div style={{flex:1,minWidth:0}}>
@@ -1785,23 +1785,39 @@ return (
                 </div>
               </div>
 
-              {/* Right col: Send BGV Request form */}
-              <div style={{background:"#fff",border:"1px solid #c8c2b8",borderRadius:10,overflow:"hidden",alignSelf:"start"}}>
-                <div style={{padding:"10px 16px",borderBottom:"1px solid #e8e2da"}}>
-                  <div style={{fontSize:10,fontWeight:700,letterSpacing:".8px",textTransform:"uppercase",color:"#7a6e64"}}>Send BGV Request</div>
-                </div>
-                <div style={{padding:"14px 16px"}}>
-                  <div style={{fontSize:"0.65rem",fontWeight:700,color:"#7a6e64",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>Candidate Email *</div>
-                  <input className="req-in" type="email" placeholder="candidate@company.com" value={reqEmail} onChange={e=>setReqEmail(e.target.value)} style={{width:"100%",marginBottom:"0.75rem"}}/>
-                  <div style={{fontSize:"0.65rem",fontWeight:700,color:"#7a6e64",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>Message (Optional)</div>
-                  <textarea className="req-in req-ta" placeholder="Add context for the candidate…" value={reqMsg} onChange={e=>setReqMsg(e.target.value)} style={{width:"100%",marginBottom:"0.75rem"}}/>
-                  {reqErr&&<p className="req-msg e" style={{marginBottom:"0.5rem"}}>{reqErr}</p>}
-                  {reqOk&&<p className="req-msg s" style={{marginBottom:"0.5rem"}}>{reqOk}</p>}
-                  <button className="send-btn" onClick={sendRequest} disabled={reqBusy} style={{width:"100%"}}>{reqBusy?"Sending…":"Send consent request →"}</button>
-                  <div style={{marginTop:"0.75rem",borderTop:"1px solid #e8e2da",paddingTop:"0.75rem"}}>
-                    <button onClick={()=>setShowDrawer(true)} style={{width:"100%",padding:"7px",background:"#f5f2ee",border:"1px solid #c8c2b8",borderRadius:7,fontSize:11,fontWeight:600,color:"#7a6e64",cursor:"pointer",fontFamily:"inherit"}}>📊 Bulk invite (Excel / CSV)</button>
+              {/* Right col: Quick Actions */}
+              <div style={{display:"flex",flexDirection:"column",gap:"1rem"}}>
+                <div style={{background:"#fff",border:"1px solid #c8c2b8",borderRadius:10,overflow:"hidden"}}>
+                  <div style={{padding:"10px 16px",borderBottom:"1px solid #e8e2da"}}>
+                    <div style={{fontSize:10,fontWeight:700,letterSpacing:".8px",textTransform:"uppercase",color:"#7a6e64"}}>Quick Actions</div>
+                  </div>
+                  <div style={{padding:"12px 14px",display:"flex",flexDirection:"column",gap:8}}>
+                    <button onClick={()=>setShowDrawer(true)} style={{width:"100%",padding:"10px 14px",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 8px rgba(13,110,110,.25)",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
+                      <span>＋</span> Send BGV Request
+                    </button>
+                    <button onClick={()=>{setReqTab("bulk");setShowDrawer(true);}} style={{width:"100%",padding:"10px 14px",background:"#f5f2ee",color:"#0d6e6e",border:"1.5px solid #a8d5ce",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
+                      <span>📊</span> Bulk Invite (Excel / CSV)
+                    </button>
+                    <button onClick={()=>{setShowInbox(true);loadInbox();}} style={{width:"100%",padding:"10px 14px",background:"#f5f2ee",color:"#111",border:"1px solid #c8c2b8",borderRadius:8,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
+                      <span>✉️</span> Messages {unreadCount>0&&<span style={{background:"#dc2626",color:"#fff",borderRadius:999,fontSize:9,fontWeight:800,padding:"1px 6px",marginLeft:"auto"}}>{unreadCount}</span>}
+                    </button>
                   </div>
                 </div>
+
+                {/* Pending actions — candidates waiting */}
+                {pending.length > 0 && (
+                  <div style={{background:"#fef9c3",border:"1px solid #fde68a",borderRadius:10,padding:"12px 14px"}}>
+                    <div style={{fontSize:10,fontWeight:700,letterSpacing:".8px",textTransform:"uppercase",color:"#854d0e",marginBottom:8}}>Awaiting Response</div>
+                    {pending.slice(0,3).map(c=>(
+                      <div key={gcid(c)} onClick={()=>{selectConsent(c);setMainTab("Candidates");}} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",cursor:"pointer",borderBottom:"1px solid #fde68a"}}>
+                        <div style={{width:6,height:6,borderRadius:"50%",background:"#d97706",flexShrink:0}}/>
+                        <div style={{flex:1,fontSize:11,color:"#111",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.employee_email}</div>
+                        <span style={{fontSize:9,color:"#854d0e",fontWeight:600,whiteSpace:"nowrap"}}>{toISTDate(c.requested_at||c.created_at)}</span>
+                      </div>
+                    ))}
+                    {pending.length > 3 && <div style={{fontSize:10,color:"#854d0e",marginTop:6,fontWeight:600}}>+{pending.length-3} more pending</div>}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1870,7 +1886,7 @@ return (
               ):(
                 <>
                   <div className="top-bar">
-                    <div className="top-title"><strong>{empName}</strong> — {selected.employee_email}</div>
+                    <div className="top-title"><strong>{profileData?.profile_snapshot ? ([profileData.profile_snapshot.firstName, profileData.profile_snapshot.lastName].filter(Boolean).join(" ") || selected?.employee_email) : (selected?.employee_email||"")}</strong> — {selected.employee_email}</div>
                     {selected.status==="approved"&&profileData&&(
                       <button className="print-btn" onClick={handlePrint} disabled={printing}>{printing?"⏳ Preparing…":"🖨 Print / Export PDF"}</button>
                     )}
@@ -1878,7 +1894,7 @@ return (
                   <div className="pane">
                     <div className="hero-card">
                       <div>
-                        <div className="hero-name">{empName}</div>
+                        <div className="hero-name">{profileData?.profile_snapshot ? ([profileData.profile_snapshot.firstName, profileData.profile_snapshot.lastName].filter(Boolean).join(" ") || selected?.employee_email) : (selected?.employee_email||"")}</div>
                         <div className="hero-email">{selected.employee_email}</div>
                         <div className="hero-badges">
                           <span className={`hb hb-${selected.status}`}>{selected.status.charAt(0).toUpperCase()+selected.status.slice(1)}</span>
@@ -1952,7 +1968,7 @@ return (
                 list.map(c=>{
                   const col=c.status==="approved"?"#0d6e6e":c.status==="pending"?"#d97706":"#dc2626";
                   return(
-                    <div key={gcid(c)} onClick={()=>{setMainTab("Candidates");selectConsent(c);}} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 16px",borderBottom:"1px solid #f5f2ee",cursor:"pointer"}}
+                    <div key={gcid(c)} onClick={()=>{ selectConsent(c); setMainTab("Candidates"); }} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 16px",borderBottom:"1px solid #f5f2ee",cursor:"pointer"}}
                       onMouseEnter={e=>e.currentTarget.style.background="#faf8f5"} onMouseLeave={e=>e.currentTarget.style.background="#fff"}>
                       <div style={{flex:1}}>
                         <div style={{fontSize:13,fontWeight:700,color:"#111"}}>{c.employee_name||c.employee_email}</div>
