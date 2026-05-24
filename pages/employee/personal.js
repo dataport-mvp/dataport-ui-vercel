@@ -1,9 +1,6 @@
+import React, { useState, useEffect, useCallback, useRef } from "react";
 // pages/employee/personal.js  — Page 1 of 5
-// Fixes:
-// 1. DateField — no calendar, DD/MM/YYYY input, shows "📅 15 March 2023" below
-// 2. Bank account — digit counter below entry + confirm fields
-// 3. page1_edited cascade flag → page 5 re-asks acks when page 1 was edited
-import { useState, useEffect, useCallback, useRef } from "react";
+
 import { useRouter } from "next/router";
 import { useAuth } from "../../utils/AuthContext";
 import { parseError } from "../../utils/apiError";
@@ -549,11 +546,143 @@ function DeleteAccountModal({ onConfirm, onCancel, loading }) {
   );
 }
 
+
+function SupportModal({ apiFetch, onClose }) {
+  const CATS = ["account","consent","document","bgv","billing","other"];
+  const [tab,     setTab]     = React.useState("new");   // "new" | "tickets"
+  const [cat,     setCat]     = React.useState("account");
+  const [subject, setSubject] = React.useState("");
+  const [body,    setBody]    = React.useState("");
+  const [busy,    setBusy]    = React.useState(false);
+  const [ok,      setOk]      = React.useState("");
+  const [err,     setErr]     = React.useState("");
+  const [tickets, setTickets] = React.useState([]);
+  const [tLoading,setTLoading]= React.useState(false);
+
+  const loadTickets = async () => {
+    setTLoading(true);
+    try {
+      const r = await apiFetch(`${API}/support/tickets`);
+      if (r.ok) setTickets(await r.json());
+    } catch(_) {}
+    setTLoading(false);
+  };
+
+  const submit = async () => {
+    if (!subject.trim() || !body.trim()) { setErr("Subject and message are required"); return; }
+    setBusy(true); setErr("");
+    try {
+      const r = await apiFetch(`${API}/support/tickets`, {
+        method: "POST",
+        body: JSON.stringify({ category: cat, subject: subject.trim(), body: body.trim() }),
+      });
+      const d = await r.json();
+      if (!r.ok) { setErr(d.detail || "Failed to submit"); setBusy(false); return; }
+      setOk("✅ Ticket submitted! We'll get back to you within 2 business days.");
+      setSubject(""); setBody(""); setCat("account");
+      setTimeout(() => { setOk(""); setTab("tickets"); loadTickets(); }, 1800);
+    } catch(_) { setErr("Network error — please try again"); }
+    setBusy(false);
+  };
+
+  const statusColor = { open:"#f59e0b", in_progress:"#3b82f6", resolved:"#16a34a" };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(15,12,40,0.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:3000,backdropFilter:"blur(4px)"}}>
+      <div style={{background:"#fff",borderRadius:18,padding:"1.75rem",maxWidth:460,width:"92%",maxHeight:"85vh",overflow:"auto",boxShadow:"0 24px 60px rgba(15,12,40,0.3)"}}>
+        {/* Header */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"1.1rem"}}>
+          <div>
+            <div style={{fontWeight:800,fontSize:"1rem",color:"#1a1730"}}>🎧 Help & Support</div>
+            <div style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:2}}>Datagate support team · usually replies in 1–2 days</div>
+          </div>
+          <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.2rem",cursor:"pointer",color:"#8b88b0",lineHeight:1}}>✕</button>
+        </div>
+
+        {/* Tabs */}
+        <div style={{display:"flex",borderBottom:"2px solid #ebe9f5",marginBottom:"1.1rem"}}>
+          {[["new","✍️ New Ticket"],["tickets","📋 My Tickets"]].map(([k,l])=>(
+            <button key={k} onClick={()=>{setTab(k);if(k==="tickets")loadTickets();}}
+              style={{padding:"0.45rem 0.9rem",background:"none",border:"none",borderBottom:`2.5px solid ${tab===k?"#0d6e6e":"transparent"}`,marginBottom:-2,cursor:"pointer",fontFamily:"inherit",fontSize:"0.75rem",fontWeight:700,color:tab===k?"#0d6e6e":"#94a3b8"}}>
+              {l}
+            </button>
+          ))}
+        </div>
+
+        {tab === "new" ? (
+          <div style={{display:"flex",flexDirection:"column",gap:"0.75rem"}}>
+            {/* Category */}
+            <div>
+              <div style={{fontSize:"0.65rem",fontWeight:700,color:"#8b88b0",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.35rem"}}>Category</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:"0.4rem"}}>
+                {CATS.map(c=>(
+                  <button key={c} onClick={()=>setCat(c)}
+                    style={{padding:"0.3rem 0.75rem",borderRadius:999,border:`1.5px solid ${cat===c?"#0d6e6e":"#ddd8f5"}`,background:cat===c?"#0d6e6e":"#f8f7ff",color:cat===c?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.72rem",fontWeight:600,fontFamily:"inherit",transition:"all 0.12s",textTransform:"capitalize"}}>
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Subject */}
+            <div>
+              <div style={{fontSize:"0.65rem",fontWeight:700,color:"#8b88b0",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.35rem"}}>Subject <span style={{color:"#ef4444"}}>*</span></div>
+              <input value={subject} onChange={e=>setSubject(e.target.value)} placeholder="Brief summary of your issue"
+                style={{width:"100%",padding:"0.6rem 0.875rem",background:"#f8f7ff",border:"1.5px solid #ddd8f5",borderRadius:9,fontFamily:"inherit",fontSize:"0.84rem",color:"#1a1730",outline:"none"}}/>
+            </div>
+
+            {/* Body */}
+            <div>
+              <div style={{fontSize:"0.65rem",fontWeight:700,color:"#8b88b0",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.35rem"}}>Message <span style={{color:"#ef4444"}}>*</span></div>
+              <textarea value={body} onChange={e=>setBody(e.target.value)} placeholder="Describe your issue in detail…" rows={5}
+                style={{width:"100%",padding:"0.6rem 0.875rem",background:"#f8f7ff",border:"1.5px solid #ddd8f5",borderRadius:9,fontFamily:"inherit",fontSize:"0.84rem",color:"#1a1730",outline:"none",resize:"vertical"}}/>
+            </div>
+
+            {err && <div style={{fontSize:"0.72rem",color:"#ef4444",fontWeight:600}}>{err}</div>}
+            {ok  && <div style={{fontSize:"0.72rem",color:"#16a34a",fontWeight:600,background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:8,padding:"0.5rem 0.75rem"}}>{ok}</div>}
+
+            <button onClick={submit} disabled={busy}
+              style={{padding:"0.7rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:10,fontFamily:"inherit",fontSize:"0.875rem",fontWeight:700,cursor:busy?"not-allowed":"pointer",opacity:busy?0.6:1,transition:"all 0.15s"}}>
+              {busy?"Submitting…":"Submit Ticket"}
+            </button>
+          </div>
+        ) : (
+          <div>
+            {tLoading && <div style={{textAlign:"center",padding:"2rem",fontSize:"0.8rem",color:"#94a3b8"}}>Loading…</div>}
+            {!tLoading && tickets.length === 0 && (
+              <div style={{textAlign:"center",padding:"2.5rem 1rem"}}>
+                <div style={{fontSize:32,opacity:0.2,marginBottom:"0.5rem"}}>🎫</div>
+                <div style={{fontSize:"0.8rem",color:"#94a3b8"}}>No tickets yet</div>
+              </div>
+            )}
+            {tickets.map(t=>(
+              <div key={t.ticket_id} style={{border:"1px solid #ebe9f5",borderRadius:10,padding:"0.85rem 1rem",marginBottom:"0.6rem"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"0.35rem"}}>
+                  <div style={{fontWeight:700,fontSize:"0.84rem",color:"#1a1730",flex:1,paddingRight:"0.5rem"}}>{t.subject}</div>
+                  <span style={{fontSize:"0.65rem",fontWeight:700,color:statusColor[t.status]||"#94a3b8",background:`${statusColor[t.status]||"#94a3b8"}15`,padding:"2px 8px",borderRadius:999,whiteSpace:"nowrap",textTransform:"capitalize"}}>{t.status?.replace("_"," ")}</span>
+                </div>
+                <div style={{display:"flex",gap:"0.5rem",fontSize:"0.65rem",color:"#94a3b8"}}>
+                  <span style={{background:"#f0ece6",padding:"1px 7px",borderRadius:999,textTransform:"capitalize"}}>{t.category}</span>
+                  <span>{new Date(t.created_at).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</span>
+                </div>
+                {t.replies?.length > 0 && (
+                  <div style={{marginTop:"0.5rem",fontSize:"0.72rem",color:"#0d6e6e",fontWeight:600}}>💬 {t.replies.length} repl{t.replies.length===1?"y":"ies"}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function PersonalDetails() {
   const router = useRouter();
   const { user, apiFetch, logout, ready } = useAuth();
   const [activeTab,setActiveTab]         = useState("profile");
   const [showSignout,setShowSignout]     = useState(false);
+  const [showSupport,setShowSupport]     = useState(false);
   const [showGear,   setShowGear]        = useState(false);
   const [showDeleteModal,setShowDeleteModal] = useState(false);
   const [deleteLoading,setDeleteLoading]     = useState(false);
@@ -985,6 +1114,7 @@ export default function PersonalDetails() {
       <style>{G}</style>
       <div className="pg">
         {showSignout && <SignoutModal onConfirm={handleSignout} onCancel={() => setShowSignout(false)} />}
+        {showSupport && <SupportModal apiFetch={apiFetch} onClose={()=>setShowSupport(false)} />}
         {showDeleteModal && <DeleteAccountModal onConfirm={handleDeleteAccount} onCancel={()=>{setShowDeleteModal(false);}} loading={deleteLoading}/>}
 
         {/* ── Change Password Modal ── */}
@@ -1029,6 +1159,9 @@ export default function PersonalDetails() {
                   <div className="gear-dropdown">
                     <button className="gear-item" onClick={()=>{setShowGear(false);setShowPwChange(true);}}>
                       🔑 Change password
+                    </button>
+                    <button className="gear-item" onClick={()=>{setShowGear(false);setShowSupport(true);}}>
+                      🎧 Help & Support
                     </button>
                     <div className="gear-divider"/>
                     <button className="gear-item danger" onClick={()=>{setShowGear(false);setShowDeleteModal(true);}}>
