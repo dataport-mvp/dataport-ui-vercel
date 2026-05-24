@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 // pages/employee/personal.js  — Page 1 of 5
+// Fixes:
+// 1. DateField — no calendar, DD/MM/YYYY input, shows "📅 15 March 2023" below
+// 2. Bank account — digit counter below entry + confirm fields
+// 3. page1_edited cascade flag → page 5 re-asks acks when page 1 was edited
 
 import { useRouter } from "next/router";
 import { useAuth } from "../../utils/AuthContext";
