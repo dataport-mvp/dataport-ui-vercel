@@ -1,5 +1,5 @@
 // pages/employer/dashboard.js
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "../../utils/AuthContext";
 import { parseError } from "../../utils/apiError";
@@ -81,19 +81,6 @@ function maskAadhaar(a) {
 }
 
 // ── PDF with embedded images ──────────────────────────────────────────
-async function urlToBase64(url) {
-  try {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    return await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  } catch { return null; }
-}
-
 async function printProfile(profile, empHistory, documents, employerName) {
   const d   = profile || {};
   const cur  = d.currentAddress   || {};
@@ -163,16 +150,14 @@ async function printProfile(profile, empHistory, documents, employerName) {
     }
   }
 
-  // Fetch images as base64 (only images, PDFs shown as link)
-  const docsWithData = await Promise.all(sortedDocs.map(async (item) => {
+  // Build doc list with type info — use URLs directly (avoids S3 CORS issues with fetch)
+  const docsWithData = sortedDocs.map((item) => {
     const url = item.doc.url;
     const filename = item.doc.filename || "";
     const isImage = /\.(jpg|jpeg|png)$/i.test(filename);
     const isPdf   = /\.pdf$/i.test(filename);
-    let b64 = null;
-    if (isImage && url) b64 = await urlToBase64(url);
-    return { ...item, b64, isImage, isPdf, url };
-  }));
+    return { ...item, isImage, isPdf, url };
+  });
 
   const row = (label, value) => value && value !== "—" ? `
     <tr>
@@ -400,15 +385,15 @@ async function printProfile(profile, empHistory, documents, employerName) {
       </div>
       <div style="border:1px solid #e2e8f0;border-top:none;border-radius:0 0 4px 4px;padding:12px;background:#fafafa">
         <div style="font-size:10px;color:#94a3b8;margin-bottom:8px;font-family:monospace">${item.doc.filename || item.subKey}</div>
-        ${item.b64
-          ? `<img src="${item.b64}" style="max-width:100%;max-height:500px;object-fit:contain;border-radius:4px;border:1px solid #e2e8f0;display:block" />`
+        ${item.isImage
+          ? `<img src="${item.url}" style="max-width:100%;max-height:500px;object-fit:contain;border-radius:4px;border:1px solid #e2e8f0;display:block" onerror="this.replaceWith(Object.assign(document.createElement('div'),{textContent:'⚠ Image could not be loaded — open link to view',style:'color:#92400e;background:#fffbeb;padding:10px;border-radius:4px;font-size:11px'}))" />`
           : item.isPdf
             ? `<div style="padding:14px;background:#eff6ff;border-radius:4px;border:1px solid #bfdbfe;text-align:center">
                 <div style="font-size:13px;margin-bottom:6px">📄 PDF Document</div>
-                <a href="${item.url}" style="color:#2563eb;font-size:11px;font-weight:600">Open PDF ↗</a>
+                <a href="${item.url}" target="_blank" style="color:#2563eb;font-size:11px;font-weight:600">Open PDF ↗</a>
                 <div style="font-size:10px;color:#94a3b8;margin-top:4px">Links expire in 1 hour</div>
                </div>`
-            : `<a href="${item.url}" style="color:#2563eb;font-size:11px">View Document ↗</a>`
+            : `<a href="${item.url}" target="_blank" style="color:#2563eb;font-size:11px">View Document ↗</a>`
         }
       </div>
     </div>`).join("")}
@@ -734,128 +719,6 @@ function TermsModal({ onAccept }) {
           style={{padding:"0.65rem",background:checked?"#0d6e6e":"#e8e2da",color:checked?"#fff":"#a09890",border:"none",borderRadius:7,fontFamily:"inherit",fontSize:"0.84rem",fontWeight:700,cursor:checked&&!busy?"pointer":"not-allowed",transition:"all 0.15s"}}>
           {busy ? "Saving…" : "Accept & Continue"}
         </button>
-      </div>
-    </div>
-  );
-}
-
-
-function SupportModal({ apiFetch, onClose }) {
-  const CATS = ["account","consent","document","bgv","billing","other"];
-  const [tab,     setTab]     = React.useState("new");
-  const [cat,     setCat]     = React.useState("account");
-  const [subject, setSubject] = React.useState("");
-  const [body,    setBody]    = React.useState("");
-  const [busy,    setBusy]    = React.useState(false);
-  const [ok,      setOk]      = React.useState("");
-  const [err,     setErr]     = React.useState("");
-  const [tickets, setTickets] = React.useState([]);
-  const [tLoading,setTLoading]= React.useState(false);
-
-  const loadTickets = async () => {
-    setTLoading(true);
-    try {
-      const r = await apiFetch(`${API}/support/tickets`);
-      if (r.ok) setTickets(await r.json());
-    } catch(_) {}
-    setTLoading(false);
-  };
-
-  const submit = async () => {
-    if (!subject.trim() || !body.trim()) { setErr("Subject and message are required"); return; }
-    setBusy(true); setErr("");
-    try {
-      const r = await apiFetch(`${API}/support/tickets`, {
-        method: "POST",
-        body: JSON.stringify({ category: cat, subject: subject.trim(), body: body.trim() }),
-      });
-      const d = await r.json();
-      if (!r.ok) { setErr(d.detail || "Failed to submit"); setBusy(false); return; }
-      setOk("✅ Ticket submitted! We reply within 2 business days.");
-      setSubject(""); setBody(""); setCat("account");
-      setTimeout(() => { setOk(""); setTab("tickets"); loadTickets(); }, 1800);
-    } catch(_) { setErr("Network error — please try again"); }
-    setBusy(false);
-  };
-
-  const statusColor = { open:"#f59e0b", in_progress:"#3b82f6", resolved:"#16a34a" };
-
-  return (
-    <div style={{position:"fixed",inset:0,background:"rgba(17,13,10,0.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:3000,backdropFilter:"blur(4px)"}}>
-      <div style={{background:"#fff",borderRadius:18,padding:"1.75rem",maxWidth:460,width:"92%",maxHeight:"85vh",overflow:"auto",boxShadow:"0 24px 60px rgba(0,0,0,0.3)",border:"1px solid #c8c2b8"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"1.1rem"}}>
-          <div>
-            <div style={{fontWeight:800,fontSize:"1rem",color:"#111"}}>🎧 Help & Support</div>
-            <div style={{fontSize:"0.7rem",color:"#a09890",marginTop:2}}>Datagate support · usually replies in 1–2 business days</div>
-          </div>
-          <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.2rem",cursor:"pointer",color:"#a09890",lineHeight:1}}>✕</button>
-        </div>
-
-        <div style={{display:"flex",borderBottom:"2px solid #c8c2b8",marginBottom:"1.1rem"}}>
-          {[["new","✍️ New Ticket"],["tickets","📋 My Tickets"]].map(([k,l])=>(
-            <button key={k} onClick={()=>{setTab(k);if(k==="tickets")loadTickets();}}
-              style={{padding:"0.45rem 0.9rem",background:"none",border:"none",borderBottom:`2.5px solid ${tab===k?"#0d6e6e":"transparent"}`,marginBottom:-2,cursor:"pointer",fontFamily:"inherit",fontSize:"0.75rem",fontWeight:700,color:tab===k?"#0d6e6e":"#a09890"}}>
-              {l}
-            </button>
-          ))}
-        </div>
-
-        {tab === "new" ? (
-          <div style={{display:"flex",flexDirection:"column",gap:"0.75rem"}}>
-            <div>
-              <div style={{fontSize:"0.65rem",fontWeight:700,color:"#a09890",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.35rem"}}>Category</div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:"0.4rem"}}>
-                {CATS.map(c=>(
-                  <button key={c} onClick={()=>setCat(c)}
-                    style={{padding:"0.3rem 0.75rem",borderRadius:999,border:`1.5px solid ${cat===c?"#0d6e6e":"#c8c2b8"}`,background:cat===c?"#0d6e6e":"#f5f2ee",color:cat===c?"#fff":"#7a6e64",cursor:"pointer",fontSize:"0.72rem",fontWeight:600,fontFamily:"inherit",textTransform:"capitalize"}}>
-                    {c}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <div style={{fontSize:"0.65rem",fontWeight:700,color:"#a09890",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.35rem"}}>Subject <span style={{color:"#ef4444"}}>*</span></div>
-              <input value={subject} onChange={e=>setSubject(e.target.value)} placeholder="Brief summary of your issue"
-                style={{width:"100%",padding:"0.6rem 0.875rem",background:"#f5f2ee",border:"1.5px solid #c8c2b8",borderRadius:9,fontFamily:"inherit",fontSize:"0.84rem",color:"#111",outline:"none"}}/>
-            </div>
-            <div>
-              <div style={{fontSize:"0.65rem",fontWeight:700,color:"#a09890",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.35rem"}}>Message <span style={{color:"#ef4444"}}>*</span></div>
-              <textarea value={body} onChange={e=>setBody(e.target.value)} placeholder="Describe your issue in detail…" rows={5}
-                style={{width:"100%",padding:"0.6rem 0.875rem",background:"#f5f2ee",border:"1.5px solid #c8c2b8",borderRadius:9,fontFamily:"inherit",fontSize:"0.84rem",color:"#111",outline:"none",resize:"vertical"}}/>
-            </div>
-            {err && <div style={{fontSize:"0.72rem",color:"#ef4444",fontWeight:600}}>{err}</div>}
-            {ok  && <div style={{fontSize:"0.72rem",color:"#16a34a",fontWeight:600,background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:8,padding:"0.5rem 0.75rem"}}>{ok}</div>}
-            <button onClick={submit} disabled={busy}
-              style={{padding:"0.7rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:10,fontFamily:"inherit",fontSize:"0.875rem",fontWeight:700,cursor:busy?"not-allowed":"pointer",opacity:busy?0.6:1}}>
-              {busy?"Submitting…":"Submit Ticket"}
-            </button>
-          </div>
-        ) : (
-          <div>
-            {tLoading && <div style={{textAlign:"center",padding:"2rem",fontSize:"0.8rem",color:"#a09890"}}>Loading…</div>}
-            {!tLoading && tickets.length === 0 && (
-              <div style={{textAlign:"center",padding:"2.5rem 1rem"}}>
-                <div style={{fontSize:32,opacity:0.2,marginBottom:"0.5rem"}}>🎫</div>
-                <div style={{fontSize:"0.8rem",color:"#a09890"}}>No tickets yet</div>
-              </div>
-            )}
-            {tickets.map(t=>(
-              <div key={t.ticket_id} style={{border:"1px solid #c8c2b8",borderRadius:10,padding:"0.85rem 1rem",marginBottom:"0.6rem",background:"#faf9f7"}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"0.35rem"}}>
-                  <div style={{fontWeight:700,fontSize:"0.84rem",color:"#111",flex:1,paddingRight:"0.5rem"}}>{t.subject}</div>
-                  <span style={{fontSize:"0.65rem",fontWeight:700,color:statusColor[t.status]||"#a09890",background:`${statusColor[t.status]||"#a09890"}15`,padding:"2px 8px",borderRadius:999,whiteSpace:"nowrap",textTransform:"capitalize"}}>{t.status?.replace("_"," ")}</span>
-                </div>
-                <div style={{display:"flex",gap:"0.5rem",fontSize:"0.65rem",color:"#a09890"}}>
-                  <span style={{background:"#f0ece6",padding:"1px 7px",borderRadius:999,textTransform:"capitalize"}}>{t.category}</span>
-                  <span>{new Date(t.created_at).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</span>
-                </div>
-                {t.replies?.length > 0 && (
-                  <div style={{marginTop:"0.5rem",fontSize:"0.72rem",color:"#0d6e6e",fontWeight:600}}>💬 {t.replies.length} repl{t.replies.length===1?"y":"ies"}</div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -1218,7 +1081,6 @@ export default function EmployerDashboard() {
   const router = useRouter();
 
   const [showSignout,    setShowSignout]    = useState(false);
-  const [showSupport,    setShowSupport]    = useState(false);
   const [termsAccepted,  setTermsAccepted]  = useState(false);
   const [termsLoading,   setTermsLoading]   = useState(true);
   const [consents,       setConsents]       = useState([]);
@@ -1619,7 +1481,6 @@ return (
       <style>{G}</style>
 
       {showSignout && <SignoutModal onConfirm={logout} onCancel={() => setShowSignout(false)} />}
-      {showSupport && <SupportModal apiFetch={apiFetch} onClose={()=>setShowSupport(false)} />}
 
       {/* ── Change Password Modal ── */}
       {showPwModal && (
@@ -1714,7 +1575,7 @@ return (
       {showDrawer&&<div className="drawer-overlay" onClick={()=>setShowDrawer(false)}/>}
       <div className={`drawer${showDrawer?" open":""}`}>
         <div className="drawer-head">
-          <span className="drawer-title">Send BGV Request</span>
+          <span className="drawer-title">Request Employee Data</span>
           <button className="drawer-close" onClick={()=>setShowDrawer(false)}>✕</button>
         </div>
         <div className="drawer-body">
@@ -1769,12 +1630,11 @@ return (
               </div>
             </div>
             {/* Nav tabs */}
-            {["Overview","Candidates","Consents","Reports"].map(tab=>(
+            {["Overview","Candidates"].map(tab=>(
               <button key={tab} onClick={()=>setMainTab(tab)}
                 style={{padding:"0 4px",height:52,background:"none",border:"none",borderBottom:`2.5px solid ${mainTab===tab?"#0d6e6e":"transparent"}`,fontSize:"0.8rem",fontWeight:mainTab===tab?700:500,color:mainTab===tab?"#0d6e6e":"#7a6e64",cursor:"pointer",fontFamily:"inherit",transition:"all .12s",marginBottom:-1}}>
                 {tab}
                 {tab==="Candidates"&&consents.length>0&&<span style={{marginLeft:5,background:"#0d6e6e",color:"#fff",fontSize:"0.58rem",fontWeight:800,padding:"1px 5px",borderRadius:999}}>{consents.length}</span>}
-                {tab==="Consents"&&pending.length>0&&<span style={{marginLeft:5,background:"#d97706",color:"#fff",fontSize:"0.58rem",fontWeight:800,padding:"1px 5px",borderRadius:999}}>{pending.length}</span>}
               </button>
             ))}
           </div>
@@ -1789,9 +1649,8 @@ return (
               <span style={{fontSize:9,fontWeight:700,background:"#e0f0ee",color:"#0a5656",padding:"1px 6px",borderRadius:4,textTransform:"uppercase",letterSpacing:.5}}>Employer</span>
             </div>
             <button onClick={()=>setShowPwModal(true)} style={{padding:"5px 10px",border:"1px solid #c8c2b8",borderRadius:6,background:"#f5f2ee",fontSize:11,fontWeight:600,color:"#7a6e64",cursor:"pointer",fontFamily:"inherit"}}>Change password</button>
-            <button onClick={()=>setShowSupport(true)} style={{padding:"5px 10px",border:"1px solid #c8c2b8",borderRadius:6,background:"#f5f2ee",fontSize:11,fontWeight:600,color:"#0d6e6e",cursor:"pointer",fontFamily:"inherit"}}>🎧 Help</button>
             <button onClick={()=>setShowSignout(true)} style={{padding:"5px 10px",border:"1.5px solid #fca5a5",borderRadius:6,background:"#fef2f2",fontSize:11,fontWeight:700,color:"#dc2626",cursor:"pointer",fontFamily:"inherit"}}>Sign out</button>
-            <button onClick={()=>setShowDrawer(true)} style={{padding:"6px 14px",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:7,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 8px rgba(13,110,110,.3)"}}>+ Request BGV</button>
+            <button onClick={()=>setShowDrawer(true)} style={{padding:"6px 14px",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:7,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 8px rgba(13,110,110,.3)"}}>+ Request Data Access</button>
           </div>
         </div>
 
@@ -1800,12 +1659,11 @@ return (
           <div style={{padding:"1.25rem 1.75rem",flex:1}}>
 
             {/* 5 stat cards */}
-            <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:"0.5px",background:"#c8c2b8",border:"1px solid #c8c2b8",borderRadius:10,overflow:"hidden",marginBottom:"1.25rem"}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"0.5px",background:"#c8c2b8",border:"1px solid #c8c2b8",borderRadius:10,overflow:"hidden",marginBottom:"1.25rem"}}>
               {[
                 {label:"Total Requests",   val:consents.length,         sub:"Lifetime BGV sent",      col:"#111"},
                 {label:"Approved",         val:approved.length,         sub:"Profiles shared",        col:"#0d6e6e"},
                 {label:"Pending",          val:pending.length,          sub:"Awaiting employee",      col:"#d97706"},
-                {label:"Completed BGV",    val:approved.length,         sub:"Reports generated",      col:"#2563eb"},
                 {label:"Declined",         val:declined.length,         sub:"By candidates",          col:"#dc2626"},
               ].map(s=>(
                 <div key={s.label} style={{background:"#fff",padding:"12px 16px",position:"relative"}}>
@@ -1829,7 +1687,7 @@ return (
                   </div>
                   <div style={{padding:"4px 0"}}>
                     {loading&&<div style={{padding:"1rem",fontSize:"0.75rem",color:"#a09890"}}>Loading…</div>}
-                    {!loading&&consents.length===0&&<div style={{padding:"1.5rem",textAlign:"center",fontSize:"0.75rem",color:"#a09890"}}>No candidates yet. Send your first BGV request.</div>}
+                    {!loading&&consents.length===0&&<div style={{padding:"1.5rem",textAlign:"center",fontSize:"0.75rem",color:"#a09890"}}>No candidates yet. Send your first data access request.</div>}
                     {[...consents].sort((a,b)=>(b.requested_at||b.created_at||0)-(a.requested_at||a.created_at||0)).slice(0,6).map(c=>{
                       const col=c.status==="approved"?"#0d6e6e":c.status==="pending"?"#d97706":"#dc2626";
                       const bg=c.status==="approved"?"#e0f0ee":c.status==="pending"?"#fef9c3":"#fef2f2";
@@ -1851,42 +1709,27 @@ return (
                   </div>
                 </div>
 
-                {/* Bottom row: Consent Breakdown + BGV Status + Activity Feed */}
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"1rem"}}>
-                  {/* Consent Breakdown */}
+                {/* Bottom row: BGV Status + Activity Feed */}
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem"}}>
+                  {/* Onboarding Status — isolated from BGV workflow */}
                   <div style={{background:"#fff",border:"1px solid #c8c2b8",borderRadius:10,padding:"12px 14px"}}>
-                    <div style={{fontSize:9,fontWeight:700,letterSpacing:"1px",textTransform:"uppercase",color:"#7a6e64",marginBottom:10}}>Consent Breakdown</div>
-                    {[["Approved",approved.length,"#0d6e6e"],["Pending",pending.length,"#d97706"],["Declined",declined.length,"#dc2626"]].map(([label,val,col])=>{
-                      const pct=consents.length>0?Math.round((val/consents.length)*100):0;
-                      return(
-                        <div key={label} style={{marginBottom:8}}>
-                          <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
-                            <span style={{color:"#5a5248",fontWeight:500}}>{label}</span>
-                            <span style={{fontWeight:700,color:col}}>{val} <span style={{color:"#a09890",fontWeight:400}}>({pct}%)</span></span>
-                          </div>
-                          <div style={{height:4,background:"#f0ece6",borderRadius:2,overflow:"hidden"}}>
-                            <div style={{height:"100%",width:`${pct}%`,background:col,borderRadius:2,transition:"width .4s"}}/>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* BGV Status */}
-                  <div style={{background:"#fff",border:"1px solid #c8c2b8",borderRadius:10,padding:"12px 14px"}}>
-                    <div style={{fontSize:9,fontWeight:700,letterSpacing:"1px",textTransform:"uppercase",color:"#7a6e64",marginBottom:10}}>BGV Status</div>
+                    <div style={{fontSize:9,fontWeight:700,letterSpacing:"1px",textTransform:"uppercase",color:"#7a6e64",marginBottom:4}}>Onboarding Status</div>
+                    <div style={{fontSize:9,color:"#a09890",marginBottom:10,lineHeight:1.5}}>BGV completion is tracked separately by your BGV team</div>
                     {[
-                      ["Verified",approved.filter(c=>candStatus[c.employee_email]?.status==="submitted").length,"#0d6e6e"],
-                      ["In progress",pending.length,"#d97706"],
-                      ["Not started",consents.filter(c=>!candStatus[c.employee_email]).length,"#a09890"],
-                    ].map(([label,val,col])=>(
-                      <div key={label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,fontSize:11}}>
-                        <span style={{color:"#5a5248"}}>{label}</span>
-                        <div style={{display:"flex",alignItems:"center",gap:6}}>
-                          <div style={{width:50,height:4,background:"#f0ece6",borderRadius:2,overflow:"hidden"}}>
-                            <div style={{height:"100%",width:consents.length>0?`${Math.round((val/consents.length)*100)}%`:"0%",background:col,borderRadius:2}}/>
+                      ["Data Shared",approved.length,"#0d6e6e","Employee approved · data accessible"],
+                      ["Awaiting Consent",pending.length,"#d97706","Request sent · employee yet to respond"],
+                      ["Declined",declined.length,"#dc2626","Employee declined the request"],
+                    ].map(([label,val,col,sub])=>(
+                      <div key={label} style={{marginBottom:9}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                          <div>
+                            <span style={{fontSize:11,color:"#1c2b2b",fontWeight:600}}>{label}</span>
+                            <div style={{fontSize:9,color:"#a09890",marginTop:1}}>{sub}</div>
                           </div>
-                          <span style={{fontWeight:700,color:col,minWidth:16,textAlign:"right"}}>{val}</span>
+                          <span style={{fontWeight:800,color:col,fontSize:14,minWidth:20,textAlign:"right"}}>{val}</span>
+                        </div>
+                        <div style={{height:3,background:"#f0ece6",borderRadius:2,overflow:"hidden"}}>
+                          <div style={{height:"100%",width:consents.length>0?`${Math.round((val/consents.length)*100)}%`:"0%",background:col,borderRadius:2,transition:"width .4s"}}/>
                         </div>
                       </div>
                     ))}
@@ -1898,7 +1741,7 @@ return (
                     {consents.length===0&&<div style={{fontSize:11,color:"#a09890"}}>No activity yet</div>}
                     {[...consents].sort((a,b)=>(b.responded_at||b.requested_at||0)-(a.responded_at||a.requested_at||0)).slice(0,4).map(c=>{
                       const col=c.status==="approved"?"#0d6e6e":c.status==="pending"?"#d97706":"#dc2626";
-                      const txt=c.status==="approved"?`${c.employee_email} approved request`:c.status==="declined"?`${c.employee_email} declined`:`BGV request sent to ${c.employee_email}`;
+                      const txt=c.status==="approved"?`${c.employee_email} approved request`:c.status==="declined"?`${c.employee_email} declined`:`Data access request sent to ${c.employee_email}`;
                       return(
                         <div key={gcid(c)} style={{display:"flex",gap:7,marginBottom:7,alignItems:"flex-start"}}>
                           <div style={{width:6,height:6,borderRadius:"50%",background:col,flexShrink:0,marginTop:4}}/>
@@ -1917,11 +1760,8 @@ return (
                     <div style={{fontSize:10,fontWeight:700,letterSpacing:".8px",textTransform:"uppercase",color:"#7a6e64"}}>Quick Actions</div>
                   </div>
                   <div style={{padding:"12px 14px",display:"flex",flexDirection:"column",gap:8}}>
-                    <button onClick={()=>setShowDrawer(true)} style={{width:"100%",padding:"10px 14px",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 8px rgba(13,110,110,.25)",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
-                      <span>＋</span> Send BGV Request
-                    </button>
                     <button onClick={()=>{setReqTab("bulk");setShowDrawer(true);}} style={{width:"100%",padding:"10px 14px",background:"#f5f2ee",color:"#0d6e6e",border:"1.5px solid #a8d5ce",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
-                      <span>📊</span> Bulk Invite (Excel / CSV)
+                      <span>📊</span> Bulk Request (Excel / CSV)
                     </button>
                     <button onClick={()=>{setShowInbox(true);loadInbox();}} style={{width:"100%",padding:"10px 14px",background:"#f5f2ee",color:"#111",border:"1px solid #c8c2b8",borderRadius:8,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
                       <span>✉️</span> Messages {unreadCount>0&&<span style={{background:"#dc2626",color:"#fff",borderRadius:999,fontSize:9,fontWeight:800,padding:"1px 6px",marginLeft:"auto"}}>{unreadCount}</span>}
@@ -2057,7 +1897,7 @@ return (
                         <div className="tab-pane">
                           {activeTab==="Overview"&&<OverviewTab data={profileData.profile_snapshot}/>}
                           {activeTab==="Education"&&<EducationTab data={profileData.profile_snapshot?.education}/>}
-                          {activeTab==="Employment"&&<EmploymentTab data={profileData.employment_snapshot} resumeKey={profileData.profile_snapshot?.resumeKey} docUrls={docUrls}/>}
+                          {activeTab==="Employment"&&<EmploymentTab data={profileData.employment_snapshot} resumeKey={profileData.profile_snapshot?.resumeKey} docUrls={Object.values(documents||{}).reduce((acc,grp)=>({...acc,...Object.fromEntries(Object.entries(grp).map(([k,v])=>[k,v.url]))}),{})}/>}
                           {activeTab==="UAN & PF"&&<UanTab data={profileData.profile_snapshot}/>}
                           {activeTab==="Documents"&&<DocumentsTab documents={documents} loading={docsLoading}/>}
                         </div>
@@ -2070,56 +1910,7 @@ return (
           </div>
         )}
 
-        {/* ══ CONSENTS TAB ══ */}
-        {mainTab==="Consents" && (
-          <div style={{padding:"1.25rem 1.75rem"}}>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"1rem",maxWidth:700,marginBottom:"1.5rem"}}>
-              {[["Pending",pending.length,"#d97706","#fef9c3"],["Approved",approved.length,"#0d6e6e","#e0f0ee"],["Declined",declined.length,"#dc2626","#fef2f2"]].map(([label,val,col,bg])=>(
-                <div key={label} style={{background:bg,border:`1px solid ${col}33`,borderRadius:10,padding:"12px 16px",textAlign:"center"}}>
-                  <div style={{fontSize:24,fontWeight:800,color:col}}>{val}</div>
-                  <div style={{fontSize:11,fontWeight:600,color:col,marginTop:2}}>{label}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{background:"#fff",border:"1px solid #c8c2b8",borderRadius:10,overflow:"hidden"}}>
-              <div style={{padding:"10px 16px",borderBottom:"1px solid #e8e2da",display:"flex",gap:"0.5rem"}}>
-                {[["pending","Pending"],["approved","Approved"],["declined","Declined"]].map(([key,label])=>(
-                  <button key={key} onClick={()=>setCTab(key)} style={{padding:"5px 14px",borderRadius:6,border:`1.5px solid ${cTab===key?"#0d6e6e":"#c8c2b8"}`,background:cTab===key?"#0d6e6e":"#f5f2ee",color:cTab===key?"#fff":"#7a6e64",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                    {label} {counts[key]>0&&`(${counts[key]})`}
-                  </button>
-                ))}
-              </div>
-              {list.length===0?(<div style={{padding:"2rem",textAlign:"center",color:"#a09890",fontSize:"0.82rem"}}>No {cTab} requests</div>):(
-                list.map(c=>{
-                  const col=c.status==="approved"?"#0d6e6e":c.status==="pending"?"#d97706":"#dc2626";
-                  return(
-                    <div key={gcid(c)} onClick={()=>{ selectConsent(c); setMainTab("Candidates"); }} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 16px",borderBottom:"1px solid #f5f2ee",cursor:"pointer"}}
-                      onMouseEnter={e=>e.currentTarget.style.background="#faf8f5"} onMouseLeave={e=>e.currentTarget.style.background="#fff"}>
-                      <div style={{flex:1}}>
-                        <div style={{fontSize:13,fontWeight:700,color:"#111"}}>{c.employee_name||c.employee_email}</div>
-                        <div style={{fontSize:11,color:"#a09890"}}>{c.employee_email} · {toISTDate(c.requested_at||c.created_at)}</div>
-                        {c.request_message&&<div style={{fontSize:11,color:"#5a5248",fontStyle:"italic",marginTop:2}}>"{c.request_message}"</div>}
-                      </div>
-                      <span style={{fontSize:10,fontWeight:700,padding:"2px 10px",borderRadius:8,background:`${col}15`,color:col,textTransform:"uppercase",border:`0.5px solid ${col}44`}}>{c.status}</span>
-                      <span style={{fontSize:11,color:"#0d6e6e",fontWeight:600}}>View →</span>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        )}
 
-        {/* ══ REPORTS TAB ══ */}
-        {mainTab==="Reports" && (
-          <div style={{padding:"1.25rem 1.75rem"}}>
-            <div style={{background:"#fff",border:"1px solid #c8c2b8",borderRadius:10,padding:"2rem",textAlign:"center",maxWidth:500}}>
-              <div style={{fontSize:"2rem",marginBottom:"0.75rem",opacity:.3}}>📊</div>
-              <div style={{fontSize:"0.95rem",fontWeight:700,color:"#111",marginBottom:"0.3rem"}}>BGV Reports</div>
-              <div style={{fontSize:"0.8rem",color:"#a09890"}}>Detailed verification reports will appear here once candidates complete their profiles and consent is approved.</div>
-            </div>
-          </div>
-        )}
 
       </div>
     </>
