@@ -375,9 +375,9 @@ async function printProfile(profile, empHistory, documents, employerName) {
   )).join("") : ""}
 
   <!-- ══ SECTION 5: DOCUMENTS ══ -->
-  ${docsWithData.length > 0 ? `
   <div style="font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:2px;margin-bottom:14px;margin-top:20px">Documents — In Sequence Order</div>
 
+  ${docsWithData.length > 0 ? `
   ${docsWithData.map((item, idx) => `
     <div style="margin-bottom:28px;page-break-inside:avoid">
       <div style="background:#334155;color:#fff;padding:5px 12px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;border-radius:4px 4px 0 0">
@@ -397,7 +397,7 @@ async function printProfile(profile, empHistory, documents, employerName) {
         }
       </div>
     </div>`).join("")}
-  ` : ""}
+  ` : `<div style="padding:14px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;font-size:11px;color:#92400e">No documents on file for this candidate. If documents were uploaded, try refreshing the candidate's profile and printing again — document links expire after 1 hour.</div>`}
 
   <!-- Footer -->
   <div style="border-top:1px solid #e2e8f0;padding-top:10px;margin-top:24px;display:flex;justify-content:space-between">
@@ -1087,6 +1087,7 @@ export default function EmployerDashboard() {
   const [selected,       setSelected]       = useState(null);
   const [profileData,    setProfileData]    = useState(null);
   const [documents,      setDocuments]      = useState(null);
+  const [empId,          setEmpId]          = useState(null);
   const [docsLoading,    setDocsLoading]    = useState(false);
   const [activeTab,      setActiveTab]      = useState("Overview");
   const [cTab,           setCTab]           = useState("pending");
@@ -1210,15 +1211,20 @@ export default function EmployerDashboard() {
   const fa = useMemo(() => filt(approved, spApproved), [approved, spApproved]);
   const fd = useMemo(() => filt(declined, spDeclined), [declined, spDeclined]);
 
-  const loadDocs = useCallback(async (empId) => {
-    if (!empId) return;
+  const loadDocs = useCallback(async (eid) => {
+    if (!eid) return null;
     setDocsLoading(true);
-    try { const r = await apiFetch(`${API}/documents/${empId}`); if (r.ok) setDocuments((await r.json()).documents||{}); } catch (_) {}
+    let docs = null;
+    try {
+      const r = await apiFetch(`${API}/documents/${eid}`);
+      if (r.ok) { docs = (await r.json()).documents || {}; setDocuments(docs); }
+    } catch (_) {}
     setDocsLoading(false);
+    return docs;
   }, [apiFetch]);
 
   const selectConsent = useCallback(async (consent) => {
-    setSelected(consent); setProfileData(null); setDocuments(null); setActiveTab("Overview");
+    setSelected(consent); setProfileData(null); setDocuments(null); setEmpId(null); setActiveTab("Overview");
     // Fetch candidate profile status for badge (works for all statuses)
     if (consent.employee_email) fetchCandStatus(consent.employee_email);
     if (consent.status !== "approved") return;
@@ -1229,8 +1235,10 @@ export default function EmployerDashboard() {
         const raw = await r.json();
         const profile = normalizeProfile(raw?.profile_snapshot||raw?.employee||{});
         setProfileData({ ...raw, profile_snapshot: profile, employment_snapshot: raw?.employment_snapshot||raw?.employmentHistory||[] });
-        const eid = profile?.employee_id||raw?.employee_id||consent?.employee_id;
-        if (eid) loadDocs(eid);
+        const eid = profile?.employee_id || profile?.employeeId || profile?.user_id || profile?.userId
+          || raw?.employee_id || raw?.employeeId || raw?.user_id || raw?.userId
+          || consent?.employee_id || consent?.employeeId || consent?.user_id;
+        if (eid) { setEmpId(eid); loadDocs(eid); }
       }
     } catch (_) {}
     setLoadingProf(false);
@@ -1477,7 +1485,10 @@ export default function EmployerDashboard() {
     if (!profileData || printing) return;
     setPrinting(true);
     try {
-      await printProfile(profileData.profile_snapshot, profileData.employment_snapshot||[], documents, user?.name||user?.email);
+      // Refresh document URLs first — S3 presigned links expire after 1hr,
+      // so stale URLs would silently fail to load as images in the PDF.
+      const freshDocs = empId ? await loadDocs(empId) : documents;
+      await printProfile(profileData.profile_snapshot, profileData.employment_snapshot||[], freshDocs||documents, user?.name||user?.email);
     } catch (_) {}
     setPrinting(false);
   };
