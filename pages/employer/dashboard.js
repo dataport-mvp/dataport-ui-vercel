@@ -1103,6 +1103,9 @@ export default function EmployerDashboard() {
   const [bulkEmails,     setBulkEmails]     = useState("");
   const [bulkResults,    setBulkResults]    = useState([]);
   const [bulkBusy,       setBulkBusy]       = useState(false);
+  const [bulkValidating, setBulkValidating] = useState(false);
+  const [bulkValidated,  setBulkValidated]  = useState(null);   // null=not yet | array=validated
+  const [msgRecipient,   setMsgRecipient]   = useState("Employee"); // "Employee" | "BGV Team" | "Both"
   const [xlsDragging,    setXlsDragging]    = useState(false);
   const [xlsParsed,      setXlsParsed]      = useState(""); // "12 emails found from Sheet1"
   const [candStatus,     setCandStatus]     = useState({}); // email → {status,completeness,name}
@@ -1307,8 +1310,8 @@ export default function EmployerDashboard() {
   };
 
   // Bulk invite — sends consent requests to multiple emails at once
-  const sendBulkRequest = async () => {
-    const emails = bulkEmails.split(/[\n,;]+/).map(e => e.trim().toLowerCase()).filter(Boolean);
+  const sendBulkRequest = async (emailsOverride) => {
+    const emails = emailsOverride || bulkEmails.split(/[\n,;]+/).map(e => e.trim().toLowerCase()).filter(Boolean);
     if (!emails.length) return;
     setBulkBusy(true);
     setBulkResults([]);
@@ -1328,6 +1331,26 @@ export default function EmployerDashboard() {
     setBulkResults(results);
     setBulkBusy(false);
     if (results.some(r => r.ok)) loadConsents();
+  };
+
+  // Validate bulk emails against registered employees before sending
+  const validateBulkEmails = async () => {
+    const emails = bulkEmails.split(/[\n,;]+/).map(e => e.trim().toLowerCase()).filter(Boolean);
+    if (!emails.length) return;
+    setBulkValidating(true);
+    setBulkValidated(null);
+    const results = await Promise.all(emails.map(async email => {
+      try {
+        const r = await apiFetch(`${API}/employee/profile-status?email=${encodeURIComponent(email)}`);
+        if (r.ok) {
+          const d = await r.json();
+          return { email, registered: !!d.exists, name: d.name || "", status: d.status || "" };
+        }
+        return { email, registered: false, name: "", status: "" };
+      } catch { return { email, registered: false, name: "", status: "" }; }
+    }));
+    setBulkValidated(results);
+    setBulkValidating(false);
   };
 
   const handleChangePassword = async () => {
@@ -1416,7 +1439,7 @@ export default function EmployerDashboard() {
     try {
       const r = await apiFetch(`${API}/messages/send`, {
         method: "POST",
-        body: JSON.stringify({ consent_id: activeThread, body: msgBody.trim(), subject: msgSubject.trim() }),
+        body: JSON.stringify({ consent_id: activeThread, body: msgBody.trim(), subject: msgSubject.trim(), recipient_type: msgRecipient }),
       });
       if (r.ok) {
         setMsgBody(""); setMsgSubject("");
@@ -1518,7 +1541,12 @@ return (
                 {!inboxLoading && inboxThreads.length===0 && <div style={{padding:"2rem 1rem",textAlign:"center"}}><div style={{fontSize:"1.5rem",opacity:.2,marginBottom:"0.5rem"}}>✉️</div><div style={{fontSize:"0.72rem",color:"#a09890"}}>No messages yet</div></div>}
                 {inboxThreads.map(t=>(
                   <div key={t.thread_id} className={`thread-item${activeThread===t.thread_id?" active":""}`} onClick={()=>loadThread(t.thread_id)}>
-                    <div className="thread-email">{t.other_party_email}</div>
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}>
+                      <div className="thread-email" style={{flex:1}}>{t.other_party_email}</div>
+                      {t.recipient_type&&t.recipient_type!=="Employee"&&(
+                        <span style={{fontSize:"0.55rem",fontWeight:700,padding:"1px 6px",borderRadius:4,background:t.recipient_type==="Both"?"rgba(124,58,237,0.15)":"rgba(217,119,6,0.15)",color:t.recipient_type==="Both"?"#7c3aed":"#d97706",textTransform:"uppercase",letterSpacing:.4,flexShrink:0}}>{t.recipient_type}</span>
+                      )}
+                    </div>
                     {t.other_party_name&&<div style={{fontSize:"0.62rem",color:"#7a6e64",marginTop:1}}>{t.other_party_name}</div>}
                     <div className="thread-preview">{t.latest_message||"No messages"}</div>
                     <div className="thread-meta">
@@ -1545,16 +1573,34 @@ return (
                       {!threadLoading&&threadMsgs.length===0&&<div style={{textAlign:"center",fontSize:"0.72rem",color:"#a09890",padding:"2rem"}}>No messages yet.</div>}
                       {threadMsgs.map((m,i)=>{
                         const mine=m.sender_email===user?.email;
+                        // For incoming messages, show sender name and — if the message came via/about
+                        // the BGV side — the BGV company/org name beneath the bubble.
+                        const orgLabel = m.sender_org || m.bgv_company || (m.recipient_type==="BGV Team"||m.recipient_type==="Both" ? "BGV Team" : "");
                         return(
                           <div key={m.message_id||i} className={`msg-bubble-wrap ${mine?"mine":"theirs"}`}>
                             {!mine&&<div className="msg-sender">{m.sender_name||m.sender_email}</div>}
                             <div className={`msg-bubble ${mine?"mine":"theirs"}`}>{m.body}</div>
                             <div className={`msg-time ${mine?"mine":"theirs"}`}>{toISTDate(m.sent_at)}{mine&&m.read_by_recipient&&<span style={{marginLeft:4}}>✓✓</span>}{mine&&!m.read_by_recipient&&<span style={{marginLeft:4}}>✓</span>}</div>
+                            {!mine&&orgLabel&&<div style={{fontSize:"0.58rem",color:"#a09890",marginTop:2,fontStyle:"italic"}}>{orgLabel}</div>}
                           </div>
                         );
                       })}
                     </div>
                     <div className="msg-compose">
+                      {/* Recipient selector — complete isolation: Employee / BGV Team / Both */}
+                      <div style={{display:"flex",gap:"0.4rem",marginBottom:"0.5rem"}}>
+                        {["Employee","BGV Team","Both"].map(r=>(
+                          <button key={r} onClick={()=>setMsgRecipient(r)}
+                            style={{flex:1,padding:"0.35rem 0.5rem",borderRadius:7,border:`1.5px solid ${msgRecipient===r?"#0d6e6e":"#c8c2b8"}`,background:msgRecipient===r?"#0d6e6e":"#f5f2ee",color:msgRecipient===r?"#fff":"#7a6e64",fontSize:"0.66rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit",textAlign:"center"}}>
+                            {r}
+                          </button>
+                        ))}
+                      </div>
+                      <div style={{fontSize:"0.6rem",color:"#a09890",marginBottom:"0.45rem"}}>
+                        {msgRecipient==="Employee"&&"Sends to the candidate only — isolated from BGV team."}
+                        {msgRecipient==="BGV Team"&&"Sends to the BGV team only — isolated from candidate."}
+                        {msgRecipient==="Both"&&"Sends to both — visible in each party's own inbox."}
+                      </div>
                       <input placeholder="Subject (optional)" value={msgSubject} onChange={e=>setMsgSubject(e.target.value)} style={{width:"100%",padding:"0.45rem 0.75rem",background:"#f5f2ee",border:"1.5px solid #c8c2b8",borderRadius:7,fontFamily:"inherit",fontSize:"0.75rem",color:"#111",outline:"none",marginBottom:"0.4rem"}}/>
                       <textarea className="msg-input" placeholder="Type a message…" value={msgBody} onChange={e=>setMsgBody(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&e.ctrlKey){e.preventDefault();sendMessage();}}}/>
                       {msgErr&&<div style={{fontSize:"0.68rem",color:"#ef4444",marginBottom:"0.3rem",fontWeight:600}}>{msgErr}</div>}
@@ -1575,15 +1621,11 @@ return (
       {showDrawer&&<div className="drawer-overlay" onClick={()=>setShowDrawer(false)}/>}
       <div className={`drawer${showDrawer?" open":""}`}>
         <div className="drawer-head">
-          <span className="drawer-title">Request Employee Data</span>
+          <span className="drawer-title">{reqTab==="single"?"Request Employee Data":"Bulk Request — Employee Data"}</span>
           <button className="drawer-close" onClick={()=>setShowDrawer(false)}>✕</button>
         </div>
         <div className="drawer-body">
-          <div className="bulk-tab-row" style={{marginBottom:"0.75rem"}}>
-            <button className={`bulk-tab${reqTab==="single"?" on":""}`} onClick={()=>{setReqTab("single");setBulkResults([]);}}>Single</button>
-            <button className={`bulk-tab${reqTab==="bulk"?" on":""}`} onClick={()=>{setReqTab("bulk");setReqErr("");setReqOk("");}}>Bulk</button>
-          </div>
-          {reqTab==="single"?(<>
+          {reqTab==="single"&&(<>
             <div style={{fontSize:"0.65rem",fontWeight:700,color:"#7a6e64",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>Candidate Email *</div>
             <input className="req-in" type="email" placeholder="candidate@company.com" value={reqEmail} onChange={e=>setReqEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!reqMsg&&sendRequest()} style={{width:"100%",marginBottom:"0.65rem"}}/>
             <div style={{fontSize:"0.65rem",fontWeight:700,color:"#7a6e64",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>Message (Optional)</div>
@@ -1591,7 +1633,9 @@ return (
             {reqErr&&<p className="req-msg e">{reqErr}</p>}
             {reqOk&&<p className="req-msg s">{reqOk}</p>}
             <button className="send-btn" style={{marginTop:"0.75rem"}} onClick={sendRequest} disabled={reqBusy}>{reqBusy?"Sending…":"Send consent request →"}</button>
-          </>):(<>
+          </>)}
+
+          {reqTab==="bulk"&&(<>
             <div className={`xls-drop${xlsDragging?" drag":""}`} onDragOver={e=>{e.preventDefault();setXlsDragging(true);}} onDragLeave={()=>setXlsDragging(false)} onDrop={handleXlsDrop} onClick={()=>document.getElementById("xls-file-input").click()}>
               <div className="xls-drop-icon">📊</div>
               <div className="xls-drop-txt">Drop Excel / CSV here</div>
@@ -1599,9 +1643,60 @@ return (
               <input id="xls-file-input" type="file" accept=".xlsx,.xls,.csv" style={{display:"none"}} onChange={handleXlsDrop}/>
             </div>
             {xlsParsed&&<div className="xls-parsed">✓ {xlsParsed}</div>}
-            <textarea className="req-in req-ta" placeholder={"Enter emails — one per line\nrajan@company.com\npriya@company.com"} style={{minHeight:80,width:"100%"}} value={bulkEmails} onChange={e=>{setBulkEmails(e.target.value);setXlsParsed("");}}/>
+
+            <textarea className="req-in req-ta" placeholder={"Enter emails — one per line\nrajan@company.com\npriya@company.com"} style={{minHeight:72,width:"100%"}} value={bulkEmails}
+              onChange={e=>{setBulkEmails(e.target.value);setXlsParsed("");setBulkValidated(null);setBulkResults([]);}}/>
+
+            {!bulkValidated&&(
+              <button onClick={validateBulkEmails} disabled={bulkValidating||!bulkEmails.trim()}
+                style={{width:"100%",padding:"0.5rem",background:"#f5f2ee",color:"#0d6e6e",border:"1.5px solid #a8d5ce",borderRadius:8,fontFamily:"inherit",fontSize:"0.76rem",fontWeight:700,cursor:bulkValidating||!bulkEmails.trim()?"not-allowed":"pointer",marginTop:"0.4rem",marginBottom:"0.5rem"}}>
+                {bulkValidating?"Checking emails…":"🔍 Validate emails"}
+              </button>
+            )}
+
+            {bulkValidated&&(()=>{
+              const reg = bulkValidated.filter(r=>r.registered);
+              const unreg = bulkValidated.filter(r=>!r.registered);
+              return(<>
+                <div style={{background:"#f5f2ee",borderRadius:8,padding:"0.65rem",marginTop:"0.4rem",marginBottom:"0.5rem",maxHeight:160,overflowY:"auto"}}>
+                  <div style={{fontSize:"0.6rem",fontWeight:700,color:"#7a6e64",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.4rem"}}>
+                    {reg.length} registered · {unreg.length} not found
+                  </div>
+                  {bulkValidated.map((r,i)=>(
+                    <div key={i} style={{display:"flex",alignItems:"center",gap:"0.5rem",padding:"3px 0",borderBottom:"1px solid #e8e2da"}}>
+                      <span style={{fontSize:"0.75rem",flexShrink:0}}>{r.registered?"✅":"❌"}</span>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:"0.7rem",color:r.registered?"#111":"#a09890",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.email}</div>
+                        {r.registered&&r.name&&<div style={{fontSize:"0.6rem",color:"#0d6e6e"}}>{r.name}</div>}
+                        {!r.registered&&<div style={{fontSize:"0.6rem",color:"#dc2626"}}>Hey, this email is not registered on Datagate</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {unreg.length>0&&<div style={{fontSize:"0.68rem",color:"#a09890",marginBottom:"0.4rem",lineHeight:1.5}}>⚠️ {unreg.length} unregistered email{unreg.length>1?"s":""} will be skipped. Only registered employees can receive consent requests.</div>}
+                <button onClick={()=>{setBulkValidated(null);setBulkResults([]);}} style={{fontSize:"0.65rem",color:"#a09890",background:"none",border:"none",cursor:"pointer",marginBottom:"0.4rem",padding:0}}>← Edit emails</button>
+              </>);
+            })()}
+
             <textarea className="req-in req-ta" placeholder="Message to all candidates (optional)" style={{width:"100%"}} value={reqMsg} onChange={e=>setReqMsg(e.target.value)}/>
-            <button className="send-btn" style={{marginTop:"0.5rem"}} onClick={sendBulkRequest} disabled={bulkBusy||!bulkEmails.trim()}>{bulkBusy?"Sending…":`Send to ${bulkEmails.split(/[\n,;]+/).filter(e=>e.trim()).length} candidate(s)`}</button>
+
+            <button className="send-btn" style={{marginTop:"0.5rem"}}
+              onClick={()=>{
+                if(bulkValidated){
+                  const regEmails = bulkValidated.filter(r=>r.registered).map(r=>r.email);
+                  if(!regEmails.length) return;
+                  setBulkEmails(regEmails.join("\n"));
+                  sendBulkRequest(regEmails);
+                } else {
+                  sendBulkRequest();
+                }
+              }}
+              disabled={bulkBusy||!bulkEmails.trim()||(bulkValidated&&bulkValidated.filter(r=>r.registered).length===0)}>
+              {bulkBusy?"Sending…":bulkValidated
+                ?`Send to ${bulkValidated.filter(r=>r.registered).length} registered candidate(s) →`
+                :`Send to ${bulkEmails.split(/[\n,;]+/).filter(e=>e.trim()).length} candidate(s) →`}
+            </button>
+
             {bulkResults.length>0&&(
               <div style={{marginTop:"0.75rem",background:"#f5f2ee",borderRadius:8,padding:"0.65rem"}}>
                 {bulkResults.map((r,i)=>(<div key={i} style={{fontSize:"0.7rem",padding:"3px 0",color:r.ok?"#16a34a":"#ef4444",display:"flex",justifyContent:"space-between",gap:"0.5rem"}}><span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1}}>{r.email}</span><span style={{fontWeight:700,flexShrink:0}}>{r.msg}</span></div>))}
@@ -1762,9 +1857,6 @@ return (
                   <div style={{padding:"12px 14px",display:"flex",flexDirection:"column",gap:8}}>
                     <button onClick={()=>{setReqTab("bulk");setShowDrawer(true);}} style={{width:"100%",padding:"10px 14px",background:"#f5f2ee",color:"#0d6e6e",border:"1.5px solid #a8d5ce",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
                       <span>📊</span> Bulk Request (Excel / CSV)
-                    </button>
-                    <button onClick={()=>{setShowInbox(true);loadInbox();}} style={{width:"100%",padding:"10px 14px",background:"#f5f2ee",color:"#111",border:"1px solid #c8c2b8",borderRadius:8,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
-                      <span>✉️</span> Messages {unreadCount>0&&<span style={{background:"#dc2626",color:"#fff",borderRadius:999,fontSize:9,fontWeight:800,padding:"1px 6px",marginLeft:"auto"}}>{unreadCount}</span>}
                     </button>
                   </div>
                 </div>
