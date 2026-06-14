@@ -152,7 +152,7 @@ async function printProfile(profile, empHistory, documents, employerName) {
 
   // Build doc list with type info — use URLs directly (avoids S3 CORS issues with fetch)
   const docsWithData = sortedDocs.map((item) => {
-    const url = item.doc.url;
+    const url = item.doc.url || item.doc.signedUrl || item.doc.signed_url || item.doc.downloadUrl || item.doc.download_url || item.doc.presignedUrl || item.doc.presigned_url || item.doc.link || item.doc.href || "";
     const filename = item.doc.filename || "";
     const isImage = /\.(jpg|jpeg|png)$/i.test(filename);
     const isPdf   = /\.pdf$/i.test(filename);
@@ -385,8 +385,10 @@ async function printProfile(profile, empHistory, documents, employerName) {
       </div>
       <div style="border:1px solid #e2e8f0;border-top:none;border-radius:0 0 4px 4px;padding:12px;background:#fafafa">
         <div style="font-size:10px;color:#94a3b8;margin-bottom:8px;font-family:monospace">${item.doc.filename || item.subKey}</div>
-        ${item.isImage
-          ? `<img src="${item.url}" style="max-width:100%;max-height:500px;object-fit:contain;border-radius:4px;border:1px solid #e2e8f0;display:block" onerror="this.replaceWith(Object.assign(document.createElement('div'),{textContent:'⚠ Image could not be loaded — open link to view',style:'color:#92400e;background:#fffbeb;padding:10px;border-radius:4px;font-size:11px'}))" />`
+        ${!item.url
+          ? `<div style="padding:10px;background:#fef2f2;border-radius:4px;font-size:11px;color:#dc2626">⚠ No URL found for this document. Available fields: ${Object.keys(item.doc||{}).join(", ")||"(none)"}</div>`
+          : item.isImage
+          ? `<img src="${item.url}" referrerpolicy="no-referrer" style="max-width:100%;max-height:500px;object-fit:contain;border-radius:4px;border:1px solid #e2e8f0;display:block" onerror="this.outerHTML='&lt;div style=&quot;padding:10px;background:#fffbeb;border-radius:4px;font-size:11px;color:#92400e&quot;&gt;⚠ Preview could not be loaded — &lt;a href=&quot;${item.url}&quot; target=&quot;_blank&quot; style=&quot;color:#2563eb;font-weight:600&quot;&gt;Open image ↗&lt;/a&gt;&lt;/div&gt;'" />`
           : item.isPdf
             ? `<div style="padding:14px;background:#eff6ff;border-radius:4px;border:1px solid #bfdbfe;text-align:center">
                 <div style="font-size:13px;margin-bottom:6px">📄 PDF Document</div>
