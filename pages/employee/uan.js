@@ -1,8 +1,10 @@
 // pages/employee/uan.js  — Page 4 of 5
 // Fixes:
 // 1. DateField — no calendar, DD/MM/YYYY, shows month name
-// 2. Signature — NOT cleared when user edits; only cleared manually via "Clear" button
-// 3. If user edits after signing: acks reset so they must re-confirm, but signature stays
+// 2. Signature persists across page revisits — shown as a static image (no canvas/CORS dependency),
+//    never blank on return visits. User must explicitly click "Re-sign" to draw a new one.
+// 3. Editing any field (incl. nominees/PF records) after signing resets the 3 declaration checkboxes
+//    only — the saved signature itself is never touched until the user actively re-signs.
 // 4. Signature + all 3 acks mandatory before Save & Continue
 // 5. page4_edited flag saved to DB → page 5 knows to re-ask review acks
 import { useState, useEffect, useRef } from "react";
@@ -41,7 +43,7 @@ function ddmmyyyyToDisplay(val) {
 }
 
 const makePfRecord = (companyName = "") => ({
-  companyName, hasPf:"", pfMemberId:"", dojEpfo:"", doeEpfo:"", pfTransferred:"",
+  companyName, hasPf:"", pfType:"", pfMemberId:"", dojEpfo:"", doeEpfo:"", pfTransferred:"",
 });
 
 const G = `
@@ -340,7 +342,7 @@ export default function UanDetails() {
   const [epfoDecl, setEpfoDecl] = useState(false);
 
   // ── Signature ──
-  // sigDataUrl: used only for canvas preview drawing (base64 or signed URL)
+  // sigDataUrl: either a local data: URI (just drawn this session) or a fetched S3 preview URL
   // sigS3Key: the actual stored S3 key — this is what gets saved to DB
   // sigTimestamp: when signed
   const [sigDataUrl, setSigDataUrl] = useState("");
@@ -348,33 +350,17 @@ export default function UanDetails() {
   const [sigS3Key, setSigS3Key] = useState("");
   // editedAfterSign: user changed something AFTER signing — must re-confirm acks but signature stays
   const [editedAfterSign, setEditedAfterSign] = useState(false);
+  // signingMode: true = show blank canvas to draw a NEW signature. false = show the saved one as a static image.
+  // Defaults to false; first-time users fall into draw mode automatically because hasSavedSignature is false.
+  const [signingMode, setSigningMode] = useState(false);
+  const [sigPreviewFailed, setSigPreviewFailed] = useState(false);
   const sigCanvasRef = useRef(null);
   const sigDrawingRef = useRef(false);
   const sigLastRef = useRef({x:0, y:0});
   const wasSignedRef = useRef(false);
-  // Prevent canvas wipe on re-renders — track if we've restored sig once
-  const sigRestoredRef = useRef(false);
 
-  // ── Restore signature to canvas after every render ──
-  // useLayoutEffect fires synchronously after DOM mutations, before browser paint
-  // This ensures canvas is redrawn before user sees a blank canvas
-  useEffect(() => {
-    if (!sigDataUrl || !sigCanvasRef.current) return;
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      if (!sigCanvasRef.current) return;
-      const ctx = sigCanvasRef.current.getContext("2d");
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(0, 0, sigCanvasRef.current.width, sigCanvasRef.current.height);
-      ctx.drawImage(img, 0, 0, sigCanvasRef.current.width, sigCanvasRef.current.height);
-    };
-    img.onerror = () => {
-      // CORS blocked — canvas stays blank but sigS3Key still valid; timestamp shown
-    };
-    img.src = sigDataUrl;
-    // Re-run on every render cycle so signature stays visible after state updates
-  });  // No dependency array — runs after every render to prevent wipe
+  const hasSavedSignature = !!(sigS3Key || sigDataUrl);
+  const showSigCanvas = signingMode || !hasSavedSignature;
 
   // ── dirty setter — marks edited, resets acks but NOT signature ──
   const dirty = (setter) => (val) => {
@@ -384,6 +370,22 @@ export default function UanDetails() {
     if (wasSignedRef.current) {
       setEditedAfterSign(true);
       // Reset acks so user must re-confirm — but DO NOT touch signature
+      setPfNomAck(false);
+      setPensionNomAck(false);
+      setEpfoDecl(false);
+    }
+  };
+
+  // ── Soft flag used by nominee + PF record edits ──
+  // Same behavior as dirty(): resets the 3 acks if already signed, but NEVER touches
+  // the saved signature itself. Replaces the old clearSigOnNomineeEdit() which used to
+  // wipe the signature on every nominee/PF keystroke — that contradicted the documented
+  // design above and forced people to re-sign for unrelated edits.
+  const flagPostSignEdit = () => {
+    isDirtyRef.current = true;
+    wasEditedAfterLoad.current = true;
+    if (wasSignedRef.current) {
+      setEditedAfterSign(true);
       setPfNomAck(false);
       setPensionNomAck(false);
       setEpfoDecl(false);
@@ -427,11 +429,12 @@ export default function UanDetails() {
           }
 
           // ── Restore signature ──
-          // Priority: s3Key (fetch signed URL) > legacy dataUrl
+          // Priority: s3Key (fetch signed URL for preview) > legacy dataUrl
           if (d.epfoSignature?.s3Key) {
             setSigS3Key(d.epfoSignature.s3Key);
             wasSignedRef.current = true;
-            // Fetch signed URL for canvas preview
+            // Fetch signed URL for static preview — displayed as a plain <img>, never
+            // drawn onto a canvas, so there is no CORS/crossOrigin requirement at all.
             try {
               const docRes = await apiFetch(`${API}/documents/${d.employee_id}`);
               if (docRes.ok) {
@@ -477,7 +480,7 @@ export default function UanDetails() {
                   : [];
                 setPage3Companies(companies);
                 if (Array.isArray(d.pfRecords) && d.pfRecords.length > 0) {
-                  setPfRecords(d.pfRecords.map(r => ({ companyName:r.companyName||"", hasPf:r.hasPf||"", pfMemberId:r.pfMemberId||"", dojEpfo:r.dojEpfo||"", doeEpfo:r.doeEpfo||"", pfTransferred:r.pfTransferred||"" })));
+                  setPfRecords(d.pfRecords.map(r => ({ companyName:r.companyName||"", hasPf:r.hasPf||"", pfType:r.pfType||"", pfMemberId:r.pfMemberId||"", dojEpfo:r.dojEpfo||"", doeEpfo:r.doeEpfo||"", pfTransferred:r.pfTransferred||"" })));
                 } else if (companies.length > 0) {
                   setPfRecords(companies.map(c => makePfRecord(c.name)));
                 }
@@ -485,7 +488,7 @@ export default function UanDetails() {
             } catch(_) {}
           } else {
             if (Array.isArray(d.pfRecords) && d.pfRecords.length > 0) {
-              setPfRecords(d.pfRecords.map(r => ({ companyName:r.companyName||"", hasPf:r.hasPf||"", pfMemberId:r.pfMemberId||"", dojEpfo:r.dojEpfo||"", doeEpfo:r.doeEpfo||"", pfTransferred:r.pfTransferred||"" })));
+              setPfRecords(d.pfRecords.map(r => ({ companyName:r.companyName||"", hasPf:r.hasPf||"", pfType:r.pfType||"", pfMemberId:r.pfMemberId||"", dojEpfo:r.dojEpfo||"", doeEpfo:r.doeEpfo||"", pfTransferred:r.pfTransferred||"" })));
             }
           }
         }
@@ -495,22 +498,9 @@ export default function UanDetails() {
     fetchData();
   }, [ready, user, apiFetch]);
 
-  const clearSigOnNomineeEdit = () => {
-    if (!wasSignedRef.current) return;
-    wasSignedRef.current = false;
-    setSigDataUrl(""); setSigS3Key(""); setSigTimestamp("");
-    setPfNomAck(false); setPensionNomAck(false); setEpfoDecl(false);
-    setEditedAfterSign(false);
-    if (sigCanvasRef.current) {
-      const ctx = sigCanvasRef.current.getContext("2d");
-      ctx.clearRect(0, 0, sigCanvasRef.current.width, sigCanvasRef.current.height);
-    }
-  };
   const updatePf = (i, field, value) => {
     setPfRecords(prev => prev.map((r, idx) => idx === i ? {...r, [field]: value} : r));
-    isDirtyRef.current = true;
-    wasEditedAfterLoad.current = true;
-    clearSigOnNomineeEdit();
+    flagPostSignEdit();
   };
   const addPfRecord    = () => { setPfRecords(prev => [...prev, makePfRecord()]); isDirtyRef.current = true; };
   const removePfRecord = (i) => { if(i === 0) return; setPfRecords(prev => prev.filter((_, idx) => idx !== i)); isDirtyRef.current = true; };
@@ -531,6 +521,21 @@ export default function UanDetails() {
       if (!uploadRes.ok) return null;
       return s3_key;
     } catch (_) { return null; }
+  };
+
+  // Shared finish-drawing handler for both mouse and touch
+  const finishSignature = async () => {
+    sigDrawingRef.current = false;
+    if (!sigCanvasRef.current) return;
+    const dataUrl = sigCanvasRef.current.toDataURL("image/jpeg", 0.3);
+    setSigDataUrl(dataUrl);
+    setSigPreviewFailed(false);
+    const ts = new Date().toISOString();
+    setSigTimestamp(ts);
+    isDirtyRef.current = true; wasSignedRef.current = true; setEditedAfterSign(false);
+    setSigningMode(false); // flip back to "view" mode showing the freshly drawn (local, CORS-free) image
+    const key = await uploadSignature(dataUrl);
+    if (key) setSigS3Key(key);
   };
 
   const saveDraft = async () => {
@@ -696,6 +701,7 @@ export default function UanDetails() {
 
               {pfRecords.map((rec, i) => {
                 const p3 = page3Companies[i];
+                const pfLabel = rec.pfType === "Trust" ? "PF Trust" : "EPFO";
                 return (
                   <div key={i} className="pf-block">
                     <div className="pf-block-hdr">
@@ -723,10 +729,25 @@ export default function UanDetails() {
                     )}
                     {rec.hasPf === "Yes" && (
                       <>
-                        <div className="fr"><F l="PF Member ID" v={rec.pfMemberId} s={v => updatePf(i, "pfMemberId", v)}/></div>
                         <div className="fr">
-                          <FDate l="Date of Joining (EPFO)" v={rec.dojEpfo} s={v => updatePf(i, "dojEpfo", v)}/>
-                          <FDate l="Date of Exit (EPFO)" v={rec.doeEpfo} s={v => updatePf(i, "doeEpfo", v)}/>
+                          <div className="fi">
+                            <span className="fl">PF Type <span style={{color:"#ef4444"}}>*</span></span>
+                            <select className="in" value={rec.pfType||""} onChange={e=>updatePf(i,"pfType",e.target.value)} style={{background:rec.pfType?"#fff":"#f2f1f9",color:rec.pfType?"#1a1730":"#8b88b0"}}>
+                              <option value="">Select</option>
+                              <option value="EPFO">EPFO — Government (linked to my UAN)</option>
+                              <option value="Trust">Company's Own PF Trust (Exempted Establishment)</option>
+                            </select>
+                          </div>
+                        </div>
+                        {!rec.pfType && (
+                          <p style={{fontSize:"0.7rem",color:"#6b6894",marginTop:"-0.55rem",marginBottom:"0.75rem",fontWeight:500,lineHeight:1.5}}>
+                            Most companies use EPFO directly. Some large companies (e.g. TCS) maintain their own RPFC-exempted PF Trust instead — check your payslip or PF deduction note if unsure.
+                          </p>
+                        )}
+                        <div className="fr"><F l={`${pfLabel} Member ID`} v={rec.pfMemberId} s={v => updatePf(i, "pfMemberId", v)}/></div>
+                        <div className="fr">
+                          <FDate l={`Date of Joining (${pfLabel})`} v={rec.dojEpfo} s={v => updatePf(i, "dojEpfo", v)}/>
+                          <FDate l={`Date of Exit (${pfLabel})`} v={rec.doeEpfo} s={v => updatePf(i, "doeEpfo", v)}/>
                         </div>
                         <div>
                           <span className="fl" style={{display:"block",marginBottom:"0.4rem"}}>Was PF Transferred? <span style={{color:"#ef4444"}}>*</span></span>
@@ -776,15 +797,15 @@ export default function UanDetails() {
                   <div className="fr">
                     <div className="fi">
                       <span className="fl">Full Name <span style={{color:"#ef4444"}}>*</span></span>
-                      <input className="in" value={nom.name||""} placeholder="As per Aadhaar / PAN" onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],name:e.target.value};return n;});isDirtyRef.current=true;clearSigOnNomineeEdit();}}/>
+                      <input className="in" value={nom.name||""} placeholder="As per Aadhaar / PAN" onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],name:e.target.value};return n;});flagPostSignEdit();}}/>
                     </div>
                     <div className="fi">
                       <span className="fl">Date of Birth <span style={{color:"#ef4444"}}>*</span></span>
-                      <NomineeDobField value={nom.dob||""} onChange={v=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],dob:v};return n;});isDirtyRef.current=true;clearSigOnNomineeEdit();}}/>
+                      <NomineeDobField value={nom.dob||""} onChange={v=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],dob:v};return n;});flagPostSignEdit();}}/>
                     </div>
                     <div className="fi">
                       <span className="fl">Relationship <span style={{color:"#ef4444"}}>*</span></span>
-                      <select className="in" value={nom.relation||""} onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],relation:e.target.value,otherRelation:""};return n;});isDirtyRef.current=true;clearSigOnNomineeEdit();}} style={{background:nom.relation?"#fff":"#f2f1f9",color:nom.relation?"#1a1730":"#8b88b0"}}>
+                      <select className="in" value={nom.relation||""} onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],relation:e.target.value,otherRelation:""};return n;});flagPostSignEdit();}} style={{background:nom.relation?"#fff":"#f2f1f9",color:nom.relation?"#1a1730":"#8b88b0"}}>
                         <option value="">Select</option>
                         {["Spouse","Son","Daughter","Father","Mother","Brother","Sister","Other"].map(r=><option key={r} value={r}>{r}</option>)}
                       </select>
@@ -793,16 +814,16 @@ export default function UanDetails() {
                   <div className="fr">
                     <div className="fi" style={{minWidth:220}}>
                       <span className="fl">Address <span style={{color:"#ef4444"}}>*</span></span>
-                      <input className="in" value={nom.address||""} onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],address:e.target.value};return n;});isDirtyRef.current=true;clearSigOnNomineeEdit();}}/>
+                      <input className="in" value={nom.address||""} onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],address:e.target.value};return n;});flagPostSignEdit();}}/>
                     </div>
                     <div className="fi" style={{maxWidth:140}}>
                       <span className="fl">Share (%) <span style={{color:"#ef4444"}}>*</span></span>
-                      <input className="in" value={nom.share||""} placeholder="e.g. 50" inputMode="numeric" maxLength={3} onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,3);setNominees(p=>{const n=[...p];n[idx]={...n[idx],share:v};return n;});isDirtyRef.current=true;clearSigOnNomineeEdit();}}/>
+                      <input className="in" value={nom.share||""} placeholder="e.g. 50" inputMode="numeric" maxLength={3} onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,3);setNominees(p=>{const n=[...p];n[idx]={...n[idx],share:v};return n;});flagPostSignEdit();}}/>
                     </div>
                   </div>
                 </div>
               ))}
-              {nominees.length < 4 && <button className="add-btn" onClick={()=>{setNominees(p=>[...p,makeNominee()]);isDirtyRef.current=true;wasSignedRef.current=false;setSigDataUrl("");setSigS3Key("");setSigTimestamp("");setPfNomAck(false);setPensionNomAck(false);setEpfoDecl(false);setEditedAfterSign(false);}}>+ Add Another Nominee</button>}
+              {nominees.length < 4 && <button className="add-btn" onClick={()=>{setNominees(p=>[...p,makeNominee()]);flagPostSignEdit();}}>+ Add Another Nominee</button>}
               {nominees.length > 1 && nominees.reduce((s,n)=>s+(parseInt(n.share)||0),0) !== 100 && (
                 <p style={{fontSize:"0.75rem",color:"#ef4444",fontWeight:600,marginTop:"0.5rem"}}>⚠️ Total share must equal 100%. Current total: {nominees.reduce((s,n)=>s+(parseInt(n.share)||0),0)}%</p>
               )}
@@ -858,107 +879,113 @@ export default function UanDetails() {
                 </label>
               </div>
 
-              {/* Digital Signature — NEVER auto-cleared, only cleared by "Clear" button */}
+              {/* Digital Signature — saved signature persists across edits and revisits;
+                  only "Re-sign" (draw a new one) or the system never touches it otherwise */}
               <div style={{background:"#fff",border:"1.5px solid #e4e2f0",borderRadius:12,padding:"1.1rem 1.2rem"}}>
                 <div style={{fontSize:"0.72rem",fontWeight:800,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.5rem"}}>
                   Digital Signature <span style={{color:"#ef4444"}}>*</span>
                 </div>
 
-                {editedAfterSign && (sigS3Key || sigDataUrl) && (
+                {editedAfterSign && hasSavedSignature && (
                   <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:8,padding:"0.6rem 0.9rem",marginBottom:"0.75rem",fontSize:"0.75rem",color:"#15803d",fontWeight:500}}>
                     ✓ Your existing signature is saved. You only need to re-sign if you want to update it. Re-confirm the declarations above to continue.
                   </div>
                 )}
 
-                <p style={{fontSize:"0.72rem",color:"#6b6894",marginBottom:"0.75rem",fontWeight:500,lineHeight:1.5}}>Draw your signature using mouse or finger. This is recorded with date/time as your digital consent.</p>
+                {!showSigCanvas ? (
+                  // ── VIEW MODE: plain static image, no canvas, no CORS dependency ──
+                  <>
+                    <p style={{fontSize:"0.72rem",color:"#6b6894",marginBottom:"0.65rem",fontWeight:500,lineHeight:1.5}}>Your signature on file:</p>
+                    <div style={{border:"1.5px solid #bbf7d0",borderRadius:9,background:"#f0fdf4",padding:"0.5rem",maxWidth:400}}>
+                      {sigDataUrl && !sigPreviewFailed ? (
+                        <img src={sigDataUrl} alt="Your saved signature" style={{width:"100%",maxWidth:400,height:90,objectFit:"contain",display:"block"}} onError={()=>setSigPreviewFailed(true)}/>
+                      ) : (
+                        <div style={{height:90,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.75rem",color:"#8b88b0",fontWeight:500}}>
+                          {sigPreviewFailed ? "Signature on file (preview unavailable)" : "Loading signature…"}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:"0.6rem",flexWrap:"wrap",gap:"0.5rem"}}>
+                      {sigTimestamp && (
+                        <span style={{fontSize:"0.7rem",color:"#16a34a",fontWeight:600}}>
+                          ✓ Signed — {new Date(sigTimestamp).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}
+                        </span>
+                      )}
+                      <button
+                        onClick={()=>setSigningMode(true)}
+                        style={{padding:"0.3rem 0.8rem",background:"#eef2ff",color:"#0d6e6e",border:"1.5px solid #c7d2fe",borderRadius:7,fontSize:"0.72rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                        ✎ Re-sign
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  // ── DRAW MODE: blank canvas — first-time signing, or explicit re-sign ──
+                  <>
+                    <p style={{fontSize:"0.72rem",color:"#6b6894",marginBottom:"0.75rem",fontWeight:500,lineHeight:1.5}}>Draw your signature using mouse or finger. This is recorded with date/time as your digital consent.</p>
 
-                <canvas
-                  ref={sigCanvasRef}
-                  width={400} height={90}
-                  className={`sig-canvas${(sigDataUrl||sigS3Key)?" signed":""}`}
-                  style={{width:"100%",maxWidth:400,height:90}}
-                  onMouseDown={e=>{
-                    sigDrawingRef.current=true;
-                    const r=sigCanvasRef.current.getBoundingClientRect();
-                    const scaleX=sigCanvasRef.current.width/r.width;
-                    sigLastRef.current={x:(e.clientX-r.left)*scaleX,y:(e.clientY-r.top)*scaleX};
-                    if(!sigDataUrl&&!sigS3Key){const ctx=sigCanvasRef.current.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,sigCanvasRef.current.width,sigCanvasRef.current.height);}
-                  }}
-                  onMouseMove={e=>{
-                    if(!sigDrawingRef.current)return;
-                    const r=sigCanvasRef.current.getBoundingClientRect();
-                    const scaleX=sigCanvasRef.current.width/r.width;
-                    const ctx=sigCanvasRef.current.getContext("2d");
-                    const x=(e.clientX-r.left)*scaleX, y=(e.clientY-r.top)*scaleX;
-                    ctx.beginPath();ctx.strokeStyle="#1a1730";ctx.lineWidth=2;ctx.lineCap="round";
-                    ctx.moveTo(sigLastRef.current.x,sigLastRef.current.y);ctx.lineTo(x,y);ctx.stroke();
-                    sigLastRef.current={x,y};
-                  }}
-                  onMouseUp={async ()=>{
-                    sigDrawingRef.current=false;
-                    const dataUrl=sigCanvasRef.current.toDataURL("image/jpeg",0.3);
-                    setSigDataUrl(dataUrl);
-                    const ts=new Date().toISOString();
-                    setSigTimestamp(ts);
-                    isDirtyRef.current=true;wasSignedRef.current=true;setEditedAfterSign(false);
-                    const key = await uploadSignature(dataUrl);
-                    if (key) setSigS3Key(key);
-                  }}
-                  onTouchStart={e=>{
-                    e.preventDefault();sigDrawingRef.current=true;
-                    const r=sigCanvasRef.current.getBoundingClientRect();
-                    const scaleX=sigCanvasRef.current.width/r.width;
-                    const t=e.touches[0];
-                    sigLastRef.current={x:(t.clientX-r.left)*scaleX,y:(t.clientY-r.top)*scaleX};
-                  }}
-                  onTouchMove={e=>{
-                    e.preventDefault();if(!sigDrawingRef.current)return;
-                    const r=sigCanvasRef.current.getBoundingClientRect();
-                    const scaleX=sigCanvasRef.current.width/r.width;
-                    const ctx=sigCanvasRef.current.getContext("2d");
-                    const t=e.touches[0];
-                    const x=(t.clientX-r.left)*scaleX, y=(t.clientY-r.top)*scaleX;
-                    ctx.beginPath();ctx.strokeStyle="#1a1730";ctx.lineWidth=2;ctx.lineCap="round";
-                    ctx.moveTo(sigLastRef.current.x,sigLastRef.current.y);ctx.lineTo(x,y);ctx.stroke();
-                    sigLastRef.current={x,y};
-                  }}
-                  onTouchEnd={async ()=>{
-                    sigDrawingRef.current=false;
-                    const dataUrl=sigCanvasRef.current.toDataURL("image/jpeg",0.3);
-                    setSigDataUrl(dataUrl);
-                    const ts=new Date().toISOString();
-                    setSigTimestamp(ts);
-                    isDirtyRef.current=true;wasSignedRef.current=true;setEditedAfterSign(false);
-                    const key = await uploadSignature(dataUrl);
-                    if (key) setSigS3Key(key);
-                  }}
-                  onMouseLeave={()=>{sigDrawingRef.current=false;}}
-                />
+                    <canvas
+                      ref={sigCanvasRef}
+                      width={400} height={90}
+                      className="sig-canvas"
+                      style={{width:"100%",maxWidth:400,height:90}}
+                      onMouseDown={e=>{
+                        sigDrawingRef.current=true;
+                        const r=sigCanvasRef.current.getBoundingClientRect();
+                        const scaleX=sigCanvasRef.current.width/r.width;
+                        sigLastRef.current={x:(e.clientX-r.left)*scaleX,y:(e.clientY-r.top)*scaleX};
+                      }}
+                      onMouseMove={e=>{
+                        if(!sigDrawingRef.current)return;
+                        const r=sigCanvasRef.current.getBoundingClientRect();
+                        const scaleX=sigCanvasRef.current.width/r.width;
+                        const ctx=sigCanvasRef.current.getContext("2d");
+                        const x=(e.clientX-r.left)*scaleX, y=(e.clientY-r.top)*scaleX;
+                        ctx.beginPath();ctx.strokeStyle="#1a1730";ctx.lineWidth=2;ctx.lineCap="round";
+                        ctx.moveTo(sigLastRef.current.x,sigLastRef.current.y);ctx.lineTo(x,y);ctx.stroke();
+                        sigLastRef.current={x,y};
+                      }}
+                      onMouseUp={finishSignature}
+                      onTouchStart={e=>{
+                        e.preventDefault();sigDrawingRef.current=true;
+                        const r=sigCanvasRef.current.getBoundingClientRect();
+                        const scaleX=sigCanvasRef.current.width/r.width;
+                        const t=e.touches[0];
+                        sigLastRef.current={x:(t.clientX-r.left)*scaleX,y:(t.clientY-r.top)*scaleX};
+                      }}
+                      onTouchMove={e=>{
+                        e.preventDefault();if(!sigDrawingRef.current)return;
+                        const r=sigCanvasRef.current.getBoundingClientRect();
+                        const scaleX=sigCanvasRef.current.width/r.width;
+                        const ctx=sigCanvasRef.current.getContext("2d");
+                        const t=e.touches[0];
+                        const x=(t.clientX-r.left)*scaleX, y=(t.clientY-r.top)*scaleX;
+                        ctx.beginPath();ctx.strokeStyle="#1a1730";ctx.lineWidth=2;ctx.lineCap="round";
+                        ctx.moveTo(sigLastRef.current.x,sigLastRef.current.y);ctx.lineTo(x,y);ctx.stroke();
+                        sigLastRef.current={x,y};
+                      }}
+                      onTouchEnd={finishSignature}
+                      onMouseLeave={()=>{sigDrawingRef.current=false;}}
+                    />
 
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:"0.6rem",flexWrap:"wrap",gap:"0.5rem"}}>
-                  <div>
-                    {(sigS3Key || sigDataUrl) && sigTimestamp && (
-                      <span style={{fontSize:"0.7rem",color:"#16a34a",fontWeight:600}}>
-                        ✓ Signed — {new Date(sigTimestamp).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}
-                      </span>
-                    )}
-                    {sigDataUrl && !sigS3Key && (
-                      <span style={{fontSize:"0.7rem",color:"#d97706",fontWeight:500}}>⏳ Saving signature…</span>
-                    )}
-                    {!sigDataUrl && !sigS3Key && <span style={{fontSize:"0.7rem",color:"#8b88b0",fontWeight:500}}>Draw your signature above <span style={{color:"#ef4444"}}>*</span></span>}
-                  </div>
-                  {/* Only manual Clear button can erase signature */}
-                  <button
-                    onClick={()=>{
-                      const ctx=sigCanvasRef.current.getContext("2d");
-                      ctx.clearRect(0,0,sigCanvasRef.current.width,sigCanvasRef.current.height);
-                      setSigDataUrl("");setSigTimestamp("");setSigS3Key("");
-                      isDirtyRef.current=true;wasSignedRef.current=false;setEditedAfterSign(false);
-                    }}
-                    style={{padding:"0.3rem 0.8rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:7,fontSize:"0.72rem",fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
-                    Clear
-                  </button>
-                </div>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:"0.6rem",flexWrap:"wrap",gap:"0.5rem"}}>
+                      <span style={{fontSize:"0.7rem",color:"#8b88b0",fontWeight:500}}>Draw your signature above <span style={{color:"#ef4444"}}>*</span></span>
+                      <div style={{display:"flex",gap:"0.5rem"}}>
+                        <button
+                          onClick={()=>{ const ctx=sigCanvasRef.current.getContext("2d"); ctx.clearRect(0,0,sigCanvasRef.current.width,sigCanvasRef.current.height); }}
+                          style={{padding:"0.3rem 0.8rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:7,fontSize:"0.72rem",fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
+                          Clear
+                        </button>
+                        {hasSavedSignature && (
+                          <button
+                            onClick={()=>setSigningMode(false)}
+                            style={{padding:"0.3rem 0.8rem",background:"transparent",color:"#6b6894",border:"1.5px solid #dddaf0",borderRadius:7,fontSize:"0.72rem",fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
+                            Cancel
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}
