@@ -256,7 +256,7 @@ export default function EducationDetails() {
 
   const [iCollege,setICollege]=useState("");const [iBoard,setIBoard]=useState("");const [iHall,setIHall]=useState("");
   const [iFrom,setIFrom]=useState("");const [iTo,setITo]=useState("");const [iAddress,setIAddress]=useState("");const [iMode,setIMode]=useState("");
-  const [iYear,setIYear]=useState("");const [iResultType,setIResultType]=useState("");const [iResultValue,setIResultValue]=useState("");const [iMedium,setIMedium]=useState("");const [iCertKey,setICertKey]=useState("");
+  const [iYear,setIYear]=useState("");const [iResultType,setIResultType]=useState("");const [iResultValue,setIResultValue]=useState("");const [iMedium,setIMedium]=useState("");const [iCertKey,setICertKey]=useState("");const [iStream,setIStream]=useState("");
 
   const [ugCollege,setUgCollege]=useState("");const [ugUniversity,setUgUniversity]=useState("");const [ugCourse,setUgCourse]=useState("");
   const [ugSpecialization,setUgSpecialization]=useState("");
@@ -275,8 +275,8 @@ export default function EducationDetails() {
   const [dipResultType,setDipResultType]=useState("");const [dipResultValue,setDipResultValue]=useState("");const [dipMode,setDipMode]=useState("");const [dipCertKey,setDipCertKey]=useState("");
 
   const [certs,setCerts]=useState([{name:"",certKey:""}]);
-  const [profQuals,setProfQuals]=useState([{type:"",level:"",year:"",certKey:""}]);
-  const [articleships,setArticleships]=useState([{firm:"",city:"",principalName:"",regNo:"",from:"",to:"",isOngoing:"",type:"",certKey:""}]);
+  const [profQuals,setProfQuals]=useState([{type:"",otherType:"",level:"",year:"",certKey:""}]);
+  const [articleships,setArticleships]=useState([{firm:"",city:"",principalName:"",regNo:"",from:"",to:"",isOngoing:"",type:"",otherType:"",certKey:""}]);
   const [hasEduGap,setHasEduGap]=useState("");
   const [eduGapReason,setEduGapReason]=useState("");
 
@@ -305,7 +305,7 @@ export default function EducationDetails() {
 
           if(i.college)setICollege(i.college);if(i.board)setIBoard(i.board);if(i.hallTicket)setIHall(i.hallTicket);
           if(i.from)setIFrom(i.from);if(i.to)setITo(i.to);if(i.address)setIAddress(i.address);if(i.mode)setIMode(i.mode);
-          if(i.yearOfPassing)setIYear(i.yearOfPassing);if(i.resultType)setIResultType(i.resultType);if(i.resultValue)setIResultValue(i.resultValue);if(i.medium)setIMedium(i.medium);if(i.certKey)setICertKey(i.certKey);
+          if(i.yearOfPassing)setIYear(i.yearOfPassing);if(i.resultType)setIResultType(i.resultType);if(i.resultValue)setIResultValue(i.resultValue);if(i.medium)setIMedium(i.medium);if(i.certKey)setICertKey(i.certKey);if(i.stream)setIStream(i.stream);
 
           if(ug.college){setHasUG("Yes");setUgCollege(ug.college);}if(ug.university)setUgUniversity(ug.university);if(ug.course)setUgCourse(ug.course);
           if(ug.specialization)setUgSpecialization(ug.specialization);
@@ -350,7 +350,7 @@ export default function EducationDetails() {
     if(afterTenth==="Intermediate"||afterTenth==="Both"){
       if(!iCollege)e.iCollege=true;if(!iBoard)e.iBoard=true;if(!iHall)e.iHall=true;
       if(!iFrom)e.iFrom=true;if(!iTo)e.iTo=true;if(!iYear)e.iYear=true;if(!iAddress)e.iAddress=true;
-      if(!iMode)e.iMode=true;if(!iResultType)e.iResultType=true;if(!iResultValue)e.iResultValue=true;if(!iMedium)e.iMedium=true;if(!iCertKey)e.iCertKey=true;
+      if(!iMode)e.iMode=true;if(!iResultType)e.iResultType=true;if(!iResultValue)e.iResultValue=true;if(!iMedium)e.iMedium=true;if(!iCertKey)e.iCertKey=true;if(!iStream)e.iStream=true;
     }
     if(afterTenth==="Diploma"||afterTenth==="Both"){
       if(!dipInstitute)e.dipInstitute=true;if(!dipBoard)e.dipBoard=true;if(!dipCourse)e.dipCourse=true;
@@ -365,8 +365,8 @@ export default function EducationDetails() {
     if(hasPG==="Yes"){if(!pgCollege)e.pgCollege=true;if(!pgUniversity)e.pgUniversity=true;if(!pgCourse)e.pgCourse=true;if(!pgHall)e.pgHall=true;if(!pgFrom)e.pgFrom=true;if(!pgTo)e.pgTo=true;if(!pgYear)e.pgYear=true;if(!pgAddress)e.pgAddress=true;if(!pgMode)e.pgMode=true;if(!pgResultType)e.pgResultType=true;if(!pgResultValue)e.pgResultValue=true;if(!pgMedium)e.pgMedium=true;if(!pgBacklogs)e.pgBacklogs=true;if(pgBacklogs!=="Yes"&&!pgProvKey)e.pgProvKey=true;}
     if(hasDip==="Yes"&&afterTenth!=="Diploma"&&afterTenth!=="Both"){if(!dipInstitute)e.dipInstitute=true;if(!dipBoard)e.dipBoard=true;if(!dipCourse)e.dipCourse=true;if(!dipFrom)e.dipFrom=true;if(!dipTo)e.dipTo=true;if(!dipYear)e.dipYear=true;if(!dipResultType)e.dipResultType=true;if(!dipResultValue)e.dipResultValue=true;if(!dipMode)e.dipMode=true;if(!dipCertKey)e.dipCertKey=true;}
     if(hasCerts==="Yes"){certs.forEach((c,idx)=>{if(!c.name)e[`cert_name_${idx}`]=true;if(!c.certKey)e[`cert_key_${idx}`]=true;});}
-    if(hasProfQual==="Yes"){profQuals.forEach((q,idx)=>{if(!q.type)e[`pq_type_${idx}`]=true;if(!q.level)e[`pq_level_${idx}`]=true;if(!q.year)e[`pq_year_${idx}`]=true;});}
-    if(hasArticleship==="Yes"){articleships.forEach((a,idx)=>{if(!a.firm)e[`art_firm_${idx}`]=true;if(!a.from)e[`art_from_${idx}`]=true;if(!a.type)e[`art_type_${idx}`]=true;});}
+    if(hasProfQual==="Yes"){profQuals.forEach((q,idx)=>{if(!q.type)e[`pq_type_${idx}`]=true;if(q.type==="Other"&&!q.otherType)e[`pq_other_${idx}`]=true;if(!q.level)e[`pq_level_${idx}`]=true;if(!q.year)e[`pq_year_${idx}`]=true;});}
+    if(hasArticleship==="Yes"){articleships.forEach((a,idx)=>{if(!a.firm)e[`art_firm_${idx}`]=true;if(!a.from)e[`art_from_${idx}`]=true;if(!a.type)e[`art_type_${idx}`]=true;if(a.type==="Other Practical Training"&&!a.otherType)e[`art_other_${idx}`]=true;});}
     if(!hasCerts) e.hasCerts=true;
     if(!hasProfQual) e.hasProfQual=true;
     if(!hasArticleship) e.hasArticleship=true;
@@ -377,7 +377,7 @@ export default function EducationDetails() {
 
   const buildEducation=()=>({
     classX:{school:xSchool,board:xBoard,hallTicket:xHall,from:xFrom,to:xTo,address:xAddress,yearOfPassing:xYear,resultType:xResultType,resultValue:xResultValue,medium:xMedium,certKey:xCertKey},
-    intermediate:{college:iCollege,board:iBoard,hallTicket:iHall,from:iFrom,to:iTo,address:iAddress,mode:iMode,yearOfPassing:iYear,resultType:iResultType,resultValue:iResultValue,medium:iMedium,certKey:iCertKey},
+    intermediate:{college:iCollege,board:iBoard,hallTicket:iHall,from:iFrom,to:iTo,address:iAddress,mode:iMode,stream:iStream,yearOfPassing:iYear,resultType:iResultType,resultValue:iResultValue,medium:iMedium,certKey:iCertKey},
     undergraduate:hasUG==="Yes"?{college:ugCollege,university:ugUniversity,course:ugCourse,specialization:ugSpecialization,hallTicket:ugHall,from:ugFrom,to:ugTo,address:ugAddress,mode:ugMode,yearOfPassing:ugYear,resultType:ugResultType,resultValue:ugResultValue,backlogs:ugBacklogs,medium:ugMedium,provKey:ugProvKey,convoKey:ugConvoKey}:{},
     postgraduate:hasPG==="Yes"?{college:pgCollege,university:pgUniversity,course:pgCourse,specialization:pgSpecialization,hallTicket:pgHall,from:pgFrom,to:pgTo,address:pgAddress,mode:pgMode,yearOfPassing:pgYear,resultType:pgResultType,resultValue:pgResultValue,backlogs:pgBacklogs,medium:pgMedium,provKey:pgProvKey,convoKey:pgConvoKey}:{},
     afterTenth, hasDip, hasCerts, hasProfQual, hasArticleship,
@@ -468,7 +468,7 @@ export default function EducationDetails() {
               <YearField l="Year of Passing" v={xYear} s={d(setXYear)} errKey="xYear" errors={errors} onFix={fixErr}/>
             </div>
             <div className="fr"><F l="School Address" v={xAddress} s={d(setXAddress)} errKey="xAddress" errors={errors} onFix={fixErr}/></div>
-            <div className="fr"><FS l="Result Type" v={xResultType} s={d(setXResultType)} o={["Percentage","Grade"]} errKey="xResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={xResultValue} s={d(setXResultValue)} errKey="xResultValue" errors={errors} onFix={fixErr}/><F l="Medium of Study" v={xMedium} s={d(setXMedium)} errKey="xMedium" errors={errors} onFix={fixErr}/></div>
+            <div className="fr"><FS l="Result Type" v={xResultType} s={d(setXResultType)} o={["Percentage","CGPA","Grade"]} errKey="xResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={xResultValue} s={d(setXResultValue)} errKey="xResultValue" errors={errors} onFix={fixErr}/><F l="Medium of Study" v={xMedium} s={d(setXMedium)} errKey="xMedium" errors={errors} onFix={fixErr}/></div>
             <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Class X Certificate" errKey="xCertKey"/><FileUpload label="Upload Class X Certificate" category="education" subKey="classX" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={xCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setXCertKey(key);isDirtyRef.current=true;fixErr("xCertKey");}}/></div>
           </div>
 
@@ -504,8 +504,8 @@ export default function EducationDetails() {
               <YearField l="Year of Passing" v={iYear} s={d(setIYear)} errKey="iYear" errors={errors} onFix={fixErr}/>
             </div>
             <div className="fr"><F l="College Address" v={iAddress} s={d(setIAddress)} errKey="iAddress" errors={errors} onFix={fixErr}/></div>
-            <div className="fr"><FS l="Mode" v={iMode} s={d(setIMode)} o={["Full-time","Part-time","Distance"]} errKey="iMode" errors={errors} onFix={fixErr}/><FS l="Result Type" v={iResultType} s={d(setIResultType)} o={["Percentage","Grade"]} errKey="iResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={iResultValue} s={d(setIResultValue)} errKey="iResultValue" errors={errors} onFix={fixErr}/></div>
-            <div className="fr"><F l="Medium of Study" v={iMedium} s={d(setIMedium)} errKey="iMedium" errors={errors} onFix={fixErr}/></div>
+            <div className="fr"><FS l="Mode" v={iMode} s={d(setIMode)} o={["Full-time","Part-time","Distance"]} errKey="iMode" errors={errors} onFix={fixErr}/><FS l="Result Type" v={iResultType} s={d(setIResultType)} o={["Percentage","CGPA","Grade"]} errKey="iResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={iResultValue} s={d(setIResultValue)} errKey="iResultValue" errors={errors} onFix={fixErr}/></div>
+            <div className="fr"><FS l="Stream" v={iStream} s={d(setIStream)} o={["Science","Commerce","Arts","Vocational"]} errKey="iStream" errors={errors} onFix={fixErr}/><F l="Medium of Study" v={iMedium} s={d(setIMedium)} errKey="iMedium" errors={errors} onFix={fixErr}/></div>
             <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Intermediate Certificate" errKey="iCertKey"/><FileUpload label="Upload Intermediate Certificate" category="education" subKey="intermediate" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={iCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setICertKey(key);isDirtyRef.current=true;fixErr("iCertKey");}}/></div>
           </div>
           )}
@@ -586,12 +586,12 @@ export default function EducationDetails() {
           </div>
 
           {/* ── Additional Diploma ── */}
-          {afterTenth!=="Diploma"&&(
+          {afterTenth==="Intermediate"&&(
           <div className="sc grn">
-            <div className="sh"><div className="si grn">🔧</div><span className="st">{afterTenth==="Both"?"Additional Diploma / Technical":"Diploma / Technical / Vocational"}</span></div>
+            <div className="sh"><div className="si grn">🔧</div><span className="st">Diploma / Technical / Vocational</span></div>
             <div style={{display:"flex",alignItems:"center",gap:"0.5rem",flexWrap:"wrap",marginBottom:"1rem"}}>
               <span style={{fontSize:"0.875rem",color:"#1a1730",fontWeight:600}}>
-                {afterTenth==="Both"?"Do you have an additional diploma?":"Do you have a Diploma or Technical qualification?"}
+                Do you have a Diploma or Technical qualification?
                 {" "}<span style={{color:"#ef4444"}}>*</span>
               </span>
               {["Yes","No"].map(v=>(
@@ -631,7 +631,7 @@ export default function EducationDetails() {
                   <div className="fr">
                     <div className="fi">
                       <span className="fl">Qualification Type <span style={{color:"#ef4444"}}>*</span></span>
-                      <select className={`in${errors[`pq_type_${idx}`]?" err":""}`} value={q.type} onChange={e=>{const p=[...profQuals];p[idx]={...p[idx],type:e.target.value};setProfQuals(p);isDirtyRef.current=true;fixErr(`pq_type_${idx}`);}}>
+                      <select className={`in${errors[`pq_type_${idx}`]?" err":""}`} value={q.type} onChange={e=>{const p=[...profQuals];p[idx]={...p[idx],type:e.target.value,...(e.target.value!=="Other"?{otherType:""}:{})};setProfQuals(p);isDirtyRef.current=true;fixErr(`pq_type_${idx}`);}}>
                         <option value="">Select</option>
                         {["CA (Chartered Accountant)","CMA / ICWA","CS (Company Secretary)","CFA","ACCA","CIMA","FRM","PMP","ICSI","Other"].map(x=><option key={x} value={x}>{x}</option>)}
                       </select>
@@ -651,13 +651,22 @@ export default function EducationDetails() {
                       {errors[`pq_year_${idx}`]&&<span className="err-msg">Required</span>}
                     </div>
                   </div>
+                  {q.type==="Other"&&(
+                    <div className="fr">
+                      <div className="fi">
+                        <span className="fl">Specify Qualification Name <span style={{color:"#ef4444"}}>*</span></span>
+                        <input className={`in${errors[`pq_other_${idx}`]?" err":""}`} value={q.otherType||""} placeholder="Enter the qualification name" onChange={e=>{const p=[...profQuals];p[idx]={...p[idx],otherType:e.target.value};setProfQuals(p);isDirtyRef.current=true;fixErr(`pq_other_${idx}`);}}/>
+                        {errors[`pq_other_${idx}`]&&<span className="err-msg">Required</span>}
+                      </div>
+                    </div>
+                  )}
                   <div style={{marginTop:"0.5rem"}}>
                     <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Upload Certificate / Marksheet</span>
                     <FileUpload label="Upload Certificate" category="education" subKey={`profqual_${idx}`} employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={typeof q.certKey==="string"?q.certKey:""} onChange={(k)=>{const p=[...profQuals];p[idx]={...p[idx],certKey:typeof k==="string"?k:""};setProfQuals(p);isDirtyRef.current=true;}}/>
                   </div>
                 </div>
               ))}
-              <button className="add-btn" onClick={()=>{setProfQuals([...profQuals,{type:"",level:"",year:"",certKey:""}]);isDirtyRef.current=true;}}>+ Add Another Qualification</button>
+              <button className="add-btn" onClick={()=>{setProfQuals([...profQuals,{type:"",otherType:"",level:"",year:"",certKey:""}]);isDirtyRef.current=true;}}>+ Add Another Qualification</button>
             </>)}
           </div>
 
@@ -681,7 +690,7 @@ export default function EducationDetails() {
                   <div className="fr">
                     <div className="fi">
                       <span className="fl">Training Type <span style={{color:"#ef4444"}}>*</span></span>
-                      <select className={`in${errors[`art_type_${idx}`]?" err":""}`} value={a.type} onChange={e=>updateArticleship(idx,"type",e.target.value)}>
+                      <select className={`in${errors[`art_type_${idx}`]?" err":""}`} value={a.type} onChange={e=>{updateArticleship(idx,"type",e.target.value);if(e.target.value!=="Other Practical Training")updateArticleship(idx,"otherType","");fixErr(`art_type_${idx}`);}}>
                         <option value="">Select</option>
                         {["CA Articleship (ICAI)","CS Training (ICSI)","CMA Training (ICMAI)","Medical Internship","Pharmacy Internship","Law Internship","Architecture Internship","Other Practical Training"].map(x=><option key={x} value={x}>{x}</option>)}
                       </select>
@@ -689,6 +698,15 @@ export default function EducationDetails() {
                     </div>
                     <F l="Firm / Organisation Name" v={a.firm} s={v=>updateArticleship(idx,"firm",v)} errKey={`art_firm_${idx}`} errors={errors} onFix={fixErr}/>
                   </div>
+                  {a.type==="Other Practical Training"&&(
+                    <div className="fr">
+                      <div className="fi">
+                        <span className="fl">Specify Training Type <span style={{color:"#ef4444"}}>*</span></span>
+                        <input className={`in${errors[`art_other_${idx}`]?" err":""}`} value={a.otherType||""} placeholder="Enter the type of training" onChange={e=>{updateArticleship(idx,"otherType",e.target.value);fixErr(`art_other_${idx}`);}}/>
+                        {errors[`art_other_${idx}`]&&<span className="err-msg">Required</span>}
+                      </div>
+                    </div>
+                  )}
                   <div className="fr">
                     <F l="City / Location" v={a.city} s={v=>updateArticleship(idx,"city",v)} r={false}/>
                     <F l="Principal / Supervisor Name" v={a.principalName} s={v=>updateArticleship(idx,"principalName",v)} r={false}/>
@@ -712,7 +730,7 @@ export default function EducationDetails() {
                   </div>
                 </div>
               ))}
-              <button className="add-btn" onClick={()=>{setArticleships([...articleships,{firm:"",city:"",principalName:"",regNo:"",from:"",to:"",isOngoing:"",type:"",certKey:""}]);isDirtyRef.current=true;}}>+ Add Another Training</button>
+              <button className="add-btn" onClick={()=>{setArticleships([...articleships,{firm:"",city:"",principalName:"",regNo:"",from:"",to:"",isOngoing:"",type:"",otherType:"",certKey:""}]);isDirtyRef.current=true;}}>+ Add Another Training</button>
             </>)}
           </div>
 
