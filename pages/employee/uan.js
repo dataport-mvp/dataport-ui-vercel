@@ -362,6 +362,17 @@ export default function UanDetails() {
   const hasSavedSignature = !!(sigS3Key || sigDataUrl);
   const showSigCanvas = signingMode || !hasSavedSignature;
 
+  // Canvas pixels default to transparent, and JPEG has no alpha channel — toDataURL("image/jpeg")
+  // flattens any transparent pixel to black. Fill the canvas white the instant draw mode opens
+  // (first-time signing, or after clicking "Re-sign") so the exported signature is never black.
+  useEffect(() => {
+    if (showSigCanvas && sigCanvasRef.current) {
+      const ctx = sigCanvasRef.current.getContext("2d");
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, sigCanvasRef.current.width, sigCanvasRef.current.height);
+    }
+  }, [showSigCanvas]);
+
   // ── dirty setter — marks edited, resets acks but NOT signature ──
   const dirty = (setter) => (val) => {
     setter(val);
@@ -971,7 +982,7 @@ export default function UanDetails() {
                       <span style={{fontSize:"0.7rem",color:"#8b88b0",fontWeight:500}}>Draw your signature above <span style={{color:"#ef4444"}}>*</span></span>
                       <div style={{display:"flex",gap:"0.5rem"}}>
                         <button
-                          onClick={()=>{ const ctx=sigCanvasRef.current.getContext("2d"); ctx.clearRect(0,0,sigCanvasRef.current.width,sigCanvasRef.current.height); }}
+                          onClick={()=>{ const ctx=sigCanvasRef.current.getContext("2d"); ctx.clearRect(0,0,sigCanvasRef.current.width,sigCanvasRef.current.height); ctx.fillStyle="#fff"; ctx.fillRect(0,0,sigCanvasRef.current.width,sigCanvasRef.current.height); }}
                           style={{padding:"0.3rem 0.8rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:7,fontSize:"0.72rem",fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
                           Clear
                         </button>
