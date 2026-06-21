@@ -299,13 +299,13 @@ async function printProfile(profile, empHistory, documents, employerName) {
   ${edu.postgraduate?.college ? eduSection("Postgraduate / Masters", edu.postgraduate, "#334155") : ""}
 
   ${Array.isArray(edu.professionalQualifications) && edu.professionalQualifications.length > 0 ? section("Professional Qualifications", edu.professionalQualifications.map((q,i) => [
-    row(`Qualification ${i+1} — Type`,  q.type),
+    row(`Qualification ${i+1} — Type`,  q.type==="Other"?(q.otherType||"Other"):q.type),
     row(`Qualification ${i+1} — Level`, q.level),
     row(`Qualification ${i+1} — Year`,  q.year),
   ].join("")).join(""), "#334155") : ""}
 
   ${Array.isArray(edu.articleships) && edu.articleships.length > 0 ? section("Articleship / Practical Training", edu.articleships.map((a,i) => [
-    row(`Training ${i+1} — Type`,      a.type),
+    row(`Training ${i+1} — Type`,      a.type==="Other Practical Training"?(a.otherType||a.type):a.type),
     row(`Training ${i+1} — Firm`,      a.firm),
     row(`Training ${i+1} — City`,      a.city),
     row(`Training ${i+1} — Principal`, a.principalName),
@@ -884,7 +884,7 @@ function EducationTab({ data }) {
           {data.professionalQualifications.map((q,i)=>(
             <div key={i} style={{padding:"0.6rem 0.75rem",background:"#f8fafc",borderRadius:6,border:"1px solid #e8ecf2",marginBottom:"0.35rem"}}>
               <div className="kv-grid">
-                <KV k="Type"   v={q.type} />
+                <KV k="Type"   v={q.type==="Other"?(q.otherType||"Other"):q.type} />
                 <KV k="Level"  v={q.level} />
                 <KV k="Year"   v={q.year} />
               </div>
@@ -898,7 +898,7 @@ function EducationTab({ data }) {
           {data.articleships.map((a,i)=>(
             <div key={i} style={{padding:"0.6rem 0.75rem",background:"#fff7ed",borderRadius:6,border:"1px solid #fed7aa",marginBottom:"0.35rem"}}>
               <div className="kv-grid">
-                <KV k="Type"       v={a.type} />
+                <KV k="Type"       v={a.type==="Other Practical Training"?(a.otherType||a.type):a.type} />
                 <KV k="Firm"       v={a.firm} />
                 <KV k="City"       v={a.city} />
                 <KV k="Principal"  v={a.principalName} />
