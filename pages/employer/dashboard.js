@@ -176,6 +176,7 @@ async function printProfile(profile, empHistory, documents, employerName) {
     return section(title, [
       row("Institution",          s.school || s.college || s.institute),
       row("Board / University",   s.board || s.university),
+      row("Stream",               s.stream),
       row("Course / Degree",      s.course),
       row("Branch / Specialization", s.branch || s.specialization),
       row("Year of Passing",      s.yearOfPassing),
@@ -856,6 +857,7 @@ function EducationTab({ data }) {
         <div className="kv-grid">
           <KV k="Institution"           v={s.school||s.college||s.institute} />
           <KV k="Board / University"    v={s.board||s.university} />
+          {s.stream&&<KV k="Stream"     v={s.stream} />}
           {s.course&&<KV k="Course / Degree"       v={s.course} />}
           {(s.branch||s.specialization)&&<KV k="Branch / Specialization" v={s.branch||s.specialization} />}
           <KV k="Year of Passing"       v={s.yearOfPassing} />
