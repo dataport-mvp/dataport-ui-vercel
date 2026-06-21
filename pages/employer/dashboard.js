@@ -367,6 +367,7 @@ async function printProfile(profile, empHistory, documents, employerName) {
     pf.hasPf === "No"
       ? row("PF Status", "PF not maintained by this employer")
       : [
+          row("PF Type",          pf.pfType === "Trust" ? "Company's Own PF Trust (Exempted)" : pf.pfType === "EPFO" ? "EPFO (Government)" : ""),
           row("PF Member ID",     pf.pfMemberId),
           row("Date of Joining",  pf.dojEpfo),
           row("Date of Exit",     pf.doeEpfo),
@@ -1016,6 +1017,7 @@ function UanTab({ data }) {
               {pf.hasPf==="No"
                 ?<div style={{fontSize:"0.72rem",color:"#0369a1"}}>ℹ PF not maintained by this employer</div>
                 :<div className="kv-grid">
+                  <KV k="PF Type"          v={pf.pfType === "Trust" ? "Company's Own PF Trust (Exempted)" : pf.pfType === "EPFO" ? "EPFO (Government)" : ""} />
                   <KV k="PF Member ID"    v={pf.pfMemberId} mono />
                   <KV k="Date of Joining" v={isoToDisplay(pf.dojEpfo)} />
                   <KV k="Date of Exit"    v={isoToDisplay(pf.doeEpfo)} />
