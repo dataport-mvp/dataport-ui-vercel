@@ -1,11 +1,13 @@
 // pages/employee/uan.js  — Page 4 of 5
 // Fixes:
 // 1. DateField — no calendar, DD/MM/YYYY, shows month name
-// 2. Signature persists across page revisits — shown as a static image (no canvas/CORS dependency),
-//    never blank on return visits. User must explicitly click "Re-sign" to draw a new one.
-// 3. Editing any field (incl. nominees/PF records) after signing resets the 3 declaration checkboxes
-//    only — the saved signature itself is never touched until the user actively re-signs.
-// 4. Signature + all 3 acks mandatory before Save & Continue
+// 2. Signature persists across normal revisits — shown as a static image (no canvas/CORS
+//    dependency), never blank on return visits.
+// 3. Editing ANY field on this page (UAN details, PF records, nominees) after signing forces
+//    the canvas back open and resets all 3 declaration checkboxes — re-signing is mandatory,
+//    not optional, and "Save & Continue" is blocked until both are redone.
+// 4. Every signature that gets replaced is archived (signatureHistory, unique S3 key per
+//    signing) rather than silently overwritten — see chat for the retention rationale.
 // 5. page4_edited flag saved to DB → page 5 knows to re-ask review acks
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
@@ -354,13 +356,19 @@ export default function UanDetails() {
   // Defaults to false; first-time users fall into draw mode automatically because hasSavedSignature is false.
   const [signingMode, setSigningMode] = useState(false);
   const [sigPreviewFailed, setSigPreviewFailed] = useState(false);
+  // Archive of every signature this page has ever produced — old ones are never deleted or
+  // silently overwritten, only versioned, so there's a defensible record of what was signed
+  // and when if a nominee/PF detail is ever disputed later.
+  const [signatureHistory, setSignatureHistory] = useState([]);
   const sigCanvasRef = useRef(null);
   const sigDrawingRef = useRef(false);
   const sigLastRef = useRef({x:0, y:0});
   const wasSignedRef = useRef(false);
 
   const hasSavedSignature = !!(sigS3Key || sigDataUrl);
-  const showSigCanvas = signingMode || !hasSavedSignature;
+  // editedAfterSign forces the canvas back open — re-signing is mandatory after an edit,
+  // not an optional "re-sign if you want to" action.
+  const showSigCanvas = signingMode || !hasSavedSignature || editedAfterSign;
 
   // Canvas pixels default to transparent, and JPEG has no alpha channel — toDataURL("image/jpeg")
   // flattens any transparent pixel to black. Fill the canvas white the instant draw mode opens
@@ -473,6 +481,7 @@ export default function UanDetails() {
             wasSignedRef.current = true;
           }
           if (d.epfoSignature?.timestamp) setSigTimestamp(d.epfoSignature.timestamp);
+          if (Array.isArray(d.signatureHistory)) setSignatureHistory(d.signatureHistory);
 
           // Load employment history for PF pre-fill
           if (d.employee_id) {
@@ -516,15 +525,17 @@ export default function UanDetails() {
   const addPfRecord    = () => { setPfRecords(prev => [...prev, makePfRecord()]); isDirtyRef.current = true; };
   const removePfRecord = (i) => { if(i === 0) return; setPfRecords(prev => prev.filter((_, idx) => idx !== i)); isDirtyRef.current = true; };
 
-  // Upload canvas blob to S3
-  const uploadSignature = async (dataUrl) => {
+  // Upload canvas blob to S3 — filename includes the signing timestamp so each signature
+  // lands at its own S3 key rather than overwriting the previous one in place.
+  const uploadSignature = async (dataUrl, ts) => {
     if (!draft?.employee_id) return null;
     try {
       const res2 = await fetch(dataUrl);
       const blob = await res2.blob();
+      const safeTs = (ts || new Date().toISOString()).replace(/[:.]/g, "-");
       const presignRes = await apiFetch(`${API}/upload/presigned`, {
         method: "POST",
-        body: JSON.stringify({ category:"uan", sub_key:"signature", filename:"signature.jpg", employee_id:draft.employee_id }),
+        body: JSON.stringify({ category:"uan", sub_key:"signature", filename:`signature_${safeTs}.jpg`, employee_id:draft.employee_id }),
       });
       if (!presignRes.ok) return null;
       const { upload_url, s3_key } = await presignRes.json();
@@ -539,13 +550,17 @@ export default function UanDetails() {
     sigDrawingRef.current = false;
     if (!sigCanvasRef.current) return;
     const dataUrl = sigCanvasRef.current.toDataURL("image/jpeg", 0.3);
+    // Archive the signature being replaced — never silently discarded, only versioned.
+    if (sigS3Key && sigTimestamp) {
+      setSignatureHistory(prev => [...prev, { s3Key: sigS3Key, timestamp: sigTimestamp }]);
+    }
     setSigDataUrl(dataUrl);
     setSigPreviewFailed(false);
     const ts = new Date().toISOString();
     setSigTimestamp(ts);
     isDirtyRef.current = true; wasSignedRef.current = true; setEditedAfterSign(false);
     setSigningMode(false); // flip back to "view" mode showing the freshly drawn (local, CORS-free) image
-    const key = await uploadSignature(dataUrl);
+    const key = await uploadSignature(dataUrl, ts);
     if (key) setSigS3Key(key);
   };
 
@@ -568,6 +583,7 @@ export default function UanDetails() {
         s3Key: sigS3Key,
         timestamp: sigTimestamp,
       },
+      signatureHistory,
       epfoDeclarations: { pfNomAck, pensionNomAck, epfoDecl },
       last_saved_at: Date.now(),
       // ── Cascade flag: page 4 was edited → page 5 must re-ask review acks
@@ -606,7 +622,8 @@ export default function UanDetails() {
       if (!pfNomAck)     errs.push("PF Nomination Declaration");
       if (!pensionNomAck) errs.push("Pension Nomination Declaration");
       if (!epfoDecl)     errs.push("General EPFO Declaration");
-      if (!sigS3Key && !sigDataUrl) errs.push("Digital Signature");
+      if (editedAfterSign) errs.push("Digital Signature (information changed — please sign again)");
+      else if (!sigS3Key && !sigDataUrl) errs.push("Digital Signature");
 
       if (errs.length > 0) {
         setSaveStatus(`⚠️ Required: ${errs.join(", ")}`);
@@ -849,7 +866,7 @@ export default function UanDetails() {
 
               {editedAfterSign && (
                 <div style={{background:"#fff8f0",border:"1.5px solid #fbbf24",borderRadius:10,padding:"0.65rem 1rem",marginBottom:"0.75rem",fontSize:"0.75rem",color:"#92400e",fontWeight:600}}>
-                  ⚠️ You edited information — please re-confirm all declarations below. Your existing signature is still saved; re-sign only if you wish to update it.
+                  ⚠️ You changed information on this page. Your previous signature no longer applies — re-confirm all 3 declarations below and sign again before you can continue.
                 </div>
               )}
 
@@ -890,16 +907,17 @@ export default function UanDetails() {
                 </label>
               </div>
 
-              {/* Digital Signature — saved signature persists across edits and revisits;
-                  only "Re-sign" (draw a new one) or the system never touches it otherwise */}
+              {/* Digital Signature — persists across normal revisits; editing the page after
+                  signing forces this back into draw mode, and every replaced signature is
+                  archived (never overwritten in place) */}
               <div style={{background:"#fff",border:"1.5px solid #e4e2f0",borderRadius:12,padding:"1.1rem 1.2rem"}}>
                 <div style={{fontSize:"0.72rem",fontWeight:800,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.5rem"}}>
                   Digital Signature <span style={{color:"#ef4444"}}>*</span>
                 </div>
 
-                {editedAfterSign && hasSavedSignature && (
-                  <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:8,padding:"0.6rem 0.9rem",marginBottom:"0.75rem",fontSize:"0.75rem",color:"#15803d",fontWeight:500}}>
-                    ✓ Your existing signature is saved. You only need to re-sign if you want to update it. Re-confirm the declarations above to continue.
+                {editedAfterSign && (
+                  <div style={{background:"#fff5f5",border:"1px solid #fecaca",borderRadius:8,padding:"0.6rem 0.9rem",marginBottom:"0.75rem",fontSize:"0.75rem",color:"#b91c1c",fontWeight:600}}>
+                    ⚠️ Your previous signature was recorded against different information and no longer applies. Please sign again below.
                   </div>
                 )}
 
@@ -986,7 +1004,7 @@ export default function UanDetails() {
                           style={{padding:"0.3rem 0.8rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:7,fontSize:"0.72rem",fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
                           Clear
                         </button>
-                        {hasSavedSignature && (
+                        {hasSavedSignature && !editedAfterSign && (
                           <button
                             onClick={()=>setSigningMode(false)}
                             style={{padding:"0.3rem 0.8rem",background:"transparent",color:"#6b6894",border:"1.5px solid #dddaf0",borderRadius:7,fontSize:"0.72rem",fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
