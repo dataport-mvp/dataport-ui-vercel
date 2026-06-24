@@ -5,7 +5,7 @@ import { useAuth } from "../../utils/AuthContext";
 import { parseError } from "../../utils/apiError";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
-const DATA_TABS = ["Overview", "Education", "Employment", "UAN & PF", "Documents"];
+const DATA_TABS = ["Overview", "Education", "Employment", "UAN & PF", "Documents", "BGV Status"];
 
 // ── Normalizers ───────────────────────────────────────────────────────
 const normalizeEducation = (ed = {}) => {
@@ -1044,6 +1044,154 @@ const DOC_LABELS = {
 };
 const SEC_TITLES_DOC = { personal:"Identity Documents", education:"Education Certificates", uan:"UAN / EPFO Documents", general:"Resume" };
 
+function BgvTab({ consentData, apiFetch, API: apiUrl }) {
+  const CHECK_STATUS_COLORS = {
+    pending:        { color:"#94a3b8", bg:"#f1f5f9", label:"Pending" },
+    in_progress:    { color:"#3b82f6", bg:"#eff6ff", label:"In Progress" },
+    verified:       { color:"#16a34a", bg:"#f0fdf4", label:"Verified ✓" },
+    failed:         { color:"#ef4444", bg:"#fef2f2", label:"Discrepancy ✗" },
+    on_hold:        { color:"#f59e0b", bg:"#fffbeb", label:"On Hold" },
+    not_applicable: { color:"#64748b", bg:"#f8fafc", label:"N/A" },
+  };
+  const OVERALL = { clear:"#16a34a", discrepancy:"#f59e0b", failed:"#ef4444", refer:"#3b82f6" };
+
+  const [bgvCase, setBgvCase] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [vendors, setVendors] = useState([]);
+  const [assigning, setAssigning] = useState(false);
+  const [selectedVendor, setSelectedVendor] = useState("");
+  const [assignMsg, setAssignMsg] = useState("");
+  const [reportUrl, setReportUrl] = useState("");
+
+  useEffect(() => {
+    if (!consentData?.consent_id) return;
+    const load = async () => {
+      try {
+        const [cRes, vRes] = await Promise.all([
+          apiFetch(`${apiUrl}/bgv/case/${consentData.consent_id}`),
+          apiFetch(`${apiUrl}/bgv/vendors`),
+        ]);
+        if (cRes.ok) setBgvCase(await cRes.json());
+        if (vRes.ok) setVendors(await vRes.json());
+      } catch(_) {}
+      setLoading(false);
+    };
+    load();
+  }, [consentData?.consent_id, apiFetch, apiUrl]);
+
+  const assignVendor = async () => {
+    if (!selectedVendor || !consentData?.consent_id) return;
+    setAssigning(true); setAssignMsg("");
+    try {
+      const res = await apiFetch(`${apiUrl}/bgv/assign`, {
+        method: "POST",
+        body: JSON.stringify({ consent_id: consentData.consent_id, bgv_vendor_email: selectedVendor }),
+      });
+      const d = await res.json();
+      if (res.ok) {
+        setAssignMsg(`✓ Assigned to ${selectedVendor} — ${d.checks_created} checks created`);
+        const cRes = await apiFetch(`${apiUrl}/bgv/case/${consentData.consent_id}`);
+        if (cRes.ok) setBgvCase(await cRes.json());
+      } else {
+        setAssignMsg(`✗ ${d.detail || "Assignment failed"}`);
+      }
+    } catch(_) { setAssignMsg("✗ Error"); }
+    setAssigning(false);
+    setTimeout(() => setAssignMsg(""), 4000);
+  };
+
+  const viewReport = async (reportKey) => {
+    if (!consentData?.employee_id || reportUrl) { if(reportUrl) window.open(reportUrl,"_blank"); return; }
+    try {
+      const res = await apiFetch(`${apiUrl}/documents/${consentData.employee_id}`);
+      if (res.ok) {
+        const docs = await res.json();
+        const bgvDocs = docs.documents?.bgv || {};
+        const found = Object.values(bgvDocs).find(d => d.s3_key === reportKey);
+        if (found?.url) { setReportUrl(found.url); window.open(found.url, "_blank"); }
+      }
+    } catch(_) {}
+  };
+
+  if (loading) return <div className="nd-box">Loading BGV status…</div>;
+
+  return (
+    <div>
+      {/* Assign vendor section */}
+      {(!bgvCase?.bgv_vendor_email) && (
+        <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:"1rem",marginBottom:"1rem"}}>
+          <div style={{fontWeight:700,fontSize:"0.84rem",color:"#0f172a",marginBottom:"0.6rem"}}>Assign BGV Vendor</div>
+          <div style={{display:"flex",gap:"0.65rem",alignItems:"center",flexWrap:"wrap"}}>
+            <select value={selectedVendor} onChange={e=>setSelectedVendor(e.target.value)} style={{padding:"0.5rem 0.75rem",border:"1.5px solid #e2e8f0",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",flex:1,minWidth:200}}>
+              <option value="">Select BGV Vendor…</option>
+              {vendors.map(v=><option key={v.email} value={v.email}>{v.company_name||v.name} ({v.email})</option>)}
+            </select>
+            <button onClick={assignVendor} disabled={!selectedVendor||assigning} style={{padding:"0.5rem 1.1rem",background:"#4f46e5",color:"#fff",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:"0.82rem",fontWeight:700,cursor:"pointer",opacity:(!selectedVendor||assigning)?0.6:1}}>
+              {assigning?"Assigning…":"Assign →"}
+            </button>
+          </div>
+          {vendors.length===0 && <p style={{fontSize:"0.72rem",color:"#94a3b8",marginTop:"0.5rem"}}>No approved BGV vendors available. Contact admin to onboard a vendor.</p>}
+          {assignMsg && <p style={{fontSize:"0.78rem",marginTop:"0.5rem",color:assignMsg.startsWith("✓")?"#16a34a":"#ef4444",fontWeight:600}}>{assignMsg}</p>}
+        </div>
+      )}
+
+      {bgvCase?.bgv_vendor_email && (
+        <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:"0.75rem 1rem",marginBottom:"1rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <span style={{fontSize:"0.72rem",fontWeight:700,color:"#15803d",textTransform:"uppercase",letterSpacing:"0.5px"}}>Assigned to BGV Vendor</span>
+            <div style={{fontWeight:700,fontSize:"0.875rem",color:"#0f172a",marginTop:"0.1rem"}}>{bgvCase.bgv_vendor_email}</div>
+          </div>
+          {bgvCase.bgv_status && <span style={{padding:"0.25rem 0.75rem",borderRadius:999,background:"#dcfce7",color:"#15803d",fontSize:"0.72rem",fontWeight:700}}>{bgvCase.bgv_status.replace("_"," ").toUpperCase()}</span>}
+        </div>
+      )}
+
+      {/* Final Report */}
+      {bgvCase?.bgv_report_key && (
+        <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:10,padding:"1rem",marginBottom:"1rem"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"0.5rem"}}>
+            <div>
+              <div style={{fontWeight:800,fontSize:"0.875rem",color:"#0f172a"}}>✅ Final BGV Report Submitted</div>
+              {bgvCase.bgv_overall_status && (
+                <span style={{display:"inline-block",marginTop:"0.35rem",padding:"0.2rem 0.6rem",borderRadius:999,background:`${OVERALL[bgvCase.bgv_overall_status]||"#64748b"}20`,color:OVERALL[bgvCase.bgv_overall_status]||"#64748b",fontSize:"0.72rem",fontWeight:800,textTransform:"uppercase"}}>
+                  {bgvCase.bgv_overall_status.toUpperCase()}
+                </span>
+              )}
+              {bgvCase.bgv_summary && <div style={{fontSize:"0.78rem",color:"#475569",marginTop:"0.4rem",lineHeight:1.5}}>{bgvCase.bgv_summary}</div>}
+            </div>
+            <button onClick={()=>viewReport(bgvCase.bgv_report_key)} style={{padding:"0.4rem 0.9rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:7,fontSize:"0.78rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+              View Report ↗
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Check Tracker */}
+      {bgvCase?.bgv_checks?.length > 0 && (
+        <div>
+          <div style={{fontWeight:700,fontSize:"0.84rem",color:"#0f172a",marginBottom:"0.65rem"}}>Check Status</div>
+          {bgvCase.bgv_checks.map((ch,i) => {
+            const st = CHECK_STATUS_COLORS[ch.status] || CHECK_STATUS_COLORS.pending;
+            return (
+              <div key={i} style={{display:"grid",gridTemplateColumns:"2fr 1.2fr 1fr",gap:"0.5rem",padding:"0.65rem 0",borderBottom:"1px solid #f1f5f9",alignItems:"center"}}>
+                <div>
+                  <div style={{fontSize:"0.82rem",fontWeight:600,color:"#0f172a"}}>{ch.label}</div>
+                  {ch.notes && <div style={{fontSize:"0.72rem",color:"#64748b",marginTop:"0.15rem",lineHeight:1.4}}>{ch.notes}</div>}
+                </div>
+                <span style={{display:"inline-block",padding:"0.2rem 0.6rem",borderRadius:999,background:st.bg,color:st.color,fontSize:"0.7rem",fontWeight:700}}>{st.label}</span>
+                <div style={{fontSize:"0.68rem",color:"#94a3b8"}}>{ch.completed_at ? new Date(ch.completed_at).toLocaleDateString("en-IN",{day:"2-digit",month:"short"}) : "—"}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {!bgvCase?.bgv_checks?.length && bgvCase?.bgv_vendor_email && (
+        <div className="nd-box">BGV vendor has not started checks yet.</div>
+      )}
+    </div>
+  );
+}
+
 function DocumentsTab({ documents, loading }) {
   if (loading) return <div className="nd-box">Loading documents…</div>;
   if (!documents||Object.keys(documents).length===0) return <div className="nd-box">No documents uploaded yet</div>;
@@ -2000,6 +2148,7 @@ return (
                       :<>
                         <div style={{marginBottom:"0.75rem",display:"flex",gap:"0.6rem",alignItems:"center",flexWrap:"wrap"}}>
                           <button onClick={()=>{setActiveThread(gcid(selected));loadThread(gcid(selected));setShowInbox(true);}} style={{padding:"0.42rem 1rem",background:"#fff",border:"1.5px solid #0d6e6e",borderRadius:7,color:"#0d6e6e",fontSize:"0.72rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:"0.4rem"}}>✉️ Message candidate</button>
+                          <button onClick={()=>{setActiveThread(gcid(selected));loadThread(gcid(selected));setShowInbox(true);if(typeof setMsgRecipient!=="undefined")setMsgRecipient("bgv");}} style={{padding:"0.42rem 1rem",background:"#fff",border:"1.5px solid #4f46e5",borderRadius:7,color:"#4f46e5",fontSize:"0.72rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:"0.4rem"}}>🔍 Message BGV vendor</button>
                         </div>
                         <div className="note-bar">⚠️ <strong>Self-reported data.</strong> All information was filled and submitted by the employee. Not independently verified by Datagate unless a verified check has been explicitly completed.</div>
                         <div className="tab-nav">{DATA_TABS.map(t=><button key={t} className={`tab-btn${activeTab===t?" on":""}`} onClick={()=>setActiveTab(t)}>{t}</button>)}</div>
@@ -2009,6 +2158,7 @@ return (
                           {activeTab==="Employment"&&<EmploymentTab data={profileData.employment_snapshot} resumeKey={profileData.profile_snapshot?.resumeKey} docUrls={Object.values(documents||{}).reduce((acc,grp)=>({...acc,...Object.fromEntries(Object.entries(grp).map(([k,v])=>[k,v.url]))}),{})}/>}
                           {activeTab==="UAN & PF"&&<UanTab data={profileData.profile_snapshot}/>}
                           {activeTab==="Documents"&&<DocumentsTab documents={documents} loading={docsLoading}/>}
+                          {activeTab==="BGV Status"&&<BgvTab consentData={profileData} apiFetch={apiFetch} API={API}/>}
                         </div>
                       </>
                     )}
