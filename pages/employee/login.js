@@ -13,15 +13,16 @@ const Eye = ({ open }) => open ? (
 );
 
 export default function EmployeeLogin() {
-  const [mode,     setMode]     = useState("login");
-  const [email,    setEmail]    = useState("");
-  const [password, setPassword] = useState("");
-  const [showPwd,  setShowPwd]  = useState(false);
-  const [name,     setName]     = useState("");
-  const [phone,    setPhone]    = useState("");
-  const [error,    setError]    = useState("");
-  const [info,     setInfo]     = useState("");
-  const [loading,  setLoading]  = useState(false);
+  const [mode,        setMode]        = useState("login");
+  const [email,       setEmail]       = useState("");
+  const [password,    setPassword]    = useState("");
+  const [showPwd,     setShowPwd]     = useState(false);
+  const [name,        setName]        = useState("");
+  const [phone,       setPhone]       = useState("");
+  const [termsAgreed, setTermsAgreed] = useState(false); // ← NEW
+  const [error,       setError]       = useState("");
+  const [info,        setInfo]        = useState("");
+  const [loading,     setLoading]     = useState(false);
   const { login }  = useAuth();
   const router     = useRouter();
 
@@ -37,7 +38,11 @@ export default function EmployeeLogin() {
         setInfo("Reset link sent — check your email."); return;
       }
       if (mode === "signup" && phone.length !== 10) { setError("Phone must be 10 digits"); return; }
-      const body = mode === "signup" ? {email,password,name,phone,role:"employee"} : {email,password};
+      // ← NEW: block signup if terms not accepted
+      if (mode === "signup" && !termsAgreed) { setError("Please accept the Terms of Service and Privacy Policy to continue."); return; }
+      const body = mode === "signup"
+        ? {email, password, name, phone, role:"employee", terms_accepted_at: new Date().toISOString()}
+        : {email, password};
       const res  = await fetch(`${API}${mode==="signup"?"/auth/register":"/auth/login"}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
       const d    = await res.json();
       if (!res.ok) { setError(parseError(d)); return; }
@@ -60,7 +65,6 @@ export default function EmployeeLogin() {
 
         .pg{min-height:100vh;display:grid;grid-template-columns:1fr 1fr}
 
-        /* ── LEFT — sage green, evolved from current ── */
         .lft{
           background:#ecf0e8;
           border-right:1px solid #d4dfd0;
@@ -71,7 +75,6 @@ export default function EmployeeLogin() {
         .lft::before{content:'';position:absolute;top:-80px;right:-80px;width:320px;height:320px;border-radius:50%;background:rgba(45,106,79,.07);pointer-events:none}
         .lft::after{content:'';position:absolute;bottom:-60px;left:-40px;width:240px;height:240px;border-radius:50%;background:rgba(45,106,79,.04);pointer-events:none}
 
-        /* Logo — exact same as current live site */
         .lft-logo{display:inline-flex;align-items:center;gap:9px;text-decoration:none;position:relative;z-index:1}
         .lft-logo-icon{width:34px;height:34px;border-radius:8px;background:#1c3a28;display:flex;align-items:center;justify-content:center}
         .lft-logo-name{font-family:'DM Sans',sans-serif;font-weight:700;font-size:14px;color:#1c3a28;letter-spacing:-.3px;line-height:1}
@@ -84,19 +87,16 @@ export default function EmployeeLogin() {
         .lft-h em{font-style:italic;color:#2d6a4f}
         .lft-p{font-size:.875rem;color:#4a7c59;line-height:1.8;margin-bottom:2rem;max-width:340px}
 
-        /* Steps — same as current */
         .steps{display:flex;flex-direction:column;gap:1rem;margin-bottom:2rem}
         .step{display:flex;align-items:flex-start;gap:.85rem}
         .snum{width:26px;height:26px;border-radius:7px;flex-shrink:0;background:#fff;border:1.5px solid #c5d9c5;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:#2d6a4f}
         .stxt-t{font-size:.83rem;font-weight:700;color:#1c3a28;margin-bottom:1px}
         .stxt-d{font-size:.76rem;color:#6b9e7a;line-height:1.5}
 
-        /* Consent chip — same as current */
         .chip{display:flex;align-items:center;gap:.5rem;background:#fff;border:1.5px solid #c5d9c5;border-radius:10px;padding:.7rem .9rem;margin-bottom:1.5rem}
         .chip-dot{width:7px;height:7px;border-radius:50%;background:#2d6a4f;flex-shrink:0;animation:blink 2s ease-in-out infinite}
         .chip span{font-size:.75rem;font-weight:600;color:#2d6a4f}
 
-        /* Stats row — NEW, premium addition */
         .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
         .stat-box{background:#fff;border:1px solid #c5d9c5;border-radius:8px;padding:11px 13px}
         .stat-box-num{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;color:#2d6a4f;line-height:1;letter-spacing:-.5px;margin-bottom:3px}
@@ -108,7 +108,6 @@ export default function EmployeeLogin() {
         .lft-ft-link{font-size:.68rem;color:#8fb89a;text-decoration:none;transition:color .15s}
         .lft-ft-link:hover{color:#2d6a4f}
 
-        /* ── RIGHT — same clean white as current ── */
         .rgt{background:#f5f2ee;display:flex;align-items:center;justify-content:center;padding:3rem 2.5rem}
         .form-wrap{width:100%;max-width:400px;animation:fadeUp .5s ease both}
 
@@ -119,7 +118,6 @@ export default function EmployeeLogin() {
         .fhd{font-family:'Cormorant Garamond',serif;font-size:1.85rem;font-weight:500;color:#18151f;letter-spacing:-.3px;margin-bottom:4px;line-height:1.15}
         .fsb{font-size:.83rem;color:#b8b3c2;margin-bottom:1.75rem}
 
-        /* Mode tabs */
         .tabs{display:flex;background:#ede9e4;border:1.5px solid #c8c2b8;border-radius:9px;padding:3px;gap:3px;margin-bottom:1.4rem}
         .tab{flex:1;padding:7px;border:none;border-radius:7px;font-family:inherit;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:#b8b3c2}
         .tab.on{background:#fff;color:#111;border:1.5px solid #c8c2b8;box-shadow:0 1px 4px rgba(0,0,0,.08)}
@@ -139,7 +137,17 @@ export default function EmployeeLogin() {
         .err{font-size:.78rem;color:#b91c1c;padding:.6rem .9rem;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;margin-bottom:.75rem}
         .inf{font-size:.78rem;color:#2d6a4f;padding:.6rem .9rem;background:#f0f9f4;border:1px solid #c5d9c5;border-radius:8px;margin-bottom:.75rem}
 
-        .submit{padding:.88rem;background:#0d6e6e;box-shadow:0 4px 16px rgba(13,110,110,.3);color:#fff;border:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .15s;width:100%;margin-bottom:.75rem;box-shadow:0 4px 16px rgba(45,106,79,.22)}
+        /* ── Terms checkbox ── */
+        .terms-row{display:flex;align-items:flex-start;gap:.6rem;margin-bottom:.9rem;padding:.75rem .9rem;background:#f8f7fa;border:1.5px solid #ede9f5;border-radius:9px;cursor:pointer}
+        .terms-row:hover{border-color:#c5d9c5;background:#f0f9f4}
+        .terms-cb{width:16px;height:16px;border-radius:4px;border:1.5px solid #c8c2b8;background:#fff;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+        .terms-cb.checked{background:#2d6a4f;border-color:#2d6a4f}
+        .terms-cb.checked::after{content:'✓';font-size:9px;color:#fff;font-weight:700}
+        .terms-txt{font-size:.75rem;color:#7a7386;line-height:1.6}
+        .terms-txt a{color:#2d6a4f;font-weight:600;text-decoration:none}
+        .terms-txt a:hover{text-decoration:underline}
+
+        .submit{padding:.88rem;background:#0d6e6e;color:#fff;border:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .15s;width:100%;margin-bottom:.75rem;box-shadow:0 4px 16px rgba(45,106,79,.22)}
         .submit:hover:not(:disabled){background:#235c40;transform:translateY(-1px)}
         .submit:disabled{opacity:.45;cursor:not-allowed;transform:none}
 
@@ -155,7 +163,6 @@ export default function EmployeeLogin() {
         .toggle-btn{color:#2d6a4f;cursor:pointer;font-weight:700;background:none;border:none;font-family:inherit;font-size:inherit;padding:0}
         .toggle-btn:hover{text-decoration:underline}
 
-        /* Trust grid — NEW premium addition */
         .trust-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;border-top:1px solid #f2f0f5;padding-top:1rem;margin-bottom:.75rem}
         .trust-item{display:flex;align-items:center;gap:5px;font-size:10.5px;color:#b8b3c2}
         .trust-ck{width:14px;height:14px;border-radius:3px;background:#f0f9f4;border:1px solid #c5d9c5;display:flex;align-items:center;justify-content:center;font-size:8px;color:#2d6a4f;flex-shrink:0}
@@ -204,7 +211,7 @@ export default function EmployeeLogin() {
           </div>
 
           <div className="lft-ft">
-            <span className="lft-ft-copy">© 2026 Datagate Technologies</span>
+            <span className="lft-ft-copy">© 2026 Datagate</span>
             <div className="lft-ft-links">
               <a href="/privacy" className="lft-ft-link">Privacy Policy</a>
               <a href="mailto:support@datagate.co.in" className="lft-ft-link">Support</a>
@@ -214,7 +221,7 @@ export default function EmployeeLogin() {
 
         {/* RIGHT */}
         <div className="rgt">
-          <div className="form">
+          <div className="form-wrap">
             <Link href="/" className="form-back">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
               Back to Datagate
@@ -227,7 +234,7 @@ export default function EmployeeLogin() {
             {mode !== "forgot" && (
               <div className="tabs">
                 {[["login","Sign in"],["signup","Create account"]].map(([m,l])=>(
-                  <button key={m} className={`tab${mode===m?" on":""}`} onClick={()=>{setMode(m);setError("");setInfo("")}}>{l}</button>
+                  <button key={m} className={`tab${mode===m?" on":""}`} onClick={()=>{setMode(m);setError("");setInfo("");setTermsAgreed(false)}}>{l}</button>
                 ))}
               </div>
             )}
@@ -248,10 +255,28 @@ export default function EmployeeLogin() {
               </div>
             )}
 
+            {/* ── Terms checkbox — shown only on signup ── */}
+            {mode==="signup" && (
+              <div className="terms-row" onClick={()=>setTermsAgreed(v=>!v)}>
+                <div className={`terms-cb${termsAgreed?" checked":""}`}/>
+                <span className="terms-txt">
+                  I have read and agree to Datagate's{" "}
+                  <a href="/employee/terms" onClick={e=>e.stopPropagation()} target="_blank" rel="noopener noreferrer">Employee Terms of Service</a>
+                  {" "}and{" "}
+                  <a href="/privacy" onClick={e=>e.stopPropagation()} target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
+                  My data will only be shared with employers I explicitly approve.
+                </span>
+              </div>
+            )}
+
             {error && <div className="err">{error}</div>}
             {info  && <div className="inf">{info}</div>}
 
-            <button className="submit" onClick={handle} disabled={loading}>
+            <button
+              className="submit"
+              onClick={handle}
+              disabled={loading || (mode==="signup" && !termsAgreed)}
+            >
               {loading?"Please wait…":mode==="signup"?"Create account →":mode==="forgot"?"Send reset link":"Sign in →"}
             </button>
 
@@ -260,7 +285,7 @@ export default function EmployeeLogin() {
 
             {mode!=="forgot" && <>
               <div className="dvr"><div className="dvl"/><span className="dvt">or</span><div className="dvl"/></div>
-              <div className="toggle">{mode==="login"?"Don't have an account? ":"Already have an account? "}<button className="toggle-btn" onClick={()=>{setMode(mode==="login"?"signup":"login");setError("")}}>{mode==="login"?"Sign up free":"Sign in"}</button></div>
+              <div className="toggle">{mode==="login"?"Don't have an account? ":"Already have an account? "}<button className="toggle-btn" onClick={()=>{setMode(mode==="login"?"signup":"login");setError("");setTermsAgreed(false)}}>{mode==="login"?"Sign up free":"Sign in"}</button></div>
             </>}
 
             <div className="trust-grid">
@@ -271,7 +296,7 @@ export default function EmployeeLogin() {
 
             <div className="footer-row">
               <a href="/privacy" className="footer-lk">Privacy Policy</a>
-              <a href="/employer/terms" className="footer-lk">Employer Terms</a>
+              <a href="/employee/terms" className="footer-lk">Employee Terms</a>
               <a href="mailto:support@datagate.co.in" className="footer-lk">Support</a>
             </div>
           </div>
