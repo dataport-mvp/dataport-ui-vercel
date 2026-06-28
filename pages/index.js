@@ -199,19 +199,19 @@ export default function Home() {
         .btn-for:hover{background:#0d6e6e;gap:10px}
 
         /* TRUST */
-        .trust-section{background:#111;padding:80px 52px;border-top:1px solid #1e1a14}
+        .trust-section{background:#f5f2ee;padding:80px 52px;border-top:1px solid #ddd8d0}
         .trust-inner{max-width:1200px;margin:0 auto}
         .trust-lbl{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#0d6e6e;display:flex;align-items:center;gap:7px;margin-bottom:10px}
         .trust-lbl::before{content:'';width:18px;height:1.5px;background:#0d6e6e}
-        .trust-h{font-family:'Cormorant Garamond',serif;font-size:clamp(2.2rem,3vw,3.2rem);font-weight:500;color:#f5f2ee;letter-spacing:-.5px;line-height:1.15;margin-bottom:48px}
-        .trust-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.08);border-radius:16px;overflow:hidden}
-        .tc{background:#1a1510;padding:32px 26px;transition:all .2s;position:relative;overflow:hidden}
+        .trust-h{font-family:'Cormorant Garamond',serif;font-size:clamp(2.2rem,3vw,3.2rem);font-weight:500;color:#111;letter-spacing:-.5px;line-height:1.15;margin-bottom:48px}
+        .trust-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+        .tc{background:#fff;border:1.5px solid #ddd8d0;border-radius:14px;padding:32px 26px;transition:all .2s;position:relative;overflow:hidden}
         .tc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:#0d6e6e;opacity:0;transition:opacity .2s}
-        .tc:hover{background:#0f1c1a}
-        .tc:hover::before{opacity:1}
+        .tc:hover{background:#f0f9f4;border-color:#a8d5ce}
+        .tc:hover::before{opacity:1;background:#0d6e6e}
         .tc-ic{font-size:24px;margin-bottom:14px}
-        .tc-t{font-size:14px;font-weight:700;color:#f5f2ee;margin-bottom:7px;letter-spacing:-.2px}
-        .tc-d{font-size:12.5px;color:rgba(255,255,255,.38);line-height:1.75}
+        .tc-t{font-size:14px;font-weight:700;color:#111;margin-bottom:7px;letter-spacing:-.2px}
+        .tc-d{font-size:12.5px;color:#7a6e64;line-height:1.75}
 
         /* FOOTER */
         footer{background:#1a1510;border-top:1px solid #2a2520;padding:52px 52px 40px}
@@ -256,7 +256,7 @@ export default function Home() {
         </div>
         <div className="nav-r">
           <Link href="/employee/login"><button className="n-emp">Employee</button></Link>
-          <a href="https://www.linkedin.com/company/datagate-technologies" target="_blank" rel="noopener noreferrer" className="n-li"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>LinkedIn</a><Link href="/employer/login"><button className="n-er">Employer Login</button></Link>
+          <Link href="/employer/login"><button className="n-er">Employer Login</button></Link>
         </div>
       </nav>
 
