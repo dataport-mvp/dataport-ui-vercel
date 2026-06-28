@@ -77,6 +77,8 @@ export default function Home() {
         .n-emp:hover{border-color:#0d6e6e;color:#0d6e6e}
         .n-er{padding:7px 20px;border-radius:7px;background:#0d6e6e;color:#fff;font-size:13px;font-weight:700;border:none;cursor:pointer;transition:all .15s;box-shadow:0 2px 8px rgba(13,110,110,.3)}
         .n-er:hover{background:#0a5656}
+        .n-li{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:7px;border:1.5px solid #c8c2b8;color:#5a5248;font-size:12px;font-weight:600;text-decoration:none;transition:all .15s}
+        .n-li:hover{border-color:#0d6e6e;color:#0d6e6e;background:rgba(13,110,110,.05)}
 
         /* TICKER */
         .ticker{background:#0d6e6e;overflow:hidden;height:38px;display:flex;align-items:center;margin-top:60px}
@@ -254,7 +256,7 @@ export default function Home() {
         </div>
         <div className="nav-r">
           <Link href="/employee/login"><button className="n-emp">Employee</button></Link>
-          <Link href="/employer/login"><button className="n-er">Employer Login</button></Link>
+          <a href="https://www.linkedin.com/company/datagate-technologies" target="_blank" rel="noopener noreferrer" className="n-li"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>LinkedIn</a><Link href="/employer/login"><button className="n-er">Employer Login</button></Link>
         </div>
       </nav>
 

@@ -62,6 +62,8 @@ export default function EmployeeLogin() {
         @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
         @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
         .pg{min-height:100vh;display:grid;grid-template-columns:1fr 1fr}
+
+        /* LEFT */
         .lft{background:#ecf0e8;border-right:1px solid #d4dfd0;display:flex;flex-direction:column;padding:2.5rem 3rem;position:relative;overflow:hidden}
         .lft::before{content:'';position:absolute;top:-80px;right:-80px;width:320px;height:320px;border-radius:50%;background:rgba(45,106,79,.07);pointer-events:none}
         .lft::after{content:'';position:absolute;bottom:-60px;left:-40px;width:240px;height:240px;border-radius:50%;background:rgba(45,106,79,.04);pointer-events:none}
@@ -92,56 +94,59 @@ export default function EmployeeLogin() {
         .lft-ft-links{display:flex;gap:1rem}
         .lft-ft-link{font-size:.68rem;color:#8fb89a;text-decoration:none;transition:color .15s}
         .lft-ft-link:hover{color:#2d6a4f}
-        .rgt{background:#f5f2ee;display:flex;align-items:center;justify-content:center;padding:3rem 2.5rem}
+
+        /* RIGHT — white background, high contrast */
+        .rgt{background:#fff;display:flex;align-items:center;justify-content:center;padding:3rem 2.5rem;border-left:1px solid #e8e2da}
         .form-wrap{width:100%;max-width:400px;animation:fadeUp .5s ease both}
-        .form-back{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#b8b3c2;margin-bottom:2rem;cursor:pointer;text-decoration:none;transition:color .15s}
+        .form-back{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#6b6258;margin-bottom:2rem;cursor:pointer;text-decoration:none;transition:color .15s}
         .form-back:hover{color:#2d6a4f}
         .form-ey{font-size:.64rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#2d6a4f;margin-bottom:6px}
-        .fhd{font-family:'Cormorant Garamond',serif;font-size:1.85rem;font-weight:500;color:#18151f;letter-spacing:-.3px;margin-bottom:4px;line-height:1.15}
-        .fsb{font-size:.83rem;color:#b8b3c2;margin-bottom:1.75rem}
-        .tabs{display:flex;background:#ede9e4;border:1.5px solid #c8c2b8;border-radius:9px;padding:3px;gap:3px;margin-bottom:1.4rem}
-        .tab{flex:1;padding:7px;border:none;border-radius:7px;font-family:inherit;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:#b8b3c2}
+        .fhd{font-family:'Cormorant Garamond',serif;font-size:1.85rem;font-weight:500;color:#111;letter-spacing:-.3px;margin-bottom:4px;line-height:1.15}
+        .fsb{font-size:.83rem;color:#6b6258;margin-bottom:1.75rem}
+        .tabs{display:flex;background:#f0ece6;border:1.5px solid #c8c2b8;border-radius:9px;padding:3px;gap:3px;margin-bottom:1.4rem}
+        .tab{flex:1;padding:7px;border:none;border-radius:7px;font-family:inherit;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:#7a6e64}
         .tab.on{background:#fff;color:#111;border:1.5px solid #c8c2b8;box-shadow:0 1px 4px rgba(0,0,0,.08)}
         .fld{display:flex;flex-direction:column;gap:.35rem;margin-bottom:.9rem}
-        .flb{font-size:.67rem;font-weight:700;color:#7a7386;letter-spacing:.4px;text-transform:uppercase}
+        .flb{font-size:.67rem;font-weight:700;color:#3d3530;letter-spacing:.4px;text-transform:uppercase}
         .flb span{color:#2d6a4f}
-        .fin{padding:.78rem 1rem;background:#fff;border:1.5px solid #c8c2b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.875rem;color:#18151f;outline:none;width:100%;transition:all .15s}
-        .fin::placeholder{color:#d8d4e3}
-        .fin:focus{border-color:#2d6a4f;background:#fff;box-shadow:0 0 0 3px rgba(45,106,79,.07)}
+        .fin{padding:.78rem 1rem;background:#faf8f5;border:1.5px solid #b8b0a8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.875rem;color:#111;outline:none;width:100%;transition:all .15s}
+        .fin::placeholder{color:#a09890}
+        .fin:focus{border-color:#2d6a4f;background:#fff;box-shadow:0 0 0 3px rgba(45,106,79,.1)}
         .pw-wrap{position:relative}
         .pw-wrap .fin{padding-right:2.75rem}
-        .ey{position:absolute;right:.85rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#d8d4e3;padding:0;transition:color .15s}
-        .ey:hover{color:#7a7386}
-        .hint{font-size:.67rem;color:#d8d4e3;margin-top:2px}
+        .ey{position:absolute;right:.85rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#a09890;padding:0;transition:color .15s}
+        .ey:hover{color:#3d3530}
+        .hint{font-size:.67rem;color:#7a6e64;margin-top:2px}
         .err{font-size:.78rem;color:#b91c1c;padding:.6rem .9rem;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;margin-bottom:.75rem}
         .inf{font-size:.78rem;color:#2d6a4f;padding:.6rem .9rem;background:#f0f9f4;border:1px solid #c5d9c5;border-radius:8px;margin-bottom:.75rem}
-        .terms-row{display:flex;align-items:flex-start;gap:.6rem;margin-bottom:.9rem;padding:.75rem .9rem;background:#f8f7fa;border:1.5px solid #ede9f5;border-radius:9px;cursor:pointer}
-        .terms-row:hover{border-color:#c5d9c5;background:#f0f9f4}
-        .terms-cb{width:16px;height:16px;border-radius:4px;border:1.5px solid #c8c2b8;background:#fff;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+        .terms-row{display:flex;align-items:flex-start;gap:.6rem;margin-bottom:.9rem;padding:.75rem .9rem;background:#f5f2ee;border:1.5px solid #c8c2b8;border-radius:9px;cursor:pointer}
+        .terms-row:hover{border-color:#2d6a4f;background:#f0f9f4}
+        .terms-cb{width:16px;height:16px;border-radius:4px;border:1.5px solid #a09890;background:#fff;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .15s}
         .terms-cb.checked{background:#2d6a4f;border-color:#2d6a4f}
         .terms-cb.checked::after{content:'✓';font-size:9px;color:#fff;font-weight:700}
-        .terms-txt{font-size:.75rem;color:#7a7386;line-height:1.6}
+        .terms-txt{font-size:.75rem;color:#3d3530;line-height:1.6}
         .terms-txt a{color:#2d6a4f;font-weight:600;text-decoration:none}
         .terms-txt a:hover{text-decoration:underline}
-        .submit{padding:.88rem;background:#0d6e6e;color:#fff;border:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .15s;width:100%;margin-bottom:.75rem;box-shadow:0 4px 16px rgba(45,106,79,.22)}
-        .submit:hover:not(:disabled){background:#235c40;transform:translateY(-1px)}
+        .submit{padding:.88rem;background:#0d6e6e;color:#fff;border:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .15s;width:100%;margin-bottom:.75rem;box-shadow:0 4px 16px rgba(13,110,110,.25)}
+        .submit:hover:not(:disabled){background:#0a5656;transform:translateY(-1px)}
         .submit:disabled{opacity:.45;cursor:not-allowed;transform:none}
         .form-link-row{text-align:center;margin-bottom:.75rem}
-        .form-link{font-size:.78rem;color:#b8b3c2;background:none;border:none;cursor:pointer;font-family:inherit;transition:color .15s;padding:0}
+        .form-link{font-size:.78rem;color:#6b6258;background:none;border:none;cursor:pointer;font-family:inherit;transition:color .15s;padding:0}
         .form-link:hover{color:#2d6a4f}
         .dvr{display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem}
-        .dvl{flex:1;height:1px;background:#f2f0f5}
-        .dvt{font-size:.68rem;color:#d8d4e3}
-        .toggle{text-align:center;font-size:.83rem;color:#b8b3c2;margin-bottom:1rem}
+        .dvl{flex:1;height:1px;background:#e0dbd4}
+        .dvt{font-size:.68rem;color:#a09890}
+        .toggle{text-align:center;font-size:.83rem;color:#6b6258;margin-bottom:1rem}
         .toggle-btn{color:#2d6a4f;cursor:pointer;font-weight:700;background:none;border:none;font-family:inherit;font-size:inherit;padding:0}
         .toggle-btn:hover{text-decoration:underline}
-        .trust-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;border-top:1px solid #f2f0f5;padding-top:1rem;margin-bottom:.75rem}
-        .trust-item{display:flex;align-items:center;gap:5px;font-size:10.5px;color:#b8b3c2}
-        .trust-ck{width:14px;height:14px;border-radius:3px;background:#f0f9f4;border:1px solid #c5d9c5;display:flex;align-items:center;justify-content:center;font-size:8px;color:#2d6a4f;flex-shrink:0}
+        .trust-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;border-top:1px solid #e0dbd4;padding-top:1rem;margin-bottom:.75rem}
+        .trust-item{display:flex;align-items:center;gap:5px;font-size:10.5px;color:#6b6258}
+        .trust-ck{width:14px;height:14px;border-radius:3px;background:#e8f5ee;border:1px solid #c5d9c5;display:flex;align-items:center;justify-content:center;font-size:8px;color:#2d6a4f;flex-shrink:0}
         .footer-row{display:flex;justify-content:center;gap:16px}
-        .footer-lk{font-size:.67rem;color:#d8d4e3;text-decoration:none;transition:color .15s}
+        .footer-lk{font-size:.67rem;color:#a09890;text-decoration:none;transition:color .15s}
         .footer-lk:hover{color:#2d6a4f}
-        @media(max-width:900px){.pg{grid-template-columns:1fr}.lft{display:none}.rgt{padding:3rem 1.5rem;min-height:100vh}}
+
+        @media(max-width:900px){.pg{grid-template-columns:1fr}.lft{display:none}.rgt{padding:3rem 1.5rem;min-height:100vh;border-left:none}}
       `}</style>
 
       <div className="pg">
@@ -152,7 +157,6 @@ export default function EmployeeLogin() {
             </div>
             <div><div className="lft-logo-name">Datagate</div><div className="lft-logo-sub">Verified Employment</div></div>
           </Link>
-
           <div className="lft-body">
             <div className="badge">Employee Portal</div>
             <h2 className="lft-h">Your career data,<br/><em>your control.</em></h2>
@@ -171,7 +175,6 @@ export default function EmployeeLogin() {
               ))}
             </div>
           </div>
-
           <div className="lft-ft">
             <span className="lft-ft-copy">© 2026 Datagate</span>
             <div className="lft-ft-links">
@@ -248,7 +251,6 @@ export default function EmployeeLogin() {
                 <div className="trust-item" key={t}><div className="trust-ck">✓</div>{t}</div>
               ))}
             </div>
-
             <div className="footer-row">
               <a href="/privacy" className="footer-lk">Privacy Policy</a>
               <a href="/employee/terms" className="footer-lk">Employee Terms</a>
