@@ -39,6 +39,13 @@ const Chk = ({size=9,col="#0d6e6e"}) => <svg width={size} height={size} viewBox=
 const Arr = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>;
 const X = () => <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
 
+const LinkedInIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+    <rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/>
+  </svg>
+);
+
 const scroll = (id) => document.getElementById(id)?.scrollIntoView({behavior:"smooth",block:"start"});
 
 export default function Home() {
@@ -60,14 +67,8 @@ export default function Home() {
         .f3{animation:fadeUp .6s .2s ease both}
         .f4{animation:fadeUp .6s .3s ease both}
 
-        /* ─── NAV ─── */
-        .nav{
-          position:fixed;top:0;left:0;right:0;z-index:100;
-          height:60px;padding:0 52px;
-          display:flex;align-items:center;justify-content:space-between;
-          background:rgba(245,242,238,.96);backdrop-filter:blur(20px);
-          border-bottom:1px solid #d8d2c8;
-        }
+        /* NAV */
+        .nav{position:fixed;top:0;left:0;right:0;z-index:100;height:60px;padding:0 52px;display:flex;align-items:center;justify-content:space-between;background:rgba(245,242,238,.96);backdrop-filter:blur(20px);border-bottom:1px solid #d8d2c8}
         .nav-links{display:flex;gap:2px}
         .nav-lk{font-size:13px;font-weight:500;color:#5a5248;padding:6px 14px;border-radius:6px;border:none;background:none;cursor:pointer;transition:all .15s}
         .nav-lk:hover{color:#0d6e6e;background:rgba(13,110,110,.08)}
@@ -77,66 +78,30 @@ export default function Home() {
         .n-er{padding:7px 20px;border-radius:7px;background:#0d6e6e;color:#fff;font-size:13px;font-weight:700;border:none;cursor:pointer;transition:all .15s;box-shadow:0 2px 8px rgba(13,110,110,.3)}
         .n-er:hover{background:#0a5656}
 
-        /* ─── TICKER ─── */
+        /* TICKER */
         .ticker{background:#0d6e6e;overflow:hidden;height:38px;display:flex;align-items:center;margin-top:60px}
         .ticker-track{display:flex;white-space:nowrap;animation:ticker 38s linear infinite;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.75)}
         .ti{padding:0 28px;display:flex;align-items:center;gap:10px}
         .ti-dot{color:rgba(255,255,255,.4);font-size:7px}
 
-        /* ─── HERO ─── */
-        .hero{
-          background:#f5f2ee;
-          padding:72px 52px 80px;
-          max-width:1200px;margin:0 auto;
-          display:grid;grid-template-columns:1fr 440px;gap:72px;align-items:center;
-        }
-        .tag{
-          display:inline-flex;align-items:center;gap:6px;
-          padding:5px 14px;border-radius:100px;
-          background:#e0f0ee;border:1px solid #a8d5ce;
-          font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#0d6e6e;
-          margin-bottom:22px;
-        }
+        /* HERO */
+        .hero{background:#f5f2ee;padding:72px 52px 80px;max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr 440px;gap:72px;align-items:center}
+        .tag{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:100px;background:#e0f0ee;border:1px solid #a8d5ce;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#0d6e6e;margin-bottom:22px}
         .tag-dot{width:5px;height:5px;border-radius:50%;background:#0d6e6e;animation:blink 2s ease-in-out infinite}
-        .h1{
-          font-family:'Cormorant Garamond',serif;
-          font-size:clamp(3.2rem,5vw,5.5rem);
-          font-weight:500;line-height:1.04;
-          color:#111;letter-spacing:-2px;margin-bottom:22px;
-        }
+        .h1{font-family:'Cormorant Garamond',serif;font-size:clamp(3.2rem,5vw,5.5rem);font-weight:500;line-height:1.04;color:#111;letter-spacing:-2px;margin-bottom:22px}
         .h1 em{font-style:italic;color:#0d6e6e}
         .hero-p{font-size:15.5px;color:#6b6258;line-height:1.85;max-width:460px;margin-bottom:32px}
-        .btns{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:28px}
-        .btn-p{
-          padding:14px 28px;background:#0d6e6e;color:#fff;
-          font-size:14px;font-weight:700;border:none;border-radius:8px;
-          display:inline-flex;align-items:center;gap:8px;cursor:pointer;transition:all .2s;
-          box-shadow:0 4px 20px rgba(13,110,110,.35),0 1px 4px rgba(13,110,110,.2);
-        }
+        .btns{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:32px}
+        .btn-p{padding:14px 28px;background:#0d6e6e;color:#fff;font-size:14px;font-weight:700;border:none;border-radius:8px;display:inline-flex;align-items:center;gap:8px;cursor:pointer;transition:all .2s;box-shadow:0 4px 20px rgba(13,110,110,.35)}
         .btn-p:hover{background:#0a5656;transform:translateY(-2px);box-shadow:0 8px 32px rgba(13,110,110,.4)}
-        .btn-s{
-          padding:14px 24px;background:transparent;color:#111;
-          font-size:14px;font-weight:600;
-          border:1.5px solid #c8c2b8;border-radius:8px;cursor:pointer;transition:all .2s;
-        }
+        .btn-s{padding:14px 24px;background:transparent;color:#111;font-size:14px;font-weight:600;border:1.5px solid #c8c2b8;border-radius:8px;cursor:pointer;transition:all .2s}
         .btn-s:hover{border-color:#0d6e6e;color:#0d6e6e}
-        .sp{display:flex;align-items:center;gap:12px;margin-bottom:24px}
-        .sp-avs{display:flex}
-        .sp-av{width:30px;height:30px;border-radius:50%;border:2px solid #f5f2ee;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;margin-left:-7px}
-        .sp-av:first-child{margin-left:0}
-        .sp-text{font-size:12px;color:#7a6e64;line-height:1.5}
-        .sp-text strong{color:#111;font-weight:700}
         .trust-pills{display:flex;gap:6px;flex-wrap:wrap}
         .t-pill{display:flex;align-items:center;gap:5px;padding:4px 10px;background:rgba(13,110,110,.07);border:1px solid rgba(13,110,110,.18);border-radius:100px;font-size:11px;font-weight:500;color:#0d6e6e}
         .t-dot{width:4px;height:4px;border-radius:50%;background:#0d6e6e}
 
-        /* ─── HERO CARD ─── */
-        .hero-card{
-          background:#fff;
-          border:1.5px solid #d8d2c8;
-          border-radius:18px;overflow:hidden;
-          box-shadow:0 12px 48px rgba(17,13,10,.12),0 2px 8px rgba(17,13,10,.06);
-        }
+        /* HERO CARD */
+        .hero-card{background:#fff;border:1.5px solid #d8d2c8;border-radius:18px;overflow:hidden;box-shadow:0 12px 48px rgba(17,13,10,.12),0 2px 8px rgba(17,13,10,.06)}
         .hc-top{background:#111;padding:13px 18px;display:flex;align-items:center;justify-content:space-between}
         .hc-top-title{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.4)}
         .hc-live{display:flex;align-items:center;gap:5px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#4ade80}
@@ -162,7 +127,7 @@ export default function Home() {
         .hctr-k{color:#a09890}
         .hctr-v{color:#0d6e6e;font-weight:700}
 
-        /* ─── STATS BAND ─── */
+        /* STATS BAND */
         .stats-band{background:#111;border-top:1px solid #1e1a14}
         .stats-inner{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
         .sc{padding:32px 36px;border-right:1px solid #2a2520}
@@ -171,7 +136,7 @@ export default function Home() {
         .sc-num{font-family:'Cormorant Garamond',serif;font-size:48px;font-weight:500;color:#0d6e6e;line-height:1;letter-spacing:-2px;margin-bottom:5px}
         .sc-desc{font-size:13px;color:rgba(255,255,255,.5)}
 
-        /* ─── PROBLEM STRIP ─── */
+        /* PROBLEM */
         .prob-strip{background:#0a1a18;padding:64px 52px}
         .prob-inner{max-width:1200px;margin:0 auto}
         .prob-head{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;margin-bottom:48px}
@@ -189,7 +154,7 @@ export default function Home() {
         .th-dg{color:#0d6e6e!important;background:rgba(13,110,110,.12)!important}
         .td-dg{background:rgba(13,110,110,.05)}
 
-        /* ─── SECTIONS ─── */
+        /* SECTIONS */
         .sec-wrap{background:#f5f2ee;padding:88px 52px;border-top:1px solid #ddd8d0}
         .sec-inner{max-width:1200px;margin:0 auto}
         .sec-alt{background:#fff}
@@ -197,7 +162,7 @@ export default function Home() {
         .lbl::before{content:'';width:18px;height:1.5px;background:#0d6e6e}
         .sec-h{font-family:'Cormorant Garamond',serif;font-size:clamp(2.2rem,3vw,3.2rem);font-weight:500;color:#111;letter-spacing:-.5px;line-height:1.12;margin-bottom:52px}
 
-        /* ─── STEPS ─── */
+        /* STEPS */
         .steps-grid{display:grid;grid-template-columns:repeat(3,1fr);border:1.5px solid #c8c2b8;border-radius:16px;overflow:hidden;background:#c8c2b8;gap:1px}
         .step-card{background:#fff;padding:40px 32px;transition:all .2s;position:relative}
         .step-card:hover{background:#f0ece6}
@@ -207,7 +172,7 @@ export default function Home() {
         .step-t{font-size:16px;font-weight:700;color:#111;margin-bottom:10px;letter-spacing:-.2px}
         .step-d{font-size:13px;color:#7a6e64;line-height:1.75}
 
-        /* ─── FEATURES ─── */
+        /* FEATURES */
         .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);border:1.5px solid #c8c2b8;border-radius:16px;overflow:hidden;background:#c8c2b8;gap:1px;margin-top:52px}
         .fc{background:#faf8f5;padding:32px 26px;transition:all .2s}
         .fc:hover{background:#fff}
@@ -215,12 +180,9 @@ export default function Home() {
         .ft{font-size:14px;font-weight:700;color:#111;margin-bottom:7px;letter-spacing:-.2px}
         .fd{font-size:13px;color:#7a6e64;line-height:1.75}
 
-        /* ─── FOR WHO ─── */
+        /* FOR WHO */
         .for-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-        .for-card{
-          border:1.5px solid #c8c2b8;border-radius:16px;padding:40px;
-          background:#fff;position:relative;overflow:hidden;transition:all .22s;
-        }
+        .for-card{border:1.5px solid #c8c2b8;border-radius:16px;padding:40px;background:#fff;position:relative;overflow:hidden;transition:all .22s}
         .for-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:#0d6e6e;transform:scaleX(0);transform-origin:left;transition:transform .25s}
         .for-card:hover{border-color:#0d6e6e;box-shadow:0 12px 48px rgba(13,110,110,.12)}
         .for-card:hover::before{transform:scaleX(1)}
@@ -234,7 +196,7 @@ export default function Home() {
         .btn-for{display:inline-flex;align-items:center;gap:7px;padding:11px 22px;background:#111;color:#fff;font-size:13.5px;font-weight:700;border:none;border-radius:8px;cursor:pointer;transition:all .18s}
         .btn-for:hover{background:#0d6e6e;gap:10px}
 
-        /* ─── TRUST DARK ─── */
+        /* TRUST */
         .trust-section{background:#111;padding:80px 52px;border-top:1px solid #1e1a14}
         .trust-inner{max-width:1200px;margin:0 auto}
         .trust-lbl{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#0d6e6e;display:flex;align-items:center;gap:7px;margin-bottom:10px}
@@ -249,31 +211,39 @@ export default function Home() {
         .tc-t{font-size:14px;font-weight:700;color:#f5f2ee;margin-bottom:7px;letter-spacing:-.2px}
         .tc-d{font-size:12.5px;color:rgba(255,255,255,.38);line-height:1.75}
 
-        /* ─── FOOTER ─── */
-        footer{
-          background:#1a1510;border-top:1px solid #2a2520;
-          padding:44px 52px;
-          display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:28px;
-        }
-        .f-copy{font-size:11.5px;color:rgba(255,255,255,.25);margin-top:8px}
+        /* FOOTER */
+        footer{background:#1a1510;border-top:1px solid #2a2520;padding:52px 52px 40px}
+        .f-top{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:40px;margin-bottom:40px;padding-bottom:40px;border-bottom:1px solid rgba(255,255,255,.08)}
+        .f-brand{max-width:280px}
+        .f-tagline{font-size:13px;color:rgba(255,255,255,.4);line-height:1.7;margin-top:14px}
+        .f-social{display:flex;gap:10px;margin-top:18px}
+        .f-social-lk{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid rgba(255,255,255,.12);border-radius:7px;font-size:12px;font-weight:600;color:rgba(255,255,255,.5);text-decoration:none;transition:all .15s}
+        .f-social-lk:hover{border-color:#0d6e6e;color:#0d6e6e;background:rgba(13,110,110,.08)}
         .f-links-grid{display:flex;gap:52px;flex-wrap:wrap}
         .f-col-title{font-size:9.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:14px}
-        .f-links{display:flex;flex-direction:column;gap:8px}
-        .f-lk{font-size:13px;color:rgba(255,255,255,.45);font-weight:500;transition:color .15s}
+        .f-links{display:flex;flex-direction:column;gap:9px}
+        .f-lk{font-size:13px;color:rgba(255,255,255,.45);font-weight:500;transition:color .15s;text-decoration:none}
         .f-lk:hover{color:#0d6e6e}
+        .f-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+        .f-copy{font-size:11.5px;color:rgba(255,255,255,.2)}
+        .f-legal{display:flex;gap:20px}
+        .f-legal-lk{font-size:11px;color:rgba(255,255,255,.2);text-decoration:none;transition:color .15s}
+        .f-legal-lk:hover{color:rgba(255,255,255,.5)}
 
         @media(max-width:1024px){
-          .nav,.hero,.prob-strip,.trust-section,footer{padding-left:24px;padding-right:24px}
+          .nav,.prob-strip,.trust-section{padding-left:24px;padding-right:24px}
+          .hero{padding:48px 24px 64px;grid-template-columns:1fr;gap:40px}
           .sec-wrap{padding:64px 24px}
-          .hero{grid-template-columns:1fr;gap:40px;padding-top:48px}
+          footer{padding:40px 24px 32px}
           .stats-inner{grid-template-columns:repeat(2,1fr)}
           .steps-grid,.feat-grid,.for-grid,.trust-grid{grid-template-columns:1fr}
           .prob-head{grid-template-columns:1fr}
           .nav-links{display:none}
+          .f-top{flex-direction:column}
         }
       `}</style>
 
-      {/* ─── NAV ─── */}
+      {/* NAV */}
       <nav className="nav">
         <Logo />
         <div className="nav-links">
@@ -288,12 +258,12 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* ─── TICKER ─── */}
+      {/* TICKER */}
       <div className="ticker">
         <div className="ticker-track">
           {[...Array(2)].map((_,i)=>(
             <span key={i} style={{display:"flex"}}>
-              {["DPDP Act 2023 Compliant","Consent-first architecture","Zero document chasing","Instant BGV on approval","Employee-controlled access","EPFO-linked verification","Full audit trail","No data sold ever","ISO-grade security","Background verification simplified"].map((t,j)=>(
+              {["DPDP Act 2023 Compliant","Consent-first architecture","Zero document chasing","Instant BGV on approval","Employee-controlled access","EPFO-linked verification","Full audit trail","No data sold ever","Background verification simplified","Built for India"].map((t,j)=>(
                 <span className="ti" key={j}><span className="ti-dot">●</span>{t}</span>
               ))}
             </span>
@@ -301,7 +271,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ─── HERO ─── */}
+      {/* HERO */}
       <section className="hero">
         <div>
           <div className="tag f1"><span className="tag-dot"/>Consent-based employment verification</div>
@@ -310,14 +280,6 @@ export default function Home() {
           <div className="btns f4">
             <Link href="/employee/login"><button className="btn-p">Create employee profile <Arr/></button></Link>
             <Link href="/employer/login"><button className="btn-s">Employer portal</button></Link>
-          </div>
-          <div className="sp f4">
-            <div className="sp-avs">
-              {[["#0d6e6e","AR"],["#2d6a4f","PS"],["#111","KM"],["#5a4030","DV"]].map(([bg,init])=>(
-                <div key={init} className="sp-av" style={{background:bg}}>{init}</div>
-              ))}
-            </div>
-            <div className="sp-text"><strong>2,400+ employees</strong> have built verified profiles.<br/>Trusted by hiring teams across India.</div>
           </div>
           <div className="trust-pills f4">
             {["DPDP Act 2023","End-to-end encrypted","No data sold","Consent-first","EPFO-linked"].map(t=>(
@@ -354,16 +316,16 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── STATS BAND dark ─── */}
+      {/* STATS BAND */}
       <div className="stats-band">
         <div className="stats-inner">
-          {[["2,400+","Verified employee profiles"],["1-click","Consent request sent"],["Instant","Data on employer approval"],["100%","Employee-consented sharing"]].map(([n,l])=>(
-            <div className="sc" key={l}><div className="sc-ey">Platform metric</div><div className="sc-num">{n}</div><div className="sc-desc">{l}</div></div>
+          {[["Consent-first","Architecture, not an afterthought"],["1-click","Consent request sent"],["Instant","Data on employer approval"],["100%","Employee-consented sharing"]].map(([n,l])=>(
+            <div className="sc" key={l}><div className="sc-ey">Platform principle</div><div className="sc-num" style={{fontSize:"clamp(1.6rem,3vw,2.8rem)",letterSpacing:"-1px"}}>{n}</div><div className="sc-desc">{l}</div></div>
           ))}
         </div>
       </div>
 
-      {/* ─── PROBLEM / COMPARE dark ─── */}
+      {/* PROBLEM */}
       <div className="prob-strip" id="for-employers">
         <div className="prob-inner">
           <div className="prob-head">
@@ -401,7 +363,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ─── HOW IT WORKS ─── */}
+      {/* HOW IT WORKS */}
       <div className="sec-wrap" id="how-it-works">
         <div className="sec-inner">
           <div className="lbl">How it works</div>
@@ -422,7 +384,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ─── FEATURES ─── */}
+      {/* FEATURES */}
       <div className="sec-wrap sec-alt" id="features">
         <div className="sec-inner">
           <div className="lbl">Platform capabilities</div>
@@ -431,9 +393,9 @@ export default function Home() {
             {[["🔐","Consent on every share","No employer sees your data without your explicit approval. Every access is logged with timestamp and stated purpose."],
               ["📄","Complete BGV coverage","Aadhaar, PAN, education records, employment history, UAN and PF — all structured in one verified profile."],
               ["⚡","Instant for returning users","Profile built once. Every future employer gets your verified data the moment you approve — zero repeat paperwork."],
-              ["🛡️","Secure document storage","All documents encrypted and stored securely. Only you control who gets access and when it expires."],
+              ["🛡️","Secure document storage","All documents encrypted and stored securely on AWS infrastructure in India. Only you control who gets access."],
               ["🔗","EPFO-linked records","Employment history sourced from EPFO — not self-reported. Independently verified at the source."],
-              ["📱","Works on any device","Complete your full profile from any phone or computer. No app download required ever."]
+              ["📱","Works on any device","Complete your full profile from any phone or computer. No app download required."]
             ].map(([icon,t,d])=>(
               <div className="fc" key={t}><div className="fi">{icon}</div><div className="ft">{t}</div><div className="fd">{d}</div></div>
             ))}
@@ -441,14 +403,14 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ─── FOR WHO ─── */}
+      {/* FOR WHO */}
       <div className="sec-wrap">
         <div className="sec-inner">
           <div className="lbl">Who it's for</div>
           <div className="sec-h">Built for both<br/>sides of hiring</div>
           <div className="for-grid">
             {[
-              {ey:"For Individuals",t:"Tired of filling the same forms for every employer?",d:"Build your verified employment profile once. Share it with any company, any time. You stay in full control of who sees what, always.",pts:["Fill details once — personal, education, employment","Approve or decline every employer request individually","See exactly who accessed your data and when"],href:"/employee/login",cta:"Create your profile"},
+              {ey:"For Individuals",t:"Tired of filling the same forms for every employer?",d:"Build your verified employment profile once. Share it with any company, any time. You stay in full control of who sees what — always.",pts:["Fill details once — personal, education, employment","Approve or decline every employer request individually","See exactly who accessed your data and when"],href:"/employee/login",cta:"Create your profile"},
               {ey:"For Organisations",t:"Verified candidate data without the paperwork chase?",d:"Stop chasing candidates for documents. Request access to a pre-built verified profile and receive structured data the moment they approve.",pts:["Send a consent request in one click","Receive structured BGV and onboarding data instantly","Full consent audit trail for every data access"],href:"/employer/login",cta:"Access employer portal"},
             ].map(card=>(
               <div className="for-card" key={card.ey}>
@@ -463,7 +425,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ─── TRUST dark ─── */}
+      {/* TRUST */}
       <div className="trust-section">
         <div className="trust-inner">
           <div className="trust-lbl">Security &amp; compliance</div>
@@ -480,17 +442,60 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ─── FOOTER dark ─── */}
+      {/* FOOTER */}
       <footer>
-        <div>
-          <Logo variant="light"/>
-          <div className="f-copy">© 2026 Datagate Technologies. All rights reserved.</div>
+        <div className="f-top">
+          <div className="f-brand">
+            <Logo variant="light"/>
+            <p className="f-tagline">Consent-based employment verification for India. Built on the DPDP Act 2023. Your data, your control — always.</p>
+            <div className="f-social">
+              <a href="https://www.linkedin.com/company/datagate-technologies" target="_blank" rel="noopener noreferrer" className="f-social-lk">
+                <LinkedInIcon /> LinkedIn
+              </a>
+            </div>
+          </div>
+          <div className="f-links-grid">
+            <div>
+              <div className="f-col-title">Platform</div>
+              <div className="f-links">
+                <Link href="/employee/login" className="f-lk">Employee login</Link>
+                <Link href="/employer/login" className="f-lk">Employer portal</Link>
+                <Link href="/bgv/login" className="f-lk">BGV vendor portal</Link>
+              </div>
+            </div>
+            <div>
+              <div className="f-col-title">Company</div>
+              <div className="f-links">
+                <a href="#how-it-works" className="f-lk" onClick={e=>{e.preventDefault();scroll("how-it-works")}}>How it works</a>
+                <a href="#features" className="f-lk" onClick={e=>{e.preventDefault();scroll("features")}}>Features</a>
+                <a href="https://www.linkedin.com/company/datagate-technologies" target="_blank" rel="noopener noreferrer" className="f-lk">LinkedIn</a>
+              </div>
+            </div>
+            <div>
+              <div className="f-col-title">Legal</div>
+              <div className="f-links">
+                <Link href="/privacy" className="f-lk">Privacy Policy</Link>
+                <Link href="/employer/terms" className="f-lk">Employer Terms</Link>
+                <Link href="/employee/terms" className="f-lk">Employee Terms</Link>
+                <Link href="/bgv/terms" className="f-lk">BGV Vendor Terms</Link>
+              </div>
+            </div>
+            <div>
+              <div className="f-col-title">Support</div>
+              <div className="f-links">
+                <a href="mailto:support@datagate.co.in" className="f-lk">support@datagate.co.in</a>
+                <a href="mailto:grievance@datagate.co.in" className="f-lk">Grievance Officer</a>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="f-links-grid">
-          <div><div className="f-col-title">Platform</div><div className="f-links"><Link href="/employee/login" className="f-lk">Employee login</Link><Link href="/employer/login" className="f-lk">Employer portal</Link></div></div>
-          <div><div className="f-col-title">Company</div><div className="f-links"><a href="#how-it-works" className="f-lk" onClick={e=>{e.preventDefault();scroll("how-it-works")}}>How it works</a><a href="#features" className="f-lk" onClick={e=>{e.preventDefault();scroll("features")}}>Features</a></div></div>
-          <div><div className="f-col-title">Legal</div><div className="f-links"><Link href="/privacy" className="f-lk">Privacy Policy</Link><Link href="/employer/terms" className="f-lk">Employer Terms</Link></div></div>
-          <div><div className="f-col-title">Support</div><div className="f-links"><a href="mailto:support@datagate.co.in" className="f-lk">support@datagate.co.in</a></div></div>
+        <div className="f-bottom">
+          <span className="f-copy">© 2026 Datagate. All rights reserved. Data stored in India (AWS Mumbai).</span>
+          <div className="f-legal">
+            <Link href="/privacy" className="f-legal-lk">Privacy Policy</Link>
+            <Link href="/employer/terms" className="f-legal-lk">Terms</Link>
+            <a href="mailto:grievance@datagate.co.in" className="f-legal-lk">Grievance</a>
+          </div>
         </div>
       </footer>
     </>

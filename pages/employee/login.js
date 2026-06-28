@@ -19,7 +19,7 @@ export default function EmployeeLogin() {
   const [showPwd,     setShowPwd]     = useState(false);
   const [name,        setName]        = useState("");
   const [phone,       setPhone]       = useState("");
-  const [termsAgreed, setTermsAgreed] = useState(false); // ← NEW
+  const [termsAgreed, setTermsAgreed] = useState(false);
   const [error,       setError]       = useState("");
   const [info,        setInfo]        = useState("");
   const [loading,     setLoading]     = useState(false);
@@ -38,7 +38,6 @@ export default function EmployeeLogin() {
         setInfo("Reset link sent — check your email."); return;
       }
       if (mode === "signup" && phone.length !== 10) { setError("Phone must be 10 digits"); return; }
-      // ← NEW: block signup if terms not accepted
       if (mode === "signup" && !termsAgreed) { setError("Please accept the Terms of Service and Privacy Policy to continue."); return; }
       const body = mode === "signup"
         ? {email, password, name, phone, role:"employee", terms_accepted_at: new Date().toISOString()}
@@ -62,66 +61,47 @@ export default function EmployeeLogin() {
         a{text-decoration:none;color:inherit}
         @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
         @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
-
         .pg{min-height:100vh;display:grid;grid-template-columns:1fr 1fr}
-
-        .lft{
-          background:#ecf0e8;
-          border-right:1px solid #d4dfd0;
-          display:flex;flex-direction:column;
-          padding:2.5rem 3rem;
-          position:relative;overflow:hidden;
-        }
+        .lft{background:#ecf0e8;border-right:1px solid #d4dfd0;display:flex;flex-direction:column;padding:2.5rem 3rem;position:relative;overflow:hidden}
         .lft::before{content:'';position:absolute;top:-80px;right:-80px;width:320px;height:320px;border-radius:50%;background:rgba(45,106,79,.07);pointer-events:none}
         .lft::after{content:'';position:absolute;bottom:-60px;left:-40px;width:240px;height:240px;border-radius:50%;background:rgba(45,106,79,.04);pointer-events:none}
-
         .lft-logo{display:inline-flex;align-items:center;gap:9px;text-decoration:none;position:relative;z-index:1}
         .lft-logo-icon{width:34px;height:34px;border-radius:8px;background:#1c3a28;display:flex;align-items:center;justify-content:center}
         .lft-logo-name{font-family:'DM Sans',sans-serif;font-weight:700;font-size:14px;color:#1c3a28;letter-spacing:-.3px;line-height:1}
         .lft-logo-sub{font-family:'DM Sans',sans-serif;font-weight:600;font-size:6.5px;color:#2d6a4f;letter-spacing:2px;text-transform:uppercase;margin-top:3px}
-
         .lft-body{flex:1;display:flex;flex-direction:column;justify-content:center;padding:2.5rem 0;position:relative;z-index:1}
         .badge{display:inline-flex;align-items:center;gap:.45rem;font-size:.64rem;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#2d6a4f;margin-bottom:1.4rem}
         .badge::before{content:'';width:16px;height:1.5px;background:#2d6a4f}
         .lft-h{font-family:'Cormorant Garamond',serif;font-size:clamp(1.9rem,2.8vw,2.7rem);font-weight:500;line-height:1.12;color:#1c3a28;letter-spacing:-.3px;margin-bottom:.9rem}
         .lft-h em{font-style:italic;color:#2d6a4f}
         .lft-p{font-size:.875rem;color:#4a7c59;line-height:1.8;margin-bottom:2rem;max-width:340px}
-
         .steps{display:flex;flex-direction:column;gap:1rem;margin-bottom:2rem}
         .step{display:flex;align-items:flex-start;gap:.85rem}
         .snum{width:26px;height:26px;border-radius:7px;flex-shrink:0;background:#fff;border:1.5px solid #c5d9c5;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:#2d6a4f}
         .stxt-t{font-size:.83rem;font-weight:700;color:#1c3a28;margin-bottom:1px}
         .stxt-d{font-size:.76rem;color:#6b9e7a;line-height:1.5}
-
         .chip{display:flex;align-items:center;gap:.5rem;background:#fff;border:1.5px solid #c5d9c5;border-radius:10px;padding:.7rem .9rem;margin-bottom:1.5rem}
         .chip-dot{width:7px;height:7px;border-radius:50%;background:#2d6a4f;flex-shrink:0;animation:blink 2s ease-in-out infinite}
         .chip span{font-size:.75rem;font-weight:600;color:#2d6a4f}
-
         .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
         .stat-box{background:#fff;border:1px solid #c5d9c5;border-radius:8px;padding:11px 13px}
         .stat-box-num{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;color:#2d6a4f;line-height:1;letter-spacing:-.5px;margin-bottom:3px}
         .stat-box-lbl{font-size:10px;color:#6b9e7a;font-weight:500;line-height:1.3}
-
         .lft-ft{padding-top:1.5rem;border-top:1px solid #c5d9c5;display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1}
         .lft-ft-copy{font-size:.68rem;color:#8fb89a}
         .lft-ft-links{display:flex;gap:1rem}
         .lft-ft-link{font-size:.68rem;color:#8fb89a;text-decoration:none;transition:color .15s}
         .lft-ft-link:hover{color:#2d6a4f}
-
         .rgt{background:#f5f2ee;display:flex;align-items:center;justify-content:center;padding:3rem 2.5rem}
         .form-wrap{width:100%;max-width:400px;animation:fadeUp .5s ease both}
-
         .form-back{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#b8b3c2;margin-bottom:2rem;cursor:pointer;text-decoration:none;transition:color .15s}
         .form-back:hover{color:#2d6a4f}
-
         .form-ey{font-size:.64rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#2d6a4f;margin-bottom:6px}
         .fhd{font-family:'Cormorant Garamond',serif;font-size:1.85rem;font-weight:500;color:#18151f;letter-spacing:-.3px;margin-bottom:4px;line-height:1.15}
         .fsb{font-size:.83rem;color:#b8b3c2;margin-bottom:1.75rem}
-
         .tabs{display:flex;background:#ede9e4;border:1.5px solid #c8c2b8;border-radius:9px;padding:3px;gap:3px;margin-bottom:1.4rem}
         .tab{flex:1;padding:7px;border:none;border-radius:7px;font-family:inherit;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:#b8b3c2}
         .tab.on{background:#fff;color:#111;border:1.5px solid #c8c2b8;box-shadow:0 1px 4px rgba(0,0,0,.08)}
-
         .fld{display:flex;flex-direction:column;gap:.35rem;margin-bottom:.9rem}
         .flb{font-size:.67rem;font-weight:700;color:#7a7386;letter-spacing:.4px;text-transform:uppercase}
         .flb span{color:#2d6a4f}
@@ -133,11 +113,8 @@ export default function EmployeeLogin() {
         .ey{position:absolute;right:.85rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#d8d4e3;padding:0;transition:color .15s}
         .ey:hover{color:#7a7386}
         .hint{font-size:.67rem;color:#d8d4e3;margin-top:2px}
-
         .err{font-size:.78rem;color:#b91c1c;padding:.6rem .9rem;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;margin-bottom:.75rem}
         .inf{font-size:.78rem;color:#2d6a4f;padding:.6rem .9rem;background:#f0f9f4;border:1px solid #c5d9c5;border-radius:8px;margin-bottom:.75rem}
-
-        /* ── Terms checkbox ── */
         .terms-row{display:flex;align-items:flex-start;gap:.6rem;margin-bottom:.9rem;padding:.75rem .9rem;background:#f8f7fa;border:1.5px solid #ede9f5;border-radius:9px;cursor:pointer}
         .terms-row:hover{border-color:#c5d9c5;background:#f0f9f4}
         .terms-cb{width:16px;height:16px;border-radius:4px;border:1.5px solid #c8c2b8;background:#fff;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .15s}
@@ -146,40 +123,28 @@ export default function EmployeeLogin() {
         .terms-txt{font-size:.75rem;color:#7a7386;line-height:1.6}
         .terms-txt a{color:#2d6a4f;font-weight:600;text-decoration:none}
         .terms-txt a:hover{text-decoration:underline}
-
         .submit{padding:.88rem;background:#0d6e6e;color:#fff;border:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .15s;width:100%;margin-bottom:.75rem;box-shadow:0 4px 16px rgba(45,106,79,.22)}
         .submit:hover:not(:disabled){background:#235c40;transform:translateY(-1px)}
         .submit:disabled{opacity:.45;cursor:not-allowed;transform:none}
-
         .form-link-row{text-align:center;margin-bottom:.75rem}
         .form-link{font-size:.78rem;color:#b8b3c2;background:none;border:none;cursor:pointer;font-family:inherit;transition:color .15s;padding:0}
         .form-link:hover{color:#2d6a4f}
-
         .dvr{display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem}
         .dvl{flex:1;height:1px;background:#f2f0f5}
         .dvt{font-size:.68rem;color:#d8d4e3}
-
         .toggle{text-align:center;font-size:.83rem;color:#b8b3c2;margin-bottom:1rem}
         .toggle-btn{color:#2d6a4f;cursor:pointer;font-weight:700;background:none;border:none;font-family:inherit;font-size:inherit;padding:0}
         .toggle-btn:hover{text-decoration:underline}
-
         .trust-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;border-top:1px solid #f2f0f5;padding-top:1rem;margin-bottom:.75rem}
         .trust-item{display:flex;align-items:center;gap:5px;font-size:10.5px;color:#b8b3c2}
         .trust-ck{width:14px;height:14px;border-radius:3px;background:#f0f9f4;border:1px solid #c5d9c5;display:flex;align-items:center;justify-content:center;font-size:8px;color:#2d6a4f;flex-shrink:0}
-
         .footer-row{display:flex;justify-content:center;gap:16px}
         .footer-lk{font-size:.67rem;color:#d8d4e3;text-decoration:none;transition:color .15s}
         .footer-lk:hover{color:#2d6a4f}
-
-        @media(max-width:900px){
-          .pg{grid-template-columns:1fr}
-          .lft{display:none}
-          .rgt{padding:3rem 1.5rem;min-height:100vh}
-        }
+        @media(max-width:900px){.pg{grid-template-columns:1fr}.lft{display:none}.rgt{padding:3rem 1.5rem;min-height:100vh}}
       `}</style>
 
       <div className="pg">
-        {/* LEFT */}
         <div className="lft">
           <Link href="/" className="lft-logo">
             <div className="lft-logo-icon">
@@ -192,7 +157,6 @@ export default function EmployeeLogin() {
             <div className="badge">Employee Portal</div>
             <h2 className="lft-h">Your career data,<br/><em>your control.</em></h2>
             <p className="lft-p">Build a verified employment profile once. Share it securely with any employer — with your consent, every single time.</p>
-
             <div className="steps">
               {[["1","Create your profile","Personal, education, employment — filled once, forever."],
                 ["2","Upload documents","Aadhaar, PAN, certificates — encrypted and stored."],
@@ -200,11 +164,9 @@ export default function EmployeeLogin() {
                 <div className="step" key={n}><div className="snum">{n}</div><div><div className="stxt-t">{t}</div><div className="stxt-d">{d}</div></div></div>
               ))}
             </div>
-
             <div className="chip"><div className="chip-dot"/><span>Data moves only after your explicit consent</span></div>
-
             <div className="stats-row">
-              {[["2,400+","Verified profiles"],["1-click","Consent requests"],["100%","Employee controlled"]].map(([n,l])=>(
+              {[["1-click","Consent requests"],["Instant","Data on approval"],["100%","You decide always"]].map(([n,l])=>(
                 <div className="stat-box" key={l}><div className="stat-box-num">{n}</div><div className="stat-box-lbl">{l}</div></div>
               ))}
             </div>
@@ -219,14 +181,12 @@ export default function EmployeeLogin() {
           </div>
         </div>
 
-        {/* RIGHT */}
         <div className="rgt">
           <div className="form-wrap">
             <Link href="/" className="form-back">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
               Back to Datagate
             </Link>
-
             <div className="form-ey">Employee Portal</div>
             <div className="fhd">{mode==="forgot"?"Reset password":mode==="signup"?"Create account":"Welcome back"}</div>
             <div className="fsb">{mode==="forgot"?"Enter your email and we'll send a reset link":mode==="signup"?"Start your verified employment journey":"Sign in to your account"}</div>
@@ -255,7 +215,6 @@ export default function EmployeeLogin() {
               </div>
             )}
 
-            {/* ── Terms checkbox — shown only on signup ── */}
             {mode==="signup" && (
               <div className="terms-row" onClick={()=>setTermsAgreed(v=>!v)}>
                 <div className={`terms-cb${termsAgreed?" checked":""}`}/>
@@ -272,11 +231,7 @@ export default function EmployeeLogin() {
             {error && <div className="err">{error}</div>}
             {info  && <div className="inf">{info}</div>}
 
-            <button
-              className="submit"
-              onClick={handle}
-              disabled={loading || (mode==="signup" && !termsAgreed)}
-            >
+            <button className="submit" onClick={handle} disabled={loading || (mode==="signup" && !termsAgreed)}>
               {loading?"Please wait…":mode==="signup"?"Create account →":mode==="forgot"?"Send reset link":"Sign in →"}
             </button>
 
