@@ -49,7 +49,13 @@ export default function ResetPassword() {
             <h1 style={styles.title}>Password updated</h1>
             <p style={styles.sub}>Your password has been reset. You can now sign in.</p>
             <button style={styles.btn} onClick={() => router.push("/employee/login")}>
-              Go to sign in
+              Employee sign in
+            </button>
+            <button style={{...styles.btn, background:"#0d6e6e"}} onClick={() => router.push("/employer/login")}>
+              Employer sign in
+            </button>
+            <button style={{...styles.btn, background:"#4f46e5"}} onClick={() => router.push("/bgv/login")}>
+              BGV Vendor sign in
             </button>
           </>
         ) : (
