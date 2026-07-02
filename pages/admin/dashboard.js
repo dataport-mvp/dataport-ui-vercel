@@ -388,6 +388,9 @@ export default function AdminDashboard() {
   };
 
   const [tab, setTab]               = useState("overview");
+  const [bgvVendors, setBgvVendors]  = useState([]);
+  const [bgvLoading, setBgvLoading]  = useState(false);
+  const [bgvMsg,     setBgvMsg]      = useState({ type: "", text: "" });
   const [stats, setStats]           = useState(null);
   const [activity, setActivity]     = useState([]);
   const [users, setUsers]           = useState([]);
@@ -470,12 +473,59 @@ export default function AdminDashboard() {
     setLoading(false);
   }, [apiFetch, ticketFilter]);
 
+  const loadBgvVendors = useCallback(async () => {
+    setBgvLoading(true);
+    try {
+      const r = await apiFetch(`${API}/admin/users?role=bgv`);
+      if (r.ok) {
+        const all = await r.json();
+        setBgvVendors(all.filter(u => u.role === "bgv"));
+      }
+    } catch (_) {}
+    setBgvLoading(false);
+  }, [apiFetch]);
+
+  const approveBgv = async (email) => {
+    setBgvMsg({ type: "", text: "" });
+    try {
+      const r = await apiFetch(`${API}/admin/bgv/approve`, {
+        method: "POST",
+        body: JSON.stringify({ email, note: "Approved via admin dashboard" }),
+      });
+      if (r.ok) {
+        setBgvMsg({ type: "ok", text: `✅ ${email} approved` });
+        loadBgvVendors();
+      } else {
+        const d = await r.json();
+        setBgvMsg({ type: "err", text: d.detail || "Approval failed" });
+      }
+    } catch (_) { setBgvMsg({ type: "err", text: "Network error" }); }
+  };
+
+  const rejectBgv = async (email) => {
+    setBgvMsg({ type: "", text: "" });
+    try {
+      const r = await apiFetch(`${API}/admin/bgv/reject`, {
+        method: "POST",
+        body: JSON.stringify({ email, note: "Rejected via admin dashboard" }),
+      });
+      if (r.ok) {
+        setBgvMsg({ type: "ok", text: `❌ ${email} rejected` });
+        loadBgvVendors();
+      } else {
+        const d = await r.json();
+        setBgvMsg({ type: "err", text: d.detail || "Rejection failed" });
+      }
+    } catch (_) { setBgvMsg({ type: "err", text: "Network error" }); }
+  };
+
   useEffect(() => {
     if (!adminUser || !adminToken) return;
     if (tab === "overview") loadOverview();
     if (tab === "users")    loadUsers();
     if (tab === "tickets")  loadTickets();
-  }, [tab, adminUser, adminToken, loadOverview, loadUsers, loadTickets]);
+    if (tab === "bgv")      loadBgvVendors();
+  }, [tab, adminUser, adminToken, loadOverview, loadUsers, loadTickets, loadBgvVendors]);
 
   useEffect(() => {
     if (tab === "users") loadUsers();
@@ -675,6 +725,8 @@ export default function AdminDashboard() {
                 badge: stats ? (stats.users.suspended + stats.users.blocked) || null : null },
               { id: "tickets",  icon: "⊡", label: "Support",
                 badge: stats?.tickets?.open || null },
+              { id: "bgv",      icon: "⬡", label: "BGV Vendors",
+                badge: bgvVendors.filter(v => !v.bgv_approved).length || null },
             ].map(n => (
               <button key={n.id} className={`nav-btn${tab === n.id ? " active" : ""}`}
                 onClick={() => setTab(n.id)}>
@@ -1025,6 +1077,94 @@ export default function AdminDashboard() {
                   )}
                 </div>
               </div>
+            </>
+          )}
+
+          {/* ── BGV VENDORS ── */}
+          {tab === "bgv" && (
+            <>
+              <div className="page-head">
+                <div className="page-title">BGV Vendors</div>
+                <div className="page-sub">Approve or reject BGV vendor registrations</div>
+              </div>
+              {bgvMsg.text && (
+                <div className={bgvMsg.type === "ok" ? "ok-box" : "err-box"} style={{marginBottom:"1rem"}}>
+                  {bgvMsg.text}
+                </div>
+              )}
+              {bgvLoading && <div className="loading-txt">Loading vendors…</div>}
+              {!bgvLoading && bgvVendors.length === 0 && (
+                <div className="empty-state">No BGV vendors registered yet.</div>
+              )}
+              {!bgvLoading && bgvVendors.length > 0 && (
+                <>
+                  {/* Pending approval */}
+                  {bgvVendors.filter(v => !v.bgv_approved).length > 0 && (
+                    <div className="panel" style={{marginBottom:"1rem"}}>
+                      <div className="panel-head">
+                        <span className="panel-title">⏳ Pending Approval ({bgvVendors.filter(v => !v.bgv_approved).length})</span>
+                      </div>
+                      <div style={{padding:"0.5rem"}}>
+                        {bgvVendors.filter(v => !v.bgv_approved).map(v => (
+                          <div key={v.email} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0.75rem 0.6rem",borderBottom:"1px solid var(--bg2)"}}>
+                            <div>
+                              <div style={{fontSize:"0.82rem",fontWeight:700,color:"var(--text)"}}>{v.name || v.email}</div>
+                              <div style={{fontSize:"0.7rem",color:"var(--text3)",fontFamily:"var(--mono)",marginTop:"2px"}}>{v.email}</div>
+                              {v.company_name && <div style={{fontSize:"0.7rem",color:"var(--text2)",marginTop:"2px"}}>🏢 {v.company_name}</div>}
+                              {v.phone && <div style={{fontSize:"0.7rem",color:"var(--text3)",marginTop:"2px"}}>📞 {v.phone}</div>}
+                              <div style={{fontSize:"0.65rem",color:"var(--text3)",marginTop:"3px",fontFamily:"var(--mono)"}}>
+                                Registered: {v.created_at ? new Date(v.created_at).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",day:"2-digit",month:"short",year:"numeric"}) : "—"}
+                              </div>
+                            </div>
+                            <div style={{display:"flex",gap:"0.5rem",flexShrink:0}}>
+                              <button
+                                onClick={() => approveBgv(v.email)}
+                                style={{padding:"0.4rem 1rem",background:"#16a34a",color:"#fff",border:"none",borderRadius:7,fontSize:"0.72rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                                ✓ Approve
+                              </button>
+                              <button
+                                onClick={() => rejectBgv(v.email)}
+                                style={{padding:"0.4rem 1rem",background:"#fff5f5",color:"#dc2626",border:"1.5px solid #fecaca",borderRadius:7,fontSize:"0.72rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                                ✗ Reject
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Approved vendors */}
+                  {bgvVendors.filter(v => v.bgv_approved).length > 0 && (
+                    <div className="panel">
+                      <div className="panel-head">
+                        <span className="panel-title">✅ Approved Vendors ({bgvVendors.filter(v => v.bgv_approved).length})</span>
+                      </div>
+                      <div style={{padding:"0.5rem"}}>
+                        {bgvVendors.filter(v => v.bgv_approved).map(v => (
+                          <div key={v.email} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0.75rem 0.6rem",borderBottom:"1px solid var(--bg2)"}}>
+                            <div>
+                              <div style={{fontSize:"0.82rem",fontWeight:700,color:"var(--text)"}}>{v.name || v.email}</div>
+                              <div style={{fontSize:"0.7rem",color:"var(--text3)",fontFamily:"var(--mono)",marginTop:"2px"}}>{v.email}</div>
+                              {v.company_name && <div style={{fontSize:"0.7rem",color:"var(--text2)",marginTop:"2px"}}>🏢 {v.company_name}</div>}
+                              {v.bgv_approved_at && (
+                                <div style={{fontSize:"0.65rem",color:"#16a34a",marginTop:"3px",fontFamily:"var(--mono)"}}>
+                                  Approved: {new Date(v.bgv_approved_at).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",day:"2-digit",month:"short",year:"numeric"})}
+                                </div>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => rejectBgv(v.email)}
+                              style={{padding:"0.35rem 0.85rem",background:"#fff5f5",color:"#dc2626",border:"1.5px solid #fecaca",borderRadius:7,fontSize:"0.7rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>
+                              Revoke access
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </>
           )}
 

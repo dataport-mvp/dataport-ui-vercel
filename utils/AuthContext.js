@@ -153,7 +153,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("dg_refresh_token");
     localStorage.removeItem("dg_user");
 
-    const dest = role === "employer" ? "/employer/login" : "/employee/login";
+    const dest = role === "employer" ? "/employer/login" : role === "bgv" ? "/bgv/login" : "/employee/login";
     if (typeof window !== "undefined") window.location.href = dest;
   }, [user]);
 
