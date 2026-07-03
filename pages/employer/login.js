@@ -42,6 +42,10 @@ export default function EmployerLogin() {
       const res  = await fetch(`${API}${mode==="signup"?"/auth/register":"/auth/login"}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
       const d    = await res.json();
       if (!res.ok) { setError(parseError(d)); return; }
+      if (d.role !== "employer") {
+        setError("These credentials belong to a " + d.role + " account. Please use the correct portal.");
+        return;
+      }
       login(d.access_token, d.refresh_token, {role:d.role,name:d.name||company||email,email:d.email||email});
       router.push("/employer/dashboard");
     } catch { setError("Network error — please try again"); }

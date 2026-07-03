@@ -1279,6 +1279,7 @@ export default function EmployerDashboard() {
   const [loading,        setLoading]        = useState(true);
   const [printing,       setPrinting]       = useState(false);
   const [showInbox,      setShowInbox]      = useState(false);
+  const [inboxSearch,    setInboxSearch]    = useState("");
   const [mainTab,       setMainTab]        = useState("Overview");
   const [inboxThreads,   setInboxThreads]   = useState([]);
   const [inboxLoading,   setInboxLoading]   = useState(false);
@@ -1323,6 +1324,7 @@ export default function EmployerDashboard() {
     const v = String(s||"pending").toLowerCase();
     if (["approved","approve","accepted","granted","allow"].includes(v)) return "approved";
     if (["declined","decline","rejected","denied","reject"].includes(v)) return "declined";
+    if (["revoked","withdrawn","withdraw"].includes(v)) return "revoked";
     return "pending";
   };
   const nc = c => ({
@@ -1355,6 +1357,7 @@ export default function EmployerDashboard() {
   const pending  = useMemo(() => consents.filter(c => c.status === "pending"),  [consents]);
   const approved = useMemo(() => consents.filter(c => c.status === "approved"), [consents]);
   const declined = useMemo(() => consents.filter(c => c.status === "declined"), [consents]);
+  const revoked  = useMemo(() => consents.filter(c => c.status === "revoked"),  [consents]);
 
   const filt = (list, q) => {
     if (!q.trim()) return list;
@@ -1364,6 +1367,8 @@ export default function EmployerDashboard() {
   const fp = useMemo(() => filt(pending,  spPending),  [pending,  spPending]);
   const fa = useMemo(() => filt(approved, spApproved), [approved, spApproved]);
   const fd = useMemo(() => filt(declined, spDeclined), [declined, spDeclined]);
+  const [spRevoked, setSpRevoked] = useState("");
+  const fr = useMemo(() => filt(revoked,  spRevoked),  [revoked,  spRevoked]);
 
   const loadDocs = useCallback(async (eid) => {
     if (!eid) return null;
@@ -1659,10 +1664,10 @@ export default function EmployerDashboard() {
     setTermsAccepted(true);
   }} />;
 
-  const counts = { pending:pending.length, approved:approved.length, declined:declined.length };
-  const list   = cTab==="pending" ? fp : cTab==="approved" ? fa : fd;
-  const search = cTab==="pending" ? spPending : cTab==="approved" ? spApproved : spDeclined;
-  const setSearch = cTab==="pending" ? setSpPending : cTab==="approved" ? setSpApproved : setSpDeclined;
+  const counts = { pending:pending.length, approved:approved.length, declined:declined.length, revoked:revoked.length };
+  const list   = cTab==="pending" ? fp : cTab==="approved" ? fa : cTab==="revoked" ? fr : fd;
+  const search = cTab==="pending" ? spPending : cTab==="approved" ? spApproved : cTab==="revoked" ? spRevoked : spDeclined;
+  const setSearch = cTab==="pending" ? setSpPending : cTab==="approved" ? setSpApproved : cTab==="revoked" ? setSpRevoked : setSpDeclined;
 
 return (
     <>
@@ -1697,14 +1702,30 @@ return (
           <div className="inbox-overlay" onClick={()=>setShowInbox(false)}/>
           <div className="inbox-panel">
             <div className="inbox-head">
-              <div className="inbox-title">✉️ Messages</div>
+              <div className="inbox-title" style={{display:"flex",alignItems:"center",gap:"0.5rem"}}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0d6e6e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                Messages
+              </div>
               <button className="inbox-close" onClick={()=>setShowInbox(false)}>✕</button>
             </div>
             <div className="inbox-body">
               <div className="inbox-list">
+                <div style={{padding:"0.5rem 0.75rem 0.25rem"}}>
+                  <input
+                    type="text"
+                    placeholder="🔍 Search messages…"
+                    value={inboxSearch||""}
+                    onChange={e=>setInboxSearch(e.target.value)}
+                    style={{width:"100%",padding:"0.42rem 0.7rem",background:"#f5f2ee",border:"1.5px solid #c8c2b8",borderRadius:7,fontFamily:"inherit",fontSize:"0.72rem",color:"#111",outline:"none",boxSizing:"border-box"}}
+                  />
+                </div>
                 {inboxLoading && <div style={{padding:"1rem",fontSize:"0.72rem",color:"#a09890"}}>Loading…</div>}
                 {!inboxLoading && inboxThreads.length===0 && <div style={{padding:"2rem 1rem",textAlign:"center"}}><div style={{fontSize:"1.5rem",opacity:.2,marginBottom:"0.5rem"}}>✉️</div><div style={{fontSize:"0.72rem",color:"#a09890"}}>No messages yet</div></div>}
-                {inboxThreads.map(t=>(
+                {(inboxSearch ? inboxThreads.filter(t=>
+                  (t.other_party_email||"").toLowerCase().includes(inboxSearch.toLowerCase())||
+                  (t.other_party_name||"").toLowerCase().includes(inboxSearch.toLowerCase())||
+                  (t.latest_message||"").toLowerCase().includes(inboxSearch.toLowerCase())
+                ) : inboxThreads).map(t=>(
                   <div key={t.thread_id} className={`thread-item${activeThread===t.thread_id?" active":""}`} onClick={()=>loadThread(t.thread_id)}>
                     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}>
                       <div className="thread-email" style={{flex:1}}>{t.other_party_email}</div>
@@ -1901,7 +1922,8 @@ return (
           {/* Right: inbox + user + signout */}
           <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
             <button onClick={()=>{setShowInbox(true);loadInbox();}} style={{position:"relative",width:32,height:32,borderRadius:7,border:"1px solid #c8c2b8",background:"#f5f2ee",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.9rem"}}>
-              ✉️{unreadCount>0&&<span style={{position:"absolute",top:-4,right:-4,background:"#dc2626",color:"#fff",borderRadius:999,fontSize:"0.55rem",fontWeight:800,minWidth:15,height:15,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 3px",border:"2px solid #fff"}}>{unreadCount}</span>}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              {unreadCount>0&&<span style={{position:"absolute",top:-4,right:-4,background:"#dc2626",color:"#fff",borderRadius:999,fontSize:"0.55rem",fontWeight:800,minWidth:15,height:15,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 3px",border:"2px solid #fff"}}>{unreadCount}</span>}
             </button>
             <div style={{padding:"4px 10px",border:"1px solid #c8c2b8",borderRadius:6,background:"#f5f2ee",display:"flex",alignItems:"center",gap:6}}>
               <div style={{width:22,height:22,borderRadius:"50%",background:"#0d6e6e",color:"#fff",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{(user.name||user.email||"E").slice(0,2).toUpperCase()}</div>
@@ -1925,6 +1947,7 @@ return (
                 {label:"Approved",         val:approved.length,         sub:"Profiles shared",        col:"#0d6e6e"},
                 {label:"Pending",          val:pending.length,          sub:"Awaiting employee",      col:"#d97706"},
                 {label:"Declined",         val:declined.length,         sub:"By candidates",          col:"#dc2626"},
+                {label:"Revoked",          val:revoked.length,          sub:"Withdrawn by employee",  col:"#7c3aed"},
               ].map(s=>(
                 <div key={s.label} style={{background:"#fff",padding:"12px 16px",position:"relative"}}>
                   <div style={{position:"absolute",top:0,left:0,right:0,height:2.5,background:s.col}}/>
@@ -1949,7 +1972,7 @@ return (
                     {loading&&<div style={{padding:"1rem",fontSize:"0.75rem",color:"#a09890"}}>Loading…</div>}
                     {!loading&&consents.length===0&&<div style={{padding:"1.5rem",textAlign:"center",fontSize:"0.75rem",color:"#a09890"}}>No candidates yet. Send your first data access request.</div>}
                     {[...consents].sort((a,b)=>(b.requested_at||b.created_at||0)-(a.requested_at||a.created_at||0)).slice(0,6).map(c=>{
-                      const col=c.status==="approved"?"#0d6e6e":c.status==="pending"?"#d97706":"#dc2626";
+                      const col=c.status==="approved"?"#0d6e6e":c.status==="pending"?"#d97706":c.status==="revoked"?"#7c3aed":"#dc2626";
                       const bg=c.status==="approved"?"#e0f0ee":c.status==="pending"?"#fef9c3":"#fef2f2";
                       const initials=(c.employee_name||c.employee_email||"?").slice(0,2).toUpperCase();
                       const colors=["#0d6e6e","#2563eb","#7c3aed","#d97706","#dc2626","#16a34a"];
@@ -2000,7 +2023,7 @@ return (
                     <div style={{fontSize:9,fontWeight:700,letterSpacing:"1px",textTransform:"uppercase",color:"#7a6e64",marginBottom:10}}>Activity Feed</div>
                     {consents.length===0&&<div style={{fontSize:11,color:"#a09890"}}>No activity yet</div>}
                     {[...consents].sort((a,b)=>(b.responded_at||b.requested_at||0)-(a.responded_at||a.requested_at||0)).slice(0,4).map(c=>{
-                      const col=c.status==="approved"?"#0d6e6e":c.status==="pending"?"#d97706":"#dc2626";
+                      const col=c.status==="approved"?"#0d6e6e":c.status==="pending"?"#d97706":c.status==="revoked"?"#7c3aed":"#dc2626";
                       const txt=c.status==="approved"?`${c.employee_email} approved request`:c.status==="declined"?`${c.employee_email} declined`:`Data access request sent to ${c.employee_email}`;
                       return(
                         <div key={gcid(c)} style={{display:"flex",gap:7,marginBottom:7,alignItems:"flex-start"}}>
@@ -2052,7 +2075,7 @@ return (
             <div style={{width:280,minWidth:280,background:"#111",display:"flex",flexDirection:"column",height:"calc(100vh - 52px)",position:"sticky",top:52,overflow:"hidden"}}>
               <div style={{padding:"0.65rem 1.3rem 0.3rem"}}>
                 <div className="filter-tabs">
-                  {[["pending","Pending"],["approved","Approved"],["declined","Declined"]].map(([key,label])=>(
+                  {[["pending","Pending"],["approved","Approved"],["declined","Declined"],["revoked","Revoked"]].map(([key,label])=>(
                     <button key={key} className={`ft-btn${cTab===key?" on":""}`} onClick={()=>setCTab(key)}>
                       {label}{counts[key]>0&&<span className="ft-cnt">{counts[key]}</span>}
                     </button>
