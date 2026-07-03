@@ -309,15 +309,43 @@ export default function AdminDashboard() {
   const [pwBusy,     setPwBusy]     = useState(false);
 
   useEffect(() => {
-    try {
-      const tok = localStorage.getItem("dg_admin_token");
-      const usr = localStorage.getItem("dg_admin_user");
-      if (tok && usr) {
-        const parsed = JSON.parse(usr);
-        if (parsed.role === "admin") { setAdminToken(tok); setAdminUser(parsed); }
-      }
-    } catch(_) {}
-    setAuthReady(true);
+    const initAdmin = async () => {
+      try {
+        const tok = localStorage.getItem("dg_admin_token");
+        const rt  = localStorage.getItem("dg_admin_refresh");
+        const usr = localStorage.getItem("dg_admin_user");
+        if (usr) {
+          const parsed = JSON.parse(usr);
+          if (parsed.role === "admin") {
+            // Try to refresh access token on page load
+            if (rt) {
+              try {
+                const res = await fetch(`${API}/auth/refresh`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ refresh_token: rt }),
+                });
+                if (res.ok) {
+                  const data = await res.json();
+                  const newToken = data.access_token || data.token;
+                  if (newToken) {
+                    localStorage.setItem("dg_admin_token", newToken);
+                    setAdminToken(newToken);
+                    setAdminUser(parsed);
+                    setAuthReady(true);
+                    return;
+                  }
+                }
+              } catch(_) {}
+            }
+            // Fallback: use stored token if refresh failed
+            if (tok) { setAdminToken(tok); setAdminUser(parsed); }
+          }
+        }
+      } catch(_) {}
+      setAuthReady(true);
+    };
+    initAdmin();
   }, []);
 
   const handleLogin = async () => {
@@ -334,6 +362,7 @@ export default function AdminDashboard() {
       if (d.role !== "admin") { setLoginErr("This portal is for admins only"); return; }
       const userData = { email: loginEmail.trim().toLowerCase(), role: d.role, name: d.name };
       localStorage.setItem("dg_admin_token", d.access_token);
+      localStorage.setItem("dg_admin_refresh", d.refresh_token);
       localStorage.setItem("dg_admin_user", JSON.stringify(userData));
       setAdminToken(d.access_token);
       setAdminUser(userData);
@@ -359,6 +388,7 @@ export default function AdminDashboard() {
 
   const handleLogout = () => {
     localStorage.removeItem("dg_admin_token");
+    localStorage.removeItem("dg_admin_refresh");
     localStorage.removeItem("dg_admin_user");
     setAdminToken(null); setAdminUser(null);
   };
@@ -420,9 +450,37 @@ export default function AdminDashboard() {
         ...(opts.headers || {}),
       },
     });
-    // FIX BUG-3: auto-logout on token expiry
+    // Auto-refresh on 401 before logging out
     if (res.status === 401) {
+      const rt = localStorage.getItem("dg_admin_refresh");
+      if (rt) {
+        try {
+          const rr = await fetch(`${API}/auth/refresh`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh_token: rt }),
+          });
+          if (rr.ok) {
+            const rd = await rr.json();
+            const newToken = rd.access_token || rd.token;
+            if (newToken) {
+              localStorage.setItem("dg_admin_token", newToken);
+              setAdminToken(newToken);
+              // Retry original request with new token
+              return fetch(url, {
+                ...opts,
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${newToken}`,
+                  ...(opts.headers || {}),
+                },
+              });
+            }
+          }
+        } catch(_) {}
+      }
       localStorage.removeItem("dg_admin_token");
+      localStorage.removeItem("dg_admin_refresh");
       localStorage.removeItem("dg_admin_user");
       setAdminToken(null);
       setAdminUser(null);

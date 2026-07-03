@@ -58,6 +58,13 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const init = async () => {
       try {
+        // Clean up old wrong-key tokens left by old BGV login code
+        localStorage.removeItem("token");
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("role");
+        localStorage.removeItem("name");
+        localStorage.removeItem("email");
+
         const rt = localStorage.getItem("dg_refresh_token");
         const u  = localStorage.getItem("dg_user");
         if (rt && rt !== "undefined" && rt !== "null" && u && u !== "undefined" && u !== "null") {
