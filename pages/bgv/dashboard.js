@@ -129,6 +129,7 @@ export default function BgvDashboard() {
 
   // Messaging
   const [inbox, setInbox]         = useState([]);
+  const [inboxSearch, setInboxSearch] = useState("");
   const [activeThread, setActiveThread] = useState(null);
   const [threadMsgs, setThreadMsgs] = useState([]);
   const [msgBody, setMsgBody]     = useState("");
@@ -601,8 +602,22 @@ export default function BgvDashboard() {
               {/* Thread list */}
               <div style={{borderRight:"1px solid #f1f5f9"}}>
                 <div style={{padding:"0.9rem 1.25rem",borderBottom:"1px solid #f1f5f9",fontWeight:700,fontSize:"0.84rem",color:"#0f172a"}}>Threads</div>
+                <div style={{padding:"0.4rem 0 0.5rem"}}>
+                  <input
+                    type="text"
+                    placeholder="Search messages…"
+                    value={inboxSearch}
+                    onChange={e => setInboxSearch(e.target.value)}
+                    style={{width:"100%",padding:"0.45rem 0.8rem",border:"1.5px solid #e2e8f0",borderRadius:7,fontSize:"0.8rem",fontFamily:"inherit",outline:"none",boxSizing:"border-box",background:"#fafafa"}}
+                  />
+                </div>
                 {inbox.length === 0 && <div className="empty-state">No messages yet.</div>}
-                {inbox.map(t=>(
+                {(inboxSearch
+                  ? inbox.filter(t =>
+                      (t.subject||"").toLowerCase().includes(inboxSearch.toLowerCase()) ||
+                      (t.last_message||t.body||t.preview||"").toLowerCase().includes(inboxSearch.toLowerCase()) ||
+                      (t.employer_name||t.employer_email||"").toLowerCase().includes(inboxSearch.toLowerCase()))
+                  : inbox).map(t=>(
                   <div key={t.consent_id} className={`inbox-thread${activeThread===t.consent_id?" active":""}`} onClick={()=>loadThread(t.consent_id)}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:"0.5rem"}}>
                       <div style={{fontWeight:700,fontSize:"0.84rem",color:"#0f172a"}}>{t.candidate_name}</div>

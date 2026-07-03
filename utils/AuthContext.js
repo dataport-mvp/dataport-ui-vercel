@@ -66,19 +66,12 @@ export function AuthProvider({ children }) {
             setUser(JSON.parse(u));
             resetInactivityTimer();
           } else {
-            try {
-              const cached = JSON.parse(u);
-              if (cached?.email && cached?.role) {
-                setUser(cached);
-                resetInactivityTimer();
-              } else {
-                localStorage.removeItem("dg_refresh_token");
-                localStorage.removeItem("dg_user");
-              }
-            } catch (_) {
-              localStorage.removeItem("dg_refresh_token");
-              localStorage.removeItem("dg_user");
-            }
+            // Refresh failed — token invalid or expired or DynamoDB cleared
+            // Do NOT fall back to cached user: accessTokenRef is null,
+            // every apiFetch would get 401 and trigger logout loop.
+            // Clear cleanly and let user log in fresh.
+            localStorage.removeItem("dg_refresh_token");
+            localStorage.removeItem("dg_user");
           }
         }
       } catch (_) {}

@@ -707,6 +707,7 @@ export default function PersonalDetails() {
   const [msgErr,        setMsgErr]         = useState("");
   const [inboxLoading,  setInboxLoading]   = useState(false);
   const [inboxUnread,   setInboxUnread]    = useState(0);
+  const [inboxSearch,   setInboxSearch]    = useState("");
   const [completeness,  setCompleteness]    = useState(null); // 0-100 or null=loading
   const [saveStatus,setSaveStatus]       = useState("");
   const [midSaveStatus,setMidSaveStatus] = useState("");
@@ -1202,7 +1203,21 @@ export default function PersonalDetails() {
                       <div style={{fontSize:"0.62rem",color:"#c4bfdb",marginTop:"0.3rem"}}>Employers will message you here</div>
                     </div>
                   )}
-                  {inboxThreads.map(t=>(
+                  <div style={{padding:"0.5rem 0 0.25rem"}}>
+                    <input
+                      type="text"
+                      placeholder="Search messages…"
+                      value={inboxSearch}
+                      onChange={e => setInboxSearch(e.target.value)}
+                      style={{width:"100%",padding:"0.45rem 0.8rem",border:"1.5px solid #e2e8f0",borderRadius:7,fontSize:"0.8rem",fontFamily:"inherit",outline:"none",boxSizing:"border-box",background:"#fafafa"}}
+                    />
+                  </div>
+                  {(inboxSearch
+                    ? inboxThreads.filter(t =>
+                        (t.subject||"").toLowerCase().includes(inboxSearch.toLowerCase()) ||
+                        (t.last_message||t.body||t.preview||"").toLowerCase().includes(inboxSearch.toLowerCase()) ||
+                        (t.sender_name||t.sender_email||"").toLowerCase().includes(inboxSearch.toLowerCase()))
+                    : inboxThreads).map(t=>(
                     <div key={t.thread_id} onClick={()=>loadThread(t.thread_id)}
                       style={{padding:"0.65rem 0.9rem",cursor:"pointer",borderBottom:"1px solid #f5f3ff",background:activeThread===t.thread_id?"#eef2ff":"#fff",borderLeft:activeThread===t.thread_id?"3px solid #0d6e6e":"3px solid transparent",transition:"all 0.1s"}}>
                       <div style={{fontSize:"0.71rem",fontWeight:700,color:"#1a1730",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.other_party_name||t.other_party_email}</div>
