@@ -14,7 +14,7 @@ const Eye = ({ open }) => open ? (
 
 export default function BgvLogin() {
   const router = useRouter();
-  const { loginWithCredentials } = useAuth();
+  const { login } = useAuth();
   const [mode,        setMode]        = useState("login");
   const [email,       setEmail]       = useState("");
   const [password,    setPassword]    = useState("");
@@ -53,14 +53,11 @@ export default function BgvLogin() {
       }
       if (data.role !== "bgv") { setError("This portal is for BGV vendors only."); setLoading(false); return; }
       if (mode === "register") { setRegistered(true); setLoading(false); return; }
-      if (loginWithCredentials) { await loginWithCredentials(data); }
-      else {
-        localStorage.setItem("token", data.access_token);
-        localStorage.setItem("refresh_token", data.refresh_token);
-        localStorage.setItem("role", data.role);
-        localStorage.setItem("name", data.name || "");
-        localStorage.setItem("email", email.trim().toLowerCase());
-      }
+      login(data.access_token, data.refresh_token, {
+        role:  data.role,
+        name:  data.name || "",
+        email: email.trim().toLowerCase(),
+      });
       router.push("/bgv/dashboard");
     } catch { setError("Network error. Please try again."); setLoading(false); }
   };
