@@ -665,30 +665,44 @@ export default function PreviousCompany() {
 
               <div className="subsec">
                 <div className="sub-lbl">Attachments</div>
-                <div className="att-wrap">
-                  <span className="att-lbl">Payslips (Last 3 Months){!(isLast&&emp.currentlyWorking==="Yes")&&<span style={{color:"#ef4444"}}> *</span>}</span>
-                  {errors[`${index}_payslips`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
-                  <FileUpload label="Payslips" category="employment" subKey="payslips" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.payslipsKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.payslipsKey",k);fixErr(`${index}_payslips`);}}/>
-                </div>
+
+                {/* Offer Letter — always required for every employer */}
                 <div className="att-wrap">
                   <span className="att-lbl">Offer Letter <span style={{color:"#ef4444"}}>*</span></span>
                   {errors[`${index}_offerLetter`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
                   <FileUpload label="Offer Letter" category="employment" subKey="offerLetter" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.offerLetterKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.offerLetterKey",k);fixErr(`${index}_offerLetter`);}}/>
                 </div>
-                <div className="att-wrap">
-                  <span className="att-lbl">Resignation Acceptance{index===0&&emp.currentlyWorking==="No"&&<span style={{color:"#ef4444"}}> *</span>}</span>
-                  {errors[`${index}_resignation`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
-                  <FileUpload label="Resignation" category="employment" subKey="resignation" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.resignationKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.resignationKey",k);fixErr(`${index}_resignation`);}}/>
-                </div>
-                <div className="att-wrap">
-                  <span className="att-lbl">Experience / Relieving Letter{!(isLast&&emp.currentlyWorking==="Yes")&&<span style={{color:"#ef4444"}}> *</span>}</span>
-                  {errors[`${index}_experience`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
-                  <FileUpload label="Experience Letter" category="employment" subKey="experience" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.experienceKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.experienceKey",k);fixErr(`${index}_experience`);}}/>
-                </div>
-                <div className="att-wrap">
-                  <span className="att-lbl">Company ID Card</span>
-                  <FileUpload label="ID Card" category="employment" subKey="idCard" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.idCardKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.idCardKey",k);}}/>
-                </div>
+
+                {/* Currently employed — no other docs needed yet */}
+                {isCurrentlyWorking && (
+                  <div style={{background:"#f0fdf4",border:"1px solid #86efac",borderRadius:9,padding:"0.7rem 0.9rem",fontSize:"0.76rem",color:"#15803d",lineHeight:1.6,marginTop:"0.25rem"}}>
+                    ℹ️ You're currently employed here. Payslips, resignation letter, and experience letter will be collected once you update your end date.
+                  </div>
+                )}
+
+                {/* Left this company — collect remaining docs */}
+                {!isCurrentlyWorking && (<>
+                  <div className="att-wrap">
+                    <span className="att-lbl">Payslips — Last 3 Months <span style={{color:"#ef4444"}}>*</span></span>
+                    <p style={{fontSize:"0.68rem",color:"#6b6894",margin:"0.15rem 0 0.35rem",lineHeight:1.4}}>Merge your last 3 months payslips into one PDF before uploading.</p>
+                    {errors[`${index}_payslips`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
+                    <FileUpload label="Payslips" category="employment" subKey="payslips" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.payslipsKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.payslipsKey",k);fixErr(`${index}_payslips`);}}/>
+                  </div>
+                  <div className="att-wrap">
+                    <span className="att-lbl">Resignation Acceptance{isLast&&<span style={{color:"#ef4444"}}> *</span>}</span>
+                    {errors[`${index}_resignation`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
+                    <FileUpload label="Resignation" category="employment" subKey="resignation" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.resignationKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.resignationKey",k);fixErr(`${index}_resignation`);}}/>
+                  </div>
+                  <div className="att-wrap">
+                    <span className="att-lbl">Experience / Relieving Letter <span style={{color:"#ef4444"}}>*</span></span>
+                    {errors[`${index}_experience`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
+                    <FileUpload label="Experience Letter" category="employment" subKey="experience" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.experienceKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.experienceKey",k);fixErr(`${index}_experience`);}}/>
+                  </div>
+                  <div className="att-wrap">
+                    <span className="att-lbl">Company ID Card</span>
+                    <FileUpload label="ID Card" category="employment" subKey="idCard" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.idCardKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.idCardKey",k);}}/>
+                  </div>
+                </>)}
               </div>
             </div>
             );
