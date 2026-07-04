@@ -945,7 +945,7 @@ function EmploymentTab({ data, resumeKey, docUrls }) {
           <a href={docUrls[resumeKey]} target="_blank" rel="noopener noreferrer" className="doc-view" style={{display:"inline-flex",alignItems:"center",gap:"0.35rem"}}>📄 View Resume / CV ↗</a>
         </div>
       )}
-      {list.map((e,i)=>(
+      {[...list].reverse().map((e,i)=>(
         <div key={e.company_id||i} className="emp-card">
           <div className="emp-title">
             {i===0?"Current / Most Recent Employer":`Previous Employer ${i}`}
