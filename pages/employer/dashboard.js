@@ -415,7 +415,7 @@ async function printProfile(profile, empHistory, documents, employerName) {
     <button onclick="window.close()" style="padding:10px 18px;background:#f1f5f9;color:#475569;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Close</button>
   </div>
 </body>
-</html>`);
+</html>`;
   return htmlString;
 }
 
