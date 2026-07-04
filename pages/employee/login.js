@@ -21,12 +21,46 @@ export default function EmployeeLogin() {
   const [phone,       setPhone]       = useState("");
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [error,       setError]       = useState("");
+  const [mobileVerified, setMobileVerified] = useState(false);
+  const [mobileOtpSent,  setMobileOtpSent]  = useState(false);
+  const [mobileOtp,      setMobileOtp]      = useState("");
+  const [mobileOtpMsg,   setMobileOtpMsg]   = useState("");
   const [info,        setInfo]        = useState("");
   const [loading,     setLoading]     = useState(false);
   const { login }  = useAuth();
   const router     = useRouter();
 
   const handlePhone = v => setPhone(v.replace(/\D/g,"").slice(0,10));
+
+  const sendMobileOtp = async () => {
+    if (phone.length !== 10) { setError("Enter a valid 10-digit mobile number first"); return; }
+    setError(""); setMobileOtpMsg("Sending OTP…");
+    try {
+      const res = await fetch(`${API}/auth/send-mobile-otp`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ mobile: phone }),
+      });
+      const d = await res.json();
+      if (!res.ok) { setError(d.detail || "Failed to send OTP"); setMobileOtpMsg(""); return; }
+      setMobileOtpSent(true);
+      setMobileOtpMsg("OTP sent to +91 " + phone.slice(0,5) + "XXXXX");
+    } catch { setError("Network error"); setMobileOtpMsg(""); }
+  };
+
+  const verifyMobileOtp = async () => {
+    if (mobileOtp.length !== 6) { setError("Enter the 6-digit OTP"); return; }
+    setError("");
+    try {
+      const res = await fetch(`${API}/auth/verify-mobile-otp`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ mobile: phone, otp: mobileOtp }),
+      });
+      const d = await res.json();
+      if (!res.ok) { setError(d.detail || "Invalid OTP"); return; }
+      setMobileVerified(true);
+      setMobileOtpMsg("✅ Mobile verified");
+    } catch { setError("Network error"); }
+  };
 
   const handle = async () => {
     setError(""); setInfo(""); setLoading(true);
@@ -38,6 +72,7 @@ export default function EmployeeLogin() {
         setInfo("Reset link sent — check your email."); return;
       }
       if (mode === "signup" && phone.length !== 10) { setError("Phone must be 10 digits"); return; }
+      if (mode === "signup" && !mobileVerified) { setError("Please verify your mobile number with OTP before creating your account."); return; }
       if (mode === "signup" && !termsAgreed) { setError("Please accept the Terms of Service and Privacy Policy to continue."); return; }
       const body = mode === "signup"
         ? {email, password, name, phone, role:"employee", terms_accepted_at: new Date().toISOString()}
@@ -208,7 +243,22 @@ export default function EmployeeLogin() {
 
             {mode==="signup" && <>
               <div className="fld"><label className="flb">Full Name <span>*</span></label><input className="fin" placeholder="Your full name" value={name} onChange={e=>setName(e.target.value)}/></div>
-              <div className="fld"><label className="flb">Mobile Number <span>*</span></label><input className="fin" placeholder="10-digit mobile number" value={phone} onChange={e=>handlePhone(e.target.value)} inputMode="numeric" maxLength={10}/><span className="hint">{phone.length}/10 digits</span></div>
+              <div className="fld">
+                <label className="flb">Mobile Number <span>*</span></label>
+                <div style={{display:"flex",gap:"0.4rem"}}>
+                  <input className="fin" placeholder="10-digit mobile number" value={phone} onChange={e=>{handlePhone(e.target.value);setMobileVerified(false);setMobileOtpSent(false);setMobileOtp("");setMobileOtpMsg("");}} inputMode="numeric" maxLength={10} style={{flex:1}}/>
+                  {!mobileVerified && phone.length===10 && !mobileOtpSent && (
+                    <button type="button" onClick={sendMobileOtp} style={{padding:"0 0.9rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:9,fontSize:"0.72rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Send OTP</button>
+                  )}
+                </div>
+                {mobileOtpMsg && <span style={{fontSize:"0.68rem",color:mobileVerified?"#16a34a":"#6b6258",marginTop:2}}>{mobileOtpMsg}</span>}
+                {!mobileVerified && mobileOtpSent && (
+                  <div style={{marginTop:"0.4rem",display:"flex",gap:"0.4rem"}}>
+                    <input className="fin" placeholder="Enter 6-digit OTP" value={mobileOtp} onChange={e=>setMobileOtp(e.target.value.replace(/\D/g,"").slice(0,6))} inputMode="numeric" maxLength={6} style={{flex:1,letterSpacing:"4px",textAlign:"center"}}/>
+                    <button type="button" onClick={verifyMobileOtp} style={{padding:"0 0.9rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:9,fontSize:"0.72rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Verify</button>
+                  </div>
+                )}
+              </div>
             </>}
 
             <div className="fld"><label className="flb">Email Address <span>*</span></label><input className="fin" type="email" placeholder="you@example.com" value={email} onChange={e=>setEmail(e.target.value)}/></div>
