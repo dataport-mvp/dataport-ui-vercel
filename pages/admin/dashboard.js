@@ -309,43 +309,15 @@ export default function AdminDashboard() {
   const [pwBusy,     setPwBusy]     = useState(false);
 
   useEffect(() => {
-    const initAdmin = async () => {
-      try {
-        const tok = localStorage.getItem("dg_admin_token");
-        const rt  = localStorage.getItem("dg_admin_refresh");
-        const usr = localStorage.getItem("dg_admin_user");
-        if (usr) {
-          const parsed = JSON.parse(usr);
-          if (parsed.role === "admin") {
-            // Try to refresh access token on page load
-            if (rt) {
-              try {
-                const res = await fetch(`${API}/auth/refresh`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ refresh_token: rt }),
-                });
-                if (res.ok) {
-                  const data = await res.json();
-                  const newToken = data.access_token || data.token;
-                  if (newToken) {
-                    localStorage.setItem("dg_admin_token", newToken);
-                    setAdminToken(newToken);
-                    setAdminUser(parsed);
-                    setAuthReady(true);
-                    return;
-                  }
-                }
-              } catch(_) {}
-            }
-            // Fallback: use stored token if refresh failed
-            if (tok) { setAdminToken(tok); setAdminUser(parsed); }
-          }
-        }
-      } catch(_) {}
-      setAuthReady(true);
-    };
-    initAdmin();
+    try {
+      const tok = localStorage.getItem("dg_admin_token");
+      const usr = localStorage.getItem("dg_admin_user");
+      if (tok && usr) {
+        const parsed = JSON.parse(usr);
+        if (parsed.role === "admin") { setAdminToken(tok); setAdminUser(parsed); }
+      }
+    } catch(_) {}
+    setAuthReady(true);
   }, []);
 
   const handleLogin = async () => {
@@ -362,7 +334,6 @@ export default function AdminDashboard() {
       if (d.role !== "admin") { setLoginErr("This portal is for admins only"); return; }
       const userData = { email: loginEmail.trim().toLowerCase(), role: d.role, name: d.name };
       localStorage.setItem("dg_admin_token", d.access_token);
-      localStorage.setItem("dg_admin_refresh", d.refresh_token);
       localStorage.setItem("dg_admin_user", JSON.stringify(userData));
       setAdminToken(d.access_token);
       setAdminUser(userData);
@@ -388,7 +359,6 @@ export default function AdminDashboard() {
 
   const handleLogout = () => {
     localStorage.removeItem("dg_admin_token");
-    localStorage.removeItem("dg_admin_refresh");
     localStorage.removeItem("dg_admin_user");
     setAdminToken(null); setAdminUser(null);
   };
@@ -418,9 +388,7 @@ export default function AdminDashboard() {
   };
 
   const [tab, setTab]               = useState("overview");
-  const [bgvVendors, setBgvVendors]  = useState([]);
-  const [bgvLoading, setBgvLoading]  = useState(false);
-  const [bgvMsg,     setBgvMsg]      = useState({ type: "", text: "" });
+  const [emailOverride, setEmailOverride] = useState({ old:"", new:"", loading:false, msg:"", err:"" });
   const [stats, setStats]           = useState(null);
   const [activity, setActivity]     = useState([]);
   const [users, setUsers]           = useState([]);
@@ -450,43 +418,29 @@ export default function AdminDashboard() {
         ...(opts.headers || {}),
       },
     });
-    // Auto-refresh on 401 before logging out
+    // FIX BUG-3: auto-logout on token expiry
     if (res.status === 401) {
-      const rt = localStorage.getItem("dg_admin_refresh");
-      if (rt) {
-        try {
-          const rr = await fetch(`${API}/auth/refresh`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ refresh_token: rt }),
-          });
-          if (rr.ok) {
-            const rd = await rr.json();
-            const newToken = rd.access_token || rd.token;
-            if (newToken) {
-              localStorage.setItem("dg_admin_token", newToken);
-              setAdminToken(newToken);
-              // Retry original request with new token
-              return fetch(url, {
-                ...opts,
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${newToken}`,
-                  ...(opts.headers || {}),
-                },
-              });
-            }
-          }
-        } catch(_) {}
-      }
       localStorage.removeItem("dg_admin_token");
-      localStorage.removeItem("dg_admin_refresh");
       localStorage.removeItem("dg_admin_user");
       setAdminToken(null);
       setAdminUser(null);
     }
     return res;
   }, [adminToken]);
+
+  const doEmailOverride = async () => {
+    if (!emailOverride.old || !emailOverride.new) { setEmailOverride(v=>({...v,err:"Both emails required"})); return; }
+    setEmailOverride(v=>({...v,loading:true,err:"",msg:""}));
+    try {
+      const r = await apiFetch(`${API}/admin/update-user-email`, {
+        method:"POST",
+        body: JSON.stringify({ old_email: emailOverride.old.trim().toLowerCase(), new_email: emailOverride.new.trim().toLowerCase() }),
+      });
+      const d = await r.json();
+      if (!r.ok) setEmailOverride(v=>({...v,loading:false,err:d.detail||"Failed"}));
+      else setEmailOverride(v=>({...v,loading:false,msg:d.message,old:"",new:""}));
+    } catch(_) { setEmailOverride(v=>({...v,loading:false,err:"Network error"})); }
+  };
 
   const loadOverview = useCallback(async () => {
     setLoading(true);
@@ -531,59 +485,12 @@ export default function AdminDashboard() {
     setLoading(false);
   }, [apiFetch, ticketFilter]);
 
-  const loadBgvVendors = useCallback(async () => {
-    setBgvLoading(true);
-    try {
-      const r = await apiFetch(`${API}/admin/users?role=bgv`);
-      if (r.ok) {
-        const all = await r.json();
-        setBgvVendors(all.filter(u => u.role === "bgv"));
-      }
-    } catch (_) {}
-    setBgvLoading(false);
-  }, [apiFetch]);
-
-  const approveBgv = async (email) => {
-    setBgvMsg({ type: "", text: "" });
-    try {
-      const r = await apiFetch(`${API}/admin/bgv/approve`, {
-        method: "POST",
-        body: JSON.stringify({ email, note: "Approved via admin dashboard" }),
-      });
-      if (r.ok) {
-        setBgvMsg({ type: "ok", text: `✅ ${email} approved` });
-        loadBgvVendors();
-      } else {
-        const d = await r.json();
-        setBgvMsg({ type: "err", text: d.detail || "Approval failed" });
-      }
-    } catch (_) { setBgvMsg({ type: "err", text: "Network error" }); }
-  };
-
-  const rejectBgv = async (email) => {
-    setBgvMsg({ type: "", text: "" });
-    try {
-      const r = await apiFetch(`${API}/admin/bgv/reject`, {
-        method: "POST",
-        body: JSON.stringify({ email, note: "Rejected via admin dashboard" }),
-      });
-      if (r.ok) {
-        setBgvMsg({ type: "ok", text: `❌ ${email} rejected` });
-        loadBgvVendors();
-      } else {
-        const d = await r.json();
-        setBgvMsg({ type: "err", text: d.detail || "Rejection failed" });
-      }
-    } catch (_) { setBgvMsg({ type: "err", text: "Network error" }); }
-  };
-
   useEffect(() => {
     if (!adminUser || !adminToken) return;
     if (tab === "overview") loadOverview();
     if (tab === "users")    loadUsers();
     if (tab === "tickets")  loadTickets();
-    if (tab === "bgv")      loadBgvVendors();
-  }, [tab, adminUser, adminToken, loadOverview, loadUsers, loadTickets, loadBgvVendors]);
+  }, [tab, adminUser, adminToken, loadOverview, loadUsers, loadTickets]);
 
   useEffect(() => {
     if (tab === "users") loadUsers();
@@ -783,8 +690,6 @@ export default function AdminDashboard() {
                 badge: stats ? (stats.users.suspended + stats.users.blocked) || null : null },
               { id: "tickets",  icon: "⊡", label: "Support",
                 badge: stats?.tickets?.open || null },
-              { id: "bgv",      icon: "⬡", label: "BGV Vendors",
-                badge: bgvVendors.filter(v => !v.bgv_approved).length || null },
             ].map(n => (
               <button key={n.id} className={`nav-btn${tab === n.id ? " active" : ""}`}
                 onClick={() => setTab(n.id)}>
@@ -1049,6 +954,28 @@ export default function AdminDashboard() {
           )}
 
           {/* ── TICKETS ── */}
+          {/* Admin email override tool */}
+          {tab === "users" && selUser && (
+            <div className="panel" style={{marginTop:"0.75rem"}}>
+              <div className="panel-head"><span className="panel-title">🔑 Update Email Address</span></div>
+              <div style={{padding:"0.75rem"}}>
+                <p style={{fontSize:"0.7rem",color:"var(--text3)",marginBottom:"0.5rem",lineHeight:1.5}}>Only use when user has lost access to old email. Verify identity (mobile + PAN) manually before updating.</p>
+                <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap",marginBottom:"0.4rem"}}>
+                  <input placeholder="Old email" value={emailOverride.old} onChange={e=>setEmailOverride(v=>({...v,old:e.target.value,err:"",msg:""}))}
+                    style={{flex:1,minWidth:180,padding:"0.42rem 0.7rem",border:"1.5px solid var(--border)",borderRadius:7,fontSize:"0.75rem",fontFamily:"inherit",background:"var(--bg2)",color:"var(--text)",outline:"none"}}/>
+                  <input placeholder="New email" value={emailOverride.new} onChange={e=>setEmailOverride(v=>({...v,new:e.target.value,err:"",msg:""}))}
+                    style={{flex:1,minWidth:180,padding:"0.42rem 0.7rem",border:"1.5px solid var(--border)",borderRadius:7,fontSize:"0.75rem",fontFamily:"inherit",background:"var(--bg2)",color:"var(--text)",outline:"none"}}/>
+                  <button onClick={doEmailOverride} disabled={emailOverride.loading}
+                    style={{padding:"0.42rem 1rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:7,fontSize:"0.73rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit",opacity:emailOverride.loading?0.6:1}}>
+                    {emailOverride.loading?"Updating…":"Update Email"}
+                  </button>
+                </div>
+                {emailOverride.err && <p style={{fontSize:"0.7rem",color:"#dc2626",margin:0}}>{emailOverride.err}</p>}
+                {emailOverride.msg && <p style={{fontSize:"0.7rem",color:"#16a34a",margin:0}}>{emailOverride.msg}</p>}
+              </div>
+            </div>
+          )}
+
           {tab === "tickets" && (
             <>
               <div className="page-head">
@@ -1135,94 +1062,6 @@ export default function AdminDashboard() {
                   )}
                 </div>
               </div>
-            </>
-          )}
-
-          {/* ── BGV VENDORS ── */}
-          {tab === "bgv" && (
-            <>
-              <div className="page-head">
-                <div className="page-title">BGV Vendors</div>
-                <div className="page-sub">Approve or reject BGV vendor registrations</div>
-              </div>
-              {bgvMsg.text && (
-                <div className={bgvMsg.type === "ok" ? "ok-box" : "err-box"} style={{marginBottom:"1rem"}}>
-                  {bgvMsg.text}
-                </div>
-              )}
-              {bgvLoading && <div className="loading-txt">Loading vendors…</div>}
-              {!bgvLoading && bgvVendors.length === 0 && (
-                <div className="empty-state">No BGV vendors registered yet.</div>
-              )}
-              {!bgvLoading && bgvVendors.length > 0 && (
-                <>
-                  {/* Pending approval */}
-                  {bgvVendors.filter(v => !v.bgv_approved).length > 0 && (
-                    <div className="panel" style={{marginBottom:"1rem"}}>
-                      <div className="panel-head">
-                        <span className="panel-title">⏳ Pending Approval ({bgvVendors.filter(v => !v.bgv_approved).length})</span>
-                      </div>
-                      <div style={{padding:"0.5rem"}}>
-                        {bgvVendors.filter(v => !v.bgv_approved).map(v => (
-                          <div key={v.email} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0.75rem 0.6rem",borderBottom:"1px solid var(--bg2)"}}>
-                            <div>
-                              <div style={{fontSize:"0.82rem",fontWeight:700,color:"var(--text)"}}>{v.name || v.email}</div>
-                              <div style={{fontSize:"0.7rem",color:"var(--text3)",fontFamily:"var(--mono)",marginTop:"2px"}}>{v.email}</div>
-                              {v.company_name && <div style={{fontSize:"0.7rem",color:"var(--text2)",marginTop:"2px"}}>🏢 {v.company_name}</div>}
-                              {v.phone && <div style={{fontSize:"0.7rem",color:"var(--text3)",marginTop:"2px"}}>📞 {v.phone}</div>}
-                              <div style={{fontSize:"0.65rem",color:"var(--text3)",marginTop:"3px",fontFamily:"var(--mono)"}}>
-                                Registered: {v.created_at ? new Date(v.created_at).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",day:"2-digit",month:"short",year:"numeric"}) : "—"}
-                              </div>
-                            </div>
-                            <div style={{display:"flex",gap:"0.5rem",flexShrink:0}}>
-                              <button
-                                onClick={() => approveBgv(v.email)}
-                                style={{padding:"0.4rem 1rem",background:"#16a34a",color:"#fff",border:"none",borderRadius:7,fontSize:"0.72rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                                ✓ Approve
-                              </button>
-                              <button
-                                onClick={() => rejectBgv(v.email)}
-                                style={{padding:"0.4rem 1rem",background:"#fff5f5",color:"#dc2626",border:"1.5px solid #fecaca",borderRadius:7,fontSize:"0.72rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                                ✗ Reject
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Approved vendors */}
-                  {bgvVendors.filter(v => v.bgv_approved).length > 0 && (
-                    <div className="panel">
-                      <div className="panel-head">
-                        <span className="panel-title">✅ Approved Vendors ({bgvVendors.filter(v => v.bgv_approved).length})</span>
-                      </div>
-                      <div style={{padding:"0.5rem"}}>
-                        {bgvVendors.filter(v => v.bgv_approved).map(v => (
-                          <div key={v.email} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0.75rem 0.6rem",borderBottom:"1px solid var(--bg2)"}}>
-                            <div>
-                              <div style={{fontSize:"0.82rem",fontWeight:700,color:"var(--text)"}}>{v.name || v.email}</div>
-                              <div style={{fontSize:"0.7rem",color:"var(--text3)",fontFamily:"var(--mono)",marginTop:"2px"}}>{v.email}</div>
-                              {v.company_name && <div style={{fontSize:"0.7rem",color:"var(--text2)",marginTop:"2px"}}>🏢 {v.company_name}</div>}
-                              {v.bgv_approved_at && (
-                                <div style={{fontSize:"0.65rem",color:"#16a34a",marginTop:"3px",fontFamily:"var(--mono)"}}>
-                                  Approved: {new Date(v.bgv_approved_at).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",day:"2-digit",month:"short",year:"numeric"})}
-                                </div>
-                              )}
-                            </div>
-                            <button
-                              onClick={() => rejectBgv(v.email)}
-                              style={{padding:"0.35rem 0.85rem",background:"#fff5f5",color:"#dc2626",border:"1.5px solid #fecaca",borderRadius:7,fontSize:"0.7rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>
-                              Revoke access
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
             </>
           )}
 

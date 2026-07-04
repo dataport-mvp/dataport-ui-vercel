@@ -707,7 +707,6 @@ export default function PersonalDetails() {
   const [msgErr,        setMsgErr]         = useState("");
   const [inboxLoading,  setInboxLoading]   = useState(false);
   const [inboxUnread,   setInboxUnread]    = useState(0);
-  const [inboxSearch,   setInboxSearch]    = useState("");
   const [completeness,  setCompleteness]    = useState(null); // 0-100 or null=loading
   const [saveStatus,setSaveStatus]       = useState("");
   const [midSaveStatus,setMidSaveStatus] = useState("");
@@ -785,6 +784,15 @@ export default function PersonalDetails() {
   const [aadhaarEditing,setAadhaarEditing] = useState(false);
   const [nameAsPerAadhaar,setNameAsPerAadhaar] = useState("");
   const [pan,setPan]                     = useState("");
+  const [panDuplicate,setPanDuplicate]   = useState(false);
+  // Email change state
+  const [showEmailChange, setShowEmailChange] = useState(false);
+  const [newEmail,        setNewEmail]        = useState("");
+  const [emailOtp,        setEmailOtp]        = useState("");
+  const [emailOtpSent,    setEmailOtpSent]    = useState(false);
+  const [emailChangeMsg,  setEmailChangeMsg]  = useState("");
+  const [emailChangeErr,  setEmailChangeErr]  = useState("");
+  const [emailChangeLod,  setEmailChangeLod]  = useState(false);
   const [nameAsPerPan,setNameAsPerPan]   = useState("");
   const [hasPassport,setHasPassport]     = useState("");
   const [passport,setPassport]           = useState("");
@@ -986,6 +994,50 @@ export default function PersonalDetails() {
       pin:      sameAsCurrent ? curPin      : permPin,
     },
   });
+
+  const checkPanDuplicate = async (panVal) => {
+    if (!panVal || panVal.length !== 10) { setPanDuplicate(false); return; }
+    try {
+      const res = await apiFetch(`${API}/employee/check-duplicate?pan=${panVal.toUpperCase()}`);
+      if (res.ok) {
+        const d = await res.json();
+        setPanDuplicate(d.conflicts?.includes("pan") || false);
+      }
+    } catch (_) {}
+  };
+
+  const requestEmailChange = async () => {
+    if (!newEmail || !newEmail.includes("@")) { setEmailChangeErr("Enter a valid email"); return; }
+    setEmailChangeLod(true); setEmailChangeErr(""); setEmailChangeMsg("");
+    try {
+      const res = await apiFetch(`${API}/auth/request-email-change`, {
+        method: "POST",
+        body: JSON.stringify({ new_email: newEmail }),
+      });
+      const d = await res.json();
+      if (!res.ok) { setEmailChangeErr(d.detail || "Failed"); }
+      else { setEmailOtpSent(true); setEmailChangeMsg(d.message); }
+    } catch (_) { setEmailChangeErr("Network error"); }
+    setEmailChangeLod(false);
+  };
+
+  const verifyEmailChange = async () => {
+    if (!emailOtp || emailOtp.length !== 6) { setEmailChangeErr("Enter the 6-digit OTP"); return; }
+    setEmailChangeLod(true); setEmailChangeErr("");
+    try {
+      const res = await apiFetch(`${API}/auth/verify-email-change`, {
+        method: "POST",
+        body: JSON.stringify({ otp: emailOtp, new_email: newEmail }),
+      });
+      const d = await res.json();
+      if (!res.ok) { setEmailChangeErr(d.detail || "Failed"); }
+      else {
+        setEmailChangeMsg("Email updated. Logging you out now...");
+        setTimeout(() => logout(), 2500);
+      }
+    } catch (_) { setEmailChangeErr("Network error"); }
+    setEmailChangeLod(false);
+  };
 
   const saveDraft = async () => {
     const empId = employeeId || `emp-${Date.now()}`;
@@ -1203,21 +1255,7 @@ export default function PersonalDetails() {
                       <div style={{fontSize:"0.62rem",color:"#c4bfdb",marginTop:"0.3rem"}}>Employers will message you here</div>
                     </div>
                   )}
-                  <div style={{padding:"0.5rem 0 0.25rem"}}>
-                    <input
-                      type="text"
-                      placeholder="Search messages…"
-                      value={inboxSearch}
-                      onChange={e => setInboxSearch(e.target.value)}
-                      style={{width:"100%",padding:"0.45rem 0.8rem",border:"1.5px solid #e2e8f0",borderRadius:7,fontSize:"0.8rem",fontFamily:"inherit",outline:"none",boxSizing:"border-box",background:"#fafafa"}}
-                    />
-                  </div>
-                  {(inboxSearch
-                    ? inboxThreads.filter(t =>
-                        (t.subject||"").toLowerCase().includes(inboxSearch.toLowerCase()) ||
-                        (t.last_message||t.body||t.preview||"").toLowerCase().includes(inboxSearch.toLowerCase()) ||
-                        (t.sender_name||t.sender_email||"").toLowerCase().includes(inboxSearch.toLowerCase()))
-                    : inboxThreads).map(t=>(
+                  {inboxThreads.map(t=>(
                     <div key={t.thread_id} onClick={()=>loadThread(t.thread_id)}
                       style={{padding:"0.65rem 0.9rem",cursor:"pointer",borderBottom:"1px solid #f5f3ff",background:activeThread===t.thread_id?"#eef2ff":"#fff",borderLeft:activeThread===t.thread_id?"3px solid #0d6e6e":"3px solid transparent",transition:"all 0.1s"}}>
                       <div style={{fontSize:"0.71rem",fontWeight:700,color:"#1a1730",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.other_party_name||t.other_party_email}</div>
@@ -1395,6 +1433,47 @@ export default function PersonalDetails() {
                   <div className="fi">
                     <span className="fl">Email <span style={{color:"#ef4444"}}>*</span></span>
                     <input className="in" value={email} disabled />
+                    <button
+                      type="button"
+                      onClick={()=>{setShowEmailChange(v=>!v);setEmailOtpSent(false);setEmailOtp("");setNewEmail("");setEmailChangeMsg("");setEmailChangeErr("");}}
+                      style={{marginTop:"0.3rem",background:"none",border:"none",color:"#0d6e6e",fontSize:"0.7rem",fontWeight:700,cursor:"pointer",padding:0,fontFamily:"inherit",textDecoration:"underline"}}>
+                      {showEmailChange?"Cancel":"Change email"}
+                    </button>
+                    {showEmailChange && (
+                      <div style={{marginTop:"0.5rem",background:"#f0f9f4",border:"1.5px solid #a8d5c2",borderRadius:9,padding:"0.75rem"}}>
+                        <div style={{fontSize:"0.72rem",fontWeight:700,color:"#0d6e6e",marginBottom:"0.4rem"}}>Change Email Address</div>
+                        {!emailOtpSent ? (<>
+                          <input
+                            className="in"
+                            type="email"
+                            placeholder="Enter new email address"
+                            value={newEmail}
+                            onChange={e=>{setNewEmail(e.target.value);setEmailChangeErr("");}}
+                            style={{marginBottom:"0.4rem"}}
+                          />
+                          <button type="button" onClick={requestEmailChange} disabled={emailChangeLod}
+                            style={{width:"100%",padding:"0.45rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:7,fontSize:"0.78rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit",opacity:emailChangeLod?0.6:1}}>
+                            {emailChangeLod?"Sending OTP…":"Send OTP to current email"}
+                          </button>
+                        </>) : (<>
+                          <p style={{fontSize:"0.72rem",color:"#0d6e6e",margin:"0 0 0.4rem"}}>{emailChangeMsg}</p>
+                          <input
+                            className="in"
+                            placeholder="Enter 6-digit OTP"
+                            value={emailOtp}
+                            maxLength={6}
+                            onChange={e=>{setEmailOtp(e.target.value.replace(/\D/g,"").slice(0,6));setEmailChangeErr("");}}
+                            style={{marginBottom:"0.4rem",letterSpacing:"4px",fontSize:"1rem",textAlign:"center"}}
+                            inputMode="numeric"
+                          />
+                          <button type="button" onClick={verifyEmailChange} disabled={emailChangeLod}
+                            style={{width:"100%",padding:"0.45rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:7,fontSize:"0.78rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit",opacity:emailChangeLod?0.6:1}}>
+                            {emailChangeLod?"Verifying…":"Confirm email change"}
+                          </button>
+                        </>)}
+                        {emailChangeErr && <p style={{fontSize:"0.72rem",color:"#b91c1c",margin:"0.35rem 0 0"}}>{emailChangeErr}</p>}
+                      </div>
+                    )}
                   </div>
                   <div className="fi">
                     <span className="fl">Mobile <span style={{color:"#ef4444"}}>*</span></span>
@@ -1477,8 +1556,23 @@ export default function PersonalDetails() {
                   </div>
                   {/* PAN */}
                   <div className="fi">
-                    <F l="PAN Number" v={pan} s={(v) => { let val = v.toUpperCase().slice(0,10); if (val.length<=5) val=val.replace(/[^A-Z]/g,""); else if (val.length<=9) val=val.slice(0,5)+val.slice(5).replace(/[^0-9]/g,""); else val=val.slice(0,5)+val.slice(5,9)+val.slice(9).replace(/[^A-Z]/g,""); dirty(setPan)(val); }} />
-                    {pan && pan.length !== 10 && <span className="fe">Format: AAAAA9999A</span>}
+                    <div className="fi">
+                      <span className="fl">PAN Number <span style={{color:"#ef4444"}}>*</span></span>
+                      <input
+                        className={`in${panDuplicate?" err":""}`}
+                        value={pan||""}
+                        maxLength={10}
+                        onChange={e=>{let val=e.target.value.toUpperCase().slice(0,10);if(val.length<=5)val=val.replace(/[^A-Z]/g,"");else if(val.length<=9)val=val.slice(0,5)+val.slice(5).replace(/[^0-9]/g,"");else val=val.slice(0,5)+val.slice(5,9)+val.slice(9).replace(/[^A-Z]/g,"");dirty(setPan)(val);setPanDuplicate(false);}}
+                        onBlur={()=>checkPanDuplicate(pan)}
+                      />
+                    </div>
+                    {pan && pan.length !== 10 && !panDuplicate && <span className="fe">Format: AAAAA9999A</span>}
+                    {panDuplicate && (
+                      <div style={{background:"#fef2f2",border:"1px solid #fecaca",borderRadius:7,padding:"0.5rem 0.75rem",fontSize:"0.75rem",color:"#b91c1c",lineHeight:1.6,marginTop:"0.35rem"}}>
+                        ⚠️ A Datagate profile already exists with this PAN number. Each person can have only one profile. <br/>
+                        Sign in to your existing account or contact <a href="mailto:support@datagate.co.in" style={{color:"#b91c1c",fontWeight:700}}>support@datagate.co.in</a>.
+                      </div>
+                    )}
                     <div style={{marginTop:"0.75rem"}}>
                       <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Name as per PAN <span style={{color:"#ef4444"}}>*</span></span>
                       <input className={`in${errors.nameAsPerPan?" err":""}`} value={nameAsPerPan} placeholder="Exactly as printed on PAN card" onChange={e=>{dirty(setNameAsPerPan)(e.target.value);fixErr("nameAsPerPan");}}/>

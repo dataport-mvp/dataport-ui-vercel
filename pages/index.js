@@ -1,3 +1,4 @@
+import React from "react";
 import Link from "next/link";
 
 const Logo = ({ variant = "dark" }) => (
@@ -47,6 +48,30 @@ const LinkedInIcon = () => (
 );
 
 const scroll = (id) => document.getElementById(id)?.scrollIntoView({behavior:"smooth",block:"start"});
+
+function CookieBanner() {
+  const [show, setShow] = React.useState(false);
+  React.useEffect(() => {
+    if (typeof window !== "undefined" && !localStorage.getItem("dg_cookie_consent")) {
+      setShow(true);
+    }
+  }, []);
+  const accept = () => { localStorage.setItem("dg_cookie_consent", "1"); setShow(false); };
+  if (!show) return null;
+  return (
+    <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:999,background:"#1a1510",borderTop:"1px solid rgba(255,255,255,0.1)",padding:"0.9rem 2rem",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:"0.75rem",fontFamily:"'DM Sans',sans-serif"}}>
+      <p style={{fontSize:"0.78rem",color:"rgba(255,255,255,0.7)",lineHeight:1.6,margin:0,maxWidth:"680px"}}>
+        We use essential cookies to keep you signed in and make Datagate work. No tracking, no advertising cookies. By continuing to use Datagate you agree to our{" "}
+        <a href="/privacy" style={{color:"#0d6e6e",textDecoration:"none",fontWeight:600}}>Privacy Policy</a>.
+      </p>
+      <div style={{display:"flex",gap:"0.6rem",flexShrink:0}}>
+        <button onClick={accept} style={{padding:"0.45rem 1.2rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:7,fontSize:"0.78rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+          Got it
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   return (
@@ -470,7 +495,7 @@ export default function Home() {
               <div className="f-links">
                 <a href="#how-it-works" className="f-lk" onClick={e=>{e.preventDefault();scroll("how-it-works")}}>How it works</a>
                 <a href="#features" className="f-lk" onClick={e=>{e.preventDefault();scroll("features")}}>Features</a>
-                <a href="https://www.linkedin.com/company/datagate-technologies" target="_blank" rel="noopener noreferrer" className="f-lk">LinkedIn</a>
+
               </div>
             </div>
             <div>
@@ -500,6 +525,7 @@ export default function Home() {
           </div>
         </div>
       </footer>
+      <CookieBanner />
     </>
   );
 }

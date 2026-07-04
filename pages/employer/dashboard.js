@@ -191,8 +191,8 @@ async function printProfile(profile, empHistory, documents, employerName) {
     ].join(""), color);
   };
 
-  const win = window.open("", "_blank");
-  win.document.write(`<!DOCTYPE html>
+  // Return HTML string instead of opening new tab
+  const htmlString = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8"/>
@@ -416,8 +416,10 @@ async function printProfile(profile, empHistory, documents, employerName) {
   </div>
 </body>
 </html>`);
-  win.document.close();
+  return htmlString;
 }
+
+const buildPrintHtml = printProfile;
 
 // ── Styles ────────────────────────────────────────────────────────────
 const G = `
@@ -523,6 +525,7 @@ const G = `
   .top-title strong { color: #111; font-size: 0.9rem; font-weight: 700; }
 
   .print-btn { padding: 0.44rem 1rem; background: #0d6e6e; color: #fff; border: none; border-radius: 7px; font-family: inherit; font-size: 0.73rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; transition: background 0.15s; box-shadow: 0 2px 8px rgba(13,110,110,0.25); }
+  @media print { .no-print { display: none !important; } }
   .print-btn:hover:not(:disabled) { background: #0a5656; }
   .print-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
@@ -724,6 +727,43 @@ function TermsModal({ onAccept }) {
           {busy ? "Saving…" : "Accept & Continue"}
         </button>
       </div>
+    </div>
+  );
+}
+
+function PrintPreviewModal({ html, onClose }) {
+  if (!html) return null;
+  return (
+    <div style={{position:"fixed",inset:0,zIndex:999,display:"flex",flexDirection:"column",background:"#1a1a1a"}}>
+      {/* Top bar */}
+      <div className="no-print" style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0.6rem 1.2rem",background:"#111",borderBottom:"1px solid #2a2a2a",flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:"0.75rem"}}>
+          <span style={{color:"#fff",fontWeight:700,fontSize:"0.9rem",fontFamily:"inherit"}}>📄 Print Preview</span>
+          <span style={{color:"#94a3b8",fontSize:"0.72rem"}}>Review before printing or saving as PDF</span>
+        </div>
+        <div style={{display:"flex",gap:"0.6rem"}}>
+          <button
+            onClick={() => {
+              const iframe = document.getElementById("dg-print-frame");
+              if (iframe) { iframe.contentWindow.focus(); iframe.contentWindow.print(); }
+            }}
+            style={{padding:"0.45rem 1.1rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:7,fontFamily:"inherit",fontSize:"0.78rem",fontWeight:700,cursor:"pointer"}}>
+            🖨 Print / Save as PDF
+          </button>
+          <button
+            onClick={onClose}
+            style={{padding:"0.45rem 0.9rem",background:"#2a2a2a",color:"#94a3b8",border:"1px solid #3a3a3a",borderRadius:7,fontFamily:"inherit",fontSize:"0.78rem",fontWeight:600,cursor:"pointer"}}>
+            ✕ Close
+          </button>
+        </div>
+      </div>
+      {/* iframe preview */}
+      <iframe
+        id="dg-print-frame"
+        srcDoc={html}
+        style={{flex:1,border:"none",background:"#fff"}}
+        title="Print Preview"
+      />
     </div>
   );
 }
@@ -1278,6 +1318,7 @@ export default function EmployerDashboard() {
   const [loadingProf,    setLoadingProf]    = useState(false);
   const [loading,        setLoading]        = useState(true);
   const [printing,       setPrinting]       = useState(false);
+  const [printHtml,      setPrintHtml]      = useState(null);  // null = closed, string = open
   const [showInbox,      setShowInbox]      = useState(false);
   const [inboxSearch,    setInboxSearch]    = useState("");
   const [mainTab,       setMainTab]        = useState("Overview");
@@ -1644,10 +1685,9 @@ export default function EmployerDashboard() {
     if (!profileData || printing) return;
     setPrinting(true);
     try {
-      // Refresh document URLs first — S3 presigned links expire after 1hr,
-      // so stale URLs would silently fail to load as images in the PDF.
       const freshDocs = empId ? await loadDocs(empId) : documents;
-      await printProfile(profileData.profile_snapshot, profileData.employment_snapshot||[], freshDocs||documents, user?.name||user?.email);
+      const html = await buildPrintHtml(profileData.profile_snapshot, profileData.employment_snapshot||[], freshDocs||documents, user?.name||user?.email);
+      setPrintHtml(html);
     } catch (_) {}
     setPrinting(false);
   };
@@ -1674,6 +1714,7 @@ return (
       <style>{G}</style>
 
       {showSignout && <SignoutModal onConfirm={logout} onCancel={() => setShowSignout(false)} />}
+      {printHtml && <PrintPreviewModal html={printHtml} onClose={() => setPrintHtml(null)} />}
 
       {/* ── Change Password Modal ── */}
       {showPwModal && (
