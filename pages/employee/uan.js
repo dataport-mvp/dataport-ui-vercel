@@ -489,26 +489,46 @@ export default function UanDetails() {
               const histRes = await apiFetch(`${API}/employee/employment-history/${d.employee_id}`);
               if (histRes.ok) {
                 const hist = await histRes.json();
-                const companies = Array.isArray(hist.employments)
-                  ? hist.employments.map((e, idx) => ({
-                      name: e.companyName || "",
-                      label: idx === 0
-                        ? (e.companyName ? `${e.companyName} (Current)` : "Current Employer")
-                        : (e.companyName ? `${e.companyName}` : `Previous Employer ${idx}`),
-                      isCurrent: idx === 0,
-                    }))
-                  : [];
+                const emps = Array.isArray(hist.employments) ? hist.employments : [];
+                const lastEmpIdx = emps.length - 1;
+                const companies = emps.map((e, idx) => {
+                      const isCurrentlyWorking = e.currentlyWorking === "Yes";
+                      const hasEndDate = !!e.endDate;
+                      // isCurrent = last entry, marked currently working, no end date
+                      const isCurrent = idx === lastEmpIdx && isCurrentlyWorking && !hasEndDate;
+                      return {
+                        name: e.companyName || "",
+                        label: isCurrent
+                          ? (e.companyName ? `${e.companyName} (Current)` : "Current Employer")
+                          : (e.companyName ? `${e.companyName}` : `Employer ${idx + 1}`),
+                        isCurrent,
+                        currentlyWorking: e.currentlyWorking || "",
+                        endDate: e.endDate || "",
+                      };
+                    });
                 setPage3Companies(companies);
                 if (Array.isArray(d.pfRecords) && d.pfRecords.length > 0) {
-                  setPfRecords(d.pfRecords.map(r => ({ companyName:r.companyName||"", hasPf:r.hasPf||"", pfType:r.pfType||"", pfMemberId:r.pfMemberId||"", dojEpfo:r.dojEpfo||"", doeEpfo:r.doeEpfo||"", pfTransferred:r.pfTransferred||"" })));
+                  // Merge saved pfRecords with live currentlyWorking status from page 3
+                  setPfRecords(d.pfRecords.map((r, idx) => ({
+                    ...r,
+                    companyName: r.companyName||"",
+                    hasPf: r.hasPf||"",
+                    pfType: r.pfType||"",
+                    pfMemberId: r.pfMemberId||"",
+                    dojEpfo: r.dojEpfo||"",
+                    doeEpfo: r.doeEpfo||"",
+                    pfTransferred: r.pfTransferred||"",
+                    // Always use live isCurrent from page 3 — not saved value
+                    isCurrent: companies[idx]?.isCurrent ?? (idx === 0),
+                  })));
                 } else if (companies.length > 0) {
-                  setPfRecords(companies.map(c => makePfRecord(c.name)));
+                  setPfRecords(companies.map((c) => ({ ...makePfRecord(c.name), isCurrent: c.isCurrent })));
                 }
               }
             } catch(_) {}
           } else {
             if (Array.isArray(d.pfRecords) && d.pfRecords.length > 0) {
-              setPfRecords(d.pfRecords.map(r => ({ companyName:r.companyName||"", hasPf:r.hasPf||"", pfType:r.pfType||"", pfMemberId:r.pfMemberId||"", dojEpfo:r.dojEpfo||"", doeEpfo:r.doeEpfo||"", pfTransferred:r.pfTransferred||"" })));
+              setPfRecords(d.pfRecords.map((r, idx) => ({ companyName:r.companyName||"", hasPf:r.hasPf||"", pfType:r.pfType||"", pfMemberId:r.pfMemberId||"", dojEpfo:r.dojEpfo||"", doeEpfo:r.doeEpfo||"", pfTransferred:r.pfTransferred||"", isCurrent: idx === 0 })));
             }
           }
         }
@@ -735,10 +755,24 @@ export default function UanDetails() {
                     <div className="pf-block-hdr">
                       <div style={{display:"flex",flexDirection:"column",gap:"0.25rem"}}>
                         <span className="pf-block-title">{rec.companyName || (p3?.label) || `Employer ${i + 1}`}</span>
-                        {p3 && <span className="pf-block-badge">{p3.isCurrent ? "🟢 Current / Most Recent" : `⬅ Previous Employer ${i}`}</span>}
+                        {p3 && <span className="pf-block-badge">{rec.isCurrent ? "🟢 Current / Most Recent" : `⬅ Previous Employer ${i}`}</span>}
                       </div>
                       {i > 0 && <button className="rm-btn" onClick={() => removePfRecord(i)}>− Remove</button>}
                     </div>
+                    {/* Current employer — no PF fields needed yet */}
+                    {rec.isCurrent && (
+                      <div style={{background:"#f0fdf4",border:"1px solid #86efac",borderRadius:10,padding:"0.9rem 1rem",marginTop:"0.25rem"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:"0.5rem",marginBottom:"0.4rem"}}>
+                          <span style={{fontSize:"1rem"}}>🟢</span>
+                          <span style={{fontSize:"0.83rem",fontWeight:700,color:"#15803d"}}>Currently employed here</span>
+                        </div>
+                        <p style={{fontSize:"0.76rem",color:"#166534",lineHeight:1.65,margin:0}}>
+                          PF details for your current employer will be collected once you update your end date on Page 3. 
+                          You don't need to fill anything here right now.
+                        </p>
+                      </div>
+                    )}
+                    {!rec.isCurrent && (
                     <div className="fr">
                       <F l="Company Name" v={rec.companyName} s={v => updatePf(i, "companyName", v)}/>
                       <div className="fi">
@@ -749,13 +783,13 @@ export default function UanDetails() {
                           ))}
                         </div>
                       </div>
-                    </div>
-                    {rec.hasPf === "No" && (
+                    </div>)}
+                    {!rec.isCurrent && rec.hasPf === "No" && (
                       <div style={{padding:"0.7rem 0.9rem",background:"#f0f9ff",border:"1px solid #bae6fd",borderRadius:9,fontSize:"0.78rem",color:"#0369a1",fontWeight:500,marginTop:"0.1rem"}}>
                         ℹ️ No PF details required — employer does not maintain Provident Fund.
                       </div>
                     )}
-                    {rec.hasPf === "Yes" && (
+                    {!rec.isCurrent && rec.hasPf === "Yes" && (
                       <>
                         <div className="fr">
                           <div className="fi">
@@ -775,16 +809,24 @@ export default function UanDetails() {
                         <div className="fr"><F l={`${pfLabel} Member ID`} v={rec.pfMemberId} s={v => updatePf(i, "pfMemberId", v)}/></div>
                         <div className="fr">
                           <FDate l={`Date of Joining (${pfLabel})`} v={rec.dojEpfo} s={v => updatePf(i, "dojEpfo", v)}/>
-                          <FDate l={`Date of Exit (${pfLabel})`} v={rec.doeEpfo} s={v => updatePf(i, "doeEpfo", v)}/>
+                          {!rec.isCurrent && (
+                            <FDate l={`Date of Exit (${pfLabel})`} v={rec.doeEpfo} s={v => updatePf(i, "doeEpfo", v)}/>
+                          )}
                         </div>
-                        <div>
-                          <span className="fl" style={{display:"block",marginBottom:"0.4rem"}}>Was PF Transferred? <span style={{color:"#ef4444"}}>*</span></span>
-                          <div style={{display:"flex",gap:"0.6rem"}}>
-                            {["Yes","No"].map(v => (
-                              <button key={v} onClick={() => updatePf(i, "pfTransferred", v)} style={{padding:"0.3rem 1.1rem",borderRadius:999,border:rec.pfTransferred===v?"2px solid #7c3aed":"1.5px solid #dddaf0",background:rec.pfTransferred===v?"#7c3aed":"#f2f1f9",color:rec.pfTransferred===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}>{v}</button>
-                            ))}
+                        {rec.isCurrent ? (
+                          <div style={{background:"#f0f9f4",border:"1px solid #a8d5c2",borderRadius:8,padding:"0.6rem 0.9rem",fontSize:"0.78rem",color:"#1a6b4a",marginBottom:"0.5rem",lineHeight:1.6}}>
+                            ℹ️ <strong>Currently employed here.</strong> Date of exit and PF transfer details will be filled when you leave this company. You can update this later.
                           </div>
-                        </div>
+                        ) : (
+                          <div>
+                            <span className="fl" style={{display:"block",marginBottom:"0.4rem"}}>Was PF Transferred? <span style={{color:"#ef4444"}}>*</span></span>
+                            <div style={{display:"flex",gap:"0.6rem"}}>
+                              {["Yes","No"].map(v => (
+                                <button key={v} onClick={() => updatePf(i, "pfTransferred", v)} style={{padding:"0.3rem 1.1rem",borderRadius:999,border:rec.pfTransferred===v?"2px solid #7c3aed":"1.5px solid #dddaf0",background:rec.pfTransferred===v?"#7c3aed":"#f2f1f9",color:rec.pfTransferred===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}>{v}</button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>

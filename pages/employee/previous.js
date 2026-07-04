@@ -151,11 +151,11 @@ const ACK_DEFS = [
 ];
 
 const GUIDE_STEPS = [
-  { label:"Current Company", sub:"most recent" },
-  { label:"Company 2",       sub:"before that"  },
+  { label:"First Job",       sub:"oldest"       },
+  { label:"Company 2",       sub:"after that"   },
   { label:"Company 3",       sub:""             },
   { label:"Company 4",       sub:""             },
-  { label:"First Job",       sub:"oldest"       },
+  { label:"Current Company", sub:"most recent"  },
 ];
 
 // ── DateField: no calendar, DD/MM/YYYY input, shows month name below ──
@@ -420,21 +420,22 @@ export default function PreviousCompany() {
           if(!emp.contractVendor.mobile) e[`${i}_vendorMobile`]=true;
         }
         if(!emp.startDate) e[`${i}_startDate`]=true;
-        if(i===0){
+        const lastIdx = employments.length - 1;
+        if(i===lastIdx){
           if(!emp.currentlyWorking) e[`${i}_currentlyWorking`]=true;
           if(emp.currentlyWorking==="No"&&!emp.endDate) e[`${i}_endDate`]=true;
         } else {
           if(!emp.endDate) e[`${i}_endDate`]=true;
         }
-        if(!(i===0&&emp.currentlyWorking==="Yes")&&!emp.reasonForRelieving) e[`${i}_reasonForRelieving`]=true;
-        const stillWorking = i===0 && emp.currentlyWorking==="Yes";
+        if(!(i===lastIdx&&emp.currentlyWorking==="Yes")&&!emp.reasonForRelieving) e[`${i}_reasonForRelieving`]=true;
+        const stillWorking = i===lastIdx && emp.currentlyWorking==="Yes";
         if(!stillWorking&&!emp.reference.role) e[`${i}_refRole`]=true;
         if(!stillWorking&&!emp.reference.name) e[`${i}_refName`]=true;
         if(!stillWorking&&!emp.reference.email) e[`${i}_refEmail`]=true;
         if(!stillWorking&&!emp.reference.mobile) e[`${i}_refMobile`]=true;
         if(!stillWorking&&!emp.documents.payslipsKey) e[`${i}_payslips`]=true;
         if(!emp.documents.offerLetterKey) e[`${i}_offerLetter`]=true;
-        if(i===0&&emp.currentlyWorking==="No"&&!emp.documents.resignationKey) e[`${i}_resignation`]=true;
+        if(i===lastIdx&&emp.currentlyWorking==="No"&&!emp.documents.resignationKey) e[`${i}_resignation`]=true;
         if(!stillWorking&&!emp.documents.experienceKey) e[`${i}_experience`]=true;
         if(emp.gap.hasGap==="Yes"&&!emp.gap.reason) e[`${i}_gapReason`]=true;
       });
@@ -523,8 +524,8 @@ export default function PreviousCompany() {
           <div className="guide-banner">
             <div style={{fontSize:"1.2rem",flexShrink:0}}>💡</div>
             <div style={{flex:1}}>
-              <div style={{fontSize:"0.82rem",fontWeight:700,color:"#3730a3",marginBottom:"0.25rem"}}>Always start with your current or most recent company</div>
-              <div style={{fontSize:"0.72rem",color:"#6b6894",marginBottom:"0.5rem",lineHeight:1.5}}>Add each employer in reverse chronological order — most recent first.</div>
+              <div style={{fontSize:"0.82rem",fontWeight:700,color:"#3730a3",marginBottom:"0.25rem"}}>Start with your first job and work forward to your current employer</div>
+              <div style={{fontSize:"0.72rem",color:"#6b6894",marginBottom:"0.5rem",lineHeight:1.5}}>Add employers in chronological order — oldest first, current employer last.</div>
               <div className="guide-steps">
                 {GUIDE_STEPS.map((s,i,arr)=>(
                   <span key={i} style={{display:"inline-flex",alignItems:"center",gap:"0.4rem"}}>
@@ -567,24 +568,25 @@ export default function PreviousCompany() {
           {/* ── Employer cards ── */}
           {hasExperience==="Yes"&&(<>
           {employments.map((emp,index)=>{
-            const isCurrentlyWorking = index===0 && emp.currentlyWorking==="Yes";
+            const isLast = index === employments.length - 1;
+            const isCurrentlyWorking = isLast && emp.currentlyWorking==="Yes";
             const gapPillLabel = emp.gap.hasGap==="Yes"
               ? (index===0?"Gap before joining: Yes":"Gap before this job: Yes")
               : (index===0?"Gap before joining?":"Gap before this job?");
             const gapHint = index===0
-              ? "Any gap between leaving your previous company and joining this one."
-              : `Any gap between leaving the company below and joining this one.`;
+              ? "Any gap between finishing your education and joining this company."
+              : `Any gap between leaving ${employments[index-1]?.companyName||"the previous company"} and joining this one.`;
 
             return (
             <div key={emp.company_id} className="emp-card">
               <div className="emp-hdr">
                 <div style={{display:"flex",alignItems:"center",gap:"0.55rem",flexWrap:"wrap"}}>
-                  <span className="emp-title">{index===0?"Current / Most Recent Employer":`Previous Employer ${index}`}</span>
-                  {isCurrentlyWorking&&<span className="cur-badge">✓ Currently working here</span>}
+                  <span className="emp-title">{isLast?"Current / Most Recent Employer":index===0?"First Job / Oldest Employer":`Employer ${index + 1}`}</span>
+                  {isLast&&isCurrentlyWorking&&<span className="cur-badge">✓ Currently working here</span>}
                 </div>
                 <div className="emp-hdr-right">
-                  <button className={`gap-pill${emp.gap.hasGap==="Yes"?" on":""}`} onClick={()=>update(index,"gap.hasGap",emp.gap.hasGap==="Yes"?"":"Yes")}>⏱ {gapPillLabel}</button>
-                  {index!==0&&<button className="rm-btn" onClick={()=>removeEmployer(index)}>− Remove</button>}
+                  {index > 0 && <button className={`gap-pill${emp.gap.hasGap==="Yes"?" on":""}`} onClick={()=>update(index,"gap.hasGap",emp.gap.hasGap==="Yes"?"":"Yes")}>⏱ {gapPillLabel}</button>}
+                  {employments.length>1&&<button className="rm-btn" onClick={()=>removeEmployer(index)}>− Remove</button>}
                 </div>
               </div>
 
@@ -616,18 +618,18 @@ export default function PreviousCompany() {
 
               <div className="fr">
                 <FDate l="Date of Joining" v={emp.startDate} s={v=>update(index,"startDate",v)} errKey={`${index}_startDate`} errors={errors} onFix={fixErr}/>
-                {(index!==0||(index===0&&emp.currentlyWorking==="No"))&&(
+                {(!isLast || emp.currentlyWorking==="No")&&(
                   <FDate l="Date of Leaving" v={emp.endDate} s={v=>update(index,"endDate",v)} errKey={`${index}_endDate`} errors={errors} onFix={fixErr}/>
                 )}
-                {index===0&&(
+                {isLast&&(
                   <div className="fi">
                     <span className="fl">Currently Working Here <span style={{color:"#ef4444",marginLeft:2}}>*</span></span>
                     <div style={{display:"flex",gap:"0.55rem",marginTop:"0.15rem"}}>
                       {["Yes","No"].map(v=>(
-                        <button key={v} onClick={()=>{update(0,"currentlyWorking",v);fixErr("0_currentlyWorking");}} style={{flex:1,padding:"0.62rem 0",borderRadius:9,border:emp.currentlyWorking===v?"2px solid #0d6e6e":"1.5px solid #d8d4e3",background:emp.currentlyWorking===v?"#0d6e6e":"#f5f4f0",color:emp.currentlyWorking===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}>{v}</button>
+                        <button key={v} onClick={()=>{update(index,"currentlyWorking",v);fixErr(`${index}_currentlyWorking`);}} style={{flex:1,padding:"0.62rem 0",borderRadius:9,border:emp.currentlyWorking===v?"2px solid #0d6e6e":"1.5px solid #d8d4e3",background:emp.currentlyWorking===v?"#0d6e6e":"#f5f4f0",color:emp.currentlyWorking===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}>{v}</button>
                       ))}
                     </div>
-                    {errors[`0_currentlyWorking`]&&<span className="err-msg">Required</span>}
+                    {errors[`${index}_currentlyWorking`]&&<span className="err-msg">Required</span>}
                   </div>
                 )}
               </div>
@@ -643,28 +645,28 @@ export default function PreviousCompany() {
                 </div>
               )}
 
-              {!(index===0 && emp.currentlyWorking==="Yes") && (
+              {!(isLast && emp.currentlyWorking==="Yes") && (
                 <div style={{marginTop:"0.75rem"}}>
                   <TA l="Reason for Relieving / Leaving" v={emp.reasonForRelieving} s={v=>update(index,"reasonForRelieving",v)} errKey={`${index}_reasonForRelieving`} errors={errors} onFix={fixErr}/>
                 </div>
               )}
 
               <div className="subsec">
-                <div className="sub-lbl">Reference Details{index===0&&emp.currentlyWorking==="Yes"&&<span style={{fontSize:"0.7rem",color:"#16a34a",fontWeight:500,marginLeft:"0.5rem"}}>(optional while currently employed)</span>}</div>
+                <div className="sub-lbl">Reference Details{isLast&&emp.currentlyWorking==="Yes"&&<span style={{fontSize:"0.7rem",color:"#16a34a",fontWeight:500,marginLeft:"0.5rem"}}>(optional while currently employed)</span>}</div>
                 <div className="fr">
-                  <FS l="Reference Role" v={emp.reference.role} s={v=>update(index,"reference.role",v)} o={["Manager","Colleague","HR","Client"]} r={!(index===0&&emp.currentlyWorking==="Yes")} errKey={`${index}_refRole`} errors={errors} onFix={fixErr}/>
-                  <F l="Reference Name" v={emp.reference.name} s={v=>update(index,"reference.name",v)} r={!(index===0&&emp.currentlyWorking==="Yes")} errKey={`${index}_refName`} errors={errors} onFix={fixErr}/>
+                  <FS l="Reference Role" v={emp.reference.role} s={v=>update(index,"reference.role",v)} o={["Manager","Colleague","HR","Client"]} r={!(isLast&&emp.currentlyWorking==="Yes")} errKey={`${index}_refRole`} errors={errors} onFix={fixErr}/>
+                  <F l="Reference Name" v={emp.reference.name} s={v=>update(index,"reference.name",v)} r={!(isLast&&emp.currentlyWorking==="Yes")} errKey={`${index}_refName`} errors={errors} onFix={fixErr}/>
                 </div>
                 <div className="fr">
-                  <F l="Reference Official Email" v={emp.reference.email} s={v=>update(index,"reference.email",v)} r={!(index===0&&emp.currentlyWorking==="Yes")} errKey={`${index}_refEmail`} errors={errors} onFix={fixErr}/>
-                  <F l="Reference Mobile" v={emp.reference.mobile} s={v=>/^\d*$/.test(v)&&update(index,"reference.mobile",v)} mx={10} r={!(index===0&&emp.currentlyWorking==="Yes")} errKey={`${index}_refMobile`} errors={errors} onFix={fixErr}/>
+                  <F l="Reference Official Email" v={emp.reference.email} s={v=>update(index,"reference.email",v)} r={!(isLast&&emp.currentlyWorking==="Yes")} errKey={`${index}_refEmail`} errors={errors} onFix={fixErr}/>
+                  <F l="Reference Mobile" v={emp.reference.mobile} s={v=>/^\d*$/.test(v)&&update(index,"reference.mobile",v)} mx={10} r={!(isLast&&emp.currentlyWorking==="Yes")} errKey={`${index}_refMobile`} errors={errors} onFix={fixErr}/>
                 </div>
               </div>
 
               <div className="subsec">
                 <div className="sub-lbl">Attachments</div>
                 <div className="att-wrap">
-                  <span className="att-lbl">Payslips (Last 3 Months){!(index===0&&emp.currentlyWorking==="Yes")&&<span style={{color:"#ef4444"}}> *</span>}</span>
+                  <span className="att-lbl">Payslips (Last 3 Months){!(isLast&&emp.currentlyWorking==="Yes")&&<span style={{color:"#ef4444"}}> *</span>}</span>
                   {errors[`${index}_payslips`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
                   <FileUpload label="Payslips" category="employment" subKey="payslips" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.payslipsKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.payslipsKey",k);fixErr(`${index}_payslips`);}}/>
                 </div>
@@ -679,7 +681,7 @@ export default function PreviousCompany() {
                   <FileUpload label="Resignation" category="employment" subKey="resignation" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.resignationKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.resignationKey",k);fixErr(`${index}_resignation`);}}/>
                 </div>
                 <div className="att-wrap">
-                  <span className="att-lbl">Experience / Relieving Letter{!(index===0&&emp.currentlyWorking==="Yes")&&<span style={{color:"#ef4444"}}> *</span>}</span>
+                  <span className="att-lbl">Experience / Relieving Letter{!(isLast&&emp.currentlyWorking==="Yes")&&<span style={{color:"#ef4444"}}> *</span>}</span>
                   {errors[`${index}_experience`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
                   <FileUpload label="Experience Letter" category="employment" subKey="experience" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.experienceKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.experienceKey",k);fixErr(`${index}_experience`);}}/>
                 </div>
@@ -691,7 +693,14 @@ export default function PreviousCompany() {
             </div>
             );
           })}
-          <button className="add-btn" onClick={addEmployer}>+ Add Another Employer</button>
+          <button className="add-btn" onClick={()=>{
+            const last = employments[employments.length-1];
+            if(last && last.currentlyWorking==="Yes" && !last.endDate){
+              alert(`Please update the end date for "${last.companyName||"your current employer"}" on this page before adding a new employer.`);
+              return;
+            }
+            addEmployer();
+          }}>+ Add New / Current Employer</button>
           </>)}
 
           {/* ── Other Declarations ── */}
