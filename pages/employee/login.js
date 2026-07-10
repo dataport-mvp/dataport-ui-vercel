@@ -72,7 +72,7 @@ export default function EmployeeLogin() {
         setInfo("Reset link sent — check your email."); return;
       }
       if (mode === "signup" && phone.length !== 10) { setError("Phone must be 10 digits"); return; }
-      if (mode === "signup" && !mobileVerified) { setError("Please verify your mobile number with OTP before creating your account."); return; }
+      // OTP verification temporarily disabled — re-enable when SNS production approved
       if (mode === "signup" && !termsAgreed) { setError("Please accept the Terms of Service and Privacy Policy to continue."); return; }
       const body = mode === "signup"
         ? {email, password, name, phone, role:"employee", terms_accepted_at: new Date().toISOString()}
@@ -247,12 +247,12 @@ export default function EmployeeLogin() {
                 <label className="flb">Mobile Number <span>*</span></label>
                 <div style={{display:"flex",gap:"0.4rem"}}>
                   <input className="fin" placeholder="10-digit mobile number" value={phone} onChange={e=>{handlePhone(e.target.value);setMobileVerified(false);setMobileOtpSent(false);setMobileOtp("");setMobileOtpMsg("");}} inputMode="numeric" maxLength={10} style={{flex:1}}/>
-                  {!mobileVerified && phone.length===10 && !mobileOtpSent && (
+                  {false && !mobileVerified && phone.length===10 && !mobileOtpSent && (
                     <button type="button" onClick={sendMobileOtp} style={{padding:"0 0.9rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:9,fontSize:"0.72rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Send OTP</button>
                   )}
                 </div>
-                {mobileOtpMsg && <span style={{fontSize:"0.68rem",color:mobileVerified?"#16a34a":"#6b6258",marginTop:2}}>{mobileOtpMsg}</span>}
-                {!mobileVerified && mobileOtpSent && (
+                {false && mobileOtpMsg && <span style={{fontSize:"0.68rem",color:mobileVerified?"#16a34a":"#6b6258",marginTop:2}}>{mobileOtpMsg}</span>}
+                {false && !mobileVerified && mobileOtpSent && (
                   <div style={{marginTop:"0.4rem",display:"flex",gap:"0.4rem"}}>
                     <input className="fin" placeholder="Enter 6-digit OTP" value={mobileOtp} onChange={e=>setMobileOtp(e.target.value.replace(/\D/g,"").slice(0,6))} inputMode="numeric" maxLength={6} style={{flex:1,letterSpacing:"4px",textAlign:"center"}}/>
                     <button type="button" onClick={verifyMobileOtp} style={{padding:"0 0.9rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:9,fontSize:"0.72rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Verify</button>
