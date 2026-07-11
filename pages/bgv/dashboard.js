@@ -772,7 +772,6 @@ export default function BgvDashboard() {
             </div>
           )}
         </div>
-        </div>
 
         {/* ON HOLD — Request additional info from employee */}
         {caseDetail && caseDetail.consent_status === "APPROVED" && (
