@@ -408,6 +408,29 @@ function ConsentTab({ apiFetch, profileStatus }) {
       <button disabled={acting===c.consent_id} onClick={()=>withdraw(c.consent_id)} style={{padding:"0.45rem 1rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:8,fontWeight:600,cursor:acting===c.consent_id?"not-allowed":"pointer",fontSize:"0.8rem",fontFamily:"inherit",opacity:acting===c.consent_id?0.7:1}}>{acting===c.consent_id?"…":"Withdraw consent"}</button>
       <span style={{fontSize:"0.7rem",color:"#94a3b8",marginLeft:"0.6rem"}}>Employer will immediately lose access</span>
     </div>)}
+    {c.bgv_status&&(<div style={{marginTop:"0.75rem",padding:"0.6rem 0.9rem",background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:9}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"0.4rem"}}>
+        <span style={{fontSize:"0.7rem",fontWeight:700,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.5px"}}>BGV Status</span>
+        <span style={{padding:"0.18rem 0.65rem",borderRadius:999,fontSize:"0.7rem",fontWeight:700,
+          color:c.bgv_status==="completed"?"#16a34a":c.bgv_status==="on_hold"?"#dc2626":c.bgv_status==="in_progress"?"#d97706":"#6366f1",
+          background:c.bgv_status==="completed"?"#f0fdf4":c.bgv_status==="on_hold"?"#fef2f2":c.bgv_status==="in_progress"?"#fffbeb":"#eef2ff",
+        }}>
+          {c.bgv_status==="groomed"?"Assigned":c.bgv_status==="in_progress"?"In Progress":c.bgv_status==="on_hold"?"⚠️ On Hold — Action needed":c.bgv_status==="completed"?"Completed":c.bgv_status}
+        </span>
+      </div>
+      {c.bgv_result_flag&&(<div style={{marginTop:"0.4rem",display:"flex",alignItems:"center",gap:"0.4rem"}}>
+        <span style={{fontSize:"0.7rem",fontWeight:700,color:"#64748b"}}>Result:</span>
+        <span style={{padding:"0.15rem 0.6rem",borderRadius:999,fontSize:"0.7rem",fontWeight:800,
+          color:c.bgv_result_flag==="green"?"#16a34a":c.bgv_result_flag==="red"?"#dc2626":"#d97706",
+          background:c.bgv_result_flag==="green"?"#f0fdf4":c.bgv_result_flag==="red"?"#fef2f2":"#fffbeb",
+        }}>
+          {c.bgv_result_flag==="green"?"✓ Clear":c.bgv_result_flag==="red"?"✗ Discrepancy found":"⚠ Minor issues"}
+        </span>
+      </div>)}
+      {c.bgv_status==="on_hold"&&(<div style={{marginTop:"0.4rem",fontSize:"0.72rem",color:"#dc2626",fontWeight:600}}>
+        Your BGV is on hold. Check your inbox — the BGV team has requested additional information.
+      </div>)}
+    </div>)}
   </div>);
   const toIST=(ts)=>{if(!ts)return"—";try{return new Date(typeof ts==="number"&&ts<1e12?ts*1000:ts).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});}catch{return"—";}};
 

@@ -1161,16 +1161,44 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
       {(!bgvCase?.bgv_vendor_email) && (
         <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:"1rem",marginBottom:"1rem"}}>
           <div style={{fontWeight:700,fontSize:"0.84rem",color:"#0f172a",marginBottom:"0.6rem"}}>Assign BGV Vendor</div>
-          <div style={{display:"flex",gap:"0.65rem",alignItems:"center",flexWrap:"wrap"}}>
-            <select value={selectedVendor} onChange={e=>setSelectedVendor(e.target.value)} style={{padding:"0.5rem 0.75rem",border:"1.5px solid #e2e8f0",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",flex:1,minWidth:200}}>
-              <option value="">Select BGV Vendor…</option>
-              {vendors.map(v=><option key={v.email} value={v.email}>{v.company_name||v.name} ({v.email})</option>)}
-            </select>
-            <button onClick={assignVendor} disabled={!selectedVendor||assigning} style={{padding:"0.5rem 1.1rem",background:"#4f46e5",color:"#fff",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:"0.82rem",fontWeight:700,cursor:"pointer",opacity:(!selectedVendor||assigning)?0.6:1}}>
-              {assigning?"Assigning…":"Assign →"}
-            </button>
-          </div>
-          {vendors.length===0 && <p style={{fontSize:"0.72rem",color:"#94a3b8",marginTop:"0.5rem"}}>No approved BGV vendors available. Contact admin to onboard a vendor.</p>}
+          {/* Searchable BGV vendor selector */}
+          {(()=>{
+            const [vendorSearch, setVendorSearch] = React.useState("");
+            const filtered = vendors.filter(v=>
+              (v.company_name||v.name||"").toLowerCase().includes(vendorSearch.toLowerCase()) ||
+              (v.email||"").toLowerCase().includes(vendorSearch.toLowerCase())
+            );
+            return (
+              <div>
+                <input
+                  type="text"
+                  placeholder="Search BGV vendor by name or email…"
+                  value={vendorSearch}
+                  onChange={e=>setVendorSearch(e.target.value)}
+                  style={{width:"100%",padding:"0.5rem 0.75rem",border:"1.5px solid #e2e8f0",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",boxSizing:"border-box",marginBottom:"0.5rem",outline:"none"}}
+                />
+                <div style={{maxHeight:180,overflowY:"auto",border:"1px solid #e2e8f0",borderRadius:8,marginBottom:"0.5rem"}}>
+                  {filtered.length===0&&<div style={{padding:"0.75rem",fontSize:"0.78rem",color:"#94a3b8"}}>No vendors found</div>}
+                  {filtered.map(v=>(
+                    <div key={v.email} onClick={()=>setSelectedVendor(v.email)}
+                      style={{padding:"0.6rem 0.85rem",cursor:"pointer",borderBottom:"1px solid #f1f5f9",
+                        background:selectedVendor===v.email?"#eef2ff":"#fff",
+                        fontWeight:selectedVendor===v.email?700:400,
+                        fontSize:"0.84rem",color:"#0f172a"}}>
+                      <span style={{fontWeight:700}}>{v.company_name||v.name}</span>
+                      <span style={{fontSize:"0.72rem",color:"#64748b",marginLeft:"0.5rem"}}>{v.email}</span>
+                      {selectedVendor===v.email&&<span style={{float:"right",color:"#4f46e5",fontSize:"0.72rem",fontWeight:800}}>✓ Selected</span>}
+                    </div>
+                  ))}
+                </div>
+                <button onClick={assignVendor} disabled={!selectedVendor||assigning}
+                  style={{width:"100%",padding:"0.55rem",background:"#4f46e5",color:"#fff",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",fontWeight:700,cursor:"pointer",opacity:(!selectedVendor||assigning)?0.6:1}}>
+                  {assigning?"Assigning…":selectedVendor?`Assign to ${vendors.find(v=>v.email===selectedVendor)?.company_name||selectedVendor} →`:"Select a vendor first"}
+                </button>
+                {vendors.length===0&&<p style={{fontSize:"0.72rem",color:"#94a3b8",marginTop:"0.5rem"}}>No approved BGV vendors. Contact admin to onboard a vendor.</p>}
+              </div>
+            );
+          })()}
           {assignMsg && <p style={{fontSize:"0.78rem",marginTop:"0.5rem",color:assignMsg.startsWith("✓")?"#16a34a":"#ef4444",fontWeight:600}}>{assignMsg}</p>}
         </div>
       )}
