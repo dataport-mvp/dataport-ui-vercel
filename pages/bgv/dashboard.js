@@ -798,6 +798,7 @@ export default function BgvDashboard() {
               >{holdSending?"Sending…":"Put on hold & notify"}</button>
               {holdResult && <span style={{fontSize:"0.75rem",color:holdResult.startsWith("✓")?"#16a34a":"#dc2626",fontWeight:600}}>{holdResult}</span>}
             </div>
+          </div>
         )}
 
       </div>
