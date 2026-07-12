@@ -528,7 +528,7 @@ export default function UanDetails() {
             } catch(_) {}
           } else {
             if (Array.isArray(d.pfRecords) && d.pfRecords.length > 0) {
-              setPfRecords(d.pfRecords.map((r, idx) => ({ companyName:r.companyName||"", hasPf:r.hasPf||"", pfType:r.pfType||"", pfMemberId:r.pfMemberId||"", dojEpfo:r.dojEpfo||"", doeEpfo:r.doeEpfo||"", pfTransferred:r.pfTransferred||"", isCurrent: idx === 0 })));
+              setPfRecords(d.pfRecords.map((r, idx, arr) => ({ companyName:r.companyName||"", hasPf:r.hasPf||"", pfType:r.pfType||"", pfMemberId:r.pfMemberId||"", dojEpfo:r.dojEpfo||"", doeEpfo:r.doeEpfo||"", pfTransferred:r.pfTransferred||"", isCurrent: idx === arr.length - 1 })));
             }
           }
         }
