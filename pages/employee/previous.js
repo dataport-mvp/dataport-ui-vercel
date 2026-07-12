@@ -654,12 +654,12 @@ export default function PreviousCompany() {
               <div className="subsec">
                 <div className="sub-lbl">Reference Details{isLast&&emp.currentlyWorking==="Yes"&&<span style={{fontSize:"0.7rem",color:"#16a34a",fontWeight:500,marginLeft:"0.5rem"}}>(optional while currently employed)</span>}</div>
                 <div className="fr">
-                  <FS l="Reference Role" v={emp.reference.role} s={v=>update(index,"reference.role",v)} o={["Manager","Colleague","HR","Client"]} r={!(isLast&&emp.currentlyWorking==="Yes")} errKey={`${index}_refRole`} errors={errors} onFix={fixErr}/>
-                  <F l="Reference Name" v={emp.reference.name} s={v=>update(index,"reference.name",v)} r={!(isLast&&emp.currentlyWorking==="Yes")} errKey={`${index}_refName`} errors={errors} onFix={fixErr}/>
+                  <FS l="Reference Role" v={emp.reference.role} s={v=>update(index,"reference.role",v)} o={["Manager","Colleague","HR","Client"]} r={false} errKey={`${index}_refRole`} errors={errors} onFix={fixErr}/>
+                  <F l="Reference Name" v={emp.reference.name} s={v=>update(index,"reference.name",v)} r={false} errKey={`${index}_refName`} errors={errors} onFix={fixErr}/>
                 </div>
                 <div className="fr">
-                  <F l="Reference Official Email" v={emp.reference.email} s={v=>update(index,"reference.email",v)} r={!(isLast&&emp.currentlyWorking==="Yes")} errKey={`${index}_refEmail`} errors={errors} onFix={fixErr}/>
-                  <F l="Reference Mobile" v={emp.reference.mobile} s={v=>/^\d*$/.test(v)&&update(index,"reference.mobile",v)} mx={10} r={!(isLast&&emp.currentlyWorking==="Yes")} errKey={`${index}_refMobile`} errors={errors} onFix={fixErr}/>
+                  <F l="Reference Official Email" v={emp.reference.email} s={v=>update(index,"reference.email",v)} r={false} errKey={`${index}_refEmail`} errors={errors} onFix={fixErr}/>
+                  <F l="Reference Mobile" v={emp.reference.mobile} s={v=>/^\d*$/.test(v)&&update(index,"reference.mobile",v)} mx={10} r={false} errKey={`${index}_refMobile`} errors={errors} onFix={fixErr}/>
                 </div>
               </div>
 
@@ -689,12 +689,12 @@ export default function PreviousCompany() {
                     <FileUpload label="Payslips" category="employment" subKey="payslips" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.payslipsKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.payslipsKey",k);fixErr(`${index}_payslips`);}}/>
                   </div>
                   <div className="att-wrap">
-                    <span className="att-lbl">Resignation Acceptance{isLast&&<span style={{color:"#ef4444"}}> *</span>}</span>
+                    <span className="att-lbl">Resignation Acceptance</span>
                     {errors[`${index}_resignation`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
                     <FileUpload label="Resignation" category="employment" subKey="resignation" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.resignationKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.resignationKey",k);fixErr(`${index}_resignation`);}}/>
                   </div>
                   <div className="att-wrap">
-                    <span className="att-lbl">Experience / Relieving Letter <span style={{color:"#ef4444"}}>*</span></span>
+                    <span className="att-lbl">Experience / Relieving Letter</span>
                     {errors[`${index}_experience`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
                     <FileUpload label="Experience Letter" category="employment" subKey="experience" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.experienceKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.experienceKey",k);fixErr(`${index}_experience`);}}/>
                   </div>
