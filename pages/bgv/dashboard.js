@@ -6,19 +6,16 @@ import { useAuth } from "../../utils/AuthContext";
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
 const BGV_LIFECYCLE = {
-  groomed:     { label: "Groomed",     color: "#6366f1", bg: "#eef2ff" },
-  in_progress: { label: "In Progress", color: "#d97706", bg: "#fffbeb" },
-  on_hold:     { label: "On Hold",     color: "#dc2626", bg: "#fef2f2" },
-  completed:   { label: "Completed",   color: "#16a34a", bg: "#f0fdf4" },
-  assigned:    { label: "Assigned",    color: "#0d6e6e", bg: "#f0fdfa" },
+  groomed:     {label:"Assigned",    color:"#6366f1",bg:"#eef2ff"},
+  in_progress: {label:"In Progress", color:"#d97706",bg:"#fffbeb"},
+  on_hold:     {label:"On Hold",     color:"#dc2626",bg:"#fef2f2"},
+  completed:   {label:"Completed",   color:"#16a34a",bg:"#f0fdf4"},
 };
-
 const RESULT_FLAG = {
-  green: { label: "Clear ✓",       color: "#16a34a", bg: "#f0fdf4" },
-  amber: { label: "Minor Issues",  color: "#d97706", bg: "#fffbeb" },
-  red:   { label: "Discrepancy ✗", color: "#dc2626", bg: "#fef2f2" },
+  green:{label:"Clear",        color:"#16a34a",bg:"#f0fdf4"},
+  amber:{label:"Minor Issues", color:"#d97706",bg:"#fffbeb"},
+  red:  {label:"Discrepancy",  color:"#dc2626",bg:"#fef2f2"},
 };
-
 const CHECK_STATUS = {
   pending:        { label:"Pending",        color:"#94a3b8", bg:"#f1f5f9" },
   in_progress:    { label:"In Progress",    color:"#3b82f6", bg:"#eff6ff" },
@@ -135,9 +132,9 @@ export default function BgvDashboard() {
   const { user, apiFetch, logout, ready } = useAuth();
 
   const [tab, setTab]             = useState("cases");
-  const [holdMsg,    setHoldMsg]   = useState("");
-  const [holdSending,setHoldSending] = useState(false);
-  const [holdResult, setHoldResult] = useState("");
+  const [holdMsg,     setHoldMsg]    = useState("");
+  const [holdSending, setHoldSending]= useState(false);
+  const [holdResult,  setHoldResult] = useState("");
   const [cases, setCases]         = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [caseDetail, setCaseDetail] = useState(null);
@@ -690,80 +687,74 @@ export default function BgvDashboard() {
             </div>
           )}
 
-          {/* ── REPORTS TAB ── */}
+          {/* ── STATS TAB ── */}
           {tab === "stats" && (() => {
-            const total   = cases.length;
-            const byStatus = cases.reduce((acc,c) => { acc[c.bgv_status||"groomed"] = (acc[c.bgv_status||"groomed"]||0)+1; return acc; }, {});
-            const completed = cases.filter(c=>c.bgv_status==="completed");
-            const onHold    = cases.filter(c=>c.bgv_status==="on_hold");
-            const inProg    = cases.filter(c=>c.bgv_status==="in_progress");
-            const groomed   = cases.filter(c=>!c.bgv_status||c.bgv_status==="groomed");
-            const avgDays   = completed.length > 0
-              ? Math.round(completed.reduce((sum,c)=>{
-                  const diff = (c.bgv_updated_at||0) - (c.bgv_assigned_at||0);
-                  return sum + diff/(1000*60*60*24);
-                }, 0) / completed.length)
-              : null;
-            const statCard = (label, value, color, sub) => (
-              <div style={{background:"#fff",borderRadius:12,padding:"1.1rem 1.25rem",boxShadow:"0 2px 8px rgba(30,26,62,0.07)",border:`2px solid ${color}30`}}>
-                <div style={{fontSize:"0.72rem",fontWeight:700,color:"#94a3b8",textTransform:"uppercase",letterSpacing:"0.5px"}}>{label}</div>
-                <div style={{fontSize:"2rem",fontWeight:900,color,margin:"0.3rem 0 0.1rem"}}>{value}</div>
-                {sub && <div style={{fontSize:"0.72rem",color:"#94a3b8"}}>{sub}</div>}
+            const total = cases.length;
+            const groomed = cases.filter(c=>!c.bgv_status||c.bgv_status==="groomed").length;
+            const inProg  = cases.filter(c=>c.bgv_status==="in_progress").length;
+            const onHold  = cases.filter(c=>c.bgv_status==="on_hold").length;
+            const done    = cases.filter(c=>c.bgv_status==="completed");
+            const avgDays = done.length>0 ? Math.round(done.reduce((s,c)=>s+((c.bgv_updated_at||0)-(c.bgv_assigned_at||0))/86400000,0)/done.length) : null;
+            const SC=(label,val,color,sub)=>(
+              <div style={{background:"#fff",borderRadius:10,padding:"0.9rem",border:`2px solid ${color}25`,textAlign:"center"}}>
+                <div style={{fontSize:"0.65rem",fontWeight:700,color:"#94a3b8",textTransform:"uppercase",letterSpacing:1}}>{label}</div>
+                <div style={{fontSize:"1.7rem",fontWeight:900,color,margin:"0.15rem 0"}}>{val}</div>
+                <div style={{fontSize:"0.65rem",color:"#94a3b8"}}>{sub}</div>
               </div>
             );
             return (
               <div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:"0.75rem",marginBottom:"1.25rem"}}>
-                  {statCard("Total Cases", total, "#4f46e5", "all time")}
-                  {statCard("Groomed", groomed.length, "#0d6e6e", "not started")}
-                  {statCard("In Progress", inProg.length, "#d97706", "active")}
-                  {statCard("On Hold", onHold.length, "#dc2626", "needs info")}
-                  {statCard("Completed", completed.length, "#16a34a", "done")}
-                  {statCard("Avg Days", avgDays !== null ? avgDays : "—", "#6366f1", "to complete")}
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(110px,1fr))",gap:"0.6rem",marginBottom:"1rem"}}>
+                  {SC("Total",total,"#4f46e5","all")}
+                  {SC("Assigned",groomed,"#0d6e6e","not started")}
+                  {SC("In Progress",inProg,"#d97706","active")}
+                  {SC("On Hold",onHold,"#dc2626","needs info")}
+                  {SC("Completed",done.length,"#16a34a","done")}
+                  {SC("Avg Days",avgDays!==null?avgDays:"—","#6366f1","turnaround")}
                 </div>
-                {onHold.length > 0 && (
-                  <div style={{background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:10,padding:"0.75rem 1rem",marginBottom:"1rem"}}>
-                    <div style={{fontWeight:700,fontSize:"0.82rem",color:"#dc2626",marginBottom:"0.4rem"}}>⚠️ Cases on hold — waiting for information</div>
-                    {onHold.map(c=>(
-                      <div key={c.consent_id} style={{fontSize:"0.8rem",color:"#0f172a",padding:"0.25rem 0"}} onClick={()=>{setSelectedId(c.consent_id);setTab("cases");}} style={{cursor:"pointer"}}>
+                {onHold>0&&(
+                  <div style={{background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:10,padding:"0.75rem 1rem",marginBottom:"0.75rem"}}>
+                    <div style={{fontWeight:700,fontSize:"0.78rem",color:"#dc2626",marginBottom:"0.3rem"}}>Cases on hold</div>
+                    {cases.filter(c=>c.bgv_status==="on_hold").map(c=>(
+                      <div key={c.consent_id} onClick={()=>{setSelectedId(c.consent_id);setTab("cases");}} style={{fontSize:"0.78rem",color:"#0f172a",padding:"0.15rem 0",cursor:"pointer"}}>
                         {c.candidate_name} — {c.requestor_name}
                       </div>
                     ))}
                   </div>
                 )}
-                <div style={{background:"#fff",borderRadius:12,padding:"1rem",boxShadow:"0 2px 8px rgba(30,26,62,0.07)"}}>
-                  <div style={{fontWeight:700,fontSize:"0.84rem",color:"#0f172a",marginBottom:"0.75rem"}}>Result breakdown (completed cases)</div>
-                  {completed.length === 0 && <div style={{color:"#94a3b8",fontSize:"0.8rem"}}>No completed cases yet.</div>}
+                <div style={{background:"#fff",borderRadius:10,padding:"0.9rem"}}>
+                  <div style={{fontWeight:700,fontSize:"0.8rem",color:"#0f172a",marginBottom:"0.4rem"}}>Result breakdown</div>
+                  {done.length===0&&<div style={{color:"#94a3b8",fontSize:"0.76rem"}}>No completed cases yet.</div>}
                   {["green","amber","red"].map(flag=>{
-                    const count = completed.filter(c=>c.bgv_result_flag===flag).length;
-                    const rf = RESULT_FLAG[flag];
-                    return count > 0 ? (
-                      <div key={flag} style={{display:"flex",justifyContent:"space-between",padding:"0.5rem 0",borderBottom:"1px solid #f1f5f9"}}>
-                        <span style={{fontSize:"0.82rem",color:rf.color,fontWeight:700}}>{rf.label}</span>
-                        <span style={{fontSize:"0.82rem",fontWeight:900,color:rf.color}}>{count}</span>
+                    const cnt=done.filter(c=>c.bgv_result_flag===flag).length;
+                    const rf=RESULT_FLAG[flag];
+                    return cnt>0?(
+                      <div key={flag} style={{display:"flex",justifyContent:"space-between",padding:"0.35rem 0",borderBottom:"1px solid #f1f5f9"}}>
+                        <span style={{fontSize:"0.78rem",color:rf.color,fontWeight:700}}>{rf.label}</span>
+                        <span style={{fontSize:"0.78rem",fontWeight:900,color:rf.color}}>{cnt}</span>
                       </div>
-                    ) : null;
+                    ):null;
                   })}
                 </div>
               </div>
             );
           })()}
 
+          {/* ── REPORTS TAB ── */}
           {tab === "reports" && (
             <div style={{background:"#fff",borderRadius:14,padding:"1.25rem",boxShadow:"0 2px 8px rgba(30,26,62,0.08)"}}>
               <div style={{fontWeight:700,fontSize:"0.9rem",color:"#0f172a",marginBottom:"1rem"}}>Submitted Reports</div>
               {cases.filter(c=>c.bgv_report_key).length===0 && <div className="empty-state">No reports submitted yet.</div>}
               {cases.filter(c=>c.bgv_report_key).map(c=>{
                 const ov = OVERALL_STATUS[c.bgv_overall_status];
-                const rf = RESULT_FLAG[c.bgv_result_flag];
                 return (
                   <div key={c.consent_id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"0.85rem 1rem",border:"1px solid #f1f5f9",borderRadius:10,marginBottom:"0.65rem"}}>
                     <div>
                       <div style={{fontWeight:700,fontSize:"0.875rem",color:"#0f172a"}}>{c.candidate_name}</div>
-                      <div style={{fontSize:"0.75rem",color:"#64748b",marginTop:"0.15rem"}}>{c.requestor_name} · {isoDate(c.bgv_updated_at)}</div>
+                      <div style={{fontSize:"0.75rem",color:"#64748b",marginTop:"0.15rem"}}>{c.requestor_name} · Submitted {isoDate(c.bgv_updated_at)}</div>
                     </div>
-                    <div style={{display:"flex",gap:"0.4rem",alignItems:"center"}}>
-                      {rf && <span style={{fontWeight:800,fontSize:"0.72rem",color:rf.color,background:rf.bg,padding:"0.2rem 0.6rem",borderRadius:999}}>{rf.label}</span>}
+                    <div style={{display:"flex",gap:"0.4rem",flexWrap:"wrap",justifyContent:"flex-end"}}>
+                      {RESULT_FLAG[c.bgv_result_flag]&&<span style={{fontWeight:800,fontSize:"0.72rem",color:RESULT_FLAG[c.bgv_result_flag].color,background:RESULT_FLAG[c.bgv_result_flag].bg,padding:"0.2rem 0.6rem",borderRadius:999}}>{RESULT_FLAG[c.bgv_result_flag].label}</span>}
                       {ov && <span style={{fontWeight:800,fontSize:"0.72rem",color:ov.color,background:`${ov.color}15`,padding:"0.2rem 0.6rem",borderRadius:999}}>{ov.label}</span>}
                     </div>
                   </div>
@@ -771,37 +762,20 @@ export default function BgvDashboard() {
               })}
             </div>
           )}
-        </div>
-
-        {/* ON HOLD — Request additional info from employee */}
-        {caseDetail && caseDetail.consent_status === "APPROVED" && (
-          <div style={{marginTop:"1.5rem",background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:12,padding:"1rem"}}>
-            <div style={{fontWeight:700,fontSize:"0.84rem",color:"#dc2626",marginBottom:"0.5rem"}}>
-              🔴 Put case on hold — request info from employee
-            </div>
-            <p style={{fontSize:"0.75rem",color:"#475569",margin:"0 0 0.6rem",lineHeight:1.6}}>
-              This will set the case status to ON HOLD and notify both the employee and employer with your message.
-            </p>
-            <textarea
-              value={holdMsg}
-              onChange={e=>setHoldMsg(e.target.value)}
-              placeholder="Describe what additional information or documents are needed..."
-              rows={3}
-              style={{width:"100%",padding:"0.5rem 0.75rem",border:"1.5px solid #fecaca",borderRadius:8,fontFamily:"inherit",fontSize:"0.8rem",resize:"vertical",boxSizing:"border-box",outline:"none"}}
-            />
-            <div style={{display:"flex",gap:"0.5rem",marginTop:"0.5rem",alignItems:"center"}}>
-              <button
-                onClick={()=>sendHoldRequest(caseDetail.consent_id)}
-                disabled={holdSending||!holdMsg.trim()}
-                style={{padding:"0.45rem 1rem",background:"#dc2626",color:"#fff",border:"none",borderRadius:7,fontSize:"0.78rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit",opacity:(holdSending||!holdMsg.trim())?0.6:1}}
-              >{holdSending?"Sending…":"Put on hold & notify"}</button>
-              {holdResult && <span style={{fontSize:"0.75rem",color:holdResult.startsWith("✓")?"#16a34a":"#dc2626",fontWeight:600}}>{holdResult}</span>}
-            </div>
+        <div style={{marginTop:"1rem",background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:10,padding:"0.85rem"}}>
+          <div style={{fontWeight:700,fontSize:"0.8rem",color:"#dc2626",marginBottom:"0.35rem"}}>Request info from employee (puts case on hold)</div>
+          <textarea value={holdMsg} onChange={e=>setHoldMsg(e.target.value)} placeholder="What documents or info are needed?" rows={2}
+            style={{width:"100%",padding:"0.4rem 0.6rem",border:"1.5px solid #fecaca",borderRadius:7,fontFamily:"inherit",fontSize:"0.77rem",resize:"vertical",boxSizing:"border-box",outline:"none"}}/>
+          <div style={{display:"flex",gap:"0.5rem",alignItems:"center",marginTop:"0.35rem"}}>
+            <button onClick={()=>sendHoldRequest(caseDetail&&caseDetail.consent_id)} disabled={holdSending||!holdMsg.trim()}
+              style={{padding:"0.38rem 0.8rem",background:"#dc2626",color:"#fff",border:"none",borderRadius:7,fontSize:"0.75rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit",opacity:(holdSending||!holdMsg.trim())?0.6:1}}>
+              {holdSending?"Sending...":"Put on hold & notify"}
+            </button>
+            {holdResult&&<span style={{fontSize:"0.72rem",color:holdResult.includes("hold")?"#16a34a":"#dc2626",fontWeight:600}}>{holdResult}</span>}
           </div>
-        )}
-
+        </div>
+        </div>
       </div>
-    </div>
     </>
   );
 }
