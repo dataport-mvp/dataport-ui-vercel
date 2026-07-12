@@ -528,7 +528,7 @@ export default function UanDetails() {
             } catch(_) {}
           } else {
             if (Array.isArray(d.pfRecords) && d.pfRecords.length > 0) {
-              setPfRecords(d.pfRecords.map((r, idx, arr) => ({ companyName:r.companyName||"", hasPf:r.hasPf||"", pfType:r.pfType||"", pfMemberId:r.pfMemberId||"", dojEpfo:r.dojEpfo||"", doeEpfo:r.doeEpfo||"", pfTransferred:r.pfTransferred||"", isCurrent: idx === arr.length - 1 })));
+              setPfRecords(d.pfRecords.map((r, idx) => ({ companyName:r.companyName||"", hasPf:r.hasPf||"", pfType:r.pfType||"", pfMemberId:r.pfMemberId||"", dojEpfo:r.dojEpfo||"", doeEpfo:r.doeEpfo||"", pfTransferred:r.pfTransferred||"", isCurrent: idx === 0 })));
             }
           }
         }
@@ -1003,7 +1003,12 @@ export default function UanDetails() {
                         sigDrawingRef.current=true;
                         const r=sigCanvasRef.current.getBoundingClientRect();
                         const scaleX=sigCanvasRef.current.width/r.width;
-                        sigLastRef.current={x:(e.clientX-r.left)*scaleX,y:(e.clientY-r.top)*scaleX};
+                        const x=(e.clientX-r.left)*scaleX, y=(e.clientY-r.top)*scaleX;
+                        sigLastRef.current={x,y};
+                        // Draw a dot immediately on press so single clicks (like dot on j/i) are captured
+                        const ctx=sigCanvasRef.current.getContext("2d");
+                        ctx.beginPath();ctx.fillStyle="#1a1730";
+                        ctx.arc(x,y,1.5,0,Math.PI*2);ctx.fill();
                       }}
                       onMouseMove={e=>{
                         if(!sigDrawingRef.current)return;
@@ -1011,7 +1016,7 @@ export default function UanDetails() {
                         const scaleX=sigCanvasRef.current.width/r.width;
                         const ctx=sigCanvasRef.current.getContext("2d");
                         const x=(e.clientX-r.left)*scaleX, y=(e.clientY-r.top)*scaleX;
-                        ctx.beginPath();ctx.strokeStyle="#1a1730";ctx.lineWidth=2;ctx.lineCap="round";
+                        ctx.beginPath();ctx.strokeStyle="#1a1730";ctx.lineWidth=2.2;ctx.lineCap="round";ctx.lineJoin="round";
                         ctx.moveTo(sigLastRef.current.x,sigLastRef.current.y);ctx.lineTo(x,y);ctx.stroke();
                         sigLastRef.current={x,y};
                       }}
@@ -1021,7 +1026,12 @@ export default function UanDetails() {
                         const r=sigCanvasRef.current.getBoundingClientRect();
                         const scaleX=sigCanvasRef.current.width/r.width;
                         const t=e.touches[0];
-                        sigLastRef.current={x:(t.clientX-r.left)*scaleX,y:(t.clientY-r.top)*scaleX};
+                        const x=(t.clientX-r.left)*scaleX, y=(t.clientY-r.top)*scaleX;
+                        sigLastRef.current={x,y};
+                        // Draw dot on press
+                        const ctx=sigCanvasRef.current.getContext("2d");
+                        ctx.beginPath();ctx.fillStyle="#1a1730";
+                        ctx.arc(x,y,1.5,0,Math.PI*2);ctx.fill();
                       }}
                       onTouchMove={e=>{
                         e.preventDefault();if(!sigDrawingRef.current)return;
@@ -1030,12 +1040,12 @@ export default function UanDetails() {
                         const ctx=sigCanvasRef.current.getContext("2d");
                         const t=e.touches[0];
                         const x=(t.clientX-r.left)*scaleX, y=(t.clientY-r.top)*scaleX;
-                        ctx.beginPath();ctx.strokeStyle="#1a1730";ctx.lineWidth=2;ctx.lineCap="round";
+                        ctx.beginPath();ctx.strokeStyle="#1a1730";ctx.lineWidth=2.2;ctx.lineCap="round";ctx.lineJoin="round";
                         ctx.moveTo(sigLastRef.current.x,sigLastRef.current.y);ctx.lineTo(x,y);ctx.stroke();
                         sigLastRef.current={x,y};
                       }}
                       onTouchEnd={finishSignature}
-                      onMouseLeave={()=>{sigDrawingRef.current=false;}}
+                      onMouseLeave={()=>{if(sigDrawingRef.current){sigDrawingRef.current=false;finishSignature();}}}
                     />
 
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:"0.6rem",flexWrap:"wrap",gap:"0.5rem"}}>
