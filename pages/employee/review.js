@@ -249,23 +249,30 @@ function getMissingFields(d, empHistory) {
   if (!ug.college && edu.hasUG === "Yes") p2.push("UG – College Name");
   if (p2.length) issues.push({ step:2, label:"Education", path:"/employee/education", fields:p2 });
 
-  if (empHistory.length > 0) {
-    const p3 = [];
+  const p3 = [];
+  if (empHistory.length === 0) {
+    // Employee never visited page 3 — flag it entirely
+    p3.push("At least one employment record required");
+  } else {
+    const lastIdx = empHistory.length - 1;
     empHistory.forEach((e, idx) => {
-      const n = idx === 0 ? "Current Employer" : `Employer ${idx + 1}`;
-      if (!e.companyName)    p3.push(`${n} – Company Name`);
-      if (!e.designation)    p3.push(`${n} – Designation`);
-      if (!e.startDate)      p3.push(`${n} – Date of Joining`);
-      if (idx === 0 && !e.currentlyWorking) p3.push(`${n} – Currently Working?`);
-      if (!e.documents?.offerLetterKey)  p3.push(`${n} – Offer Letter`);
-      if (!e.documents?.experienceKey)   p3.push(`${n} – Experience Letter`);
-      if (idx===0 && e.currentlyWorking==="No" && !e.documents?.resignationKey) p3.push(`${n} – Resignation Acceptance`);
+      const isCurrent = idx === lastIdx;
+      const n = isCurrent ? "Current Employer" : `Employer ${idx + 1}`;
+      if (!e.companyName)   p3.push(`${n} – Company Name`);
+      if (!e.designation)   p3.push(`${n} – Designation`);
+      if (!e.startDate)     p3.push(`${n} – Date of Joining`);
+      if (isCurrent && !e.currentlyWorking) p3.push(`${n} – Currently Working?`);
+      if (!e.documents?.offerLetterKey) p3.push(`${n} – Offer Letter`);
+      if (!e.documents?.experienceKey)  p3.push(`${n} – Experience Letter`);
+      if (isCurrent && e.currentlyWorking === "No" && !e.documents?.resignationKey) p3.push(`${n} – Resignation Acceptance`);
     });
-    if (p3.length) issues.push({ step:3, label:"Employment History", path:"/employee/previous", fields:p3 });
   }
+  if (p3.length) issues.push({ step:3, label:"Employment History", path:"/employee/previous", fields:p3 });
 
   const p4 = [];
-  if (d.hasUan === "yes" || d.hasUan === true) {
+  // Always check page 4 — if not visited, UAN details are missing
+  if (!d.uanNumber && !d.hasUan) p4.push("UAN details not filled");
+  else if (d.hasUan === "yes" || d.hasUan === true) {
     if (!d.uanNumber) p4.push("UAN Number");
     if (!d.epfoKey)   p4.push("UAN Card Upload");
   }
