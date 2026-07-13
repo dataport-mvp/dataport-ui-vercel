@@ -1466,6 +1466,9 @@ export default function PersonalDetails() {
                       <div style={{marginTop:"0.5rem",background:"#f0f9f4",border:"1.5px solid #a8d5c2",borderRadius:9,padding:"0.75rem"}}>
                         <div style={{fontSize:"0.72rem",fontWeight:700,color:"#0d6e6e",marginBottom:"0.4rem"}}>Change Email Address</div>
                         {!emailOtpSent ? (<>
+                          <p style={{fontSize:"0.72rem",color:"#d97706",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:6,padding:"0.4rem 0.6rem",margin:"0 0 0.5rem",lineHeight:1.5}}>
+                            {"⚠️ Make sure you have saved your profile before changing your email. Unsaved changes will be lost."}
+                          </p>
                           <input
                             className="in"
                             type="email"
