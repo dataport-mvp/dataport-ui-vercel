@@ -765,7 +765,7 @@ export default function UanDetails() {
                     <div className="pf-block-hdr">
                       <div style={{display:"flex",flexDirection:"column",gap:"0.25rem"}}>
                         <span className="pf-block-title">{rec.companyName || (p3?.label) || `Employer ${i + 1}`}</span>
-                        {p3 && <span className="pf-block-badge">{rec.isCurrent ? "🟢 Current / Most Recent" : `⬅ Previous Employer ${i}`}</span>}
+                        {p3 && <span className="pf-block-badge">{rec.isCurrent ? "🟢 Current / Most Recent" : `⬅ Previous Employer ${i + 1}`}</span>}
                       </div>
                       {i > 0 && <button className="rm-btn" onClick={() => removePfRecord(i)}>− Remove</button>}
                     </div>
