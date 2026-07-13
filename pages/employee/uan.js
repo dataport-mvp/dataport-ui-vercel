@@ -240,7 +240,7 @@ function FDate({ l, v, s, r=true, errKey, errors, onFix }) {
     setRaw(val);
     if(val.length===10){
       const[d,mo,y]=val.split("/");
-      const day=parseInt(d,10), month=parseInt(mo,10);
+      const day=parseInt(d,10),month=parseInt(mo,10);
       if(d&&mo&&y&&y.length===4&&month>=1&&month<=12&&day>=1&&day<=31){
         s(`${y}-${mo.padStart(2,"0")}-${d.padStart(2,"0")}`);
         if(onFix&&hasErr)onFix(errKey);
@@ -379,7 +379,7 @@ export default function UanDetails() {
       const ctx = sigCanvasRef.current.getContext("2d");
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, sigCanvasRef.current.width, sigCanvasRef.current.height);
-      ctx.fillStyle = "#ffffff"; // Double fill ensures white on first render
+      ctx.fillStyle = "#ffffff";
     }
   }, [showSigCanvas]);
 
@@ -509,28 +509,36 @@ export default function UanDetails() {
                       };
                     });
                 setPage3Companies(companies);
-                if (Array.isArray(d.pfRecords) && d.pfRecords.length > 0) {
-                  // Merge saved pfRecords with live currentlyWorking status from page 3
-                  setPfRecords(d.pfRecords.map((r, idx) => ({
+                // Always re-sync if company count changed (employee added/deleted a job on page 3)
+                const savedPf = Array.isArray(d.pfRecords) ? d.pfRecords : [];
+                if (savedPf.length > 0 && savedPf.length === companies.length) {
+                  // Same count — merge saved data with live company names and isCurrent
+                  setPfRecords(savedPf.map((r, idx) => ({
                     ...r,
-                    companyName: r.companyName||"",
-                    hasPf: r.hasPf||"",
-                    pfType: r.pfType||"",
-                    pfMemberId: r.pfMemberId||"",
-                    dojEpfo: r.dojEpfo||"",
-                    doeEpfo: r.doeEpfo||"",
-                    pfTransferred: r.pfTransferred||"",
-                    // Always use live isCurrent from page 3 — not saved value
-                    isCurrent: companies[idx]?.isCurrent ?? (idx === 0),
+                    companyName: companies[idx]?.name || r.companyName || "",
+                    hasPf: r.hasPf || "",
+                    pfType: r.pfType || "",
+                    pfMemberId: r.pfMemberId || "",
+                    dojEpfo: r.dojEpfo || "",
+                    doeEpfo: r.doeEpfo || "",
+                    pfTransferred: r.pfTransferred || "",
+                    isCurrent: companies[idx]?.isCurrent ?? (idx === companies.length - 1),
                   })));
                 } else if (companies.length > 0) {
-                  setPfRecords(companies.map((c) => ({ ...makePfRecord(c.name), isCurrent: c.isCurrent })));
+                  // Count changed (job added/deleted) — rebuild from page 3 companies
+                  // Preserve saved PF data where company name matches
+                  setPfRecords(companies.map((c) => {
+                    const saved = savedPf.find(r => r.companyName === c.name);
+                    return saved
+                      ? { ...saved, companyName: c.name, isCurrent: c.isCurrent }
+                      : { ...makePfRecord(c.name), isCurrent: c.isCurrent };
+                  }));
                 }
               }
             } catch(_) {}
           } else {
             if (Array.isArray(d.pfRecords) && d.pfRecords.length > 0) {
-              setPfRecords(d.pfRecords.map((r, idx) => ({ companyName:r.companyName||"", hasPf:r.hasPf||"", pfType:r.pfType||"", pfMemberId:r.pfMemberId||"", dojEpfo:r.dojEpfo||"", doeEpfo:r.doeEpfo||"", pfTransferred:r.pfTransferred||"", isCurrent: idx === arr.length - 1 })));
+              setPfRecords(d.pfRecords.map((r, idx) => ({ companyName:r.companyName||"", hasPf:r.hasPf||"", pfType:r.pfType||"", pfMemberId:r.pfMemberId||"", dojEpfo:r.dojEpfo||"", doeEpfo:r.doeEpfo||"", pfTransferred:r.pfTransferred||"", isCurrent: idx === 0 })));
             }
           }
         }
@@ -924,7 +932,7 @@ export default function UanDetails() {
                   <input type="checkbox" checked={pfNomAck} onChange={e=>{setPfNomAck(e.target.checked);isDirtyRef.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
                   <div>
                     <div style={{fontSize:"0.68rem",fontWeight:800,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>PF Nomination Declaration (Form 2 — Part A) <span style={{color:"#ef4444"}}>*</span></div>
-                    <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I hereby nominate the person(s) listed above to receive the amount standing to my credit in the Provident Fund in the event of my death, as per Form 2 under the Employees' Provident Fund Scheme, 1952. I confirm the nominee details are accurate, shares total 100%, and I have not made any other nomination that supersedes this.</span>
+                    <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I hereby nominate the person(s) listed above to receive the amount standing to my credit in the Provident Fund in the event of my death. I confirm the nominee details are accurate and shares add up to 100%.</span>
                   </div>
                 </label>
               </div>
@@ -935,7 +943,7 @@ export default function UanDetails() {
                   <input type="checkbox" checked={pensionNomAck} onChange={e=>{setPensionNomAck(e.target.checked);isDirtyRef.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
                   <div>
                     <div style={{fontSize:"0.68rem",fontWeight:800,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>Pension Nomination Declaration (Form 2 — Part B) <span style={{color:"#ef4444"}}>*</span></div>
-                    <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I nominate the above person(s) to receive pension under the Employees' Pension Scheme, 1995 (Form 2 — Part B). This nomination supersedes any previous nomination made by me and is submitted voluntarily with full knowledge of its legal effect under the EPS, 1995.</span>
+                    <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I nominate the above person(s) to receive pension under the Employees' Pension Scheme, 1995. This nomination supersedes any previous nomination made by me.</span>
                   </div>
                 </label>
               </div>
@@ -946,7 +954,7 @@ export default function UanDetails() {
                   <input type="checkbox" checked={epfoDecl} onChange={e=>{setEpfoDecl(e.target.checked);isDirtyRef.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
                   <div>
                     <div style={{fontSize:"0.68rem",fontWeight:800,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>General EPFO Declaration <span style={{color:"#ef4444"}}>*</span></div>
-                    <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I declare that all UAN, PF Member ID(s), service history, contribution records, and nominee details provided in this section are true, complete, and correct. I understand that any false declaration, suppression of material facts, or fraudulent submission may result in cancellation of my PF benefits, recovery of amounts wrongfully claimed, and legal action under the EPF & MP Act, 1952 and applicable Indian law.</span>
+                    <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I declare that all UAN, PF member ID(s), service history, and nominee details provided are true and correct. I understand false declarations may result in legal action under the EPF Act, 1952.</span>
                   </div>
                 </label>
               </div>
