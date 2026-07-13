@@ -263,7 +263,7 @@ function getMissingFields(d, empHistory) {
       if (!e.startDate)     p3.push(`${n} – Date of Joining`);
       if (isCurrent && !e.currentlyWorking) p3.push(`${n} – Currently Working?`);
       if (!e.documents?.offerLetterKey) p3.push(`${n} – Offer Letter`);
-      if (!e.documents?.experienceKey)  p3.push(`${n} – Experience Letter`);
+      if (!isCurrent && !e.documents?.experienceKey) p3.push(`${n} – Experience Letter`);
       if (isCurrent && e.currentlyWorking === "No" && !e.documents?.resignationKey) p3.push(`${n} – Resignation Acceptance`);
     });
   }
