@@ -30,11 +30,11 @@ const STEPS = [
 const ACCENTS = { 1:"#0d6e6e", 2:"#d97706", 3:"#7c3aed", 4:"#0891b2", 5:"#16a34a" };
 
 const ACK_STATEMENTS = [
-  "I confirm that I have reviewed all information across all sections of this profile and it is accurate and complete to the best of my knowledge.",
-  "I authorise Datagate and its authorised verification partners to contact my previous employers, educational institutions, and references to verify the details I have submitted.",
-  "I understand that this profile will be shared with a prospective employer only after I explicitly approve their consent request, and I retain the right to withdraw that approval at any time.",
-  "I acknowledge that any material misrepresentation, falsification, or omission discovered at any stage — including after employment commences — may lead to immediate termination and possible legal action.",
-  "I accept full responsibility for keeping my profile updated if any submitted information changes in the future.",
+  "I confirm that I have carefully reviewed all sections of this profile — personal details, education, employment history, UAN/PF records, and supporting documents — and that all information is true, accurate, and complete to the best of my knowledge.",
+  "I authorise Datagate Technologies and its authorised background verification partners to contact my previous employers, educational institutions, government bodies, and references to verify any details submitted in this profile, in accordance with the Digital Personal Data Protection Act 2023 (DPDP Act).",
+  "I understand and agree that this profile and its contents will be shared with a prospective employer only after I provide my explicit, informed consent to that specific employer's request. I retain the right to withdraw that consent at any time, subject to the terms of the Datagate platform.",
+  "I acknowledge that any material misrepresentation, falsification, or deliberate omission discovered at any stage — whether before or after commencement of employment — may result in immediate rejection of my application, termination of employment, and/or civil or criminal proceedings under applicable Indian law including the IPC, IT Act 2000, and DPDP Act 2023.",
+  "I accept full responsibility for promptly updating my Datagate profile if any submitted information changes in the future, and I acknowledge that sharing outdated or incorrect information with prospective employers may have legal and professional consequences.",
 ];
 
 function ConsentBell({ apiFetch, router }) {

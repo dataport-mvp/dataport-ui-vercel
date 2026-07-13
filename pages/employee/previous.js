@@ -144,10 +144,10 @@ const G = `
 `;
 
 const ACK_DEFS = [
-  { key:"business", title:"Other Business or Employment", question:"Are you currently engaged in any other business, employment, or professional activity outside of this role?", detail:"This includes part-time employment, freelance or consulting work, directorships, partnerships, or any activity that generates income or could create a conflict of interest." },
-  { key:"dismissed", title:"Dismissal or Termination for Cause", question:"Have you ever been dismissed, discharged, or asked to resign from any position of employment for reasons of misconduct, performance, or any disciplinary action?", detail:"This includes termination with cause, constructive dismissal, or any exit that followed a formal disciplinary process." },
-  { key:"criminal", title:"Criminal Conviction or Pending Proceedings", question:"Have you ever been convicted of a criminal offence, or do you currently have any criminal proceedings pending against you in any court of law?", detail:"This includes convictions resulting in fines, community service, probation, imprisonment, or any other sentence." },
-  { key:"civil", title:"Civil Judgments or Regulatory Actions", question:"Have you ever had a civil judgment entered against you, or been subject to a regulatory finding, ban, or sanction by any court, tribunal, or regulatory authority?", detail:"This includes money decrees, injunctions, adverse orders in consumer or labour disputes." },
+  { key:"business", title:"Other Business or Employment", question:"Are you currently engaged in any other business, employment, or professional activity outside of this role?", detail:"This includes part-time employment, freelance or consulting work, directorships, partnerships, or any activity that generates income or could create a conflict of interest. Disclosure is required under the DPDP Act 2023 and your prospective employer's code of conduct." },
+  { key:"dismissed", title:"Dismissal or Termination for Cause", question:"Have you ever been dismissed, discharged, or asked to resign from any position of employment for reasons of misconduct, performance, or disciplinary action?", detail:"This includes termination with cause, constructive dismissal, or any exit that followed a formal disciplinary process, a Performance Improvement Plan (PIP), or a show-cause notice." },
+  { key:"criminal", title:"Criminal Conviction or Pending Proceedings", question:"Have you ever been convicted of a criminal offence, or do you currently have any criminal proceedings pending against you in any court of law in India or abroad?", detail:"This includes convictions resulting in fines, community service, probation, imprisonment, or any other sentence. Cases under the IPC, CRPC, or any special statute must be disclosed." },
+  { key:"civil", title:"Civil Judgments or Regulatory Actions", question:"Have you ever had a civil judgment entered against you, or been subject to a regulatory finding, ban, or sanction by any court, tribunal, or regulatory authority?", detail:"This includes money decrees, injunctions, adverse orders in consumer or labour disputes, SEBI/RBI/IRDAI sanctions, or any professional body disciplinary action." },
 ];
 
 const GUIDE_STEPS = [
@@ -180,8 +180,9 @@ function FDate({ l, v, s, r=true, errKey, errors, onFix }) {
     setRaw(val);
     if(val.length===10){
       const[d,mo,y]=val.split("/");
-      if(d&&mo&&y&&y.length===4){
-        s(`${y}-${mo}-${d}`);
+      const day=parseInt(d,10), month=parseInt(mo,10), year=parseInt(y,10);
+      if(d&&mo&&y&&y.length===4&&month>=1&&month<=12&&day>=1&&day<=31){
+        s(`${y}-${mo.padStart(2,"0")}-${d.padStart(2,"0")}`);
         if(onFix&&hasErr)onFix(errKey);
       }
     } else { s(""); }
@@ -436,7 +437,9 @@ export default function PreviousCompany() {
         if(!stillWorking&&!emp.documents.payslipsKey) e[`${i}_payslips`]=true;
         if(!emp.documents.offerLetterKey) e[`${i}_offerLetter`]=true;
         if(i===lastIdx&&emp.currentlyWorking==="No"&&!emp.documents.resignationKey) e[`${i}_resignation`]=true;
-        if(!stillWorking&&!emp.documents.experienceKey) e[`${i}_experience`]=true;
+        // Experience letter not required for current employer (no end date)
+        const isCurrentEmp = i === lastIdx && emp.currentlyWorking === "Yes";
+        if(!stillWorking&&!isCurrentEmp&&!emp.documents.experienceKey) e[`${i}_experience`]=true;
         if(emp.gap.hasGap==="Yes"&&!emp.gap.reason) e[`${i}_gapReason`]=true;
       });
     }
@@ -753,7 +756,7 @@ export default function PreviousCompany() {
               <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
                 <input type="checkbox" checked={declared} onChange={e=>{setDeclared(e.target.checked);isDirtyRef.current=true;if(e.target.checked)fixErr("declared");}} style={{marginTop:"0.18rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
                 <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>
-                  I hereby declare that all information provided in this employment history section is true, complete, and accurate to the best of my knowledge. I understand that any misrepresentation or omission may result in rejection of my application or termination of employment.
+                  I hereby declare that all information provided in this employment history section — including employer details, dates of service, designations, reasons for leaving, and supporting documents — is true, complete, and accurate to the best of my knowledge. I understand that any misrepresentation, falsification, or omission, whether discovered before or after commencement of employment, may result in immediate rejection of my application, termination of employment, and/or legal action under applicable Indian law including the Information Technology Act 2000 and the DPDP Act 2023.
                 </span>
               </label>
               {errors.declared&&<p style={{fontSize:"0.68rem",color:"#ef4444",fontWeight:600,marginTop:"0.5rem",marginLeft:"1.7rem"}}>Please confirm this declaration before proceeding</p>}
