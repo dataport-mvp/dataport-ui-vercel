@@ -1261,7 +1261,7 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
   );
 }
 
-function DocumentsTab({ documents, loading }) {
+function DocumentsTab({ documents, loading, empSnap }) {
   if (loading) return <div className="nd-box">Loading documents…</div>;
   if (!documents||Object.keys(documents).length===0) return <div className="nd-box">No documents uploaded yet</div>;
   const grouped = {};
@@ -1279,10 +1279,9 @@ function DocumentsTab({ documents, loading }) {
             <div key={group}>
               {group.startsWith("employment/")&&(()=>{
                 const cid = group.split("/")[1];
-                const empSnap = profileData?.employment_snapshot || [];
-                const sorted = [...empSnap].sort((a,b)=>(Number(a.sort_order??999))-(Number(b.sort_order??999)));
+                const sorted = [...(empSnap||[])].sort((a,b)=>(Number(a.sort_order??999))-(Number(b.sort_order??999)));
                 const empIdx = sorted.findIndex(e=>e.company_id===cid);
-                const empName = sorted[empIdx]?.companyName || cid;
+                const empName = sorted[empIdx]?.companyName || "";
                 const empLabel = empIdx === sorted.length-1 ? "Current Employer" : empIdx >= 0 ? `Previous Employer ${empIdx+1}` : "";
                 return <div style={{fontSize:"0.68rem",color:"#4f46e5",fontWeight:700,margin:"0.3rem 0 0.4rem",textTransform:"uppercase",letterSpacing:"0.5px"}}>{empLabel}{empName ? ` — ${empName}` : ""}</div>;
               })()}
@@ -1363,6 +1362,8 @@ export default function EmployerDashboard() {
   const [threadMsgs,     setThreadMsgs]     = useState([]);
   const [threadLoading,  setThreadLoading]  = useState(false);
   const [msgBody,        setMsgBody]        = useState("");
+  const [msgAttach,      setMsgAttach]      = useState(null);
+  const [msgAttaching,   setMsgAttaching]   = useState(false);
   const [msgSubject,     setMsgSubject]     = useState("");
   const [msgSending,     setMsgSending]     = useState(false);
   const [msgErr,         setMsgErr]         = useState("");
@@ -1675,6 +1676,22 @@ export default function EmployerDashboard() {
     apiFetch(`${API}/messages/unread-count`).then(r=>r.ok?r.json():null).then(d=>{ if(d) setUnreadCount(d.unread||0); }).catch(()=>{});
   };
 
+  const uploadMsgAttachment = async (file) => {
+    if (!file || !activeThread) return;
+    setMsgAttaching(true);
+    try {
+      const pr = await apiFetch(`${API}/messages/attachment-url`, {
+        method: "POST",
+        body: JSON.stringify({ consent_id: activeThread, filename: file.name, content_type: file.type })
+      });
+      if (!pr.ok) { setMsgErr("Attachment upload failed"); setMsgAttaching(false); return; }
+      const { upload_url, s3_key, view_url } = await pr.json();
+      await fetch(upload_url, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      setMsgAttach({ name: file.name, s3_key, url: view_url });
+    } catch(_) { setMsgErr("Attachment upload failed"); }
+    setMsgAttaching(false);
+  };
+
   const sendMessage = async () => {
     if (!msgBody.trim()) { setMsgErr("Message cannot be empty"); return; }
     if (!activeThread)   { setMsgErr("No thread selected"); return; }
@@ -1682,10 +1699,10 @@ export default function EmployerDashboard() {
     try {
       const r = await apiFetch(`${API}/messages/send`, {
         method: "POST",
-        body: JSON.stringify({ consent_id: activeThread, body: msgBody.trim(), subject: msgSubject.trim(), recipient_type: msgRecipient }),
+        body: JSON.stringify({ consent_id: activeThread, body: msgBody.trim(), subject: msgSubject.trim(), recipient_type: msgRecipient, attachment_s3_key: msgAttach?.s3_key || "" }),
       });
       if (r.ok) {
-        setMsgBody(""); setMsgSubject("");
+        setMsgBody(""); setMsgSubject(""); setMsgAttach(null);
         await loadThread(activeThread); // refresh thread
         loadInbox(); // refresh inbox list
       } else {
@@ -1864,6 +1881,19 @@ return (
                         {msgRecipient==="Both"&&"Sends to both — visible in each party's own inbox."}
                       </div>
                       <input placeholder="Subject (optional)" value={msgSubject} onChange={e=>setMsgSubject(e.target.value)} style={{width:"100%",padding:"0.45rem 0.75rem",background:"#f5f2ee",border:"1.5px solid #c8c2b8",borderRadius:7,fontFamily:"inherit",fontSize:"0.75rem",color:"#111",outline:"none",marginBottom:"0.4rem"}}/>
+                      <div style={{marginBottom:"0.4rem"}}>
+                        {msgAttach ? (
+                          <div style={{display:"flex",alignItems:"center",gap:"0.4rem",padding:"0.3rem 0.6rem",background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:6,fontSize:"0.68rem"}}>
+                            <span style={{color:"#16a34a",fontWeight:600}}>📎 {msgAttach.name}</span>
+                            <button onClick={()=>setMsgAttach(null)} style={{marginLeft:"auto",background:"none",border:"none",cursor:"pointer",color:"#dc2626",fontSize:"0.72rem",fontWeight:700}}>✕</button>
+                          </div>
+                        ) : (
+                          <label style={{display:"inline-flex",alignItems:"center",gap:"0.3rem",cursor:"pointer",fontSize:"0.68rem",color:"#7a6e64",padding:"0.25rem 0.6rem",background:"#f5f2ee",border:"1px solid #c8c2b8",borderRadius:6}}>
+                            {msgAttaching ? "Uploading…" : "📎 Attach file"}
+                            <input type="file" style={{display:"none"}} onChange={e=>e.target.files[0]&&uploadMsgAttachment(e.target.files[0])} disabled={msgAttaching}/>
+                          </label>
+                        )}
+                      </div>
                       <textarea className="msg-input" placeholder="Type a message…" value={msgBody} onChange={e=>setMsgBody(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&e.ctrlKey){e.preventDefault();sendMessage();}}}/>
                       {msgErr&&<div style={{fontSize:"0.68rem",color:"#ef4444",marginBottom:"0.3rem",fontWeight:600}}>{msgErr}</div>}
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:"0.4rem"}}>
@@ -2246,8 +2276,7 @@ return (
                       :!profileData?<div className="status-card">Could not load profile data.</div>
                       :<>
                         <div style={{marginBottom:"0.75rem",display:"flex",gap:"0.6rem",alignItems:"center",flexWrap:"wrap"}}>
-                          <button onClick={()=>{setActiveThread(gcid(selected));loadThread(gcid(selected));setShowInbox(true);}} style={{padding:"0.42rem 1rem",background:"#fff",border:"1.5px solid #0d6e6e",borderRadius:7,color:"#0d6e6e",fontSize:"0.72rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:"0.4rem"}}>✉️ Message candidate</button>
-                          <button onClick={()=>{setActiveThread(gcid(selected));loadThread(gcid(selected));setShowInbox(true);if(typeof setMsgRecipient!=="undefined")setMsgRecipient("bgv");}} style={{padding:"0.42rem 1rem",background:"#fff",border:"1.5px solid #4f46e5",borderRadius:7,color:"#4f46e5",fontSize:"0.72rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:"0.4rem"}}>🔍 Message BGV vendor</button>
+                          <button onClick={()=>{setActiveThread(gcid(selected));loadThread(gcid(selected));setShowInbox(true);}} style={{padding:"0.42rem 1rem",background:"#fff",border:"1.5px solid #0d6e6e",borderRadius:7,color:"#0d6e6e",fontSize:"0.72rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:"0.4rem"}}>✉️ Message</button>
                         </div>
                         <div className="note-bar">⚠️ <strong>Self-reported data.</strong> All information was filled and submitted by the employee. Not independently verified by Datagate unless a verified check has been explicitly completed.</div>
                         <div className="tab-nav">{DATA_TABS.map(t=><button key={t} className={`tab-btn${activeTab===t?" on":""}`} onClick={()=>setActiveTab(t)}>{t}</button>)}</div>
@@ -2256,7 +2285,7 @@ return (
                           {activeTab==="Education"&&<EducationTab data={profileData.profile_snapshot?.education}/>}
                           {activeTab==="Employment"&&<EmploymentTab data={profileData.employment_snapshot} resumeKey={profileData.profile_snapshot?.resumeKey} docUrls={Object.values(documents||{}).reduce((acc,grp)=>({...acc,...Object.fromEntries(Object.entries(grp).map(([k,v])=>[k,v.url]))}),{})}/>}
                           {activeTab==="UAN & PF"&&<UanTab data={profileData.profile_snapshot}/>}
-                          {activeTab==="Documents"&&<DocumentsTab documents={documents} loading={docsLoading}/>}
+                          {activeTab==="Documents"&&<DocumentsTab documents={documents} loading={docsLoading} empSnap={profileData?.employment_snapshot||[]}/>}
                           {activeTab==="BGV Status"&&<BgvTab consentData={profileData} apiFetch={apiFetch} API={API}/>}
                         </div>
                       </>
