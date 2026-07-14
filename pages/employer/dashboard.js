@@ -379,27 +379,20 @@ async function printProfile(profile, empHistory, documents, employerName) {
   <!-- ══ SECTION 5: DOCUMENTS ══ -->
   <div style="font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:2px;margin-bottom:14px;margin-top:20px">Documents — In Sequence Order</div>
 
-  ${(()=>{
-    // Build company_id → company name lookup from employment history
-    const companyMap = {};
-    if(Array.isArray(empHistory)){
-      empHistory.forEach(e=>{ if(e.company_id && e.companyName) companyMap[e.company_id] = e.companyName; });
-    }
-    return docsWithData.length > 0 ? `
+  ${docsWithData.length > 0 ? `
   ${docsWithData.map((item, idx) => {
     const companyId = item.group.startsWith("employment/") ? item.group.split("/")[1] : "";
-    const companyName = companyMap[companyId] || companyId || "";
-    const docLabel = companyName ? `${item.label} — ${companyName}` : item.label;
+    const companyName = (empHistory||[]).find(e=>e.company_id===companyId)?.companyName || companyId || "";
+    const docLabel = companyName ? item.label + " — " + companyName : item.label;
     return `
     <div style="margin-bottom:28px;page-break-inside:avoid">
       <div style="background:#334155;color:#fff;padding:5px 12px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;border-radius:4px 4px 0 0">
         ${String(idx+1).padStart(2,"0")}. ${docLabel}
-      </div>`;
-  }).join("")}
+      </div>
       <div style="border:1px solid #e2e8f0;border-top:none;border-radius:0 0 4px 4px;padding:12px;background:#fafafa">
         <div style="font-size:10px;color:#94a3b8;margin-bottom:8px;font-family:monospace">${item.doc.filename || item.subKey}</div>
         ${!item.url
-          ? `<div style="padding:10px;background:#fef2f2;border-radius:4px;font-size:11px;color:#dc2626">⚠ No URL found for this document. Available fields: ${Object.keys(item.doc||{}).join(", ")||"(none)"}</div>`
+          ? `<div style="padding:10px;background:#fef2f2;border-radius:4px;font-size:11px;color:#dc2626">⚠ No URL found for this document.</div>`
           : item.isImage
           ? `<img src="${item.url}" referrerpolicy="no-referrer" style="max-width:100%;max-height:500px;object-fit:contain;border-radius:4px;border:1px solid #e2e8f0;display:block" onerror="this.outerHTML='&lt;div style=&quot;padding:10px;background:#fffbeb;border-radius:4px;font-size:11px;color:#92400e&quot;&gt;⚠ Preview could not be loaded — &lt;a href=&quot;${item.url}&quot; target=&quot;_blank&quot; style=&quot;color:#2563eb;font-weight:600&quot;&gt;Open image ↗&lt;/a&gt;&lt;/div&gt;'" />`
           : item.isPdf
@@ -411,9 +404,9 @@ async function printProfile(profile, empHistory, documents, employerName) {
             : `<a href="${item.url}" target="_blank" style="color:#2563eb;font-size:11px">View Document ↗</a>`
         }
       </div>
-    </div>`).join("")}
-  ` : `<div style="padding:14px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;font-size:11px;color:#92400e">No documents on file for this candidate. If documents were uploaded, try refreshing the candidate's profile and printing again — document links expire after 1 hour.</div>`;
-  })()}
+    </div>`;
+  }).join("")}
+  ` : `<div style="padding:14px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;font-size:11px;color:#92400e">No documents on file for this candidate. If documents were uploaded, try refreshing the candidate's profile and printing again — document links expire after 1 hour.</div>`}
 
   <!-- Footer -->
   <div style="border-top:1px solid #e2e8f0;padding-top:10px;margin-top:24px;display:flex;justify-content:space-between">
