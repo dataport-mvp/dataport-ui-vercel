@@ -509,10 +509,8 @@ export default function UanDetails() {
                       };
                     });
                 setPage3Companies(companies);
-                // Always re-sync if company count changed (employee added/deleted a job on page 3)
                 const savedPf = Array.isArray(d.pfRecords) ? d.pfRecords : [];
                 if (savedPf.length > 0 && savedPf.length === companies.length) {
-                  // Same count — merge saved data with live company names and isCurrent
                   setPfRecords(savedPf.map((r, idx) => ({
                     ...r,
                     companyName: companies[idx]?.name || r.companyName || "",
@@ -525,8 +523,6 @@ export default function UanDetails() {
                     isCurrent: companies[idx]?.isCurrent ?? (idx === companies.length - 1),
                   })));
                 } else if (companies.length > 0) {
-                  // Count changed (job added/deleted) — rebuild from page 3 companies
-                  // Preserve saved PF data where company name matches
                   setPfRecords(companies.map((c) => {
                     const saved = savedPf.find(r => r.companyName === c.name);
                     return saved
@@ -538,7 +534,7 @@ export default function UanDetails() {
             } catch(_) {}
           } else {
             if (Array.isArray(d.pfRecords) && d.pfRecords.length > 0) {
-              setPfRecords(d.pfRecords.map((r, idx) => ({ companyName:r.companyName||"", hasPf:r.hasPf||"", pfType:r.pfType||"", pfMemberId:r.pfMemberId||"", dojEpfo:r.dojEpfo||"", doeEpfo:r.doeEpfo||"", pfTransferred:r.pfTransferred||"", isCurrent: idx === 0 })));
+              setPfRecords(d.pfRecords.map((r, idx) => ({ companyName:r.companyName||"", hasPf:r.hasPf||"", pfType:r.pfType||"", pfMemberId:r.pfMemberId||"", dojEpfo:r.dojEpfo||"", doeEpfo:r.doeEpfo||"", pfTransferred:r.pfTransferred||"", isCurrent: idx === arr.length - 1 })));
             }
           }
         }
@@ -565,7 +561,7 @@ export default function UanDetails() {
       const safeTs = (ts || new Date().toISOString()).replace(/[:.]/g, "-");
       const presignRes = await apiFetch(`${API}/upload/presigned`, {
         method: "POST",
-        body: JSON.stringify({ category:"uan", sub_key:"signature", filename:`signature_${safeTs}.jpg`, employee_id:draft.employee_id }),
+        body: JSON.stringify({ category:"uan", sub_key:"signature", filename:"signature.jpg", employee_id:draft.employee_id }),
       });
       if (!presignRes.ok) return null;
       const { upload_url, s3_key } = await presignRes.json();
