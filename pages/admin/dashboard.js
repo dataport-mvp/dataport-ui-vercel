@@ -388,6 +388,9 @@ export default function AdminDashboard() {
   };
 
   const [tab, setTab]               = useState("overview");
+  const [vendors, setVendors]       = useState([]);
+  const [vendorLoading, setVendorLoading] = useState(false);
+  const [vendorMsg, setVendorMsg]   = useState("");
   const [emailOverride, setEmailOverride] = useState({ old:"", new:"", loading:false, msg:"", err:"" });
   const [stats, setStats]           = useState(null);
   const [activity, setActivity]     = useState([]);
@@ -442,6 +445,42 @@ export default function AdminDashboard() {
     } catch(_) { setEmailOverride(v=>({...v,loading:false,err:"Network error"})); }
   };
 
+  const loadVendors = useCallback(async () => {
+    setVendorLoading(true);
+    try {
+      const r = await apiFetch(`${API}/admin/users?role=bgv`);
+      if (r.ok) {
+        const d = await r.json();
+        setVendors(d.users || d || []);
+      }
+    } catch(_) {}
+    setVendorLoading(false);
+  }, [apiFetch]);
+
+  const approveVendor = async (email) => {
+    setVendorMsg("");
+    try {
+      const r = await apiFetch(`${API}/admin/bgv/approve`, {
+        method: "POST",
+        body: JSON.stringify({ email })
+      });
+      if (r.ok) { setVendorMsg(`✓ ${email} approved`); loadVendors(); }
+      else { const d = await r.json(); setVendorMsg(d.detail || "Failed"); }
+    } catch(_) { setVendorMsg("Network error"); }
+  };
+
+  const rejectVendor = async (email) => {
+    setVendorMsg("");
+    try {
+      const r = await apiFetch(`${API}/admin/bgv/reject`, {
+        method: "POST",
+        body: JSON.stringify({ email })
+      });
+      if (r.ok) { setVendorMsg(`✗ ${email} rejected`); loadVendors(); }
+      else { const d = await r.json(); setVendorMsg(d.detail || "Failed"); }
+    } catch(_) { setVendorMsg("Network error"); }
+  };
+
   const loadOverview = useCallback(async () => {
     setLoading(true);
     try {
@@ -490,6 +529,7 @@ export default function AdminDashboard() {
     if (tab === "overview") loadOverview();
     if (tab === "users")    loadUsers();
     if (tab === "tickets")  loadTickets();
+    if (tab === "vendors")  loadVendors();
   }, [tab, adminUser, adminToken, loadOverview, loadUsers, loadTickets]);
 
   useEffect(() => {
@@ -688,6 +728,8 @@ export default function AdminDashboard() {
               { id: "overview", icon: "◈", label: "Overview" },
               { id: "users",    icon: "⊛", label: "Users",
                 badge: stats ? (stats.users.suspended + stats.users.blocked) || null : null },
+              { id: "vendors",  icon: "🏢", label: "BGV Vendors",
+                badge: null },
               { id: "tickets",  icon: "⊡", label: "Support",
                 badge: stats?.tickets?.open || null },
             ].map(n => (
@@ -973,6 +1015,46 @@ export default function AdminDashboard() {
                 {emailOverride.err && <p style={{fontSize:"0.7rem",color:"#dc2626",margin:0}}>{emailOverride.err}</p>}
                 {emailOverride.msg && <p style={{fontSize:"0.7rem",color:"#16a34a",margin:0}}>{emailOverride.msg}</p>}
               </div>
+            </div>
+          )}
+
+          {tab === "vendors" && (
+            <div style={{padding:"1.25rem"}}>
+              <div style={{fontWeight:700,fontSize:"0.95rem",color:"#f1f5f9",marginBottom:"0.75rem"}}>BGV Vendors</div>
+              {vendorMsg && <div style={{marginBottom:"0.75rem",padding:"0.5rem 0.75rem",borderRadius:7,background:vendorMsg.startsWith("✓")?"#f0fdf4":"#fef2f2",color:vendorMsg.startsWith("✓")?"#16a34a":"#dc2626",fontSize:"0.8rem",fontWeight:600}}>{vendorMsg}</div>}
+              {vendorLoading && <div style={{color:"#94a3b8",fontSize:"0.82rem"}}>Loading…</div>}
+              {!vendorLoading && vendors.length === 0 && <div style={{color:"#94a3b8",fontSize:"0.82rem"}}>No BGV vendors registered yet.</div>}
+              {vendors.map(v => (
+                <div key={v.email} style={{background:"#18151f",border:"1px solid rgba(255,255,255,0.08)",borderRadius:10,padding:"0.85rem 1rem",marginBottom:"0.6rem"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:"0.5rem"}}>
+                    <div>
+                      <div style={{fontWeight:700,fontSize:"0.85rem",color:"#f1f5f9"}}>{v.company_name || v.name}</div>
+                      <div style={{fontSize:"0.72rem",color:"#94a3b8",marginTop:"0.2rem"}}>{v.email}</div>
+                      <div style={{marginTop:"0.35rem"}}>
+                        <span style={{padding:"0.15rem 0.55rem",borderRadius:999,fontSize:"0.68rem",fontWeight:700,
+                          background:v.bgv_approved?"#f0fdf4":"#fef9c3",
+                          color:v.bgv_approved?"#16a34a":"#92400e"}}>
+                          {v.bgv_approved ? "✓ Approved" : "⏳ Pending Approval"}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{display:"flex",gap:"0.5rem",flexShrink:0}}>
+                      {!v.bgv_approved && (
+                        <button onClick={()=>approveVendor(v.email)}
+                          style={{padding:"0.35rem 0.85rem",background:"#16a34a",color:"#fff",border:"none",borderRadius:7,fontSize:"0.75rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                          Approve
+                        </button>
+                      )}
+                      {v.bgv_approved && (
+                        <button onClick={()=>rejectVendor(v.email)}
+                          style={{padding:"0.35rem 0.85rem",background:"#dc2626",color:"#fff",border:"none",borderRadius:7,fontSize:"0.75rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                          Revoke
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 

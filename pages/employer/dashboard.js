@@ -325,8 +325,8 @@ async function printProfile(profile, empHistory, documents, employerName) {
   <!-- ══ SECTION 3: EMPLOYMENT ══ -->
   <div style="font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;margin-top:20px">Page 3 — Employment History</div>
 
-  ${empHistory.length === 0 ? `<div style="padding:10px;color:#94a3b8;font-size:11px">No employment history provided.</div>` : empHistory.map((e,i) => section(
-    i === 0 ? "Current / Most Recent Employer" : `Previous Employer ${i}`,
+  ${empHistory.length === 0 ? `<div style="padding:10px;color:#94a3b8;font-size:11px">No employment history provided.</div>` : [...empHistory].sort((a,b)=>(Number(a.sort_order??999))-(Number(b.sort_order??999))).map((e,i,arr) => section(
+    i === arr.length-1 ? "Current / Most Recent Employer" : `Previous Employer ${i+1}`,
     [
       row("Company Name",          e.companyName),
       row("Designation",           e.designation),
@@ -379,12 +379,23 @@ async function printProfile(profile, empHistory, documents, employerName) {
   <!-- ══ SECTION 5: DOCUMENTS ══ -->
   <div style="font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:2px;margin-bottom:14px;margin-top:20px">Documents — In Sequence Order</div>
 
-  ${docsWithData.length > 0 ? `
-  ${docsWithData.map((item, idx) => `
+  ${(()=>{
+    // Build company_id → company name lookup from employment history
+    const companyMap = {};
+    if(Array.isArray(empHistory)){
+      empHistory.forEach(e=>{ if(e.company_id && e.companyName) companyMap[e.company_id] = e.companyName; });
+    }
+    return docsWithData.length > 0 ? `
+  ${docsWithData.map((item, idx) => {
+    const companyId = item.group.startsWith("employment/") ? item.group.split("/")[1] : "";
+    const companyName = companyMap[companyId] || companyId || "";
+    const docLabel = companyName ? `${item.label} — ${companyName}` : item.label;
+    return `
     <div style="margin-bottom:28px;page-break-inside:avoid">
       <div style="background:#334155;color:#fff;padding:5px 12px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;border-radius:4px 4px 0 0">
-        ${String(idx+1).padStart(2,"0")}. ${item.label}${item.group.startsWith("employment") ? ` — ${item.group.split("/")[1] || ""}` : ""}
-      </div>
+        ${String(idx+1).padStart(2,"0")}. ${docLabel}
+      </div>`;
+  }).join("")}
       <div style="border:1px solid #e2e8f0;border-top:none;border-radius:0 0 4px 4px;padding:12px;background:#fafafa">
         <div style="font-size:10px;color:#94a3b8;margin-bottom:8px;font-family:monospace">${item.doc.filename || item.subKey}</div>
         ${!item.url
@@ -401,7 +412,8 @@ async function printProfile(profile, empHistory, documents, employerName) {
         }
       </div>
     </div>`).join("")}
-  ` : `<div style="padding:14px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;font-size:11px;color:#92400e">No documents on file for this candidate. If documents were uploaded, try refreshing the candidate's profile and printing again — document links expire after 1 hour.</div>`}
+  ` : `<div style="padding:14px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;font-size:11px;color:#92400e">No documents on file for this candidate. If documents were uploaded, try refreshing the candidate's profile and printing again — document links expire after 1 hour.</div>`;
+  })()}
 
   <!-- Footer -->
   <div style="border-top:1px solid #e2e8f0;padding-top:10px;margin-top:24px;display:flex;justify-content:space-between">
@@ -495,7 +507,7 @@ const G = `
   .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
   .filter-tabs { display: flex; border-bottom: 1px solid rgba(255,255,255,0.06); padding: 0 0.5rem; }
-  .ft-btn { flex: 1; padding: 0.6rem 0; background: none; border: none; border-bottom: 2.5px solid transparent; font-size: 0.63rem; font-weight: 600; color: rgba(255,255,255,0.38); cursor: pointer; transition: all 0.12s; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: -1px; display: flex; align-items: center; justify-content: center; gap: 4px; font-family: inherit; }
+  .ft-btn { flex: 1; padding: 0.6rem 0.3rem; background: none; border: none; border-bottom: 2.5px solid transparent; font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.38); cursor: pointer; transition: all 0.12s; text-transform: capitalize; letter-spacing: 0; margin-bottom: -1px; display: flex; align-items: center; justify-content: center; gap: 4px; font-family: inherit; }
   .ft-btn:hover { color: rgba(255,255,255,0.7); }
   .ft-btn.on { color: #5eead4; border-bottom-color: #0d6e6e; }
   .ft-cnt { padding: 1px 6px; border-radius: 4px; font-size: 0.58rem; font-weight: 700; background: rgba(13,110,110,0.2); color: #5eead4; }
@@ -985,11 +997,11 @@ function EmploymentTab({ data, resumeKey, docUrls }) {
           <a href={docUrls[resumeKey]} target="_blank" rel="noopener noreferrer" className="doc-view" style={{display:"inline-flex",alignItems:"center",gap:"0.35rem"}}>📄 View Resume / CV ↗</a>
         </div>
       )}
-      {[...list].reverse().map((e,i)=>(
+      {[...list].sort((a,b)=>(Number(a.sort_order??999))-(Number(b.sort_order??999))).map((e,i,arr)=>(
         <div key={e.company_id||i} className="emp-card">
           <div className="emp-title">
-            {i===0?"Current / Most Recent Employer":`Previous Employer ${i}`}
-            {i===0&&e.currentlyWorking==="Yes"&&<span className="curr-pill">Still Employed</span>}
+            {i===arr.length-1?"Current / Most Recent Employer":`Previous Employer ${i+1}`}
+            {i===arr.length-1&&e.currentlyWorking==="Yes"&&<span className="curr-pill">Still Employed</span>}
           </div>
           <div className="kv-grid">
             <KV k="Company"         v={e.companyName} />
