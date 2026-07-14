@@ -379,34 +379,43 @@ async function printProfile(profile, empHistory, documents, employerName) {
   <!-- ══ SECTION 5: DOCUMENTS ══ -->
   <div style="font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:2px;margin-bottom:14px;margin-top:20px">Documents — In Sequence Order</div>
 
-  ${docsWithData.length > 0 ? `
-  ${docsWithData.map((item, idx) => {
-    const companyId = item.group.startsWith("employment/") ? item.group.split("/")[1] : "";
-    const companyName = (empHistory||[]).find(e=>e.company_id===companyId)?.companyName || companyId || "";
-    const docLabel = companyName ? item.label + " — " + companyName : item.label;
-    return `
-    <div style="margin-bottom:28px;page-break-inside:avoid">
-      <div style="background:#334155;color:#fff;padding:5px 12px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;border-radius:4px 4px 0 0">
-        ${String(idx+1).padStart(2,"0")}. ${docLabel}
-      </div>
-      <div style="border:1px solid #e2e8f0;border-top:none;border-radius:0 0 4px 4px;padding:12px;background:#fafafa">
-        <div style="font-size:10px;color:#94a3b8;margin-bottom:8px;font-family:monospace">${item.doc.filename || item.subKey}</div>
-        ${!item.url
-          ? `<div style="padding:10px;background:#fef2f2;border-radius:4px;font-size:11px;color:#dc2626">⚠ No URL found for this document.</div>`
-          : item.isImage
-          ? `<img src="${item.url}" referrerpolicy="no-referrer" style="max-width:100%;max-height:500px;object-fit:contain;border-radius:4px;border:1px solid #e2e8f0;display:block" onerror="this.outerHTML='&lt;div style=&quot;padding:10px;background:#fffbeb;border-radius:4px;font-size:11px;color:#92400e&quot;&gt;⚠ Preview could not be loaded — &lt;a href=&quot;${item.url}&quot; target=&quot;_blank&quot; style=&quot;color:#2563eb;font-weight:600&quot;&gt;Open image ↗&lt;/a&gt;&lt;/div&gt;'" />`
-          : item.isPdf
-            ? `<div style="padding:14px;background:#eff6ff;border-radius:4px;border:1px solid #bfdbfe;text-align:center">
-                <div style="font-size:13px;margin-bottom:6px">📄 PDF Document</div>
-                <a href="${item.url}" target="_blank" style="color:#2563eb;font-size:11px;font-weight:600">Open PDF ↗</a>
-                <div style="font-size:10px;color:#94a3b8;margin-top:4px">Links expire in 1 hour</div>
-               </div>`
-            : `<a href="${item.url}" target="_blank" style="color:#2563eb;font-size:11px">View Document ↗</a>`
-        }
+  ${docsWithData.length > 0 ? (() => {
+    // Group docs by employer — sort by employment history order
+    const sortedEmp = [...(empHistory||[])].sort((a,b)=>(Number(a.sort_order??999))-(Number(b.sort_order??999)));
+    const groups = {};
+    const nonEmpDocs = [];
+    docsWithData.forEach(item => {
+      if (item.group.startsWith("employment/")) {
+        const cid = item.group.split("/")[1];
+        if (!groups[cid]) groups[cid] = [];
+        groups[cid].push(item);
+      } else {
+        nonEmpDocs.push(item);
+      }
+    });
+    const docBlock = (item, label) => `
+    <div style="margin-bottom:16px;page-break-inside:avoid">
+      <div style="background:#475569;color:#fff;padding:4px 10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;border-radius:4px 4px 0 0">${label}</div>
+      <div style="border:1px solid #e2e8f0;border-top:none;border-radius:0 0 4px 4px;padding:10px;background:#fafafa">
+        <div style="font-size:9px;color:#94a3b8;margin-bottom:6px;font-family:monospace">${item.doc.filename || item.subKey}</div>
+        ${!item.url ? `<div style="padding:8px;background:#fef2f2;border-radius:4px;font-size:10px;color:#dc2626">⚠ No URL found.</div>`
+          : item.isImage ? `<img src="${item.url}" referrerpolicy="no-referrer" style="max-width:100%;max-height:400px;object-fit:contain;border-radius:4px;border:1px solid #e2e8f0;display:block" />`
+          : item.isPdf ? `<div style="padding:12px;background:#eff6ff;border-radius:4px;border:1px solid #bfdbfe;text-align:center"><div style="font-size:12px;margin-bottom:4px">📄 PDF Document</div><a href="${item.url}" target="_blank" style="color:#2563eb;font-size:10px;font-weight:600">Open PDF ↗</a><div style="font-size:9px;color:#94a3b8;margin-top:3px">Links expire in 1 hour</div></div>`
+          : `<a href="${item.url}" target="_blank" style="color:#2563eb;font-size:10px">View Document ↗</a>`}
       </div>
     </div>`;
-  }).join("")}
-  ` : `<div style="padding:14px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;font-size:11px;color:#92400e">No documents on file for this candidate. If documents were uploaded, try refreshing the candidate's profile and printing again — document links expire after 1 hour.</div>`}
+    // Non-employment docs first (resume, identity etc)
+    let html = nonEmpDocs.map(item => docBlock(item, item.label)).join("");
+    // Then per-employer grouped docs in employment history order
+    sortedEmp.forEach((emp, ei) => {
+      const empDocs = groups[emp.company_id] || [];
+      if (empDocs.length === 0) return;
+      const empLabel = ei === sortedEmp.length - 1 ? "Current Employer" : `Previous Employer ${ei + 1}`;
+      html += `<div style="margin-top:20px;margin-bottom:8px;padding:6px 12px;background:#1e293b;color:#fff;border-radius:6px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;page-break-before:auto">${empLabel} — ${emp.companyName || emp.company_id}</div>`;
+      html += empDocs.map(item => docBlock(item, item.label)).join("");
+    });
+    return html;
+  })() : `<div style="padding:14px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;font-size:11px;color:#92400e">No documents on file for this candidate.</div>`}
 
   <!-- Footer -->
   <div style="border-top:1px solid #e2e8f0;padding-top:10px;margin-top:24px;display:flex;justify-content:space-between">
@@ -1105,6 +1114,7 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
   const [vendors, setVendors] = useState([]);
   const [assigning, setAssigning] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState("");
+  const [vendorSearch,   setVendorSearch]   = useState("");
   const [assignMsg, setAssignMsg] = useState("");
   const [reportUrl, setReportUrl] = useState("");
 
@@ -1167,29 +1177,17 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
         <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:"1rem",marginBottom:"1rem"}}>
           <div style={{fontWeight:700,fontSize:"0.84rem",color:"#0f172a",marginBottom:"0.6rem"}}>Assign BGV Vendor</div>
           {/* Searchable BGV vendor selector */}
-          {(()=>{
-            const [vendorSearch, setVendorSearch] = React.useState("");
-            const filtered = vendors.filter(v=>
-              (v.company_name||v.name||"").toLowerCase().includes(vendorSearch.toLowerCase()) ||
-              (v.email||"").toLowerCase().includes(vendorSearch.toLowerCase())
-            );
-            return (
               <div>
-                <input
-                  type="text"
-                  placeholder="Search BGV vendor by name or email…"
-                  value={vendorSearch}
-                  onChange={e=>setVendorSearch(e.target.value)}
-                  style={{width:"100%",padding:"0.5rem 0.75rem",border:"1.5px solid #e2e8f0",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",boxSizing:"border-box",marginBottom:"0.5rem",outline:"none"}}
-                />
+                <input type="text" placeholder="Search BGV vendor by name or email…"
+                  value={vendorSearch} onChange={e=>setVendorSearch(e.target.value)}
+                  style={{width:"100%",padding:"0.5rem 0.75rem",border:"1.5px solid #e2e8f0",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",boxSizing:"border-box",marginBottom:"0.5rem",outline:"none"}}/>
                 <div style={{maxHeight:180,overflowY:"auto",border:"1px solid #e2e8f0",borderRadius:8,marginBottom:"0.5rem"}}>
-                  {filtered.length===0&&<div style={{padding:"0.75rem",fontSize:"0.78rem",color:"#94a3b8"}}>No vendors found</div>}
-                  {filtered.map(v=>(
+                  {vendors.filter(v=>(v.company_name||v.name||"").toLowerCase().includes(vendorSearch.toLowerCase())||(v.email||"").toLowerCase().includes(vendorSearch.toLowerCase())).length===0&&<div style={{padding:"0.75rem",fontSize:"0.78rem",color:"#94a3b8"}}>No vendors found</div>}
+                  {vendors.filter(v=>(v.company_name||v.name||"").toLowerCase().includes(vendorSearch.toLowerCase())||(v.email||"").toLowerCase().includes(vendorSearch.toLowerCase())).map(v=>(
                     <div key={v.email} onClick={()=>setSelectedVendor(v.email)}
                       style={{padding:"0.6rem 0.85rem",cursor:"pointer",borderBottom:"1px solid #f1f5f9",
                         background:selectedVendor===v.email?"#eef2ff":"#fff",
-                        fontWeight:selectedVendor===v.email?700:400,
-                        fontSize:"0.84rem",color:"#0f172a"}}>
+                        fontWeight:selectedVendor===v.email?700:400,fontSize:"0.84rem",color:"#0f172a"}}>
                       <span style={{fontWeight:700}}>{v.company_name||v.name}</span>
                       <span style={{fontSize:"0.72rem",color:"#64748b",marginLeft:"0.5rem"}}>{v.email}</span>
                       {selectedVendor===v.email&&<span style={{float:"right",color:"#4f46e5",fontSize:"0.72rem",fontWeight:800}}>✓ Selected</span>}
@@ -1202,8 +1200,6 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
                 </button>
                 {vendors.length===0&&<p style={{fontSize:"0.72rem",color:"#94a3b8",marginTop:"0.5rem"}}>No approved BGV vendors. Contact admin to onboard a vendor.</p>}
               </div>
-            );
-          })()}
           {assignMsg && <p style={{fontSize:"0.78rem",marginTop:"0.5rem",color:assignMsg.startsWith("✓")?"#16a34a":"#ef4444",fontWeight:600}}>{assignMsg}</p>}
         </div>
       )}
@@ -1281,9 +1277,15 @@ function DocumentsTab({ documents, loading }) {
           <div className="doc-grp-title">{SEC_TITLES_DOC[sec]||"Employment Documents"}</div>
           {entries.map(({group, docs}) => (
             <div key={group}>
-              {group.startsWith("employment/")&&(
-                <div style={{fontSize:"0.6rem",color:"#94a3b8",fontFamily:"'JetBrains Mono',monospace",margin:"0.2rem 0 0.3rem",textTransform:"uppercase",letterSpacing:"0.5px"}}>Company: {group.split("/")[1]}</div>
-              )}
+              {group.startsWith("employment/")&&(()=>{
+                const cid = group.split("/")[1];
+                const empSnap = profileData?.employment_snapshot || [];
+                const sorted = [...empSnap].sort((a,b)=>(Number(a.sort_order??999))-(Number(b.sort_order??999)));
+                const empIdx = sorted.findIndex(e=>e.company_id===cid);
+                const empName = sorted[empIdx]?.companyName || cid;
+                const empLabel = empIdx === sorted.length-1 ? "Current Employer" : empIdx >= 0 ? `Previous Employer ${empIdx+1}` : "";
+                return <div style={{fontSize:"0.68rem",color:"#4f46e5",fontWeight:700,margin:"0.3rem 0 0.4rem",textTransform:"uppercase",letterSpacing:"0.5px"}}>{empLabel}{empName ? ` — ${empName}` : ""}</div>;
+              })()}
               {Object.entries(docs).map(([subKey, doc]) => (
                 <div key={subKey} className="doc-row">
                   <div>
@@ -1989,7 +1991,7 @@ return (
               <button key={tab} onClick={()=>setMainTab(tab)}
                 style={{padding:"0 4px",height:52,background:"none",border:"none",borderBottom:`2.5px solid ${mainTab===tab?"#0d6e6e":"transparent"}`,fontSize:"0.8rem",fontWeight:mainTab===tab?700:500,color:mainTab===tab?"#0d6e6e":"#7a6e64",cursor:"pointer",fontFamily:"inherit",transition:"all .12s",marginBottom:-1}}>
                 {tab}
-                {tab==="Candidates"&&consents.length>0&&<span style={{marginLeft:5,background:"#0d6e6e",color:"#fff",fontSize:"0.58rem",fontWeight:800,padding:"1px 5px",borderRadius:999}}>{consents.length}</span>}
+                {tab==="Candidates"&&consents.filter(c=>c.status==="pending").length>0&&<span style={{marginLeft:5,background:"#dc2626",color:"#fff",fontSize:"0.58rem",fontWeight:800,padding:"1px 5px",borderRadius:999}}>{consents.filter(c=>c.status==="pending").length}</span>}
               </button>
             ))}
           </div>
