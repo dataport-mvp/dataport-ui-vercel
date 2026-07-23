@@ -339,6 +339,23 @@ export default function UanDetails() {
   const makeNominee = () => ({ name:"", dob:"", relation:"", address:"", share:"", guardianName:"", guardianAddress:"" });
   const [nominees, setNominees] = useState([makeNominee()]);
 
+  // ── Family Details (for company health insurance — Medibuddy/Acko-style enrollment) ──
+  // All optional — this section is informational for insurance enrollment, never blocks Save/Sign.
+  // Marital Status is NOT re-asked here — it's already collected (and required) on Personal Details;
+  // we just read draft.maritalStatus to decide whether to show Spouse fields.
+  const [spouseName, setSpouseName] = useState("");
+  const [spouseDob, setSpouseDob] = useState("");
+  const [hasChildren, setHasChildren] = useState("");
+  const makeChild = () => ({ name:"", dob:"", gender:"" });
+  const [children, setChildren] = useState([makeChild()]);
+  // Insurers cover ONE side of parents only — either the employee's own parents or the
+  // spouse's parents (in-laws), never one from each side. This toggle enforces that.
+  const [parentsCoverage, setParentsCoverage] = useState(""); // "My Parents" | "Spouse's Parents" | "Not Applicable"
+  const [fatherName, setFatherName] = useState("");
+  const [fatherDob, setFatherDob] = useState("");
+  const [motherName, setMotherName] = useState("");
+  const [motherDob, setMotherDob] = useState("");
+
   // ── Declarations ──
   const [pfNomAck, setPfNomAck] = useState(false);
   const [pensionNomAck, setPensionNomAck] = useState(false);
@@ -364,6 +381,8 @@ export default function UanDetails() {
   const sigCanvasRef = useRef(null);
   const sigDrawingRef = useRef(false);
   const sigLastRef = useRef({x:0, y:0});
+  const sigHasStrokeRef = useRef(false);
+  const [sigEmptyWarn, setSigEmptyWarn] = useState(false);
   const wasSignedRef = useRef(false);
 
   const hasSavedSignature = !!(sigS3Key || sigDataUrl);
@@ -380,6 +399,8 @@ export default function UanDetails() {
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, sigCanvasRef.current.width, sigCanvasRef.current.height);
       ctx.fillStyle = "#ffffff";
+      sigHasStrokeRef.current = false;
+      setSigEmptyWarn(false);
     }
   }, [showSigCanvas]);
 
@@ -443,6 +464,18 @@ export default function UanDetails() {
           if (d.serviceHistoryKey) setServiceHistoryKey(d.serviceHistoryKey);
           if (Array.isArray(d.epfoFetched) && d.epfoFetched.length > 0) setEpfoFetched(d.epfoFetched);
           if (Array.isArray(d.epfoNominees) && d.epfoNominees.length > 0) setNominees(d.epfoNominees);
+          if (d.familyDetails) {
+            const fam = d.familyDetails;
+            if (fam.spouseName)    setSpouseName(fam.spouseName);
+            if (fam.spouseDob)     setSpouseDob(fam.spouseDob);
+            if (fam.hasChildren)   setHasChildren(fam.hasChildren);
+            if (Array.isArray(fam.children) && fam.children.length > 0) setChildren(fam.children);
+            if (fam.parentsCoverage) setParentsCoverage(fam.parentsCoverage);
+            if (fam.fatherName)    setFatherName(fam.fatherName);
+            if (fam.fatherDob)     setFatherDob(fam.fatherDob);
+            if (fam.motherName)    setMotherName(fam.motherName);
+            if (fam.motherDob)     setMotherDob(fam.motherDob);
+          }
           if (d.epfoDeclarations) {
             if (d.epfoDeclarations.pfNomAck)     setPfNomAck(d.epfoDeclarations.pfNomAck);
             if (d.epfoDeclarations.pensionNomAck) setPensionNomAck(d.epfoDeclarations.pensionNomAck);
@@ -575,6 +608,7 @@ export default function UanDetails() {
   const finishSignature = async () => {
     sigDrawingRef.current = false;
     if (!sigCanvasRef.current) return;
+    if (!sigHasStrokeRef.current) { setSigEmptyWarn(true); return; }
     const dataUrl = sigCanvasRef.current.toDataURL("image/jpeg", 0.3);
     // Archive the signature being replaced — never silently discarded, only versioned.
     if (sigS3Key && sigTimestamp) {
@@ -605,6 +639,17 @@ export default function UanDetails() {
       pfRecords:    hasUan === "yes" ? pfRecords    : [],
       serviceHistoryKey,
       epfoNominees: nominees,
+      familyDetails: {
+        spouseName:  draft?.maritalStatus === "Married" ? spouseName : "",
+        spouseDob:   draft?.maritalStatus === "Married" ? spouseDob  : "",
+        hasChildren,
+        children:    hasChildren === "Yes" ? children : [],
+        parentsCoverage,
+        fatherName:  parentsCoverage !== "Not Applicable" ? fatherName : "",
+        fatherDob:   parentsCoverage !== "Not Applicable" ? fatherDob  : "",
+        motherName:  parentsCoverage !== "Not Applicable" ? motherName : "",
+        motherDob:   parentsCoverage !== "Not Applicable" ? motherDob  : "",
+      },
       epfoSignature: {
         s3Key: sigS3Key,
         timestamp: sigTimestamp,
@@ -906,6 +951,83 @@ export default function UanDetails() {
             </div>
           )}
 
+          {/* ── Family Details — for company health insurance enrollment (Medibuddy/Acko-style) ── */}
+          {/* Fully optional — informational only, never blocks Save or Signature. */}
+          <div className="sc vio" style={{marginBottom:"1.1rem"}}>
+            <div className="sh"><div className="si vio">🏥</div><span className="st">Family Details — Health Insurance</span></div>
+            <p style={{fontSize:"0.75rem",color:"#6b6894",marginBottom:"0.9rem",fontWeight:500,lineHeight:1.5}}>Optional — share your family details so HR/insurer can add them to your company health cover. Skip anything that doesn't apply.</p>
+
+            {draft?.maritalStatus ? (
+              <p style={{fontSize:"0.75rem",color:"#6b6894",marginBottom:"0.7rem"}}>Marital status on file: <strong style={{color:"#1a1730"}}>{draft.maritalStatus}</strong> <span style={{color:"#8b88b0"}}>(from Personal Details — update it there if it's changed)</span></p>
+            ) : (
+              <p style={{fontSize:"0.75rem",color:"#d97706",fontWeight:600,marginBottom:"0.7rem"}}>⚠️ Marital status isn't set yet — add it on Personal Details to unlock Spouse fields here.</p>
+            )}
+
+            {draft?.maritalStatus==="Married" && (
+              <div className="fr">
+                <div className="fi"><span className="fl">Spouse Name</span><input className="in" value={spouseName} onChange={e=>{setSpouseName(e.target.value);flagPostSignEdit();}}/></div>
+                <div className="fi"><span className="fl">Spouse Date of Birth</span><NomineeDobField value={spouseDob} onChange={v=>{setSpouseDob(v);flagPostSignEdit();}}/></div>
+              </div>
+            )}
+
+            <div className="fi" style={{marginBottom:"0.85rem",marginTop:"0.4rem"}}>
+              <span className="fl">Do you have children to add?</span>
+              <div style={{display:"flex",gap:"0.55rem",marginTop:"0.15rem",maxWidth:280}}>
+                {["Yes","No"].map(v=>(
+                  <button key={v} type="button" onClick={()=>{setHasChildren(v);flagPostSignEdit();}} style={{flex:1,padding:"0.55rem 0",borderRadius:9,border:hasChildren===v?"2px solid #7c3aed":"1.5px solid #d8d4e3",background:hasChildren===v?"#7c3aed":"#f5f4f0",color:hasChildren===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.78rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}>{v}</button>
+                ))}
+              </div>
+            </div>
+
+            {hasChildren==="Yes" && (<>
+              {children.map((c,idx)=>(
+                <div key={idx} className="nom-block" style={{background:"#f5f3ff",border:"1.5px solid #ddd6fe"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.75rem"}}>
+                    <span style={{fontSize:"0.72rem",fontWeight:800,color:"#7c3aed",textTransform:"uppercase",letterSpacing:"0.5px"}}>Child {idx+1}</span>
+                    {idx>0&&<button className="rm-btn" onClick={()=>{setChildren(prev=>prev.filter((_,i)=>i!==idx));flagPostSignEdit();}}>− Remove</button>}
+                  </div>
+                  <div className="fr">
+                    <div className="fi"><span className="fl">Name</span><input className="in" value={c.name} onChange={e=>{setChildren(p=>{const n=[...p];n[idx]={...n[idx],name:e.target.value};return n;});flagPostSignEdit();}}/></div>
+                    <div className="fi"><span className="fl">Date of Birth</span><NomineeDobField value={c.dob} onChange={v=>{setChildren(p=>{const n=[...p];n[idx]={...n[idx],dob:v};return n;});flagPostSignEdit();}}/></div>
+                    <div className="fi">
+                      <span className="fl">Gender</span>
+                      <select className="in" value={c.gender} onChange={e=>{setChildren(p=>{const n=[...p];n[idx]={...n[idx],gender:e.target.value};return n;});flagPostSignEdit();}} style={{background:c.gender?"#fff":"#f2f1f9",color:c.gender?"#1a1730":"#8b88b0"}}>
+                        <option value="">Select</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {children.length < 4 && <button className="add-btn" onClick={()=>{setChildren(p=>[...p,makeChild()]);flagPostSignEdit();}}>+ Add Another Child</button>}
+            </>)}
+
+            <div className="fi" style={{marginBottom:"0.5rem",marginTop:"0.9rem"}}>
+              <span className="fl">Parents to Cover (choose one side only)</span>
+              <div style={{display:"flex",gap:"0.55rem",marginTop:"0.15rem",flexWrap:"wrap"}}>
+                {["My Parents","Spouse's Parents","Not Applicable"].map(v=>(
+                  <button key={v} type="button" onClick={()=>{setParentsCoverage(v);if(v==="Not Applicable"){setFatherName("");setFatherDob("");setMotherName("");setMotherDob("");}flagPostSignEdit();}} style={{flex:"1 1 140px",padding:"0.55rem 0.4rem",borderRadius:9,border:parentsCoverage===v?"2px solid #7c3aed":"1.5px solid #d8d4e3",background:parentsCoverage===v?"#7c3aed":"#f5f4f0",color:parentsCoverage===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.76rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}>{v}</button>
+                ))}
+              </div>
+              <span style={{fontSize:"0.68rem",color:"#8b88b0",marginTop:"0.3rem"}}>Insurers cover one full set of parents per policy — either yours or your spouse's, not a mix of both sides.</span>
+            </div>
+
+            {(parentsCoverage==="My Parents"||parentsCoverage==="Spouse's Parents") && (
+              <>
+                <div className="fr">
+                  <div className="fi"><span className="fl">{parentsCoverage==="My Parents"?"Father":"Father-in-law"} Name</span><input className="in" value={fatherName} onChange={e=>{setFatherName(e.target.value);flagPostSignEdit();}}/></div>
+                  <div className="fi"><span className="fl">{parentsCoverage==="My Parents"?"Father":"Father-in-law"} Date of Birth</span><NomineeDobField value={fatherDob} onChange={v=>{setFatherDob(v);flagPostSignEdit();}}/></div>
+                </div>
+                <div className="fr">
+                  <div className="fi"><span className="fl">{parentsCoverage==="My Parents"?"Mother":"Mother-in-law"} Name</span><input className="in" value={motherName} onChange={e=>{setMotherName(e.target.value);flagPostSignEdit();}}/></div>
+                  <div className="fi"><span className="fl">{parentsCoverage==="My Parents"?"Mother":"Mother-in-law"} Date of Birth</span><NomineeDobField value={motherDob} onChange={v=>{setMotherDob(v);flagPostSignEdit();}}/></div>
+                </div>
+              </>
+            )}
+          </div>
+
           {/* ── EPFO Declarations + Signature ── only required when user has UAN ── */}
           {hasUan === "yes" && (
             <div id="epfo-decl-section" className="sc" style={{marginBottom:"1.1rem",position:"relative",overflow:"hidden"}}>
@@ -1007,6 +1129,8 @@ export default function UanDetails() {
                       style={{width:"100%",maxWidth:400,height:90}}
                       onMouseDown={e=>{
                         sigDrawingRef.current=true;
+                        sigHasStrokeRef.current=true;
+                        setSigEmptyWarn(false);
                         const r=sigCanvasRef.current.getBoundingClientRect();
                         const scaleX=sigCanvasRef.current.width/r.width;
                         const x=(e.clientX-r.left)*scaleX, y=(e.clientY-r.top)*scaleX;
@@ -1021,14 +1145,19 @@ export default function UanDetails() {
                         const r=sigCanvasRef.current.getBoundingClientRect();
                         const scaleX=sigCanvasRef.current.width/r.width;
                         const ctx=sigCanvasRef.current.getContext("2d");
-                        const x=(e.clientX-r.left)*scaleX, y=(e.clientY-r.top)*scaleX;
+                        // Clamp to canvas bounds — keeps the stroke going right up to the edge
+                        // instead of the pen "lifting" the instant the cursor drifts outside.
+                        const x=Math.min(Math.max((e.clientX-r.left)*scaleX,0),sigCanvasRef.current.width);
+                        const y=Math.min(Math.max((e.clientY-r.top)*scaleX,0),sigCanvasRef.current.height);
                         ctx.beginPath();ctx.strokeStyle="#1a1730";ctx.lineWidth=2.2;ctx.lineCap="round";ctx.lineJoin="round";
                         ctx.moveTo(sigLastRef.current.x,sigLastRef.current.y);ctx.lineTo(x,y);ctx.stroke();
                         sigLastRef.current={x,y};
                       }}
-                      onMouseUp={finishSignature}
+                      onMouseUp={()=>{sigDrawingRef.current=false;}}
                       onTouchStart={e=>{
                         e.preventDefault();sigDrawingRef.current=true;
+                        sigHasStrokeRef.current=true;
+                        setSigEmptyWarn(false);
                         const r=sigCanvasRef.current.getBoundingClientRect();
                         const scaleX=sigCanvasRef.current.width/r.width;
                         const t=e.touches[0];
@@ -1045,20 +1174,21 @@ export default function UanDetails() {
                         const scaleX=sigCanvasRef.current.width/r.width;
                         const ctx=sigCanvasRef.current.getContext("2d");
                         const t=e.touches[0];
-                        const x=(t.clientX-r.left)*scaleX, y=(t.clientY-r.top)*scaleX;
+                        const x=Math.min(Math.max((t.clientX-r.left)*scaleX,0),sigCanvasRef.current.width);
+                        const y=Math.min(Math.max((t.clientY-r.top)*scaleX,0),sigCanvasRef.current.height);
                         ctx.beginPath();ctx.strokeStyle="#1a1730";ctx.lineWidth=2.2;ctx.lineCap="round";ctx.lineJoin="round";
                         ctx.moveTo(sigLastRef.current.x,sigLastRef.current.y);ctx.lineTo(x,y);ctx.stroke();
                         sigLastRef.current={x,y};
                       }}
-                      onTouchEnd={finishSignature}
-                      onMouseLeave={()=>{if(sigDrawingRef.current){sigDrawingRef.current=false;finishSignature();}}}
+                      onTouchEnd={()=>{sigDrawingRef.current=false;}}
+                      onMouseLeave={()=>{sigDrawingRef.current=false;}}
                     />
 
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:"0.6rem",flexWrap:"wrap",gap:"0.5rem"}}>
-                      <span style={{fontSize:"0.7rem",color:"#8b88b0",fontWeight:500}}>Draw your signature above <span style={{color:"#ef4444"}}>*</span></span>
+                      <span style={{fontSize:"0.7rem",color:"#8b88b0",fontWeight:500}}>Draw your signature, then tap Done <span style={{color:"#ef4444"}}>*</span></span>
                       <div style={{display:"flex",gap:"0.5rem"}}>
                         <button
-                          onClick={()=>{ const ctx=sigCanvasRef.current.getContext("2d"); ctx.clearRect(0,0,sigCanvasRef.current.width,sigCanvasRef.current.height); ctx.fillStyle="#fff"; ctx.fillRect(0,0,sigCanvasRef.current.width,sigCanvasRef.current.height); }}
+                          onClick={()=>{ const ctx=sigCanvasRef.current.getContext("2d"); ctx.clearRect(0,0,sigCanvasRef.current.width,sigCanvasRef.current.height); ctx.fillStyle="#fff"; ctx.fillRect(0,0,sigCanvasRef.current.width,sigCanvasRef.current.height); sigHasStrokeRef.current=false; setSigEmptyWarn(false); }}
                           style={{padding:"0.3rem 0.8rem",background:"#fff5f5",color:"#ef4444",border:"1.5px solid #fecaca",borderRadius:7,fontSize:"0.72rem",fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
                           Clear
                         </button>
@@ -1069,8 +1199,14 @@ export default function UanDetails() {
                             Cancel
                           </button>
                         )}
+                        <button
+                          onClick={finishSignature}
+                          style={{padding:"0.3rem 0.9rem",background:"#16a34a",color:"#fff",border:"1.5px solid #16a34a",borderRadius:7,fontSize:"0.72rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                          ✓ Done
+                        </button>
                       </div>
                     </div>
+                    {sigEmptyWarn && <p style={{fontSize:"0.75rem",color:"#ef4444",fontWeight:600,marginTop:"0.4rem"}}>⚠️ Please draw your signature before tapping Done.</p>}
                   </>
                 )}
               </div>
