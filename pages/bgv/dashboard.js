@@ -497,7 +497,29 @@ export default function BgvDashboard() {
                           {caseDetail.profile?.education?.undergraduate?.college && (
                             <div className="profile-kv">
                               <span className="profile-key">UG</span>
-                              <span className="profile-val">{caseDetail.profile.education.undergraduate.course} — {caseDetail.profile.education.undergraduate.college}</span>
+                              <span className="profile-val">
+                                {caseDetail.profile.education.undergraduate.course} — {caseDetail.profile.education.undergraduate.college}
+                                {caseDetail.profile.education.undergraduate.country === "Outside India" && (
+                                  <span style={{marginLeft:8,padding:"1px 8px",borderRadius:999,background:"#fef3c7",color:"#92400e",fontSize:"0.7rem",fontWeight:700}}>
+                                    Foreign — {caseDetail.profile.education.undergraduate.countryName || "Outside India"}
+                                    {caseDetail.profile.education.undergraduate.equivalencyKey ? " · Equivalency uploaded" : " · Equivalency pending"}
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                          )}
+                          {caseDetail.profile?.education?.postgraduate?.college && (
+                            <div className="profile-kv">
+                              <span className="profile-key">PG</span>
+                              <span className="profile-val">
+                                {caseDetail.profile.education.postgraduate.course} — {caseDetail.profile.education.postgraduate.college}
+                                {caseDetail.profile.education.postgraduate.country === "Outside India" && (
+                                  <span style={{marginLeft:8,padding:"1px 8px",borderRadius:999,background:"#fef3c7",color:"#92400e",fontSize:"0.7rem",fontWeight:700}}>
+                                    Foreign — {caseDetail.profile.education.postgraduate.countryName || "Outside India"}
+                                    {caseDetail.profile.education.postgraduate.equivalencyKey ? " · Equivalency uploaded" : " · Equivalency pending"}
+                                  </span>
+                                )}
+                              </span>
                             </div>
                           )}
 

@@ -176,6 +176,7 @@ async function printProfile(profile, empHistory, documents, employerName) {
     return section(title, [
       row("Institution",          s.school || s.college || s.institute),
       row("Board / University",   s.board || s.university),
+      row("Country",              s.country === "Outside India" ? (s.countryName || "Outside India") : ""),
       row("Stream",               s.stream),
       row("Course / Degree",      s.course),
       row("Branch / Specialization", s.branch || s.specialization),
@@ -187,6 +188,7 @@ async function printProfile(profile, empHistory, documents, employerName) {
       row("Mode",                 s.mode),
       row("Medium",               s.medium),
       row("Backlogs",             s.backlogs),
+      row("Equivalency Certificate", s.country === "Outside India" ? (s.equivalencyKey ? "Uploaded" : "Not yet uploaded") : ""),
       row("Address",              s.address),
     ].join(""), color);
   };
@@ -302,7 +304,7 @@ async function printProfile(profile, empHistory, documents, employerName) {
   ${Array.isArray(edu.professionalQualifications) && edu.professionalQualifications.length > 0 ? section("Professional Qualifications", edu.professionalQualifications.map((q,i) => [
     row(`Qualification ${i+1} — Type`,  q.type==="Other"?(q.otherType||"Other"):q.type),
     row(`Qualification ${i+1} — Level`, q.level),
-    row(`Qualification ${i+1} — Year`,  q.year),
+    row(`Qualification ${i+1} — Year`,  q.year || (q.level === "Pursuing" ? "Pursuing" : "")),
   ].join("")).join(""), "#334155") : ""}
 
   ${Array.isArray(edu.articleships) && edu.articleships.length > 0 ? section("Articleship / Practical Training", edu.articleships.map((a,i) => [
@@ -912,6 +914,7 @@ function EducationTab({ data }) {
         <div className="kv-grid">
           <KV k="Institution"           v={s.school||s.college||s.institute} />
           <KV k="Board / University"    v={s.board||s.university} />
+          {s.country==="Outside India"&&<KV k="Country" v={s.countryName||"Outside India"} />}
           {s.stream&&<KV k="Stream"     v={s.stream} />}
           {s.course&&<KV k="Course / Degree"       v={s.course} />}
           {(s.branch||s.specialization)&&<KV k="Branch / Specialization" v={s.branch||s.specialization} />}
@@ -923,6 +926,7 @@ function EducationTab({ data }) {
           {s.mode&&<KV k="Mode"         v={s.mode} />}
           {s.medium&&<KV k="Medium"     v={s.medium} />}
           {s.backlogs&&<KV k="Backlogs" v={s.backlogs} />}
+          {s.country==="Outside India"&&<KV k="Equivalency Certificate" v={s.equivalencyKey?"Uploaded":"Not yet uploaded"} />}
           {s.address&&<KV k="Address"   v={s.address} />}
         </div>
       </div>
@@ -943,7 +947,7 @@ function EducationTab({ data }) {
               <div className="kv-grid">
                 <KV k="Type"   v={q.type==="Other"?(q.otherType||"Other"):q.type} />
                 <KV k="Level"  v={q.level} />
-                <KV k="Year"   v={q.year} />
+                <KV k="Year"   v={q.year || (q.level==="Pursuing"?"Pursuing":"")} />
               </div>
             </div>
           ))}
