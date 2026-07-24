@@ -756,7 +756,7 @@ export default function EducationDetails() {
                   <div className="fr">
                     <div className="fi">
                       <span className="fl">Training Type <span style={{color:"#ef4444"}}>*</span></span>
-                      <select className={`in${errors[`art_type_${idx}`]?" err":""}`} value={a.type} onChange={e=>{updateArticleship(idx,"type",e.target.value);if(e.target.value!=="Other Practical Training")updateArticleship(idx,"otherType","");fixErr(`art_type_${idx}`);}}>
+                      <select className={`in${errors[`art_type_${idx}`]?" err":""}`} value={a.type} onChange={e=>{const val=e.target.value;const arr=[...articleships];arr[idx]={...arr[idx],type:val,...(val!=="Other Practical Training"?{otherType:""}:{})};setArticleships(arr);isDirtyRef.current=true;fixErr(`art_type_${idx}`);}}>
                         <option value="">Select</option>
                         {["CA Articleship (ICAI)","CS Training (ICSI)","CMA Training (ICMAI)","Medical Internship","Pharmacy Internship","Law Internship","Architecture Internship","Other Practical Training"].map(x=><option key={x} value={x}>{x}</option>)}
                       </select>
