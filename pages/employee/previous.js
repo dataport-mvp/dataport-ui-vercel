@@ -706,7 +706,7 @@ export default function PreviousCompany() {
                     <span className="att-lbl">Experience / Relieving Letter</span>
                     {!emp.documents.experienceKey && (
                       <p style={{fontSize:"0.72rem",color:"#0369a1",background:"#f0f9ff",border:"1px solid #bae6fd",borderRadius:8,padding:"0.5rem 0.75rem",margin:"0.2rem 0 0.4rem",lineHeight:1.5}}>
-                        💡 Hey, once you get the experience/relieving letter from your former employer, attach it here — it'll make future onboarding and BGV go smoothly. Not required to submit now.
+                        💡 Haven't received it yet? No worries, just come back and add it whenever you receive it — it'll make future onboarding and BGV seamless.
                       </p>
                     )}
                     <FileUpload label="Experience Letter" category="employment" subKey="experience" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.experienceKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.experienceKey",k);}}/>
