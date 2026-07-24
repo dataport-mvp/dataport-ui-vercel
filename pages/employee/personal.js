@@ -802,6 +802,8 @@ export default function PersonalDetails() {
   const [motherDob,setMotherDob]         = useState("");
   const [dob,setDob]                     = useState("");
   const [gender,setGender]               = useState("");
+  const [religion,setReligion]           = useState("");
+  const [category,setCategory]           = useState("");
   const [nationality,setNationality]     = useState("");
   const [mobile,setMobile]               = useState("");
   const [email,setEmail]                 = useState("");
@@ -915,6 +917,8 @@ export default function PersonalDetails() {
           if (d.spouseDob)    setSpouseDob(d.spouseDob);
           if (d.dob)          setDob(d.dob);
           if (d.gender)       setGender(d.gender);
+          if (d.religion)     setReligion(d.religion);
+          if (d.category)     setCategory(d.category);
           if (d.nationality)  setNationality(d.nationality);
           if (d.mobile)       setMobile(d.mobile);
           if (d.email)        setEmail(d.email);
@@ -1003,7 +1007,7 @@ export default function PersonalDetails() {
     spouseDob:  maritalStatus==="Married" ? spouseDob  : "",
     fatherName: `${fatherFirst} ${fatherMiddle} ${fatherLast}`.trim(),
     motherName: `${motherFirst} ${motherMiddle} ${motherLast}`.trim(),
-    dob, gender, nationality, mobile, email,
+    dob, gender, religion, category, nationality, mobile, email,
     aadhaar: aadhar.length <= 4 ? aadhar : aadhar.slice(-4),
     nameAsPerAadhaar,
     pan, nameAsPerPan,
@@ -1467,6 +1471,10 @@ export default function PersonalDetails() {
                   <DateField l="Date of Birth" v={dob} s={dirty(setDob)} />
                   <FS l="Gender" v={gender} s={dirty(setGender)} o={GENDER_OPTIONS} />
                   <F l="Nationality" v={nationality} s={dirty(setNationality)} />
+                </div>
+                <div className="fr">
+                  <F l="Religion" v={religion} s={dirty(setReligion)} />
+                  <F l="Category" v={category} s={dirty(setCategory)} />
                 </div>
                 <div className="fr">
                   <div className="fi">

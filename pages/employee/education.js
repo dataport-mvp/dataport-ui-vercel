@@ -311,14 +311,16 @@ export default function EducationDetails() {
           if(i.from)setIFrom(i.from);if(i.to)setITo(i.to);if(i.address)setIAddress(i.address);if(i.mode)setIMode(i.mode);
           if(i.yearOfPassing)setIYear(i.yearOfPassing);if(i.resultType)setIResultType(i.resultType);if(i.resultValue)setIResultValue(i.resultValue);if(i.medium)setIMedium(i.medium);if(i.certKey)setICertKey(i.certKey);if(i.stream)setIStream(i.stream);
 
-          if(ug.college){setHasUG("Yes");setUgCollege(ug.college);}if(ug.university)setUgUniversity(ug.university);if(ug.course)setUgCourse(ug.course);
+          if(edu.hasUG){setHasUG(edu.hasUG);}else if(ug.college){setHasUG("Yes");}
+          if(ug.college)setUgCollege(ug.college);if(ug.university)setUgUniversity(ug.university);if(ug.course)setUgCourse(ug.course);
           if(ug.specialization)setUgSpecialization(ug.specialization);
           if(ug.hallTicket)setUgHall(ug.hallTicket);if(ug.from)setUgFrom(ug.from);if(ug.to)setUgTo(ug.to);if(ug.address)setUgAddress(ug.address);if(ug.mode)setUgMode(ug.mode);
           if(ug.yearOfPassing)setUgYear(ug.yearOfPassing);if(ug.resultType)setUgResultType(ug.resultType);if(ug.resultValue)setUgResultValue(ug.resultValue);if(ug.backlogs)setUgBacklogs(ug.backlogs);if(ug.medium)setUgMedium(ug.medium);
           if(ug.provKey)setUgProvKey(ug.provKey);if(ug.convoKey)setUgConvoKey(ug.convoKey);if(!ug.provKey&&ug.certKey)setUgProvKey(ug.certKey);
           setUgCountry(ug.country||"India");if(ug.countryName)setUgCountryName(ug.countryName);if(ug.equivalencyKey)setUgEquivalencyKey(ug.equivalencyKey);
 
-          if(pg.college){setHasPG("Yes");setPgCollege(pg.college);}if(pg.university)setPgUniversity(pg.university);if(pg.course)setPgCourse(pg.course);
+          if(edu.hasPG){setHasPG(edu.hasPG);}else if(pg.college){setHasPG("Yes");}
+          if(pg.college)setPgCollege(pg.college);if(pg.university)setPgUniversity(pg.university);if(pg.course)setPgCourse(pg.course);
           if(pg.specialization)setPgSpecialization(pg.specialization);
           if(pg.hallTicket)setPgHall(pg.hallTicket);if(pg.from)setPgFrom(pg.from);if(pg.to)setPgTo(pg.to);if(pg.address)setPgAddress(pg.address);if(pg.mode)setPgMode(pg.mode);
           if(pg.yearOfPassing)setPgYear(pg.yearOfPassing);if(pg.resultType)setPgResultType(pg.resultType);if(pg.resultValue)setPgResultValue(pg.resultValue);if(pg.backlogs)setPgBacklogs(pg.backlogs);if(pg.medium)setPgMedium(pg.medium);
@@ -394,7 +396,7 @@ export default function EducationDetails() {
     intermediate:{college:iCollege,board:iBoard,hallTicket:iHall,from:iFrom,to:iTo,address:iAddress,mode:iMode,stream:iStream,yearOfPassing:iYear,resultType:iResultType,resultValue:iResultValue,medium:iMedium,certKey:iCertKey},
     undergraduate:hasUG==="Yes"?{college:ugCollege,university:ugUniversity,course:ugCourse,specialization:ugSpecialization,hallTicket:ugHall,from:ugFrom,to:ugTo,address:ugAddress,mode:ugMode,yearOfPassing:ugYear,resultType:ugResultType,resultValue:ugResultValue,backlogs:ugBacklogs,medium:ugMedium,provKey:ugProvKey,convoKey:ugConvoKey,country:ugCountry,countryName:ugCountry==="Outside India"?ugCountryName:"",equivalencyKey:ugEquivalencyKey}:{},
     postgraduate:hasPG==="Yes"?{college:pgCollege,university:pgUniversity,course:pgCourse,specialization:pgSpecialization,hallTicket:pgHall,from:pgFrom,to:pgTo,address:pgAddress,mode:pgMode,yearOfPassing:pgYear,resultType:pgResultType,resultValue:pgResultValue,backlogs:pgBacklogs,medium:pgMedium,provKey:pgProvKey,convoKey:pgConvoKey,country:pgCountry,countryName:pgCountry==="Outside India"?pgCountryName:"",equivalencyKey:pgEquivalencyKey}:{},
-    afterTenth, hasDip, hasCerts, hasProfQual, hasArticleship,
+    afterTenth, hasDip, hasCerts, hasProfQual, hasArticleship, hasUG, hasPG,
     diploma:hasDip==="Yes"?{institute:dipInstitute,board:dipBoard,course:dipCourse,from:dipFrom,to:dipTo,yearOfPassing:dipYear,resultType:dipResultType,resultValue:dipResultValue,mode:dipMode,certKey:dipCertKey}:{},
     certifications:hasCerts==="Yes"?certs:[],
     professionalQualifications:hasProfQual==="Yes"?profQuals:[],

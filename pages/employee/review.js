@@ -204,8 +204,10 @@ function AttChip({ label, docKey, urls }) {
   return <a className="att-chip" href={url} target="_blank" rel="noopener noreferrer">📎 {label}</a>;
 }
 
-function getMissingFields(d, empHistory) {
+function getMissingFields(d, empHistory, empAcksData) {
   const issues = [];
+
+  // ── Page 1 — Personal Details ──
   const p1 = [];
   if (!d.firstName)   p1.push("First Name");
   if (!d.lastName)    p1.push("Last Name");
@@ -217,6 +219,9 @@ function getMissingFields(d, empHistory) {
   if (!d.nameAsPerAadhaar)      p1.push("Name as per Aadhaar");
   if (!d.pan)         p1.push("PAN Number");
   if (!d.nameAsPerPan) p1.push("Name as per PAN");
+  if (!d.hasPassport)  p1.push("Do you have a Passport?");
+  if (!d.bloodGroup)   p1.push("Blood Group");
+  if (!d.maritalStatus) p1.push("Marital Status");
   if (!d.aadhaarKey)  p1.push("Aadhaar Document");
   if (!d.panKey)      p1.push("PAN Document");
   if (!d.photoKey)    p1.push("Profile Photo");
@@ -226,6 +231,7 @@ function getMissingFields(d, empHistory) {
   if (!cur.state)     p1.push("Current Address – State");
   if (!cur.pin)       p1.push("Current Address – Pincode");
   if (!d.bankName)        p1.push("Bank Name");
+  if (d.bankName === "Other" && !d.bankOther) p1.push("Bank Name (Other)");
   if (!d.bankAccountName) p1.push("Name as per Bank Account");
   if (!d.ifsc)            p1.push("IFSC Code");
   if (!d.branch)          p1.push("Branch Name");
@@ -233,48 +239,198 @@ function getMissingFields(d, empHistory) {
   if (!d.accountFull && !d.accountLast4) p1.push("Account Number");
   if (p1.length) issues.push({ step:1, label:"Personal Details", path:"/employee/personal", fields:p1 });
 
+  // ── Page 2 — Education ──
   const p2 = [];
-  const edu = d.education || {};
-  const x   = edu.classX        || {};
-  const inter = edu.intermediate || {};
-  const ug  = edu.undergraduate  || {};
-  if (!x.school)            p2.push("Class X – School Name");
-  if (!x.yearOfPassing)     p2.push("Class X – Year");
-  if (!x.resultValue)       p2.push("Class X – Result");
-  if (!x.certKey)           p2.push("Class X – Document");
+  const edu   = d.education || {};
+  const x     = edu.classX        || {};
+  const inter = edu.intermediate  || {};
+  const dip   = edu.diploma       || {};
+  const ug    = edu.undergraduate || {};
+  const pg    = edu.postgraduate  || {};
+  if (!x.school)        p2.push("Class X – School Name");
+  if (!x.board)         p2.push("Class X – Board");
+  if (!x.hallTicket)    p2.push("Class X – Hall Ticket / Roll No.");
+  if (!x.from)          p2.push("Class X – From Date");
+  if (!x.to)            p2.push("Class X – To Date");
+  if (!x.yearOfPassing) p2.push("Class X – Year");
+  if (!x.address)       p2.push("Class X – School Address");
+  if (!x.resultType)    p2.push("Class X – Result Type");
+  if (!x.resultValue)   p2.push("Class X – Result");
+  if (!x.medium)        p2.push("Class X – Medium of Study");
+  if (!x.certKey)       p2.push("Class X – Document");
+  if (!edu.afterTenth)  p2.push("What did you do after Class X?");
   if (edu.afterTenth === "Intermediate" || edu.afterTenth === "Both") {
     if (!inter.college)       p2.push("Intermediate – College");
+    if (!inter.board)         p2.push("Intermediate – Board");
+    if (!inter.hallTicket)    p2.push("Intermediate – Hall Ticket / Roll No.");
+    if (!inter.from)          p2.push("Intermediate – From Date");
+    if (!inter.to)            p2.push("Intermediate – To Date");
     if (!inter.yearOfPassing) p2.push("Intermediate – Year");
+    if (!inter.address)      p2.push("Intermediate – College Address");
+    if (!inter.mode)          p2.push("Intermediate – Mode");
+    if (!inter.stream)        p2.push("Intermediate – Stream");
+    if (!inter.resultType)    p2.push("Intermediate – Result Type");
+    if (!inter.resultValue)   p2.push("Intermediate – Result");
+    if (!inter.medium)        p2.push("Intermediate – Medium of Study");
+    if (!inter.certKey)       p2.push("Intermediate – Document");
   }
-  if (!ug.college && edu.hasUG === "Yes") p2.push("UG – College Name");
+  if (edu.afterTenth === "Diploma" || edu.afterTenth === "Both" || edu.hasDip === "Yes") {
+    if (!dip.institute)    p2.push("Diploma – Institute Name");
+    if (!dip.board)        p2.push("Diploma – Board / University");
+    if (!dip.course)       p2.push("Diploma – Course");
+    if (!dip.from)         p2.push("Diploma – From Date");
+    if (!dip.to)           p2.push("Diploma – To Date");
+    if (!dip.yearOfPassing) p2.push("Diploma – Year");
+    if (!dip.resultType)   p2.push("Diploma – Result Type");
+    if (!dip.resultValue)  p2.push("Diploma – Result");
+    if (!dip.mode)         p2.push("Diploma – Mode");
+    if (!dip.certKey)      p2.push("Diploma – Document");
+  }
+  if (edu.hasUG === "Yes") {
+    if (!ug.country)                            p2.push("UG – Country of Institution");
+    if (ug.country === "Outside India" && !ug.countryName) p2.push("UG – Country Name");
+    if (!ug.college)     p2.push("UG – College Name");
+    if (!ug.university)  p2.push("UG – University Name");
+    if (!ug.course)      p2.push("UG – Course / Degree");
+    if (ug.country !== "Outside India" && !ug.hallTicket) p2.push("UG – Hall Ticket / Roll No.");
+    if (!ug.from)        p2.push("UG – From Date");
+    if (!ug.to)          p2.push("UG – To Date");
+    if (!ug.yearOfPassing) p2.push("UG – Year of Passing");
+    if (!ug.address)     p2.push("UG – College Address");
+    if (!ug.mode)        p2.push("UG – Mode");
+    if (!ug.resultType)  p2.push("UG – Result Type");
+    if (!ug.resultValue) p2.push("UG – Result");
+    if (!ug.medium)      p2.push("UG – Medium of Study");
+    if (!ug.backlogs)    p2.push("UG – Any Active Backlogs?");
+    if (ug.backlogs !== "Yes" && !ug.provKey) p2.push("UG – Provisional Marksheet");
+  }
+  if (edu.hasPG === "Yes") {
+    if (!pg.country)                            p2.push("PG – Country of Institution");
+    if (pg.country === "Outside India" && !pg.countryName) p2.push("PG – Country Name");
+    if (!pg.college)     p2.push("PG – College Name");
+    if (!pg.university)  p2.push("PG – University Name");
+    if (!pg.course)      p2.push("PG – Course / Degree");
+    if (pg.country !== "Outside India" && !pg.hallTicket) p2.push("PG – Hall Ticket / Roll No.");
+    if (!pg.from)        p2.push("PG – From Date");
+    if (!pg.to)          p2.push("PG – To Date");
+    if (!pg.yearOfPassing) p2.push("PG – Year of Passing");
+    if (!pg.address)     p2.push("PG – College Address");
+    if (!pg.mode)        p2.push("PG – Mode");
+    if (!pg.resultType)  p2.push("PG – Result Type");
+    if (!pg.resultValue) p2.push("PG – Result");
+    if (!pg.medium)      p2.push("PG – Medium of Study");
+    if (!pg.backlogs)    p2.push("PG – Any Active Backlogs?");
+    if (pg.backlogs !== "Yes" && !pg.provKey) p2.push("PG – Provisional Marksheet");
+  }
+  if (!edu.hasCerts)      p2.push("Do you have any Certifications?");
+  if (!edu.hasProfQual)   p2.push("Do you have any Professional Qualifications?");
+  if (!edu.hasArticleship) p2.push("Do you have any Articleship / Practical Training?");
+  if (edu.hasCerts === "Yes" && Array.isArray(edu.certifications)) {
+    edu.certifications.forEach((c, i) => {
+      if (!c.name)    p2.push(`Certification ${i+1} – Name`);
+      if (!c.certKey) p2.push(`Certification ${i+1} – Document`);
+    });
+  }
+  if (edu.hasProfQual === "Yes" && Array.isArray(edu.professionalQualifications)) {
+    edu.professionalQualifications.forEach((q, i) => {
+      if (!q.type)                       p2.push(`Professional Qualification ${i+1} – Type`);
+      if (q.type === "Other" && !q.otherType) p2.push(`Professional Qualification ${i+1} – Specify Type`);
+      if (!q.level)                      p2.push(`Professional Qualification ${i+1} – Level`);
+      if (q.level !== "Pursuing" && !q.year) p2.push(`Professional Qualification ${i+1} – Year`);
+    });
+  }
+  if (edu.hasArticleship === "Yes" && Array.isArray(edu.articleships)) {
+    edu.articleships.forEach((a, i) => {
+      if (!a.firm)                                    p2.push(`Articleship ${i+1} – Firm / Organisation`);
+      if (!a.from)                                     p2.push(`Articleship ${i+1} – From Date`);
+      if (!a.type)                                     p2.push(`Articleship ${i+1} – Training Type`);
+      if (a.type === "Other Practical Training" && !a.otherType) p2.push(`Articleship ${i+1} – Specify Type`);
+      if (!a.isOngoing)                                p2.push(`Articleship ${i+1} – Status`);
+      if (a.isOngoing === "Completed" && !a.to)         p2.push(`Articleship ${i+1} – To Date`);
+    });
+  }
+  if (!edu.hasEduGap) p2.push("Education Gap / Break Before First Job?");
+  if (edu.hasEduGap === "Yes") {
+    if (!edu.eduGapReason) p2.push("Education Gap – Reason");
+    if (!edu.eduGapFrom)   p2.push("Education Gap – From Date");
+    if (!edu.eduGapTo)     p2.push("Education Gap – To Date");
+  }
   if (p2.length) issues.push({ step:2, label:"Education", path:"/employee/education", fields:p2 });
 
+  // ── Page 3 — Employment History ──
   const p3 = [];
-  if (empHistory.length === 0) {
-    // Employee never visited page 3 — flag it entirely
+  if (!empAcksData) {
+    // Employment-history record hasn't loaded/been created at all
     p3.push("At least one employment record required");
   } else {
-    const lastIdx = empHistory.length - 1;
-    empHistory.forEach((e, idx) => {
-      const isCurrent = idx === lastIdx;
-      const n = isCurrent ? "Current Employer" : `Employer ${idx + 1}`;
-      if (!e.companyName)   p3.push(`${n} – Company Name`);
-      if (!e.designation)   p3.push(`${n} – Designation`);
-      if (!e.startDate)     p3.push(`${n} – Date of Joining`);
-      if (isCurrent && !e.currentlyWorking) p3.push(`${n} – Currently Working?`);
-      if (!e.documents?.offerLetterKey) p3.push(`${n} – Offer Letter`);
-      if (!isCurrent && !e.documents?.experienceKey) p3.push(`${n} – Experience Letter`);
-      if (isCurrent && e.currentlyWorking === "No" && !e.documents?.resignationKey) p3.push(`${n} – Resignation Acceptance`);
+    if (!empAcksData.resumeKey)     p3.push("Resume / CV Upload");
+    if (!empAcksData.hasExperience) p3.push("Do you have prior work experience?");
+    if (empAcksData.hasExperience === "Yes" && empHistory.length === 0) {
+      p3.push("At least one employment record required");
+    } else if (empAcksData.hasExperience === "Yes") {
+      const lastIdx = empHistory.length - 1;
+      empHistory.forEach((e, idx) => {
+        const isCurrent = idx === lastIdx;
+        const stillWorking = isCurrent && e.currentlyWorking === "Yes";
+        const n = isCurrent ? "Current Employer" : `Employer ${idx + 1}`;
+        if (!e.companyName)    p3.push(`${n} – Company Name`);
+        if (!e.officeAddress)  p3.push(`${n} – Office Address`);
+        if (!e.employeeId)     p3.push(`${n} – Employee ID`);
+        if (!e.workEmail)      p3.push(`${n} – Official Work Email`);
+        if (!e.designation)    p3.push(`${n} – Designation`);
+        if (!e.department)     p3.push(`${n} – Department`);
+        if (!e.duties)         p3.push(`${n} – Duties & Responsibilities`);
+        if (!e.employmentType) p3.push(`${n} – Employment Type`);
+        if (e.employmentType === "Contract") {
+          if (!e.contractVendor?.company) p3.push(`${n} – Vendor Company`);
+          if (!e.contractVendor?.email)   p3.push(`${n} – Vendor Email`);
+          if (!e.contractVendor?.mobile)  p3.push(`${n} – Vendor Mobile`);
+        }
+        if (!e.startDate) p3.push(`${n} – Date of Joining`);
+        if (isCurrent) {
+          if (!e.currentlyWorking) p3.push(`${n} – Currently Working?`);
+          if (e.currentlyWorking === "No" && !e.endDate) p3.push(`${n} – Date of Leaving`);
+        } else if (!e.endDate) p3.push(`${n} – Date of Leaving`);
+        if (!stillWorking && !e.reasonForRelieving) p3.push(`${n} – Reason for Leaving`);
+        if (!stillWorking) {
+          if (!e.reference?.role)   p3.push(`${n} – Reference Role`);
+          if (!e.reference?.name)   p3.push(`${n} – Reference Name`);
+          if (!e.reference?.email)  p3.push(`${n} – Reference Email`);
+          if (!e.reference?.mobile) p3.push(`${n} – Reference Mobile`);
+          if (!e.documents?.payslipsKey) p3.push(`${n} – Payslips`);
+        }
+        if (!e.documents?.offerLetterKey) p3.push(`${n} – Offer Letter`);
+        if (isCurrent && e.currentlyWorking === "No" && !e.documents?.resignationKey) p3.push(`${n} – Resignation Acceptance`);
+        // Experience/Relieving Letter deliberately NOT required — former employers can take weeks to issue it.
+        if (e.gap?.hasGap === "Yes") {
+          if (!e.gap.reason) p3.push(`${n} – Employment Gap Reason`);
+          if (!e.gap.from)   p3.push(`${n} – Employment Gap From Date`);
+          if (!e.gap.to)     p3.push(`${n} – Employment Gap To Date`);
+        }
+      });
+    }
+    const ackLabels = { business:"Other Business/Employment Declaration", dismissed:"Dismissal/Termination Declaration", criminal:"Criminal Conviction Declaration", civil:"Civil Judgment Declaration" };
+    Object.entries(ackLabels).forEach(([key, label]) => {
+      if (!empAcksData.acknowledgements?.[key]?.val) p3.push(label);
     });
+    if (!empAcksData.declared) p3.push("Employment History Declaration Checkbox");
   }
   if (p3.length) issues.push({ step:3, label:"Employment History", path:"/employee/previous", fields:p3 });
 
+  // ── Page 4 — UAN Details ──
   const p4 = [];
-  // Always check page 4 — if not visited, UAN details are missing
   if (!d.uanNumber && !d.hasUan) p4.push("UAN details not filled");
   else if (d.hasUan === "yes" || d.hasUan === true) {
     if (!d.uanNumber) p4.push("UAN Number");
     if (!d.epfoKey)   p4.push("UAN Card Upload");
+    if (Array.isArray(d.epfoNominees) && d.epfoNominees.length > 0) {
+      const totalShare = d.epfoNominees.reduce((s,n)=>s+(parseInt(n.share)||0),0);
+      if (totalShare !== 100) p4.push(`Nominee Share Total (currently ${totalShare}%, must equal 100%)`);
+    }
+    if (!d.epfoDeclarations?.pfNomAck)      p4.push("PF Nomination Declaration");
+    if (!d.epfoDeclarations?.pensionNomAck) p4.push("Pension Nomination Declaration");
+    if (!d.epfoDeclarations?.epfoDecl)      p4.push("General EPFO Declaration");
+    if (!d.epfoSignature?.s3Key) p4.push("Digital Signature");
   }
   if (p4.length) issues.push({ step:4, label:"UAN Details", path:"/employee/uan", fields:p4 });
 
@@ -286,6 +442,7 @@ export default function ReviewPage() {
   const { user, apiFetch, logout, ready } = useAuth();
   const [draft,        setDraft]        = useState(null);
   const [empHistory,   setEmpHistory]   = useState([]);
+  const [empAcksData,  setEmpAcksData]  = useState(null);
   const [loading,      setLoading]      = useState(true);
   const [acks,         setAcks]         = useState(Array(ACK_STATEMENTS.length).fill(false));
   const [profileEdited, setProfileEdited] = useState(false);
@@ -354,6 +511,7 @@ export default function ReviewPage() {
               const ed = await eRes.json();
               const emps = ed.employments || (Array.isArray(ed) ? ed : (ed.items || []));
               setEmpHistory(emps);
+              setEmpAcksData({ acknowledgements: ed.acknowledgements || {}, declared: !!ed.declared });
             }
           } catch (_) {}
 
@@ -388,8 +546,8 @@ export default function ReviewPage() {
 
   useEffect(() => {
     if (!draft) return;
-    setMissingIssues(getMissingFields(draft, empHistory));
-  }, [draft, empHistory]);
+    setMissingIssues(getMissingFields(draft, empHistory, empAcksData));
+  }, [draft, empHistory, empAcksData]);
 
   // ── If user edits something directly on page 5, switch to editor mode ──
   const handleInlineEdit = () => {

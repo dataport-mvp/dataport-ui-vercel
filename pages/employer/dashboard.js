@@ -29,6 +29,8 @@ const normalizeEducation = (ed = {}) => {
     articleships:               Array.isArray(ed?.articleships)               ? ed.articleships               : [],
     hasEduGap:      ed?.hasEduGap      || "",
     eduGapReason:   ed?.eduGapReason   || "",
+    eduGapFrom:     ed?.eduGapFrom     || "",
+    eduGapTo:       ed?.eduGapTo       || "",
     hasDip:         ed?.hasDip         || "",
     hasCerts:       ed?.hasCerts       || "",
     hasProfQual:    ed?.hasProfQual    || "",
@@ -258,6 +260,8 @@ async function printProfile(profile, empHistory, documents, employerName) {
   ${section("Personal Information", [
     row("Date of Birth",    isoToDisplay(d.dob)),
     row("Gender",           d.gender),
+    row("Religion",         d.religion),
+    row("Category",         d.category),
     row("Nationality",      d.nationality),
     row("Blood Group",      d.bloodGroup),
     row("Marital Status",   d.maritalStatus),
@@ -346,6 +350,8 @@ async function printProfile(profile, empHistory, documents, employerName) {
 
   ${edu.hasEduGap === "Yes" ? section("Education Gap Before First Job", [
     row("Had Gap",  edu.hasEduGap),
+    row("From",     isoToDisplay(edu.eduGapFrom)),
+    row("To",       isoToDisplay(edu.eduGapTo)),
     row("Reason",   edu.eduGapReason),
   ].join(""), "#334155") : ""}
 
@@ -375,6 +381,8 @@ async function printProfile(profile, empHistory, documents, employerName) {
       row("Reference Email",       e.reference?.email),
       row("Reference Mobile",      e.reference?.mobile),
       e.gap?.hasGap === "Yes" ? row("Employment Gap", e.gap?.reason) : "",
+      e.gap?.hasGap === "Yes" ? row("Employment Gap From", isoToDisplay(e.gap?.from)) : "",
+      e.gap?.hasGap === "Yes" ? row("Employment Gap To",   isoToDisplay(e.gap?.to))   : "",
     ].join(""), i === arr.length-1 ? "#18151f" : "#334155"
   )).join("")}
 
@@ -870,6 +878,8 @@ function OverviewTab({ data }) {
           <KV k="Full Name"           v={[data.firstName,data.middleName,data.lastName].filter(Boolean).join(" ")} />
           <KV k="Date of Birth"       v={isoToDisplay(data.dob)} />
           <KV k="Gender"              v={data.gender} />
+          <KV k="Religion"            v={data.religion} />
+          <KV k="Category"            v={data.category} />
           <KV k="Nationality"         v={data.nationality} />
           <KV k="Blood Group"         v={data.bloodGroup} />
           <KV k="Marital Status"      v={data.maritalStatus} />
@@ -1030,6 +1040,8 @@ function EducationTab({ data }) {
         <Sec title="Education Gap Before First Job">
           <div className="kv-grid">
             <KV k="Had Gap" v={data.hasEduGap} />
+            <KV k="From"    v={isoToDisplay(data.eduGapFrom)} />
+            <KV k="To"      v={isoToDisplay(data.eduGapTo)} />
             <KV k="Reason"  v={data.eduGapReason} />
           </div>
         </Sec>
@@ -1088,7 +1100,7 @@ function EmploymentTab({ data, resumeKey, docUrls }) {
             </div>
           )}
           {e.gap?.hasGap==="Yes"&&e.gap?.reason&&(
-            <div className="gap-note">⏱ Employment gap: {e.gap.reason}</div>
+            <div className="gap-note">⏱ Employment gap{(e.gap.from||e.gap.to)?` (${isoToDisplay(e.gap.from)} – ${isoToDisplay(e.gap.to)})`:""}: {e.gap.reason}</div>
           )}
         </div>
       ))}

@@ -459,7 +459,7 @@ export default function UanDetails() {
       sigHasStrokeRef.current = false;
       setSigEmptyWarn(false);
     }
-  }, [showSigCanvas]);
+  }, [showSigCanvas, loading]);
 
   // ── dirty setter — marks edited, resets acks but NOT signature ──
   const dirty = (setter) => (val) => {
@@ -639,8 +639,8 @@ export default function UanDetails() {
     setPfRecords(prev => prev.map((r, idx) => idx === i ? {...r, [field]: value} : r));
     flagPostSignEdit();
   };
-  const addPfRecord    = () => { setPfRecords(prev => [...prev, makePfRecord()]); isDirtyRef.current = true; };
-  const removePfRecord = (i) => { if(i === 0) return; setPfRecords(prev => prev.filter((_, idx) => idx !== i)); isDirtyRef.current = true; };
+  const addPfRecord    = () => { setPfRecords(prev => [...prev, makePfRecord()]); flagPostSignEdit(); };
+  const removePfRecord = (i) => { if(i === 0) return; setPfRecords(prev => prev.filter((_, idx) => idx !== i)); flagPostSignEdit(); };
 
   // Upload canvas blob to S3 — filename includes the signing timestamp so each signature
   // lands at its own S3 key rather than overwriting the previous one in place.
@@ -750,6 +750,8 @@ export default function UanDetails() {
     // Only validate acks + signature when user has UAN
     if (hasUan === "yes") {
       const errs = [];
+      const totalShare = nominees.reduce((s,n)=>s+(parseInt(n.share)||0),0);
+      if (nominees.length > 0 && totalShare !== 100) errs.push(`Nominee Share Total (currently ${totalShare}%, must equal 100%)`);
       if (!pfNomAck)     errs.push("PF Nomination Declaration");
       if (!pensionNomAck) errs.push("Pension Nomination Declaration");
       if (!epfoDecl)     errs.push("General EPFO Declaration");
@@ -831,7 +833,7 @@ export default function UanDetails() {
                   <F l="Mobile Linked to UAN" v={mobileLinked} s={v => dirty(setMobileLinked)(v.replace(/\D/g, ""))} r={false} mx={10}/>
                   <div className="fi">
                     <span className="fl">UAN Active <span style={{color:"#ef4444"}}>*</span></span>
-                    <select className="in" value={isActive} onChange={e => { setIsActive(e.target.value); isDirtyRef.current = true; }} style={{background:isActive?"#fff":"#f2f1f9",color:isActive?"#1a1730":"#8b88b0"}}>
+                    <select className="in" value={isActive} onChange={e => { setIsActive(e.target.value); flagPostSignEdit(); }} style={{background:isActive?"#fff":"#f2f1f9",color:isActive?"#1a1730":"#8b88b0"}}>
                       <option value="">Select</option>
                       <option value="Yes">Yes</option>
                       <option value="No">No</option>
@@ -840,12 +842,12 @@ export default function UanDetails() {
                 </div>
                 <div style={{marginTop:"0.75rem"}}>
                   <span className="fl" style={{display:"block",marginBottom:"0.4rem"}}>UAN Card <span style={{color:"#ef4444"}}>*</span></span>
-                  <FileUpload label="Upload UAN Card *" category="uan" subKey="uanCard" employeeId={draft?.employee_id || ""} apiFetch={apiFetch} value={epfoKey} onChange={k => { setEpfoKey(k); isDirtyRef.current = true; }}/>
+                  <FileUpload label="Upload UAN Card *" category="uan" subKey="uanCard" employeeId={draft?.employee_id || ""} apiFetch={apiFetch} value={epfoKey} onChange={k => { setEpfoKey(k); flagPostSignEdit(); }}/>
                 </div>
                 <div style={{marginTop:"0.75rem"}}>
                   <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Service History Record Snapshot <span style={{color:"#ef4444"}}>*</span></span>
                   <p style={{fontSize:"0.7rem",color:"#6b6894",marginBottom:"0.4rem",fontWeight:500,lineHeight:1.5}}>Download from EPFO Member Portal (passbook.epfindia.gov.in) and upload screenshot or PDF.</p>
-                  <FileUpload label="Upload Service History Snapshot *" category="uan" subKey="serviceHistory" employeeId={draft?.employee_id || ""} apiFetch={apiFetch} value={serviceHistoryKey} onChange={k => { const key = typeof k==="string"?k:(k?.key||k?.s3_key||""); setServiceHistoryKey(key); isDirtyRef.current = true; }}/>
+                  <FileUpload label="Upload Service History Snapshot *" category="uan" subKey="serviceHistory" employeeId={draft?.employee_id || ""} apiFetch={apiFetch} value={serviceHistoryKey} onChange={k => { const key = typeof k==="string"?k:(k?.key||k?.s3_key||""); setServiceHistoryKey(key); flagPostSignEdit(); }}/>
                 </div>
               </>
             )}
@@ -974,7 +976,7 @@ export default function UanDetails() {
                 <div key={nom._k||idx} className="nom-block">
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.75rem"}}>
                     <span style={{fontSize:"0.72rem",fontWeight:800,color:"#16a34a",textTransform:"uppercase",letterSpacing:"0.5px"}}>Nominee {idx+1}</span>
-                    {idx>0&&<button className="rm-btn" onClick={()=>{setNominees(prev=>prev.filter((_,i)=>i!==idx));isDirtyRef.current=true;}}>− Remove</button>}
+                    {idx>0&&<button className="rm-btn" onClick={()=>{setNominees(prev=>prev.filter((_,i)=>i!==idx));flagPostSignEdit();}}>− Remove</button>}
                   </div>
                   <div className="fr">
                     <div className="fi">
@@ -1006,7 +1008,7 @@ export default function UanDetails() {
                 </div>
               ))}
               {nominees.length < 4 && <button className="add-btn" onClick={()=>{setNominees(p=>[...p,makeNominee()]);flagPostSignEdit();}}>+ Add Another Nominee</button>}
-              {nominees.length > 1 && nominees.reduce((s,n)=>s+(parseInt(n.share)||0),0) !== 100 && (
+              {nominees.reduce((s,n)=>s+(parseInt(n.share)||0),0) !== 100 && (
                 <p style={{fontSize:"0.75rem",color:"#ef4444",fontWeight:600,marginTop:"0.5rem"}}>⚠️ Total share must equal 100%. Current total: {nominees.reduce((s,n)=>s+(parseInt(n.share)||0),0)}%</p>
               )}
             </div>
