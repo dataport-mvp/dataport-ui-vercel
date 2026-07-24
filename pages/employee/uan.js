@@ -44,6 +44,45 @@ function ddmmyyyyToDisplay(val) {
   return `${parseInt(dd, 10)} ${mName} ${yyyy}`;
 }
 
+// Accepts either dd-mm-yyyy (NomineeDobField) or yyyy-mm-dd (ISO, e.g. draft.fatherDob) and
+// returns a Date, or null if unparseable/invalid/in the future.
+function parseAnyDob(val) {
+  if (!val) return null;
+  const parts = val.split("-");
+  if (parts.length !== 3) return null;
+  let d, m, y;
+  if (parts[0].length === 4) { [y, m, d] = parts; }      // yyyy-mm-dd
+  else { [d, m, y] = parts; }                             // dd-mm-yyyy
+  d = parseInt(d, 10); m = parseInt(m, 10); y = parseInt(y, 10);
+  if (!d || !m || !y || y.toString().length !== 4) return null;
+  const dob = new Date(y, m - 1, d);
+  if (dob.getFullYear() !== y || dob.getMonth() !== m - 1 || dob.getDate() !== d) return null; // rejects invalid dates like 31-02
+  if (dob > new Date()) return null;
+  return dob;
+}
+
+// Completed age as of today — counted from the exact date, not just calendar-year subtraction,
+// so a child born 11 months ago correctly shows "11 months" rather than rounding to a year either way.
+function calcAge(dobVal) {
+  const dob = parseAnyDob(dobVal);
+  if (!dob) return null;
+  const today = new Date();
+  let years = today.getFullYear() - dob.getFullYear();
+  let months = today.getMonth() - dob.getMonth();
+  let days = today.getDate() - dob.getDate();
+  if (days < 0) { months -= 1; days += new Date(today.getFullYear(), today.getMonth(), 0).getDate(); }
+  if (months < 0) { years -= 1; months += 12; }
+  const totalDays = Math.floor((today - dob) / 86400000);
+  return { years, months, days, totalDays };
+}
+
+function formatAge(a) {
+  if (!a) return "";
+  if (a.years >= 1) return `${a.years} yr${a.years !== 1 ? "s" : ""} old`;
+  if (a.months >= 1) return `${a.months} month${a.months !== 1 ? "s" : ""} old`;
+  return `${a.totalDays} day${a.totalDays !== 1 ? "s" : ""} old`;
+}
+
 const makePfRecord = (companyName = "") => ({
   companyName, hasPf:"", pfType:"", pfMemberId:"", dojEpfo:"", doeEpfo:"", pfTransferred:"",
 });
@@ -273,6 +312,20 @@ function FDate({ l, v, s, r=true, errKey, errors, onFix }) {
       />
       {hasErr&&<span className="err-msg">Required</span>}
     </div>
+  );
+}
+
+// Small inline age readout next to a DOB — computed, never manually entered.
+// Flags newborns under 90 days since that's the one cutoff that genuinely varies
+// by insurer (Day 1 add-on vs. standard 90-day vs. some policies requiring 1 year).
+function AgeTag({ dob }) {
+  const age = calcAge(dob);
+  if (!age) return null;
+  return (
+    <span style={{fontSize:"0.72rem",color:"#6b6894",fontWeight:600,marginLeft:8}}>
+      ({formatAge(age)})
+      {age.totalDays < 90 && <span style={{color:"#d97706"}}> · newborn — confirm Day-1/90-day cover with your insurer</span>}
+    </span>
   );
 }
 
@@ -645,10 +698,10 @@ export default function UanDetails() {
         hasChildren,
         children:    hasChildren === "Yes" ? children : [],
         parentsCoverage,
-        fatherName:  parentsCoverage !== "Not Applicable" ? fatherName : "",
-        fatherDob:   parentsCoverage !== "Not Applicable" ? fatherDob  : "",
-        motherName:  parentsCoverage !== "Not Applicable" ? motherName : "",
-        motherDob:   parentsCoverage !== "Not Applicable" ? motherDob  : "",
+        fatherName:  parentsCoverage === "My Parents" ? (draft?.fatherName || "") : parentsCoverage === "Spouse's Parents" ? fatherName : "",
+        fatherDob:   parentsCoverage === "My Parents" ? (draft?.fatherDob  || "") : parentsCoverage === "Spouse's Parents" ? fatherDob  : "",
+        motherName:  parentsCoverage === "My Parents" ? (draft?.motherName || "") : parentsCoverage === "Spouse's Parents" ? motherName : "",
+        motherDob:   parentsCoverage === "My Parents" ? (draft?.motherDob  || "") : parentsCoverage === "Spouse's Parents" ? motherDob  : "",
       },
       epfoSignature: {
         s3Key: sigS3Key,
@@ -966,7 +1019,7 @@ export default function UanDetails() {
             {draft?.maritalStatus==="Married" && (
               <div className="fr">
                 <div className="fi"><span className="fl">Spouse Name</span><input className="in" value={spouseName} onChange={e=>{setSpouseName(e.target.value);flagPostSignEdit();}}/></div>
-                <div className="fi"><span className="fl">Spouse Date of Birth</span><NomineeDobField value={spouseDob} onChange={v=>{setSpouseDob(v);flagPostSignEdit();}}/></div>
+                <div className="fi"><span className="fl">Spouse Date of Birth</span><NomineeDobField value={spouseDob} onChange={v=>{setSpouseDob(v);flagPostSignEdit();}}/>{spouseDob && <AgeTag dob={spouseDob}/>}</div>
               </div>
             )}
 
@@ -988,7 +1041,7 @@ export default function UanDetails() {
                   </div>
                   <div className="fr">
                     <div className="fi"><span className="fl">Name</span><input className="in" value={c.name} onChange={e=>{setChildren(p=>{const n=[...p];n[idx]={...n[idx],name:e.target.value};return n;});flagPostSignEdit();}}/></div>
-                    <div className="fi"><span className="fl">Date of Birth</span><NomineeDobField value={c.dob} onChange={v=>{setChildren(p=>{const n=[...p];n[idx]={...n[idx],dob:v};return n;});flagPostSignEdit();}}/></div>
+                    <div className="fi"><span className="fl">Date of Birth</span><NomineeDobField value={c.dob} onChange={v=>{setChildren(p=>{const n=[...p];n[idx]={...n[idx],dob:v};return n;});flagPostSignEdit();}}/>{c.dob && <AgeTag dob={c.dob}/>}</div>
                     <div className="fi">
                       <span className="fl">Gender</span>
                       <select className="in" value={c.gender} onChange={e=>{setChildren(p=>{const n=[...p];n[idx]={...n[idx],gender:e.target.value};return n;});flagPostSignEdit();}} style={{background:c.gender?"#fff":"#f2f1f9",color:c.gender?"#1a1730":"#8b88b0"}}>
@@ -1008,21 +1061,33 @@ export default function UanDetails() {
               <span className="fl">Parents to Cover (choose one side only)</span>
               <div style={{display:"flex",gap:"0.55rem",marginTop:"0.15rem",flexWrap:"wrap"}}>
                 {["My Parents","Spouse's Parents","Not Applicable"].map(v=>(
-                  <button key={v} type="button" onClick={()=>{setParentsCoverage(v);if(v==="Not Applicable"){setFatherName("");setFatherDob("");setMotherName("");setMotherDob("");}flagPostSignEdit();}} style={{flex:"1 1 140px",padding:"0.55rem 0.4rem",borderRadius:9,border:parentsCoverage===v?"2px solid #7c3aed":"1.5px solid #d8d4e3",background:parentsCoverage===v?"#7c3aed":"#f5f4f0",color:parentsCoverage===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.76rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}>{v}</button>
+                  <button key={v} type="button" onClick={()=>{setParentsCoverage(v);if(v!=="Spouse's Parents"){setFatherName("");setFatherDob("");setMotherName("");setMotherDob("");}flagPostSignEdit();}} style={{flex:"1 1 140px",padding:"0.55rem 0.4rem",borderRadius:9,border:parentsCoverage===v?"2px solid #7c3aed":"1.5px solid #d8d4e3",background:parentsCoverage===v?"#7c3aed":"#f5f4f0",color:parentsCoverage===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.76rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}>{v}</button>
                 ))}
               </div>
               <span style={{fontSize:"0.68rem",color:"#8b88b0",marginTop:"0.3rem"}}>Insurers cover one full set of parents per policy — either yours or your spouse's, not a mix of both sides.</span>
             </div>
 
-            {(parentsCoverage==="My Parents"||parentsCoverage==="Spouse's Parents") && (
+            {parentsCoverage==="My Parents" && (
+              draft?.fatherName || draft?.motherName ? (
+                <div style={{background:"#f5f3ff",border:"1px solid #ddd6fe",borderRadius:8,padding:"0.7rem 0.9rem",fontSize:"0.8rem",color:"#1a1730",lineHeight:1.7}}>
+                  <div>👨 <strong>{draft.fatherName || "—"}</strong>{draft.fatherDob && ` — ${isoToDisplay(draft.fatherDob)}`}{draft.fatherDob && <AgeTag dob={draft.fatherDob}/>}</div>
+                  <div>👩 <strong>{draft.motherName || "—"}</strong>{draft.motherDob && ` — ${isoToDisplay(draft.motherDob)}`}{draft.motherDob && <AgeTag dob={draft.motherDob}/>}</div>
+                  <div style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:"0.2rem"}}>From Personal Details — update it there if anything's changed. {(!draft.fatherDob || !draft.motherDob) && "(DOB missing for one or both — add it on Personal Details for complete insurance data.)"}</div>
+                </div>
+              ) : (
+                <p style={{fontSize:"0.75rem",color:"#d97706",fontWeight:600}}>⚠️ Father's/Mother's names aren't filled in on Personal Details yet — add them there first.</p>
+              )
+            )}
+
+            {parentsCoverage==="Spouse's Parents" && (
               <>
                 <div className="fr">
-                  <div className="fi"><span className="fl">{parentsCoverage==="My Parents"?"Father":"Father-in-law"} Name</span><input className="in" value={fatherName} onChange={e=>{setFatherName(e.target.value);flagPostSignEdit();}}/></div>
-                  <div className="fi"><span className="fl">{parentsCoverage==="My Parents"?"Father":"Father-in-law"} Date of Birth</span><NomineeDobField value={fatherDob} onChange={v=>{setFatherDob(v);flagPostSignEdit();}}/></div>
+                  <div className="fi"><span className="fl">Father-in-law Name</span><input className="in" value={fatherName} onChange={e=>{setFatherName(e.target.value);flagPostSignEdit();}}/></div>
+                  <div className="fi"><span className="fl">Father-in-law Date of Birth</span><NomineeDobField value={fatherDob} onChange={v=>{setFatherDob(v);flagPostSignEdit();}}/>{fatherDob && <AgeTag dob={fatherDob}/>}</div>
                 </div>
                 <div className="fr">
-                  <div className="fi"><span className="fl">{parentsCoverage==="My Parents"?"Mother":"Mother-in-law"} Name</span><input className="in" value={motherName} onChange={e=>{setMotherName(e.target.value);flagPostSignEdit();}}/></div>
-                  <div className="fi"><span className="fl">{parentsCoverage==="My Parents"?"Mother":"Mother-in-law"} Date of Birth</span><NomineeDobField value={motherDob} onChange={v=>{setMotherDob(v);flagPostSignEdit();}}/></div>
+                  <div className="fi"><span className="fl">Mother-in-law Name</span><input className="in" value={motherName} onChange={e=>{setMotherName(e.target.value);flagPostSignEdit();}}/></div>
+                  <div className="fi"><span className="fl">Mother-in-law Date of Birth</span><NomineeDobField value={motherDob} onChange={v=>{setMotherDob(v);flagPostSignEdit();}}/>{motherDob && <AgeTag dob={motherDob}/>}</div>
                 </div>
               </>
             )}
