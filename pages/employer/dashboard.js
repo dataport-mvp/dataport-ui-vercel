@@ -1840,7 +1840,7 @@ export default function EmployerDashboard() {
     if (!file || !activeThread) return;
     setMsgAttaching(true);
     try {
-      const pr = await apiFetch(`${API}/messages/attachment-url`, {
+      const pr = await apiFetch(`${API}/messages/attachment-upload-url`, {
         method: "POST",
         body: JSON.stringify({ consent_id: activeThread, filename: file.name, content_type: file.type })
       });
