@@ -30,7 +30,7 @@ const emptyEmployment = () => ({
   reference:{ role:"", name:"", email:"", mobile:"" },
   contractVendor:{ company:"", email:"", mobile:"" },
   documents:{ payslipsKey:"", offerLetterKey:"", resignationKey:"", experienceKey:"", idCardKey:"" },
-  gap:{ hasGap:"", reason:"" }, company_id: genId(),
+  gap:{ hasGap:"", reason:"", from:"", to:"" }, company_id: genId(),
 });
 const emptyAck = () => ({ val:"", note:"" });
 
@@ -355,7 +355,7 @@ export default function PreviousCompany() {
               reference:{role:e.reference?.role||"",name:e.reference?.name||"",email:e.reference?.email||"",mobile:e.reference?.mobile||""},
               contractVendor:{company:e.contractVendor?.company||"",email:e.contractVendor?.email||"",mobile:e.contractVendor?.mobile||""},
               documents:{payslipsKey:e.documents?.payslipsKey||"",offerLetterKey:e.documents?.offerLetterKey||"",resignationKey:e.documents?.resignationKey||"",experienceKey:e.documents?.experienceKey||"",idCardKey:e.documents?.idCardKey||""},
-              gap:{hasGap:e.gap?.hasGap||"",reason:e.gap?.reason||""},company_id:e.company_id||genId(),
+              gap:{hasGap:e.gap?.hasGap||"",reason:e.gap?.reason||"",from:e.gap?.from||"",to:e.gap?.to||""},company_id:e.company_id||genId(),
             })));
           }
           if(data.acknowledgements){
@@ -370,12 +370,10 @@ export default function PreviousCompany() {
     fetchData();
   },[ready,user,apiFetch]);
 
-  // Mark edited — resets declaration so user must re-confirm
+  // Mark edited — resets declaration so user must re-confirm, on EVERY edit, not just the first
   const markEdited = () => {
-    if (!wasEdited.current) {
-      wasEdited.current = true;
-      setDeclared(false);
-    }
+    wasEdited.current = true;
+    setDeclared(false);
     isDirtyRef.current = true;
   };
 
@@ -437,8 +435,12 @@ export default function PreviousCompany() {
         if(!emp.documents.offerLetterKey) e[`${i}_offerLetter`]=true;
         if(i===lastIdx&&emp.currentlyWorking==="No"&&!emp.documents.resignationKey) e[`${i}_resignation`]=true;
         // Experience letter not required for current employer (no end date yet)
-        if(!stillWorking&&!(i===lastIdx&&emp.currentlyWorking==="Yes")&&!emp.documents.experienceKey) e[`${i}_experience`]=true;
+        // Experience/Relieving Letter is NOT a submission blocker — former employers can take
+        // weeks to issue these. We just remind the employee to attach it once they have it
+        // (see the note rendered next to the upload field below).
         if(emp.gap.hasGap==="Yes"&&!emp.gap.reason) e[`${i}_gapReason`]=true;
+        if(emp.gap.hasGap==="Yes"&&!emp.gap.from) e[`${i}_gapFrom`]=true;
+        if(emp.gap.hasGap==="Yes"&&!emp.gap.to) e[`${i}_gapTo`]=true;
       });
     }
     ACK_DEFS.forEach(({key})=>{ if(!ack[key].val) e[`ack_${key}`]=true; });
@@ -594,8 +596,12 @@ export default function PreviousCompany() {
 
               {emp.gap.hasGap==="Yes"&&(
                 <div className="gap-reason-box">
-                  <span className="fl" style={{display:"block",marginBottom:"0.35rem"}}>Reason for Gap <span style={{color:"#ef4444"}}>*</span></span>
                   <p style={{fontSize:"0.71rem",color:"#92400e",marginBottom:"0.5rem",fontWeight:500,lineHeight:1.4}}>{gapHint}</p>
+                  <div className="fr" style={{marginBottom:"0.6rem"}}>
+                    <FDate l="Gap From" v={emp.gap.from} s={v=>update(index,"gap.from",v)} errKey={`${index}_gapFrom`} errors={errors} onFix={fixErr}/>
+                    <FDate l="Gap To" v={emp.gap.to} s={v=>update(index,"gap.to",v)} errKey={`${index}_gapTo`} errors={errors} onFix={fixErr}/>
+                  </div>
+                  <span className="fl" style={{display:"block",marginBottom:"0.35rem"}}>Reason for Gap <span style={{color:"#ef4444"}}>*</span></span>
                   <textarea className={`ta${errors[`${index}_gapReason`]?" err":""}`} value={emp.gap.reason||""} placeholder="Describe the gap period and reason…" style={{background:"#fffbeb",borderColor:errors[`${index}_gapReason`]?"#ef4444":"#fde68a"}} onChange={e=>{update(index,"gap.reason",e.target.value);fixErr(`${index}_gapReason`);}}/>
                   {errors[`${index}_gapReason`]&&<span className="err-msg">Required</span>}
                 </div>
@@ -692,14 +698,18 @@ export default function PreviousCompany() {
                     <FileUpload label="Payslips" category="employment" subKey="payslips" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.payslipsKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.payslipsKey",k);fixErr(`${index}_payslips`);}}/>
                   </div>
                   <div className="att-wrap">
-                    <span className="att-lbl">Resignation Acceptance</span>
+                    <span className="att-lbl">Resignation Acceptance{isLast&&<span style={{color:"#ef4444"}}> *</span>}</span>
                     {errors[`${index}_resignation`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
                     <FileUpload label="Resignation" category="employment" subKey="resignation" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.resignationKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.resignationKey",k);fixErr(`${index}_resignation`);}}/>
                   </div>
                   <div className="att-wrap">
                     <span className="att-lbl">Experience / Relieving Letter</span>
-                    {errors[`${index}_experience`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
-                    <FileUpload label="Experience Letter" category="employment" subKey="experience" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.experienceKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.experienceKey",k);fixErr(`${index}_experience`);}}/>
+                    {!emp.documents.experienceKey && (
+                      <p style={{fontSize:"0.72rem",color:"#0369a1",background:"#f0f9ff",border:"1px solid #bae6fd",borderRadius:8,padding:"0.5rem 0.75rem",margin:"0.2rem 0 0.4rem",lineHeight:1.5}}>
+                        💡 Hey, once you get the experience/relieving letter from your former employer, attach it here — it'll make future onboarding and BGV go smoothly. Not required to submit now.
+                      </p>
+                    )}
+                    <FileUpload label="Experience Letter" category="employment" subKey="experience" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.experienceKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.experienceKey",k);}}/>
                   </div>
                   <div className="att-wrap">
                     <span className="att-lbl">Company ID Card</span>
