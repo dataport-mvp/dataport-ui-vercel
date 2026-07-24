@@ -389,17 +389,17 @@ export default function UanDetails() {
   const [page3Companies, setPage3Companies] = useState([]);
 
   // ── Nominees ──
-  const makeNominee = () => ({ name:"", dob:"", relation:"", address:"", share:"", guardianName:"", guardianAddress:"" });
+  const makeNominee = () => ({ name:"", dob:"", relation:"", address:"", share:"", guardianName:"", guardianAddress:"", _k:`nom-${Date.now()}-${Math.random().toString(36).slice(2,7)}` });
   const [nominees, setNominees] = useState([makeNominee()]);
 
   // ── Family Details (for company health insurance — Medibuddy/Acko-style enrollment) ──
   // All optional — this section is informational for insurance enrollment, never blocks Save/Sign.
   // Marital Status is NOT re-asked here — it's already collected (and required) on Personal Details;
   // we just read draft.maritalStatus to decide whether to show Spouse fields.
-  const [spouseName, setSpouseName] = useState("");
-  const [spouseDob, setSpouseDob] = useState("");
+  // Spouse name/DOB now live on Personal Details (added there so it's asked once, in the
+  // natural place, right when Marital Status is set) — read via draft.spouseName/spouseDob below.
   const [hasChildren, setHasChildren] = useState("");
-  const makeChild = () => ({ name:"", dob:"", gender:"" });
+  const makeChild = () => ({ name:"", dob:"", gender:"", _k:`child-${Date.now()}-${Math.random().toString(36).slice(2,7)}` });
   const [children, setChildren] = useState([makeChild()]);
   // Insurers cover ONE side of parents only — either the employee's own parents or the
   // spouse's parents (in-laws), never one from each side. This toggle enforces that.
@@ -516,13 +516,12 @@ export default function UanDetails() {
           if (d.epfoKey)           setEpfoKey(d.epfoKey);
           if (d.serviceHistoryKey) setServiceHistoryKey(d.serviceHistoryKey);
           if (Array.isArray(d.epfoFetched) && d.epfoFetched.length > 0) setEpfoFetched(d.epfoFetched);
-          if (Array.isArray(d.epfoNominees) && d.epfoNominees.length > 0) setNominees(d.epfoNominees);
+          if (Array.isArray(d.epfoNominees) && d.epfoNominees.length > 0) setNominees(d.epfoNominees.map((n,i)=>({...n,_k:n._k||`nom-restored-${i}-${Date.now()}`})));
           if (d.familyDetails) {
             const fam = d.familyDetails;
-            if (fam.spouseName)    setSpouseName(fam.spouseName);
-            if (fam.spouseDob)     setSpouseDob(fam.spouseDob);
+            // spouseName/spouseDob no longer restored here — read live from draft.spouseName/spouseDob
             if (fam.hasChildren)   setHasChildren(fam.hasChildren);
-            if (Array.isArray(fam.children) && fam.children.length > 0) setChildren(fam.children);
+            if (Array.isArray(fam.children) && fam.children.length > 0) setChildren(fam.children.map((c,i)=>({...c,_k:c._k||`child-restored-${i}-${Date.now()}`})));
             if (fam.parentsCoverage) setParentsCoverage(fam.parentsCoverage);
             if (fam.fatherName)    setFatherName(fam.fatherName);
             if (fam.fatherDob)     setFatherDob(fam.fatherDob);
@@ -693,8 +692,8 @@ export default function UanDetails() {
       serviceHistoryKey,
       epfoNominees: nominees,
       familyDetails: {
-        spouseName:  draft?.maritalStatus === "Married" ? spouseName : "",
-        spouseDob:   draft?.maritalStatus === "Married" ? spouseDob  : "",
+        spouseName:  draft?.maritalStatus === "Married" ? (draft?.spouseName || "") : "",
+        spouseDob:   draft?.maritalStatus === "Married" ? (draft?.spouseDob  || "") : "",
         hasChildren,
         children:    hasChildren === "Yes" ? children : [],
         parentsCoverage,
@@ -786,6 +785,7 @@ export default function UanDetails() {
         <div className="topbar">
           <span className="logo-text">Datagate</span>
           <div className="topbar-right">
+            <button className="bell-btn" title="Home — Personal Details" onClick={()=>router.push("/employee/personal")}>🏠</button>
             <span className="user-name">👤 {user.name || user.email}</span>
             <ConsentBell apiFetch={apiFetch} router={router}/>
             <button className="signout-btn" onClick={()=>setShowSignout(true)} style={{borderColor:"#ef4444",color:"#ef4444"}}>Sign out</button>
@@ -963,7 +963,7 @@ export default function UanDetails() {
               <div className="sh"><div className="si grn">👨‍👩‍👧</div><span className="st">Nominee Details — PF & Pension (Form 2)</span></div>
               <p style={{fontSize:"0.75rem",color:"#6b6894",marginBottom:"0.9rem",fontWeight:500,lineHeight:1.5}}>Nominate beneficiaries for your PF and Pension. Shares must add up to 100%.</p>
               {nominees.map((nom, idx) => (
-                <div key={idx} className="nom-block">
+                <div key={nom._k||idx} className="nom-block">
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.75rem"}}>
                     <span style={{fontSize:"0.72rem",fontWeight:800,color:"#16a34a",textTransform:"uppercase",letterSpacing:"0.5px"}}>Nominee {idx+1}</span>
                     {idx>0&&<button className="rm-btn" onClick={()=>{setNominees(prev=>prev.filter((_,i)=>i!==idx));isDirtyRef.current=true;}}>− Remove</button>}
@@ -1017,10 +1017,14 @@ export default function UanDetails() {
             )}
 
             {draft?.maritalStatus==="Married" && (
-              <div className="fr">
-                <div className="fi"><span className="fl">Spouse Name</span><input className="in" value={spouseName} onChange={e=>{setSpouseName(e.target.value);flagPostSignEdit();}}/></div>
-                <div className="fi"><span className="fl">Spouse Date of Birth</span><NomineeDobField value={spouseDob} onChange={v=>{setSpouseDob(v);flagPostSignEdit();}}/>{spouseDob && <AgeTag dob={spouseDob}/>}</div>
-              </div>
+              draft?.spouseName || draft?.spouseDob ? (
+                <div style={{background:"#f5f3ff",border:"1px solid #ddd6fe",borderRadius:8,padding:"0.7rem 0.9rem",fontSize:"0.8rem",color:"#1a1730"}}>
+                  💍 <strong>{draft.spouseName || "—"}</strong>{draft.spouseDob && ` — ${isoToDisplay(draft.spouseDob)}`}{draft.spouseDob && <AgeTag dob={draft.spouseDob}/>}
+                  <div style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:"0.2rem"}}>From Personal Details — update it there if it's changed.</div>
+                </div>
+              ) : (
+                <p style={{fontSize:"0.75rem",color:"#d97706",fontWeight:600}}>⚠️ Spouse details aren't filled in on Personal Details yet — add them there.</p>
+              )
             )}
 
             <div className="fi" style={{marginBottom:"0.85rem",marginTop:"0.4rem"}}>
@@ -1034,7 +1038,7 @@ export default function UanDetails() {
 
             {hasChildren==="Yes" && (<>
               {children.map((c,idx)=>(
-                <div key={idx} className="nom-block" style={{background:"#f5f3ff",border:"1.5px solid #ddd6fe"}}>
+                <div key={c._k||idx} className="nom-block" style={{background:"#f5f3ff",border:"1.5px solid #ddd6fe"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.75rem"}}>
                     <span style={{fontSize:"0.72rem",fontWeight:800,color:"#7c3aed",textTransform:"uppercase",letterSpacing:"0.5px"}}>Child {idx+1}</span>
                     {idx>0&&<button className="rm-btn" onClick={()=>{setChildren(prev=>prev.filter((_,i)=>i!==idx));flagPostSignEdit();}}>− Remove</button>}
@@ -1070,8 +1074,17 @@ export default function UanDetails() {
             {parentsCoverage==="My Parents" && (
               draft?.fatherName || draft?.motherName ? (
                 <div style={{background:"#f5f3ff",border:"1px solid #ddd6fe",borderRadius:8,padding:"0.7rem 0.9rem",fontSize:"0.8rem",color:"#1a1730",lineHeight:1.7}}>
-                  <div>👨 <strong>{draft.fatherName || "—"}</strong>{draft.fatherDob && ` — ${isoToDisplay(draft.fatherDob)}`}{draft.fatherDob && <AgeTag dob={draft.fatherDob}/>}</div>
-                  <div>👩 <strong>{draft.motherName || "—"}</strong>{draft.motherDob && ` — ${isoToDisplay(draft.motherDob)}`}{draft.motherDob && <AgeTag dob={draft.motherDob}/>}</div>
+                  <div>
+                    👨 <strong>{draft.fatherName || "—"}</strong>{draft.fatherDob && ` — ${isoToDisplay(draft.fatherDob)}`}{draft.fatherDob && draft.fatherLiving!=="Deceased" && <AgeTag dob={draft.fatherDob}/>}
+                    {draft.fatherLiving==="Deceased" && <span style={{marginLeft:8,padding:"1px 8px",borderRadius:999,background:"#f1f5f9",color:"#64748b",fontSize:"0.68rem",fontWeight:700}}>Deceased — not eligible for coverage</span>}
+                  </div>
+                  <div>
+                    👩 <strong>{draft.motherName || "—"}</strong>{draft.motherDob && ` — ${isoToDisplay(draft.motherDob)}`}{draft.motherDob && draft.motherLiving!=="Deceased" && <AgeTag dob={draft.motherDob}/>}
+                    {draft.motherLiving==="Deceased" && <span style={{marginLeft:8,padding:"1px 8px",borderRadius:999,background:"#f1f5f9",color:"#64748b",fontSize:"0.68rem",fontWeight:700}}>Deceased — not eligible for coverage</span>}
+                  </div>
+                  {draft.fatherLiving==="Deceased" && draft.motherLiving==="Deceased" && (
+                    <div style={{marginTop:"0.4rem",fontSize:"0.75rem",color:"#92400e",fontWeight:600}}>Both parents are recorded as deceased — there's no one to cover under this option. You can set this back to "Not Applicable."</div>
+                  )}
                   <div style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:"0.2rem"}}>From Personal Details — update it there if anything's changed. {(!draft.fatherDob || !draft.motherDob) && "(DOB missing for one or both — add it on Personal Details for complete insurance data.)"}</div>
                 </div>
               ) : (

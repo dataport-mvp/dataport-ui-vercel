@@ -8,6 +8,8 @@ const NO_NAV_ROUTES = [
   "/employee/education",
   "/employee/previous",
   "/employee/uan",
+  "/employee/review",
+  "/employee/submitted",
   "/employee/login",
   "/employer/login",
   "/employer/dashboard",

@@ -276,11 +276,13 @@ export default function EducationDetails() {
   const [dipFrom,setDipFrom]=useState("");const [dipTo,setDipTo]=useState("");const [dipYear,setDipYear]=useState("");
   const [dipResultType,setDipResultType]=useState("");const [dipResultValue,setDipResultValue]=useState("");const [dipMode,setDipMode]=useState("");const [dipCertKey,setDipCertKey]=useState("");
 
-  const [certs,setCerts]=useState([{name:"",certKey:""}]);
-  const [profQuals,setProfQuals]=useState([{type:"",otherType:"",level:"",year:"",certKey:""}]);
-  const [articleships,setArticleships]=useState([{firm:"",city:"",principalName:"",regNo:"",from:"",to:"",isOngoing:"",type:"",otherType:"",certKey:""}]);
+  const [certs,setCerts]=useState([{name:"",certKey:"",_k:"cert-init"}]);
+  const [profQuals,setProfQuals]=useState([{type:"",otherType:"",level:"",year:"",certKey:"",_k:"pq-init"}]);
+  const [articleships,setArticleships]=useState([{firm:"",city:"",principalName:"",regNo:"",from:"",to:"",isOngoing:"",type:"",otherType:"",certKey:"",_k:"art-init"}]);
   const [hasEduGap,setHasEduGap]=useState("");
   const [eduGapReason,setEduGapReason]=useState("");
+  const [eduGapFrom,setEduGapFrom]=useState("");
+  const [eduGapTo,setEduGapTo]=useState("");
 
   useEffect(()=>{
     if(!ready)return;
@@ -333,11 +335,13 @@ export default function EducationDetails() {
           if(dip.from)setDipFrom(dip.from);if(dip.to)setDipTo(dip.to);if(dip.yearOfPassing)setDipYear(dip.yearOfPassing);
           if(dip.resultType)setDipResultType(dip.resultType);if(dip.resultValue)setDipResultValue(dip.resultValue);if(dip.mode)setDipMode(dip.mode);if(dip.certKey)setDipCertKey(dip.certKey);
 
-          if(certsData.length>0)setCerts(certsData.map(c=>({name:typeof c.name==="string"?c.name:"",certKey:typeof c.certKey==="string"?c.certKey:""})));
-          if(profData.length>0)setProfQuals(profData);
-          if(artData.length>0)setArticleships(artData);
+          if(certsData.length>0)setCerts(certsData.map((c,i)=>({name:typeof c.name==="string"?c.name:"",certKey:typeof c.certKey==="string"?c.certKey:"",_k:c._k||`cert-restored-${i}-${Date.now()}`})));
+          if(profData.length>0)setProfQuals(profData.map((q,i)=>({...q,_k:q._k||`pq-restored-${i}-${Date.now()}`})));
+          if(artData.length>0)setArticleships(artData.map((a,i)=>({...a,_k:a._k||`art-restored-${i}-${Date.now()}`})));
           if(edu.hasEduGap)setHasEduGap(edu.hasEduGap);
           if(edu.eduGapReason)setEduGapReason(edu.eduGapReason);
+          if(edu.eduGapFrom)setEduGapFrom(edu.eduGapFrom);
+          if(edu.eduGapTo)setEduGapTo(edu.eduGapTo);
         }
       }catch(_){}
       setLoading(false);
@@ -374,12 +378,14 @@ export default function EducationDetails() {
     if(hasDip==="Yes"&&afterTenth!=="Diploma"&&afterTenth!=="Both"){if(!dipInstitute)e.dipInstitute=true;if(!dipBoard)e.dipBoard=true;if(!dipCourse)e.dipCourse=true;if(!dipFrom)e.dipFrom=true;if(!dipTo)e.dipTo=true;if(!dipYear)e.dipYear=true;if(!dipResultType)e.dipResultType=true;if(!dipResultValue)e.dipResultValue=true;if(!dipMode)e.dipMode=true;if(!dipCertKey)e.dipCertKey=true;}
     if(hasCerts==="Yes"){certs.forEach((c,idx)=>{if(!c.name)e[`cert_name_${idx}`]=true;if(!c.certKey)e[`cert_key_${idx}`]=true;});}
     if(hasProfQual==="Yes"){profQuals.forEach((q,idx)=>{if(!q.type)e[`pq_type_${idx}`]=true;if(q.type==="Other"&&!q.otherType)e[`pq_other_${idx}`]=true;if(!q.level)e[`pq_level_${idx}`]=true;if(q.level!=="Pursuing"&&!q.year)e[`pq_year_${idx}`]=true;});}
-    if(hasArticleship==="Yes"){articleships.forEach((a,idx)=>{if(!a.firm)e[`art_firm_${idx}`]=true;if(!a.from)e[`art_from_${idx}`]=true;if(!a.type)e[`art_type_${idx}`]=true;if(a.type==="Other Practical Training"&&!a.otherType)e[`art_other_${idx}`]=true;});}
+    if(hasArticleship==="Yes"){articleships.forEach((a,idx)=>{if(!a.firm)e[`art_firm_${idx}`]=true;if(!a.from)e[`art_from_${idx}`]=true;if(!a.type)e[`art_type_${idx}`]=true;if(a.type==="Other Practical Training"&&!a.otherType)e[`art_other_${idx}`]=true;if(!a.isOngoing)e[`art_status_${idx}`]=true;if(a.isOngoing==="Completed"&&!a.to)e[`art_to_${idx}`]=true;});}
     if(!hasCerts) e.hasCerts=true;
     if(!hasProfQual) e.hasProfQual=true;
     if(!hasArticleship) e.hasArticleship=true;
     if(!hasEduGap) e.hasEduGap=true;
     if(hasEduGap==="Yes"&&!eduGapReason) e.eduGapReason=true;
+    if(hasEduGap==="Yes"&&!eduGapFrom) e.eduGapFrom=true;
+    if(hasEduGap==="Yes"&&!eduGapTo) e.eduGapTo=true;
     return e;
   };
 
@@ -395,6 +401,8 @@ export default function EducationDetails() {
     articleships:hasArticleship==="Yes"?articleships:[],
     hasEduGap,
     eduGapReason: hasEduGap==="Yes"?eduGapReason:"",
+    eduGapFrom: hasEduGap==="Yes"?eduGapFrom:"",
+    eduGapTo: hasEduGap==="Yes"?eduGapTo:"",
   });
 
   const saveDraft=async()=>{
@@ -458,6 +466,7 @@ export default function EducationDetails() {
         <div className="topbar">
           <span className="logo-text">Datagate</span>
           <div className="topbar-right">
+            <button className="bell-btn" title="Home — Personal Details" onClick={()=>router.push("/employee/personal")}>🏠</button>
             <span className="user-name">👤 {user.name||user.email}</span>
             <ConsentBell apiFetch={apiFetch} router={router}/>
             <button className="signout-btn" onClick={()=>setShowSignout(true)} style={{borderColor:"#ef4444",color:"#ef4444"}}>Sign out</button>
@@ -671,7 +680,7 @@ export default function EducationDetails() {
             {errors.hasProfQual&&<span className="err-msg" style={{marginTop:"-0.5rem",marginBottom:"0.5rem",display:"block"}}>Please answer this question</span>}
             {hasProfQual==="Yes"&&(<>
               {profQuals.map((q,idx)=>(
-                <div key={idx} className="cert-box">
+                <div key={q._k||idx} className="cert-box">
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.6rem"}}>
                     <span style={{fontSize:"0.78rem",color:"#8b88b0",fontWeight:700}}>Qualification {idx+1}</span>
                     {idx>0&&<button className="rm-btn" onClick={()=>{const p=[...profQuals];p.splice(idx,1);setProfQuals(p);isDirtyRef.current=true;}}>- Remove</button>}
@@ -723,7 +732,7 @@ export default function EducationDetails() {
                   </div>
                 </div>
               ))}
-              <button className="add-btn" onClick={()=>{setProfQuals([...profQuals,{type:"",otherType:"",level:"",year:"",certKey:""}]);isDirtyRef.current=true;}}>+ Add Another Qualification</button>
+              <button className="add-btn" onClick={()=>{setProfQuals([...profQuals,{type:"",otherType:"",level:"",year:"",certKey:"",_k:`pq-${Date.now()}-${Math.random().toString(36).slice(2,7)}`}]);isDirtyRef.current=true;}}>+ Add Another Qualification</button>
             </>)}
           </div>
 
@@ -739,7 +748,7 @@ export default function EducationDetails() {
             {errors.hasArticleship&&<span className="err-msg" style={{marginTop:"-0.5rem",marginBottom:"0.5rem",display:"block"}}>Please answer this question</span>}
             {hasArticleship==="Yes"&&(<>
               {articleships.map((a,idx)=>(
-                <div key={idx} className="cert-box" style={{background:"#fff7ed",border:"1.5px solid #fed7aa"}}>
+                <div key={a._k||idx} className="cert-box" style={{background:"#fff7ed",border:"1.5px solid #fed7aa"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.75rem"}}>
                     <span style={{fontSize:"0.78rem",color:"#ea580c",fontWeight:700}}>Training / Articleship {idx+1}</span>
                     {idx>0&&<button className="rm-btn" onClick={()=>{const arr=[...articleships];arr.splice(idx,1);setArticleships(arr);isDirtyRef.current=true;}}>- Remove</button>}
@@ -771,14 +780,24 @@ export default function EducationDetails() {
                   </div>
                   <div className="fr">
                     <DateField l="From" v={a.from} s={v=>updateArticleship(idx,"from",v)} errKey={`art_from_${idx}`} errors={errors} onFix={fixErr}/>
-                    <DateField l="To" v={a.to} s={v=>updateArticleship(idx,"to",v)} r={false}/>
+                    {a.isOngoing==="Ongoing"?(
+                      <div className="fi">
+                        <span className="fl">To</span>
+                        <div style={{padding:"0.65rem 0.875rem",background:"#fffbeb",border:"1.5px solid #fcd34d",borderRadius:9,fontSize:"0.78rem",color:"#92400e",fontWeight:600}}>
+                          ⏳ Ongoing — update once completed
+                        </div>
+                      </div>
+                    ):(
+                      <DateField l="To" v={a.to} s={v=>updateArticleship(idx,"to",v)} r={a.isOngoing==="Completed"} errKey={`art_to_${idx}`} errors={errors} onFix={fixErr}/>
+                    )}
                     <div className="fi">
-                      <span className="fl">Status</span>
+                      <span className="fl">Status <span style={{color:"#ef4444"}}>*</span></span>
                       <div style={{display:"flex",gap:"0.55rem",marginTop:"0.15rem"}}>
                         {["Ongoing","Completed"].map(v=>(
-                          <button key={v} type="button" onClick={()=>updateArticleship(idx,"isOngoing",v)} style={{flex:1,padding:"0.55rem 0",borderRadius:9,border:a.isOngoing===v?"2px solid #ea580c":"1.5px solid #d8d4e3",background:a.isOngoing===v?"#ea580c":"#f5f4f0",color:a.isOngoing===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.78rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}>{v}</button>
+                          <button key={v} type="button" onClick={()=>{updateArticleship(idx,"isOngoing",v);fixErr(`art_status_${idx}`);}} style={{flex:1,padding:"0.55rem 0",borderRadius:9,border:a.isOngoing===v?"2px solid #ea580c":(errors[`art_status_${idx}`]?"1.5px solid #ef4444":"1.5px solid #d8d4e3"),background:a.isOngoing===v?"#ea580c":"#f5f4f0",color:a.isOngoing===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.78rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}>{v}</button>
                         ))}
                       </div>
+                      {errors[`art_status_${idx}`]&&<span className="err-msg">Required</span>}
                     </div>
                   </div>
                   <div style={{marginTop:"0.5rem"}}>
@@ -787,7 +806,7 @@ export default function EducationDetails() {
                   </div>
                 </div>
               ))}
-              <button className="add-btn" onClick={()=>{setArticleships([...articleships,{firm:"",city:"",principalName:"",regNo:"",from:"",to:"",isOngoing:"",type:"",otherType:"",certKey:""}]);isDirtyRef.current=true;}}>+ Add Another Training</button>
+              <button className="add-btn" onClick={()=>{setArticleships([...articleships,{firm:"",city:"",principalName:"",regNo:"",from:"",to:"",isOngoing:"",type:"",otherType:"",certKey:"",_k:`art-${Date.now()}-${Math.random().toString(36).slice(2,7)}`}]);isDirtyRef.current=true;}}>+ Add Another Training</button>
             </>)}
           </div>
 
@@ -803,7 +822,7 @@ export default function EducationDetails() {
             {errors.hasCerts&&<span className="err-msg" style={{marginTop:"-0.5rem",marginBottom:"0.5rem",display:"block"}}>Please answer this question</span>}
             {hasCerts==="Yes"&&(<>
               {certs.map((cert,idx)=>(
-                <div key={idx} className="cert-box">
+                <div key={cert._k||idx} className="cert-box">
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.6rem"}}>
                     <span style={{fontSize:"0.78rem",color:"#8b88b0",fontWeight:700}}>Certification {idx+1}</span>
                     {idx>0&&<button className="rm-btn" onClick={()=>{const c=[...certs];c.splice(idx,1);setCerts(c);isDirtyRef.current=true;}}>- Remove</button>}
@@ -822,7 +841,7 @@ export default function EducationDetails() {
                   </div>
                 </div>
               ))}
-              <button className="add-btn" onClick={()=>{setCerts([...certs,{name:"",certKey:""}]);isDirtyRef.current=true;}}>+ Add Another Certification</button>
+              <button className="add-btn" onClick={()=>{setCerts([...certs,{name:"",certKey:"",_k:`cert-${Date.now()}-${Math.random().toString(36).slice(2,7)}`}]);isDirtyRef.current=true;}}>+ Add Another Certification</button>
             </>)}
           </div>
 
@@ -837,6 +856,10 @@ export default function EducationDetails() {
             {errors.hasEduGap&&<span className="err-msg" style={{marginTop:"0.4rem",display:"block"}}>Please answer this question before continuing</span>}
             {hasEduGap==="Yes"&&(
               <div style={{marginTop:"0.65rem"}}>
+                <div className="fr" style={{marginBottom:"0.65rem"}}>
+                  <DateField l="Gap From" v={eduGapFrom} s={d(setEduGapFrom)} errKey="eduGapFrom" errors={errors} onFix={fixErr}/>
+                  <DateField l="Gap To" v={eduGapTo} s={d(setEduGapTo)} errKey="eduGapTo" errors={errors} onFix={fixErr}/>
+                </div>
                 <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Reason for Gap <span style={{color:"#ef4444"}}>*</span></span>
                 <textarea className={`in${errors.eduGapReason?" err":""}`} style={{minHeight:72,resize:"vertical"}} value={eduGapReason} placeholder="Briefly describe the gap period and reason" onChange={e=>{d(setEduGapReason)(e.target.value);fixErr("eduGapReason");}}/>
                 {errors.eduGapReason&&<span className="err-msg">Please describe the reason for the gap</span>}

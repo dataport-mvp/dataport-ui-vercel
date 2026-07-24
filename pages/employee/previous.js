@@ -512,6 +512,7 @@ export default function PreviousCompany() {
         <div className="topbar">
           <span className="logo-text">Datagate</span>
           <div className="topbar-right">
+            <button className="bell-btn" title="Home — Personal Details" onClick={()=>router.push("/employee/personal")}>🏠</button>
             <span className="user-name">👤 {user.name||user.email}</span>
             <ConsentBell apiFetch={apiFetch} router={router}/>
             <button className="signout-btn" onClick={()=>setShowSignout(true)} style={{borderColor:"#ef4444",color:"#ef4444"}}>Sign out</button>
