@@ -404,6 +404,10 @@ export default function UanDetails() {
   // Insurers cover ONE side of parents only — either the employee's own parents or the
   // spouse's parents (in-laws), never one from each side. This toggle enforces that.
   const [parentsCoverage, setParentsCoverage] = useState(""); // "My Parents" | "Spouse's Parents" | "Not Applicable"
+  // If a parent has passed away, exclude them from insurance coverage here — this is local to
+  // this health-insurance section, not a fact recorded on Personal Details.
+  const [excludeFather, setExcludeFather] = useState(false);
+  const [excludeMother, setExcludeMother] = useState(false);
   const [fatherName, setFatherName] = useState("");
   const [fatherDob, setFatherDob] = useState("");
   const [motherName, setMotherName] = useState("");
@@ -523,6 +527,8 @@ export default function UanDetails() {
             if (fam.hasChildren)   setHasChildren(fam.hasChildren);
             if (Array.isArray(fam.children) && fam.children.length > 0) setChildren(fam.children.map((c,i)=>({...c,_k:c._k||`child-restored-${i}-${Date.now()}`})));
             if (fam.parentsCoverage) setParentsCoverage(fam.parentsCoverage);
+            if (fam.excludeFather) setExcludeFather(true);
+            if (fam.excludeMother) setExcludeMother(true);
             if (fam.fatherName)    setFatherName(fam.fatherName);
             if (fam.fatherDob)     setFatherDob(fam.fatherDob);
             if (fam.motherName)    setMotherName(fam.motherName);
@@ -697,10 +703,12 @@ export default function UanDetails() {
         hasChildren,
         children:    hasChildren === "Yes" ? children : [],
         parentsCoverage,
-        fatherName:  parentsCoverage === "My Parents" ? (draft?.fatherName || "") : parentsCoverage === "Spouse's Parents" ? fatherName : "",
-        fatherDob:   parentsCoverage === "My Parents" ? (draft?.fatherDob  || "") : parentsCoverage === "Spouse's Parents" ? fatherDob  : "",
-        motherName:  parentsCoverage === "My Parents" ? (draft?.motherName || "") : parentsCoverage === "Spouse's Parents" ? motherName : "",
-        motherDob:   parentsCoverage === "My Parents" ? (draft?.motherDob  || "") : parentsCoverage === "Spouse's Parents" ? motherDob  : "",
+        excludeFather: parentsCoverage === "My Parents" ? excludeFather : false,
+        excludeMother: parentsCoverage === "My Parents" ? excludeMother : false,
+        fatherName:  parentsCoverage === "My Parents" ? (excludeFather ? "" : draft?.fatherName || "") : parentsCoverage === "Spouse's Parents" ? fatherName : "",
+        fatherDob:   parentsCoverage === "My Parents" ? (excludeFather ? "" : draft?.fatherDob  || "") : parentsCoverage === "Spouse's Parents" ? fatherDob  : "",
+        motherName:  parentsCoverage === "My Parents" ? (excludeMother ? "" : draft?.motherName || "") : parentsCoverage === "Spouse's Parents" ? motherName : "",
+        motherDob:   parentsCoverage === "My Parents" ? (excludeMother ? "" : draft?.motherDob  || "") : parentsCoverage === "Spouse's Parents" ? motherDob  : "",
       },
       epfoSignature: {
         s3Key: sigS3Key,
@@ -1065,7 +1073,7 @@ export default function UanDetails() {
               <span className="fl">Parents to Cover (choose one side only)</span>
               <div style={{display:"flex",gap:"0.55rem",marginTop:"0.15rem",flexWrap:"wrap"}}>
                 {["My Parents","Spouse's Parents","Not Applicable"].map(v=>(
-                  <button key={v} type="button" onClick={()=>{setParentsCoverage(v);if(v!=="Spouse's Parents"){setFatherName("");setFatherDob("");setMotherName("");setMotherDob("");}flagPostSignEdit();}} style={{flex:"1 1 140px",padding:"0.55rem 0.4rem",borderRadius:9,border:parentsCoverage===v?"2px solid #7c3aed":"1.5px solid #d8d4e3",background:parentsCoverage===v?"#7c3aed":"#f5f4f0",color:parentsCoverage===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.76rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}>{v}</button>
+                  <button key={v} type="button" onClick={()=>{setParentsCoverage(v);if(v!=="Spouse's Parents"){setFatherName("");setFatherDob("");setMotherName("");setMotherDob("");}if(v!=="My Parents"){setExcludeFather(false);setExcludeMother(false);}flagPostSignEdit();}} style={{flex:"1 1 140px",padding:"0.55rem 0.4rem",borderRadius:9,border:parentsCoverage===v?"2px solid #7c3aed":"1.5px solid #d8d4e3",background:parentsCoverage===v?"#7c3aed":"#f5f4f0",color:parentsCoverage===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.76rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}>{v}</button>
                 ))}
               </div>
               <span style={{fontSize:"0.68rem",color:"#8b88b0",marginTop:"0.3rem"}}>Insurers cover one full set of parents per policy — either yours or your spouse's, not a mix of both sides.</span>
@@ -1074,18 +1082,23 @@ export default function UanDetails() {
             {parentsCoverage==="My Parents" && (
               draft?.fatherName || draft?.motherName ? (
                 <div style={{background:"#f5f3ff",border:"1px solid #ddd6fe",borderRadius:8,padding:"0.7rem 0.9rem",fontSize:"0.8rem",color:"#1a1730",lineHeight:1.7}}>
-                  <div>
-                    👨 <strong>{draft.fatherName || "—"}</strong>{draft.fatherDob && ` — ${isoToDisplay(draft.fatherDob)}`}{draft.fatherDob && draft.fatherLiving!=="Deceased" && <AgeTag dob={draft.fatherDob}/>}
-                    {draft.fatherLiving==="Deceased" && <span style={{marginLeft:8,padding:"1px 8px",borderRadius:999,background:"#f1f5f9",color:"#64748b",fontSize:"0.68rem",fontWeight:700}}>Deceased — not eligible for coverage</span>}
+                  <p style={{fontSize:"0.7rem",color:"#8b88b0",margin:"0 0 0.5rem"}}>If a parent has passed away, remove them below — they won't be sent for insurance coverage.</p>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                    <span>👨 <strong>{draft.fatherName || "—"}</strong>{draft.fatherDob && ` — ${isoToDisplay(draft.fatherDob)}`}{draft.fatherDob && !excludeFather && <AgeTag dob={draft.fatherDob}/>}</span>
+                    {excludeFather
+                      ? <span style={{fontSize:"0.7rem",color:"#64748b"}}>Removed — <button type="button" onClick={()=>{setExcludeFather(false);flagPostSignEdit();}} style={{background:"none",border:"none",color:"#7c3aed",fontWeight:700,cursor:"pointer",fontSize:"0.7rem",padding:0}}>Undo</button></span>
+                      : <button type="button" onClick={()=>{setExcludeFather(true);flagPostSignEdit();}} style={{background:"none",border:"1px solid #d8d4e3",borderRadius:6,color:"#94a3b8",fontWeight:600,cursor:"pointer",fontSize:"0.68rem",padding:"0.2rem 0.5rem"}}>✕ Remove</button>}
                   </div>
-                  <div>
-                    👩 <strong>{draft.motherName || "—"}</strong>{draft.motherDob && ` — ${isoToDisplay(draft.motherDob)}`}{draft.motherDob && draft.motherLiving!=="Deceased" && <AgeTag dob={draft.motherDob}/>}
-                    {draft.motherLiving==="Deceased" && <span style={{marginLeft:8,padding:"1px 8px",borderRadius:999,background:"#f1f5f9",color:"#64748b",fontSize:"0.68rem",fontWeight:700}}>Deceased — not eligible for coverage</span>}
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:"0.3rem"}}>
+                    <span>👩 <strong>{draft.motherName || "—"}</strong>{draft.motherDob && ` — ${isoToDisplay(draft.motherDob)}`}{draft.motherDob && !excludeMother && <AgeTag dob={draft.motherDob}/>}</span>
+                    {excludeMother
+                      ? <span style={{fontSize:"0.7rem",color:"#64748b"}}>Removed — <button type="button" onClick={()=>{setExcludeMother(false);flagPostSignEdit();}} style={{background:"none",border:"none",color:"#7c3aed",fontWeight:700,cursor:"pointer",fontSize:"0.7rem",padding:0}}>Undo</button></span>
+                      : <button type="button" onClick={()=>{setExcludeMother(true);flagPostSignEdit();}} style={{background:"none",border:"1px solid #d8d4e3",borderRadius:6,color:"#94a3b8",fontWeight:600,cursor:"pointer",fontSize:"0.68rem",padding:"0.2rem 0.5rem"}}>✕ Remove</button>}
                   </div>
-                  {draft.fatherLiving==="Deceased" && draft.motherLiving==="Deceased" && (
-                    <div style={{marginTop:"0.4rem",fontSize:"0.75rem",color:"#92400e",fontWeight:600}}>Both parents are recorded as deceased — there's no one to cover under this option. You can set this back to "Not Applicable."</div>
+                  {excludeFather && excludeMother && (
+                    <div style={{marginTop:"0.4rem",fontSize:"0.75rem",color:"#92400e",fontWeight:600}}>Both parents removed — there's no one to cover under this option. You can set this back to "Not Applicable."</div>
                   )}
-                  <div style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:"0.2rem"}}>From Personal Details — update it there if anything's changed. {(!draft.fatherDob || !draft.motherDob) && "(DOB missing for one or both — add it on Personal Details for complete insurance data.)"}</div>
+                  <div style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:"0.4rem"}}>Name/DOB come from Personal Details — update it there if anything's changed. {(!draft.fatherDob || !draft.motherDob) && "(DOB missing for one or both — add it on Personal Details for complete insurance data.)"}</div>
                 </div>
               ) : (
                 <p style={{fontSize:"0.75rem",color:"#d97706",fontWeight:600}}>⚠️ Father's/Mother's names aren't filled in on Personal Details yet — add them there first.</p>

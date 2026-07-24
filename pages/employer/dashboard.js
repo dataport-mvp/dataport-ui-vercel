@@ -266,10 +266,8 @@ async function printProfile(profile, empHistory, documents, employerName) {
   ${section("Family", [
     row("Father's Name", d.fatherName || [d.fatherFirst, d.fatherMiddle, d.fatherLast].filter(Boolean).join(" ")),
     row("Father's Date of Birth", isoToDisplay(d.fatherDob)),
-    row("Father's Living Status", d.fatherLiving),
     row("Mother's Name", d.motherName || [d.motherFirst, d.motherMiddle, d.motherLast].filter(Boolean).join(" ")),
     row("Mother's Date of Birth", isoToDisplay(d.motherDob)),
-    row("Mother's Living Status", d.motherLiving),
     d.maritalStatus === "Married" ? row("Spouse Name", d.spouseName) : "",
     d.maritalStatus === "Married" ? row("Spouse Date of Birth", isoToDisplay(d.spouseDob)) : "",
   ].join(""))}
@@ -414,10 +412,10 @@ async function printProfile(profile, empHistory, documents, employerName) {
       row(`Child ${i+1} Gender`, c.gender),
     ]) : []),
     d.familyDetails.parentsCoverage && d.familyDetails.parentsCoverage !== "Not Applicable" ? row("Parents Covered", d.familyDetails.parentsCoverage) : "",
-    row(d.familyDetails.parentsCoverage === "My Parents" ? "Father's Name" : "Father-in-law's Name", d.familyDetails.fatherName),
-    row(d.familyDetails.parentsCoverage === "My Parents" ? "Father's DOB"  : "Father-in-law's DOB",  anyDobToDisplay(d.familyDetails.fatherDob)),
-    row(d.familyDetails.parentsCoverage === "My Parents" ? "Mother's Name" : "Mother-in-law's Name", d.familyDetails.motherName),
-    row(d.familyDetails.parentsCoverage === "My Parents" ? "Mother's DOB"  : "Mother-in-law's DOB",  anyDobToDisplay(d.familyDetails.motherDob)),
+    row(d.familyDetails.parentsCoverage === "My Parents" ? "Father's Name" : "Father-in-law's Name", d.familyDetails.excludeFather ? "Excluded — passed away" : d.familyDetails.fatherName),
+    row(d.familyDetails.parentsCoverage === "My Parents" ? "Father's DOB"  : "Father-in-law's DOB",  d.familyDetails.excludeFather ? "" : anyDobToDisplay(d.familyDetails.fatherDob)),
+    row(d.familyDetails.parentsCoverage === "My Parents" ? "Mother's Name" : "Mother-in-law's Name", d.familyDetails.excludeMother ? "Excluded — passed away" : d.familyDetails.motherName),
+    row(d.familyDetails.parentsCoverage === "My Parents" ? "Mother's DOB"  : "Mother-in-law's DOB",  d.familyDetails.excludeMother ? "" : anyDobToDisplay(d.familyDetails.motherDob)),
   ].join(""), "#334155") : ""}
 
   <!-- ══ SECTION 5: DOCUMENTS ══ -->
@@ -894,10 +892,8 @@ function OverviewTab({ data }) {
           <div className="kv-grid">
             <KV k="Father's Name" v={data.fatherName||[data.fatherFirst,data.fatherMiddle,data.fatherLast].filter(Boolean).join(" ")} />
             <KV k="Father's Date of Birth" v={isoToDisplay(data.fatherDob)} />
-            <KV k="Father's Living Status" v={data.fatherLiving} />
             <KV k="Mother's Name" v={data.motherName||[data.motherFirst,data.motherMiddle,data.motherLast].filter(Boolean).join(" ")} />
             <KV k="Mother's Date of Birth" v={isoToDisplay(data.motherDob)} />
-            <KV k="Mother's Living Status" v={data.motherLiving} />
             {data.maritalStatus==="Married"&&<>
               <KV k="Spouse Name" v={data.spouseName} />
               <KV k="Spouse Date of Birth" v={isoToDisplay(data.spouseDob)} />
@@ -1159,10 +1155,10 @@ function UanTab({ data }) {
             <div style={{marginTop:"0.6rem"}}>
               <div style={{fontSize:"0.62rem",fontWeight:700,color:"#7c3aed",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.4rem"}}>{data.familyDetails.parentsCoverage} Covered</div>
               <div className="kv-grid">
-                <KV k={data.familyDetails.parentsCoverage==="My Parents"?"Father's Name":"Father-in-law's Name"} v={data.familyDetails.fatherName} />
-                <KV k={data.familyDetails.parentsCoverage==="My Parents"?"Father's DOB":"Father-in-law's DOB"} v={anyDobToDisplay(data.familyDetails.fatherDob)} />
-                <KV k={data.familyDetails.parentsCoverage==="My Parents"?"Mother's Name":"Mother-in-law's Name"} v={data.familyDetails.motherName} />
-                <KV k={data.familyDetails.parentsCoverage==="My Parents"?"Mother's DOB":"Mother-in-law's DOB"} v={anyDobToDisplay(data.familyDetails.motherDob)} />
+                <KV k={data.familyDetails.parentsCoverage==="My Parents"?"Father's Name":"Father-in-law's Name"} v={data.familyDetails.excludeFather ? "Excluded — passed away" : data.familyDetails.fatherName} />
+                <KV k={data.familyDetails.parentsCoverage==="My Parents"?"Father's DOB":"Father-in-law's DOB"} v={data.familyDetails.excludeFather ? "" : anyDobToDisplay(data.familyDetails.fatherDob)} />
+                <KV k={data.familyDetails.parentsCoverage==="My Parents"?"Mother's Name":"Mother-in-law's Name"} v={data.familyDetails.excludeMother ? "Excluded — passed away" : data.familyDetails.motherName} />
+                <KV k={data.familyDetails.parentsCoverage==="My Parents"?"Mother's DOB":"Mother-in-law's DOB"} v={data.familyDetails.excludeMother ? "" : anyDobToDisplay(data.familyDetails.motherDob)} />
               </div>
             </div>
           )}

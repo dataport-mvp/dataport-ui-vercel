@@ -796,12 +796,10 @@ export default function PersonalDetails() {
   const [fatherMiddle,setFatherMiddle]   = useState("");
   const [fatherLast,setFatherLast]       = useState("");
   const [fatherDob,setFatherDob]         = useState("");
-  const [fatherLiving,setFatherLiving]   = useState(""); // "Alive" | "Deceased" — optional; drives health-insurance eligibility on UAN page
   const [motherFirst,setMotherFirst]     = useState("");
   const [motherMiddle,setMotherMiddle]   = useState("");
   const [motherLast,setMotherLast]       = useState("");
   const [motherDob,setMotherDob]         = useState("");
-  const [motherLiving,setMotherLiving]   = useState("");
   const [dob,setDob]                     = useState("");
   const [gender,setGender]               = useState("");
   const [nationality,setNationality]     = useState("");
@@ -909,12 +907,10 @@ export default function PersonalDetails() {
           if (d.fatherMiddle) setFatherMiddle(d.fatherMiddle);
           if (d.fatherLast)   setFatherLast(d.fatherLast);
           if (d.fatherDob)    setFatherDob(d.fatherDob);
-          if (d.fatherLiving) setFatherLiving(d.fatherLiving);
           if (d.motherFirst)  setMotherFirst(d.motherFirst);
           if (d.motherMiddle) setMotherMiddle(d.motherMiddle);
           if (d.motherLast)   setMotherLast(d.motherLast);
           if (d.motherDob)    setMotherDob(d.motherDob);
-          if (d.motherLiving) setMotherLiving(d.motherLiving);
           if (d.spouseName)   setSpouseName(d.spouseName);
           if (d.spouseDob)    setSpouseDob(d.spouseDob);
           if (d.dob)          setDob(d.dob);
@@ -1001,8 +997,8 @@ export default function PersonalDetails() {
   const buildPayload = (empId) => ({
     employee_id: empId, status: "draft",
     firstName, middleName, lastName,
-    fatherFirst, fatherMiddle, fatherLast, fatherDob, fatherLiving,
-    motherFirst, motherMiddle, motherLast, motherDob, motherLiving,
+    fatherFirst, fatherMiddle, fatherLast, fatherDob,
+    motherFirst, motherMiddle, motherLast, motherDob,
     spouseName: maritalStatus==="Married" ? spouseName : "",
     spouseDob:  maritalStatus==="Married" ? spouseDob  : "",
     fatherName: `${fatherFirst} ${fatherMiddle} ${fatherLast}`.trim(),
@@ -1437,14 +1433,6 @@ export default function PersonalDetails() {
                 </div>
                 <div className="fr">
                   <DateField l="Father's Date of Birth" v={fatherDob} s={dirty(setFatherDob)} r={false} />
-                  <div className="fi">
-                    <span className="fl">Living Status</span>
-                    <div style={{display:"flex",gap:"0.5rem",marginTop:"0.15rem"}}>
-                      {["Alive","Deceased"].map(v=>(
-                        <button key={v} type="button" onClick={()=>dirty(setFatherLiving)(v)} style={{flex:1,padding:"0.5rem 0",borderRadius:9,border:fatherLiving===v?"2px solid #6d28d9":"1.5px solid #d8d4e3",background:fatherLiving===v?"#6d28d9":"#f5f4f0",color:fatherLiving===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.76rem",fontWeight:700,fontFamily:"inherit"}}>{v}</button>
-                      ))}
-                    </div>
-                  </div>
                 </div>
                 {(fatherFirst || fatherLast) && (
                   <div style={{marginTop:"0.5rem",padding:"0.5rem 0.875rem",background:"#f5f3ff",border:"1px solid #ddd6fe",borderRadius:8,fontSize:"0.82rem",fontWeight:700,color:"#6d28d9",letterSpacing:"0.2px"}}>
@@ -1463,14 +1451,6 @@ export default function PersonalDetails() {
                 </div>
                 <div className="fr">
                   <DateField l="Mother's Date of Birth" v={motherDob} s={dirty(setMotherDob)} r={false} />
-                  <div className="fi">
-                    <span className="fl">Living Status</span>
-                    <div style={{display:"flex",gap:"0.5rem",marginTop:"0.15rem"}}>
-                      {["Alive","Deceased"].map(v=>(
-                        <button key={v} type="button" onClick={()=>dirty(setMotherLiving)(v)} style={{flex:1,padding:"0.5rem 0",borderRadius:9,border:motherLiving===v?"2px solid #be123c":"1.5px solid #d8d4e3",background:motherLiving===v?"#be123c":"#f5f4f0",color:motherLiving===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.76rem",fontWeight:700,fontFamily:"inherit"}}>{v}</button>
-                      ))}
-                    </div>
-                  </div>
                 </div>
                 {(motherFirst || motherLast) && (
                   <div style={{marginTop:"0.5rem",padding:"0.5rem 0.875rem",background:"#fff1f2",border:"1px solid #fecdd3",borderRadius:8,fontSize:"0.82rem",fontWeight:700,color:"#be123c",letterSpacing:"0.2px"}}>
@@ -1585,6 +1565,7 @@ export default function PersonalDetails() {
               {maritalStatus==="Married" && (
                 <div className="sc amb">
                   <div className="sh"><div className="si amb">💍</div><span className="st">Spouse Details</span></div>
+                  <p style={{fontSize:"0.72rem",color:"#6b6894",marginBottom:"0.6rem"}}>Optional — only used for company health insurance dependent coverage.</p>
                   <div className="fr">
                     <F l="Spouse Name" v={spouseName} s={dirty(setSpouseName)} />
                     <DateField l="Spouse Date of Birth" v={spouseDob} s={dirty(setSpouseDob)} r={false} />

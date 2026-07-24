@@ -655,6 +655,7 @@ export default function PreviousCompany() {
 
               <div className="subsec">
                 <div className="sub-lbl">Reference Details{isLast&&emp.currentlyWorking==="Yes"&&<span style={{fontSize:"0.7rem",color:"#16a34a",fontWeight:500,marginLeft:"0.5rem"}}>(optional while currently employed)</span>}</div>
+                <p style={{fontSize:"0.72rem",color:"#6b6894",marginTop:"-0.35rem",marginBottom:"0.7rem",lineHeight:1.5}}>A colleague or manager at <strong>this company</strong> who can confirm your role if our verification team calls or emails them — not the person who referred you for a job.</p>
                 <div className="fr">
                   <FS l="Reference Role" v={emp.reference.role} s={v=>update(index,"reference.role",v)} o={["Manager","Colleague","HR","Client"]} r={false} errKey={`${index}_refRole`} errors={errors} onFix={fixErr}/>
                   <F l="Reference Name" v={emp.reference.name} s={v=>update(index,"reference.name",v)} r={false} errKey={`${index}_refName`} errors={errors} onFix={fixErr}/>
