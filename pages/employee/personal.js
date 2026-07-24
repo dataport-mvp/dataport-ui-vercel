@@ -795,9 +795,11 @@ export default function PersonalDetails() {
   const [fatherFirst,setFatherFirst]     = useState("");
   const [fatherMiddle,setFatherMiddle]   = useState("");
   const [fatherLast,setFatherLast]       = useState("");
+  const [fatherDob,setFatherDob]         = useState("");
   const [motherFirst,setMotherFirst]     = useState("");
   const [motherMiddle,setMotherMiddle]   = useState("");
   const [motherLast,setMotherLast]       = useState("");
+  const [motherDob,setMotherDob]         = useState("");
   const [dob,setDob]                     = useState("");
   const [gender,setGender]               = useState("");
   const [nationality,setNationality]     = useState("");
@@ -902,9 +904,11 @@ export default function PersonalDetails() {
           if (d.fatherFirst)  setFatherFirst(d.fatherFirst);
           if (d.fatherMiddle) setFatherMiddle(d.fatherMiddle);
           if (d.fatherLast)   setFatherLast(d.fatherLast);
+          if (d.fatherDob)    setFatherDob(d.fatherDob);
           if (d.motherFirst)  setMotherFirst(d.motherFirst);
           if (d.motherMiddle) setMotherMiddle(d.motherMiddle);
           if (d.motherLast)   setMotherLast(d.motherLast);
+          if (d.motherDob)    setMotherDob(d.motherDob);
           if (d.dob)          setDob(d.dob);
           if (d.gender)       setGender(d.gender);
           if (d.nationality)  setNationality(d.nationality);
@@ -989,8 +993,8 @@ export default function PersonalDetails() {
   const buildPayload = (empId) => ({
     employee_id: empId, status: "draft",
     firstName, middleName, lastName,
-    fatherFirst, fatherMiddle, fatherLast,
-    motherFirst, motherMiddle, motherLast,
+    fatherFirst, fatherMiddle, fatherLast, fatherDob,
+    motherFirst, motherMiddle, motherLast, motherDob,
     fatherName: `${fatherFirst} ${fatherMiddle} ${fatherLast}`.trim(),
     motherName: `${motherFirst} ${motherMiddle} ${motherLast}`.trim(),
     dob, gender, nationality, mobile, email,
@@ -1421,6 +1425,9 @@ export default function PersonalDetails() {
                   <F l="Middle Name" v={fatherMiddle} s={dirty(setFatherMiddle)} r={false} />
                   <F l="Last Name"   v={fatherLast}   s={dirty(setFatherLast)} />
                 </div>
+                <div className="fr">
+                  <DateField l="Father's Date of Birth" v={fatherDob} s={dirty(setFatherDob)} r={false} />
+                </div>
                 {(fatherFirst || fatherLast) && (
                   <div style={{marginTop:"0.5rem",padding:"0.5rem 0.875rem",background:"#f5f3ff",border:"1px solid #ddd6fe",borderRadius:8,fontSize:"0.82rem",fontWeight:700,color:"#6d28d9",letterSpacing:"0.2px"}}>
                     👨 {[fatherFirst, fatherMiddle, fatherLast].filter(Boolean).join(" ")}
@@ -1435,6 +1442,9 @@ export default function PersonalDetails() {
                   <F l="First Name"  v={motherFirst}  s={dirty(setMotherFirst)} />
                   <F l="Middle Name" v={motherMiddle} s={dirty(setMotherMiddle)} r={false} />
                   <F l="Last Name"   v={motherLast}   s={dirty(setMotherLast)} />
+                </div>
+                <div className="fr">
+                  <DateField l="Mother's Date of Birth" v={motherDob} s={dirty(setMotherDob)} r={false} />
                 </div>
                 {(motherFirst || motherLast) && (
                   <div style={{marginTop:"0.5rem",padding:"0.5rem 0.875rem",background:"#fff1f2",border:"1px solid #fecdd3",borderRadius:8,fontSize:"0.82rem",fontWeight:700,color:"#be123c",letterSpacing:"0.2px"}}>
