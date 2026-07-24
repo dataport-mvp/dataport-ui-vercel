@@ -59,6 +59,24 @@ function isoToDisplay(iso) {
   return `${parseInt(d, 10)} ${mName} ${y}`;
 }
 
+// familyDetails mixes two DOB formats: ISO (yyyy-mm-dd) when copied straight from Personal
+// Details ("My Parents"), and dd-mm-yyyy from NomineeDobField everywhere else (spouse,
+// children, in-laws). Detect which one we've got and format either correctly.
+function anyDobToDisplay(val) {
+  if (!val) return "";
+  const parts = val.split("-");
+  if (parts.length !== 3) return val;
+  return parts[0].length === 4 ? isoToDisplay(val) : ddmmyyyyToDisplay(val);
+}
+function ddmmyyyyToDisplay(val) {
+  if (!val || val.length !== 10) return val || "";
+  const [dd, mm, yyyy] = val.split("-");
+  const idx = parseInt(mm, 10) - 1;
+  const mName = MONTH_NAMES[idx];
+  if (!mName) return val;
+  return `${parseInt(dd, 10)} ${mName} ${yyyy}`;
+}
+
 function toIST(ts) {
   if (!ts) return "—";
   try {
@@ -101,8 +119,10 @@ async function printProfile(profile, empHistory, documents, employerName) {
     { key: "diploma",        label: "Diploma Certificate",            group: "education" },
     { key: "ug_provisional", label: "UG Provisional Marksheet",       group: "education" },
     { key: "ug_convocation", label: "UG Convocation Certificate",     group: "education" },
+    { key: "ug_equivalency", label: "UG Equivalency Certificate (Foreign Degree)", group: "education" },
     { key: "pg_provisional", label: "PG Provisional Marksheet",       group: "education" },
     { key: "pg_convocation", label: "PG Convocation Certificate",     group: "education" },
+    { key: "pg_equivalency", label: "PG Equivalency Certificate (Foreign Degree)", group: "education" },
     { key: /^profqual_/,     label: "Professional Qualification",     group: "education" },
     { key: /^articleship_/,  label: "Articleship / Training Letter",  group: "education" },
     // NOTE: cert_ (Professional Certifications) intentionally excluded from PDF
@@ -116,6 +136,7 @@ async function printProfile(profile, empHistory, documents, employerName) {
     // ── UAN (Page 4) ──────────────────────────────────────────────
     { key: "uanCard",        label: "UAN Card / Passbook",            group: "uan" },
     { key: "serviceHistory", label: "Service History Snapshot",       group: "uan" },
+    { key: "signature",      label: "Digital Signature (latest)",     group: "uan" },
   ];
 
   // Flatten all documents
@@ -242,9 +263,15 @@ async function printProfile(profile, empHistory, documents, employerName) {
     row("Marital Status",   d.maritalStatus),
   ].join(""))}
 
-  ${section("Father's & Mother's Name", [
+  ${section("Family", [
     row("Father's Name", d.fatherName || [d.fatherFirst, d.fatherMiddle, d.fatherLast].filter(Boolean).join(" ")),
+    row("Father's Date of Birth", isoToDisplay(d.fatherDob)),
+    row("Father's Living Status", d.fatherLiving),
     row("Mother's Name", d.motherName || [d.motherFirst, d.motherMiddle, d.motherLast].filter(Boolean).join(" ")),
+    row("Mother's Date of Birth", isoToDisplay(d.motherDob)),
+    row("Mother's Living Status", d.motherLiving),
+    d.maritalStatus === "Married" ? row("Spouse Name", d.spouseName) : "",
+    d.maritalStatus === "Married" ? row("Spouse Date of Birth", isoToDisplay(d.spouseDob)) : "",
   ].join(""))}
 
   ${section("Identity Documents", [
@@ -338,8 +365,8 @@ async function printProfile(profile, empHistory, documents, employerName) {
       row("Work Email",            e.workEmail),
       row("Office Address",        e.officeAddress),
       row("Date of Joining",       isoToDisplay(e.startDate)),
-      i === 0 ? row("Currently Working", e.currentlyWorking === "Yes" ? "Yes — Still Employed" : "No") : row("Date of Leaving", isoToDisplay(e.endDate)),
-      i === 0 && e.currentlyWorking === "No" ? row("Date of Leaving", isoToDisplay(e.endDate)) : "",
+      i === arr.length-1 ? row("Currently Working", e.currentlyWorking === "Yes" ? "Yes — Still Employed" : "No") : row("Date of Leaving", isoToDisplay(e.endDate)),
+      i === arr.length-1 && e.currentlyWorking === "No" ? row("Date of Leaving", isoToDisplay(e.endDate)) : "",
       row("Reason for Leaving",    e.reasonForRelieving),
       row("Duties",                e.duties),
       e.employmentType === "Contract" ? row("Vendor Company", e.contractVendor?.company) : "",
@@ -350,7 +377,7 @@ async function printProfile(profile, empHistory, documents, employerName) {
       row("Reference Email",       e.reference?.email),
       row("Reference Mobile",      e.reference?.mobile),
       e.gap?.hasGap === "Yes" ? row("Employment Gap", e.gap?.reason) : "",
-    ].join(""), i === 0 ? "#18151f" : "#334155"
+    ].join(""), i === arr.length-1 ? "#18151f" : "#334155"
   )).join("")}
 
   <!-- ══ SECTION 4: UAN / EPFO ══ -->
@@ -377,6 +404,21 @@ async function printProfile(profile, empHistory, documents, employerName) {
         ].join(""),
     "#334155"
   )).join("") : ""}
+
+  ${d.familyDetails && (d.familyDetails.spouseName || d.familyDetails.spouseDob || d.familyDetails.hasChildren === "Yes" || (d.familyDetails.parentsCoverage && d.familyDetails.parentsCoverage !== "Not Applicable")) ? section("Family Details — Health Insurance", [
+    row("Spouse Name",             d.familyDetails.spouseName),
+    row("Spouse Date of Birth",    anyDobToDisplay(d.familyDetails.spouseDob)),
+    ...(Array.isArray(d.familyDetails.children) ? d.familyDetails.children.flatMap((c,i) => [
+      row(`Child ${i+1} Name`,   c.name),
+      row(`Child ${i+1} DOB`,    anyDobToDisplay(c.dob)),
+      row(`Child ${i+1} Gender`, c.gender),
+    ]) : []),
+    d.familyDetails.parentsCoverage && d.familyDetails.parentsCoverage !== "Not Applicable" ? row("Parents Covered", d.familyDetails.parentsCoverage) : "",
+    row(d.familyDetails.parentsCoverage === "My Parents" ? "Father's Name" : "Father-in-law's Name", d.familyDetails.fatherName),
+    row(d.familyDetails.parentsCoverage === "My Parents" ? "Father's DOB"  : "Father-in-law's DOB",  anyDobToDisplay(d.familyDetails.fatherDob)),
+    row(d.familyDetails.parentsCoverage === "My Parents" ? "Mother's Name" : "Mother-in-law's Name", d.familyDetails.motherName),
+    row(d.familyDetails.parentsCoverage === "My Parents" ? "Mother's DOB"  : "Mother-in-law's DOB",  anyDobToDisplay(d.familyDetails.motherDob)),
+  ].join(""), "#334155") : ""}
 
   <!-- ══ SECTION 5: DOCUMENTS ══ -->
   <div style="font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:2px;margin-bottom:14px;margin-top:20px">Documents — In Sequence Order</div>
@@ -851,7 +893,15 @@ function OverviewTab({ data }) {
         <Sec title="Family">
           <div className="kv-grid">
             <KV k="Father's Name" v={data.fatherName||[data.fatherFirst,data.fatherMiddle,data.fatherLast].filter(Boolean).join(" ")} />
+            <KV k="Father's Date of Birth" v={isoToDisplay(data.fatherDob)} />
+            <KV k="Father's Living Status" v={data.fatherLiving} />
             <KV k="Mother's Name" v={data.motherName||[data.motherFirst,data.motherMiddle,data.motherLast].filter(Boolean).join(" ")} />
+            <KV k="Mother's Date of Birth" v={isoToDisplay(data.motherDob)} />
+            <KV k="Mother's Living Status" v={data.motherLiving} />
+            {data.maritalStatus==="Married"&&<>
+              <KV k="Spouse Name" v={data.spouseName} />
+              <KV k="Spouse Date of Birth" v={isoToDisplay(data.spouseDob)} />
+            </>}
           </div>
         </Sec>
       )}
@@ -1018,10 +1068,10 @@ function EmploymentTab({ data, resumeKey, docUrls }) {
             <KV k="Work Email"      v={e.workEmail} mono />
             <KV k="Office Address"  v={e.officeAddress} />
             <KV k="Date of Joining" v={isoToDisplay(e.startDate)} />
-            {i===0
+            {i===arr.length-1
               ?<KV k="Currently Working" v={e.currentlyWorking==="Yes"?"Yes — Still Employed":"No"} />
               :<KV k="Date of Leaving"   v={isoToDisplay(e.endDate)} />}
-            {i===0&&e.currentlyWorking==="No"&&<KV k="Date of Leaving" v={isoToDisplay(e.endDate)} />}
+            {i===arr.length-1&&e.currentlyWorking==="No"&&<KV k="Date of Leaving" v={isoToDisplay(e.endDate)} />}
             {e.reasonForRelieving&&<KV k="Reason for Leaving" v={e.reasonForRelieving} />}
             {e.duties&&<KV k="Duties" v={e.duties} />}
             {e.employmentType==="Contract"&&e.contractVendor?.company&&<>
@@ -1085,6 +1135,39 @@ function UanTab({ data }) {
           ))}
         </Sec>
       )}
+      {data.familyDetails && (data.familyDetails.spouseName || data.familyDetails.spouseDob || data.familyDetails.hasChildren==="Yes" || (data.familyDetails.parentsCoverage && data.familyDetails.parentsCoverage!=="Not Applicable")) && (
+        <Sec title="Family Details — Health Insurance">
+          {(data.familyDetails.spouseName||data.familyDetails.spouseDob)&&(
+            <div className="kv-grid">
+              <KV k="Spouse Name" v={data.familyDetails.spouseName} />
+              <KV k="Spouse Date of Birth" v={anyDobToDisplay(data.familyDetails.spouseDob)} />
+            </div>
+          )}
+          {data.familyDetails.hasChildren==="Yes"&&Array.isArray(data.familyDetails.children)&&data.familyDetails.children.length>0&&(
+            <div style={{marginTop:"0.6rem"}}>
+              <div style={{fontSize:"0.62rem",fontWeight:700,color:"#7c3aed",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.4rem"}}>Children</div>
+              {data.familyDetails.children.map((c,i)=>(c.name||c.dob) && (
+                <div key={i} className="kv-grid" style={{marginBottom:"0.3rem"}}>
+                  <KV k={`Child ${i+1} Name`}   v={c.name} />
+                  <KV k={`Child ${i+1} DOB`}    v={anyDobToDisplay(c.dob)} />
+                  <KV k={`Child ${i+1} Gender`} v={c.gender} />
+                </div>
+              ))}
+            </div>
+          )}
+          {data.familyDetails.parentsCoverage&&data.familyDetails.parentsCoverage!=="Not Applicable"&&(
+            <div style={{marginTop:"0.6rem"}}>
+              <div style={{fontSize:"0.62rem",fontWeight:700,color:"#7c3aed",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.4rem"}}>{data.familyDetails.parentsCoverage} Covered</div>
+              <div className="kv-grid">
+                <KV k={data.familyDetails.parentsCoverage==="My Parents"?"Father's Name":"Father-in-law's Name"} v={data.familyDetails.fatherName} />
+                <KV k={data.familyDetails.parentsCoverage==="My Parents"?"Father's DOB":"Father-in-law's DOB"} v={anyDobToDisplay(data.familyDetails.fatherDob)} />
+                <KV k={data.familyDetails.parentsCoverage==="My Parents"?"Mother's Name":"Mother-in-law's Name"} v={data.familyDetails.motherName} />
+                <KV k={data.familyDetails.parentsCoverage==="My Parents"?"Mother's DOB":"Mother-in-law's DOB"} v={anyDobToDisplay(data.familyDetails.motherDob)} />
+              </div>
+            </div>
+          )}
+        </Sec>
+      )}
     </div>
   );
 }
@@ -1094,13 +1177,65 @@ const DOC_LABELS = {
   aadhaar:"Aadhaar Card", pan:"PAN Card", photo:"Profile Photo", passport:"Passport",
   classX:"Class X Certificate", intermediate:"Intermediate Certificate",
   ug_provisional:"UG Provisional Marksheet", ug_convocation:"UG Convocation",
+  ug_equivalency:"UG Equivalency Certificate (Foreign Degree)",
   pg_provisional:"PG Provisional Marksheet", pg_convocation:"PG Convocation",
+  pg_equivalency:"PG Equivalency Certificate (Foreign Degree)",
   diploma:"Diploma Certificate", uanCard:"UAN Card / Passbook",
+  serviceHistory:"UAN Service History Snapshot", signature:"Digital Signature (latest)",
   payslips:"Payslips (Last 3 Months)", offerLetter:"Offer Letter",
   resignation:"Resignation Acceptance", experience:"Experience / Relieving Letter",
   idCard:"Company ID Card", cv:"Resume / CV",
 };
+// Friendly labels for dynamically-indexed uploads (certification_1, profqual_2, articleship_1, ...)
+const DYNAMIC_DOC_LABELS = { certification:"Certification", profqual:"Professional Qualification", articleship:"Articleship / Training Certificate" };
+function docLabel(subKey) {
+  if (DOC_LABELS[subKey]) return DOC_LABELS[subKey];
+  const m = subKey.match(/^([a-zA-Z]+)_(\d+)$/);
+  if (m && DYNAMIC_DOC_LABELS[m[1]]) return `${DYNAMIC_DOC_LABELS[m[1]]} ${m[2]}`;
+  return subKey;
+}
 const SEC_TITLES_DOC = { personal:"Identity Documents", education:"Education Certificates", uan:"UAN / EPFO Documents", general:"Resume" };
+
+// ── Canonical ordering — mirrors the exact sequence the employee fills the form in ──
+// (personal.js → education.js: X, 12th, Diploma, UG, PG, ProfQuals/Articleship/Certs →
+//  previous.js per employer → uan.js). Fixes the Documents tab from just showing whatever
+// order S3/the backend happens to return.
+const SEC_ORDER = ["personal", "education", "employment", "uan", "general"];
+const PERSONAL_ORDER = ["photo", "passport", "aadhaar", "pan"];
+const EDUCATION_FIXED_ORDER = ["classX", "intermediate", "diploma", "ug_provisional", "ug_convocation", "ug_equivalency", "pg_provisional", "pg_convocation", "pg_equivalency"];
+const EDUCATION_DYNAMIC_PREFIX_ORDER = ["certification", "profqual", "articleship"]; // Certifications, then Prof Quals, then Articleship — matches education.js section order
+const EMPLOYMENT_ORDER = ["offerLetter", "payslips", "resignation", "experience", "idCard"];
+const UAN_ORDER = ["uanCard", "serviceHistory", "signature"];
+const GENERAL_ORDER = ["cv"];
+
+function fixedOrderFor(group) {
+  if (group === "personal") return PERSONAL_ORDER;
+  if (group === "education") return EDUCATION_FIXED_ORDER;
+  if (group === "uan") return UAN_ORDER;
+  if (group === "general") return GENERAL_ORDER;
+  if (group.startsWith("employment/")) return EMPLOYMENT_ORDER;
+  return [];
+}
+function sortSubKeys(subKeys, group) {
+  const fixed = fixedOrderFor(group);
+  const dynIdx = (k) => {
+    const m = k.match(/^([a-zA-Z]+)_(\d+)$/);
+    if (!m) return null;
+    const pIdx = EDUCATION_DYNAMIC_PREFIX_ORDER.indexOf(m[1]);
+    if (pIdx === -1) return null;
+    return { pIdx, num: parseInt(m[2], 10) };
+  };
+  return [...subKeys].sort((a, b) => {
+    const ai = fixed.indexOf(a), bi = fixed.indexOf(b);
+    if (ai !== -1 || bi !== -1) return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+    const da = dynIdx(a), db = dynIdx(b);
+    if (da || db) {
+      if (da && db) return da.pIdx - db.pIdx || da.num - db.num;
+      return da ? -1 : 1;
+    }
+    return a.localeCompare(b); // any future/unknown keys — stable alphabetical fallback
+  });
+}
 
 function BgvTab({ consentData, apiFetch, API: apiUrl }) {
   const CHECK_STATUS_COLORS = {
@@ -1274,34 +1409,55 @@ function DocumentsTab({ documents, loading, empSnap }) {
     if (!grouped[sec]) grouped[sec] = [];
     grouped[sec].push({ group, docs });
   }
+  // Employer document blocks in chronological fill order (oldest → current), matching
+  // how they're numbered/labelled everywhere else on this dashboard.
+  const empSorted = [...(empSnap||[])].sort((a,b)=>(Number(a.sort_order??999))-(Number(b.sort_order??999)));
+  if (grouped.employment) {
+    grouped.employment.sort((x,y)=>{
+      const ix = empSorted.findIndex(e=>e.company_id===x.group.split("/")[1]);
+      const iy = empSorted.findIndex(e=>e.company_id===y.group.split("/")[1]);
+      return (ix===-1?999:ix) - (iy===-1?999:iy);
+    });
+  }
+  // Render sections in the same order the employee actually fills the form:
+  // Personal → Education → Employment (per employer, oldest first) → UAN → Resume.
+  // Any group we don't have an explicit slot for (e.g. bgv) is appended at the end so
+  // nothing silently disappears.
+  const knownSecs = new Set(SEC_ORDER);
+  const orderedSecs = [...SEC_ORDER.filter(s=>grouped[s]), ...Object.keys(grouped).filter(s=>!knownSecs.has(s))];
   return (
     <div>
-      {Object.entries(grouped).map(([sec, entries]) => (
+      {orderedSecs.map(sec => {
+        const entries = grouped[sec];
+        return (
         <div key={sec}>
           <div className="doc-grp-title">{SEC_TITLES_DOC[sec]||"Employment Documents"}</div>
           {entries.map(({group, docs}) => (
             <div key={group}>
               {group.startsWith("employment/")&&(()=>{
                 const cid = group.split("/")[1];
-                const sorted = [...(empSnap||[])].sort((a,b)=>(Number(a.sort_order??999))-(Number(b.sort_order??999)));
-                const empIdx = sorted.findIndex(e=>e.company_id===cid);
-                const empName = sorted[empIdx]?.companyName || "";
-                const empLabel = empIdx === sorted.length-1 ? "Current Employer" : empIdx >= 0 ? `Previous Employer ${empIdx+1}` : "";
+                const empIdx = empSorted.findIndex(e=>e.company_id===cid);
+                const empName = empSorted[empIdx]?.companyName || "";
+                const empLabel = empIdx === empSorted.length-1 ? "Current Employer" : empIdx >= 0 ? `Previous Employer ${empIdx+1}` : "";
                 return <div style={{fontSize:"0.68rem",color:"#4f46e5",fontWeight:700,margin:"0.3rem 0 0.4rem",textTransform:"uppercase",letterSpacing:"0.5px"}}>{empLabel}{empName ? ` — ${empName}` : ""}</div>;
               })()}
-              {Object.entries(docs).map(([subKey, doc]) => (
+              {sortSubKeys(Object.keys(docs), group).map(subKey => {
+                const doc = docs[subKey];
+                return (
                 <div key={subKey} className="doc-row">
                   <div>
-                    <div className="doc-name">{DOC_LABELS[subKey]||subKey}</div>
+                    <div className="doc-name">{docLabel(subKey)}</div>
                     <div className="doc-meta">{doc.filename}{doc.uploaded_at?` · ${toIST(doc.uploaded_at)}`:""}</div>
                   </div>
                   <a href={doc.url} target="_blank" rel="noopener noreferrer" className="doc-view">↓ View</a>
                 </div>
-              ))}
+                );
+              })}
             </div>
           ))}
         </div>
-      ))}
+        );
+      })}
       <div style={{fontSize:"0.62rem",color:"#94a3b8",marginTop:"0.85rem",paddingTop:"0.7rem",borderTop:"1px solid #f1f5f9"}}>⏱ Links expire in 1 hour. Refresh page to get new links.</div>
     </div>
   );
