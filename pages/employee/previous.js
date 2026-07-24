@@ -261,7 +261,7 @@ function ExitAckModal({ onSaveAndExit, onExitWithout, onCancel }) {
 
 function StepNav({ current, onNavigate }) {
   const steps = [
-    { n:1, label:"Personal",   icon:"ðŸ‘¤", path:"/employee/personal"  },
+    { n:1, label:"Personal",   icon:"í±¤", path:"/employee/personal"  },
     { n:2, label:"Education",  icon:"ðŸŽ“", path:"/employee/education" },
     { n:3, label:"Employment", icon:"ðŸ’¼", path:"/employee/previous"  },
     { n:4, label:"UAN",        icon:"ðŸ¦", path:"/employee/uan"       },
@@ -342,8 +342,6 @@ export default function PreviousCompany() {
         const draft=await draftRes.json();
         if(!draft.employee_id){setLoading(false);return;}
         setEmployeeId(draft.employee_id);
-        if(draft.resumeKey) setResumeKey(draft.resumeKey);
-        if(draft.hasExperience) setHasExperience(draft.hasExperience);
         const histRes=await apiFetch(`${API}/employee/employment-history/${draft.employee_id}`);
         if(histRes.ok){
           const data=await histRes.json();
@@ -362,6 +360,8 @@ export default function PreviousCompany() {
             const a=data.acknowledgements;
             setAck({business:{val:a.business?.val||"",note:a.business?.note||""},dismissed:{val:a.dismissed?.val||"",note:a.dismissed?.note||""},criminal:{val:a.criminal?.val||"",note:a.criminal?.note||""},civil:{val:a.civil?.val||"",note:a.civil?.note||""}});
           }
+          if(data.resumeKey) setResumeKey(data.resumeKey);
+          if(data.hasExperience) setHasExperience(data.hasExperience);
           if(typeof data.declared==="boolean") setDeclared(data.declared);
         }
       }catch(_){}
@@ -467,7 +467,7 @@ export default function PreviousCompany() {
       })});
     }
 
-    const res=await apiFetch(`${API}/employee/employment-history`,{method:"POST",body:JSON.stringify({employments,acknowledgements:ack,declared})});
+    const res=await apiFetch(`${API}/employee/employment-history`,{method:"POST",body:JSON.stringify({employments,acknowledgements:ack,declared,resumeKey,hasExperience})});
     if(!res.ok) throw new Error(parseError(await res.json().catch(()=>({}))));
     isDirtyRef.current=false;
   };

@@ -511,7 +511,7 @@ export default function ReviewPage() {
               const ed = await eRes.json();
               const emps = ed.employments || (Array.isArray(ed) ? ed : (ed.items || []));
               setEmpHistory(emps);
-              setEmpAcksData({ acknowledgements: ed.acknowledgements || {}, declared: !!ed.declared });
+              setEmpAcksData({ acknowledgements: ed.acknowledgements || {}, declared: !!ed.declared, resumeKey: ed.resumeKey || "", hasExperience: ed.hasExperience || "" });
             }
           } catch (_) {}
 
@@ -717,12 +717,20 @@ export default function ReviewPage() {
               </>}
               <KV label="Blood Group"    value={d.bloodGroup}/>
               <KV label="Marital Status" value={d.maritalStatus}/>
+              <KV label="Religion"       value={d.religion}/>
+              <KV label="Category"       value={d.category}/>
             </div>
-            {(d.fatherFirst||d.fatherName)&&(<>
+            {(d.fatherFirst||d.fatherName||d.maritalStatus==="Married")&&(<>
               <div className="sec-divider">Family</div>
               <div className="grid">
                 <KV label="Father's Name" value={d.fatherName||[d.fatherFirst,d.fatherMiddle,d.fatherLast].filter(Boolean).join(" ")}/>
+                <KV label="Father's DOB"  value={d.fatherDob}/>
                 <KV label="Mother's Name" value={d.motherName||[d.motherFirst,d.motherMiddle,d.motherLast].filter(Boolean).join(" ")}/>
+                <KV label="Mother's DOB"  value={d.motherDob}/>
+                {d.maritalStatus==="Married"&&<>
+                  <KV label="Spouse Name" value={d.spouseName}/>
+                  <KV label="Spouse DOB"  value={d.spouseDob}/>
+                </>}
               </div>
             </>)}
             {(d.emergName||d.emergPhone)&&(<>
@@ -835,6 +843,20 @@ export default function ReviewPage() {
                 {edu.diploma?.certKey && <div className="att-grid"><AttChip label="Diploma Certificate" docKey={edu.diploma.certKey} urls={docUrls}/></div>}
               </div>
             )}
+            {Array.isArray(edu.professionalQualifications) && edu.professionalQualifications.length > 0 && (
+              <div style={{marginBottom:"0.9rem",paddingBottom:"0.9rem",borderBottom:"1px solid #f0eef8"}}>
+                <div style={{fontSize:"0.72rem",fontWeight:700,color:"#7c3aed",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.5rem"}}>Professional Qualifications</div>
+                {edu.professionalQualifications.map((q,i)=>(
+                  <div key={i} style={{background:"#f5f3ff",border:"1px solid #ddd6fe",borderRadius:8,padding:"0.6rem 0.85rem",marginBottom:"0.4rem"}}>
+                    <div className="grid" style={{gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))"}}>
+                      <KV label="Type"  value={q.type==="Other"?(q.otherType||"Other"):q.type}/>
+                      <KV label="Level" value={q.level}/>
+                      <KV label="Year"  value={q.year || (q.level==="Pursuing"?"Pursuing":"")}/>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
             {Array.isArray(edu.certifications) && edu.certifications.length > 0 && (
               <div>
                 <div style={{fontSize:"0.72rem",fontWeight:700,color:"#d97706",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.5rem"}}>Certifications</div>
@@ -863,6 +885,8 @@ export default function ReviewPage() {
                 <div style={{fontSize:"0.72rem",fontWeight:700,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.4rem"}}>Education Gap Before First Job</div>
                 <div className="grid">
                   <KV label="Had Education Gap" value={edu.hasEduGap}/>
+                  {edu.eduGapFrom&&<KV label="From" value={edu.eduGapFrom}/>}
+                  {edu.eduGapTo&&<KV label="To" value={edu.eduGapTo}/>}
                   {edu.eduGapReason&&<KV label="Reason" value={edu.eduGapReason}/>}
                 </div>
               </div>
@@ -914,7 +938,7 @@ export default function ReviewPage() {
                 )}
                 {e.gap?.hasGap==="Yes"&&e.gap?.reason&&(
                   <div style={{marginTop:"0.5rem",padding:"0.5rem 0.75rem",background:"#fffbeb",borderRadius:8,border:"1px solid #fde68a",fontSize:"0.78rem",color:"#92400e",fontWeight:500}}>
-                    ⏱ Gap: {e.gap.reason}
+                    ⏱ Gap{(e.gap.from||e.gap.to)?` (${e.gap.from} – ${e.gap.to})`:""}: {e.gap.reason}
                   </div>
                 )}
               </div>
@@ -956,6 +980,37 @@ export default function ReviewPage() {
               {d.epfoKey && <AttChip label="UAN Card" docKey={d.epfoKey} urls={docUrls}/>}
               {d.serviceHistoryKey && <AttChip label="Service History Snapshot" docKey={d.serviceHistoryKey} urls={docUrls}/>}
             </div>
+            {d.familyDetails && (d.familyDetails.spouseName || d.familyDetails.hasChildren==="Yes" || (d.familyDetails.parentsCoverage && d.familyDetails.parentsCoverage!=="Not Applicable")) && (
+              <div style={{marginTop:"0.85rem"}}>
+                <div className="sec-divider">Family Details — Health Insurance</div>
+                <div style={{background:"#f5f3ff",border:"1px solid #ddd6fe",borderRadius:10,padding:"0.75rem 0.9rem"}}>
+                  {(d.familyDetails.spouseName||d.familyDetails.spouseDob) && (
+                    <div className="grid" style={{marginBottom:"0.4rem"}}>
+                      <KV label="Spouse Name" value={d.familyDetails.spouseName}/>
+                      <KV label="Spouse DOB"  value={d.familyDetails.spouseDob}/>
+                    </div>
+                  )}
+                  {d.familyDetails.hasChildren==="Yes" && Array.isArray(d.familyDetails.children) && d.familyDetails.children.filter(c=>c.name||c.dob).length>0 && (
+                    <div style={{marginBottom:"0.4rem"}}>
+                      {d.familyDetails.children.map((c,i)=>(c.name||c.dob) && (
+                        <div key={i} className="grid" style={{marginBottom:"0.3rem"}}>
+                          <KV label={`Child ${i+1} Name`}   value={c.name}/>
+                          <KV label={`Child ${i+1} DOB`}    value={c.dob}/>
+                          <KV label={`Child ${i+1} Gender`} value={c.gender}/>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {d.familyDetails.parentsCoverage && d.familyDetails.parentsCoverage!=="Not Applicable" && (
+                    <div className="grid">
+                      <KV label="Parents Covered" value={d.familyDetails.parentsCoverage}/>
+                      <KV label={d.familyDetails.parentsCoverage==="My Parents"?"Father":"Father-in-law"} value={d.familyDetails.excludeFather?"Excluded — passed away":d.familyDetails.fatherName}/>
+                      <KV label={d.familyDetails.parentsCoverage==="My Parents"?"Mother":"Mother-in-law"} value={d.familyDetails.excludeMother?"Excluded — passed away":d.familyDetails.motherName}/>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
             {Array.isArray(d.epfoNominees) && d.epfoNominees.length > 0 && (
               <div style={{marginTop:"0.85rem"}}>
                 <div className="sec-divider">Nominee Details (Form 2)</div>
