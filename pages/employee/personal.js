@@ -1432,7 +1432,7 @@ export default function PersonalDetails() {
                   <F l="Last Name"   v={fatherLast}   s={dirty(setFatherLast)} />
                 </div>
                 <div className="fr">
-                  <DateField l="Father's Date of Birth" v={fatherDob} s={dirty(setFatherDob)} r={false} />
+                  <DateField l="Father's Date of Birth" v={fatherDob} s={dirty(setFatherDob)} />
                 </div>
                 {(fatherFirst || fatherLast) && (
                   <div style={{marginTop:"0.5rem",padding:"0.5rem 0.875rem",background:"#f5f3ff",border:"1px solid #ddd6fe",borderRadius:8,fontSize:"0.82rem",fontWeight:700,color:"#6d28d9",letterSpacing:"0.2px"}}>
@@ -1450,7 +1450,7 @@ export default function PersonalDetails() {
                   <F l="Last Name"   v={motherLast}   s={dirty(setMotherLast)} />
                 </div>
                 <div className="fr">
-                  <DateField l="Mother's Date of Birth" v={motherDob} s={dirty(setMotherDob)} r={false} />
+                  <DateField l="Mother's Date of Birth" v={motherDob} s={dirty(setMotherDob)} />
                 </div>
                 {(motherFirst || motherLast) && (
                   <div style={{marginTop:"0.5rem",padding:"0.5rem 0.875rem",background:"#fff1f2",border:"1px solid #fecdd3",borderRadius:8,fontSize:"0.82rem",fontWeight:700,color:"#be123c",letterSpacing:"0.2px"}}>
