@@ -524,7 +524,7 @@ export default function BgvDashboard() {
                           )}
 
                           <div className="panel-title" style={{marginTop:"1rem"}}>Employment History</div>
-                          {(caseDetail.employment_history||[]).map((e,i)=>(
+                          {(caseDetail.employment_history||[]).filter(e=>e?.company_id!=="__meta__").map((e,i)=>(
                             <div key={i} className="profile-kv">
                               <span className="profile-key">{e.currentlyWorking==="Yes"?"Current":"Previous"}</span>
                               <span className="profile-val">{e.companyName} — {e.designation}</span>

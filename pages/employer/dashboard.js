@@ -1638,7 +1638,9 @@ export default function EmployerDashboard() {
       if (r.ok) {
         const raw = await r.json();
         const profile = normalizeProfile(raw?.profile_snapshot||raw?.employee||{});
-        setProfileData({ ...raw, profile_snapshot: profile, employment_snapshot: raw?.employment_snapshot||raw?.employmentHistory||[] });
+        const rawEmpSnap = raw?.employment_snapshot || raw?.employmentHistory || [];
+        const cleanEmpSnap = rawEmpSnap.filter(e => e?.company_id !== "__meta__");
+        setProfileData({ ...raw, profile_snapshot: profile, employment_snapshot: cleanEmpSnap });
         const eid = profile?.employee_id || profile?.employeeId || profile?.user_id || profile?.userId
           || raw?.employee_id || raw?.employeeId || raw?.user_id || raw?.userId
           || consent?.employee_id || consent?.employeeId || consent?.user_id;
