@@ -1527,6 +1527,8 @@ export default function EmployerDashboard() {
   const [inboxThreads,   setInboxThreads]   = useState([]);
   const [inboxLoading,   setInboxLoading]   = useState(false);
   const [activeThread,   setActiveThread]   = useState(null); // consent_id
+  const [msgAttachUrls,  setMsgAttachUrls]  = useState({}); // s3_key -> presigned view URL
+  const [showNewMsg,     setShowNewMsg]     = useState(false);
   const [threadMsgs,     setThreadMsgs]     = useState([]);
   const [threadLoading,  setThreadLoading]  = useState(false);
   const [msgBody,        setMsgBody]        = useState("");
@@ -1836,10 +1838,23 @@ export default function EmployerDashboard() {
   };
 
   const loadThread = async (consentId) => {
-    setActiveThread(consentId); setThreadMsgs([]); setThreadLoading(true); setMsgErr("");
+    setActiveThread(consentId); setThreadMsgs([]); setThreadLoading(true); setMsgErr(""); setShowNewMsg(false);
     try {
       const r = await apiFetch(`${API}/messages/thread/${consentId}`);
-      if (r.ok) { const d = await r.json(); setThreadMsgs(d.messages || []); }
+      if (r.ok) {
+        const d = await r.json();
+        const msgs = d.messages || [];
+        setThreadMsgs(msgs);
+        // Resolve a viewable URL for every attachment in this thread
+        const keys = [...new Set(msgs.filter(m=>m.attachment_s3_key).map(m=>m.attachment_s3_key))];
+        keys.forEach(async (key) => {
+          if (msgAttachUrls[key]) return;
+          try {
+            const ur = await apiFetch(`${API}/messages/attachment-url?consent_id=${encodeURIComponent(consentId)}&s3_key=${encodeURIComponent(key)}`, { method: "POST" });
+            if (ur.ok) { const ud = await ur.json(); setMsgAttachUrls(prev => ({ ...prev, [key]: ud.url })); }
+          } catch(_) {}
+        });
+      }
     } catch(_) {}
     setThreadLoading(false);
     // Refresh unread after reading
@@ -1969,26 +1984,54 @@ return (
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0d6e6e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                 Messages
               </div>
-              <button className="inbox-close" onClick={()=>setShowInbox(false)}>✕</button>
+              <div style={{display:"flex",gap:"0.5rem",alignItems:"center"}}>
+                <button onClick={()=>setShowNewMsg(v=>!v)} style={{padding:"0.3rem 0.7rem",borderRadius:7,border:`1.5px solid ${showNewMsg?"#0d6e6e":"#c8c2b8"}`,background:showNewMsg?"#0d6e6e":"#f5f2ee",color:showNewMsg?"#fff":"#7a6e64",fontSize:"0.68rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>✎ New</button>
+                <button className="inbox-close" onClick={()=>setShowInbox(false)}>✕</button>
+              </div>
             </div>
             <div className="inbox-body">
               <div className="inbox-list">
                 <div style={{padding:"0.5rem 0.75rem 0.25rem"}}>
                   <input
                     type="text"
-                    placeholder="🔍 Search messages…"
+                    placeholder={showNewMsg ? "🔍 Search approved candidates…" : "🔍 Search messages…"}
                     value={inboxSearch||""}
                     onChange={e=>setInboxSearch(e.target.value)}
                     style={{width:"100%",padding:"0.42rem 0.7rem",background:"#f5f2ee",border:"1.5px solid #c8c2b8",borderRadius:7,fontFamily:"inherit",fontSize:"0.72rem",color:"#111",outline:"none",boxSizing:"border-box"}}
                   />
                 </div>
-                {inboxLoading && <div style={{padding:"1rem",fontSize:"0.72rem",color:"#a09890"}}>Loading…</div>}
-                {!inboxLoading && inboxThreads.length===0 && <div style={{padding:"2rem 1rem",textAlign:"center"}}><div style={{fontSize:"1.5rem",opacity:.2,marginBottom:"0.5rem"}}>✉️</div><div style={{fontSize:"0.72rem",color:"#a09890"}}>No messages yet</div></div>}
-                {(inboxSearch ? inboxThreads.filter(t=>
-                  (t.other_party_email||"").toLowerCase().includes(inboxSearch.toLowerCase())||
-                  (t.other_party_name||"").toLowerCase().includes(inboxSearch.toLowerCase())||
-                  (t.latest_message||"").toLowerCase().includes(inboxSearch.toLowerCase())
-                ) : inboxThreads).map(t=>(
+                {showNewMsg ? (
+                  <>
+                    {(() => {
+                      const approved = consents.filter(c=>c.status==="APPROVED");
+                      const filtered = inboxSearch ? approved.filter(c=>
+                        (c.employee_email||"").toLowerCase().includes(inboxSearch.toLowerCase()) ||
+                        (c.employee_name||"").toLowerCase().includes(inboxSearch.toLowerCase())
+                      ) : approved;
+                      if (filtered.length===0) return <div style={{padding:"2rem 1rem",textAlign:"center"}}><div style={{fontSize:"1.5rem",opacity:.2,marginBottom:"0.5rem"}}>👤</div><div style={{fontSize:"0.72rem",color:"#a09890"}}>No approved candidates{inboxSearch?" match your search":" yet"}</div></div>;
+                      return filtered.map(c=>{
+                        const hasThread = inboxThreads.some(t=>t.thread_id===c.consent_id);
+                        return (
+                          <div key={c.consent_id} className="thread-item" onClick={()=>{loadThread(c.consent_id);setShowNewMsg(false);}}>
+                            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}>
+                              <span style={{fontSize:"0.76rem",fontWeight:700,color:"#111"}}>{c.employee_name||c.employee_email}</span>
+                              {hasThread && <span style={{fontSize:"0.6rem",color:"#0d6e6e",fontWeight:600}}>Existing thread</span>}
+                            </div>
+                            <div style={{fontSize:"0.66rem",color:"#a09890",marginTop:2}}>{c.employee_email}</div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </>
+                ) : (
+                  <>
+                    {inboxLoading && <div style={{padding:"1rem",fontSize:"0.72rem",color:"#a09890"}}>Loading…</div>}
+                    {!inboxLoading && inboxThreads.length===0 && <div style={{padding:"2rem 1rem",textAlign:"center"}}><div style={{fontSize:"1.5rem",opacity:.2,marginBottom:"0.5rem"}}>✉️</div><div style={{fontSize:"0.72rem",color:"#a09890"}}>No messages yet — tap "✎ New" to message an approved candidate</div></div>}
+                    {(inboxSearch ? inboxThreads.filter(t=>
+                      (t.other_party_email||"").toLowerCase().includes(inboxSearch.toLowerCase())||
+                      (t.other_party_name||"").toLowerCase().includes(inboxSearch.toLowerCase())||
+                      (t.latest_message||"").toLowerCase().includes(inboxSearch.toLowerCase())
+                    ) : inboxThreads).map(t=>(
                   <div key={t.thread_id} className={`thread-item${activeThread===t.thread_id?" active":""}`} onClick={()=>loadThread(t.thread_id)}>
                     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}>
                       <div className="thread-email" style={{flex:1}}>{t.other_party_email}</div>
@@ -2004,6 +2047,8 @@ return (
                     </div>
                   </div>
                 ))}
+                  </>
+                )}
               </div>
               <div className="inbox-thread">
                 {!activeThread?(
@@ -2028,7 +2073,23 @@ return (
                         return(
                           <div key={m.message_id||i} className={`msg-bubble-wrap ${mine?"mine":"theirs"}`}>
                             {!mine&&<div className="msg-sender">{m.sender_name||m.sender_email}</div>}
-                            <div className={`msg-bubble ${mine?"mine":"theirs"}`}>{m.body}</div>
+                            <div className={`msg-bubble ${mine?"mine":"theirs"}`}>
+                              {m.body}
+                              {m.attachment_s3_key && (
+                                <div style={{marginTop: m.body ? "0.5rem" : 0}}>
+                                  {/^\.(png|jpe?g|gif|webp)$/i.test(m.attachment_s3_key.slice(m.attachment_s3_key.lastIndexOf("."))) && msgAttachUrls[m.attachment_s3_key] ? (
+                                    <a href={msgAttachUrls[m.attachment_s3_key]} target="_blank" rel="noopener noreferrer">
+                                      <img src={msgAttachUrls[m.attachment_s3_key]} alt="attachment" style={{maxWidth:"100%",maxHeight:180,borderRadius:8,display:"block"}}/>
+                                    </a>
+                                  ) : (
+                                    <a href={msgAttachUrls[m.attachment_s3_key]||"#"} target="_blank" rel="noopener noreferrer"
+                                       style={{display:"flex",alignItems:"center",gap:"0.4rem",padding:"0.4rem 0.6rem",borderRadius:8,fontSize:"0.72rem",fontWeight:600,textDecoration:"none",background:mine?"rgba(255,255,255,0.15)":"#fff",border:mine?"1px solid rgba(255,255,255,0.25)":"1px solid #c8c2b8",color:mine?"#fff":"#0d6e6e"}}>
+                                      📎 {m.attachment_s3_key.split("/").pop()}
+                                    </a>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                             <div className={`msg-time ${mine?"mine":"theirs"}`}>{toISTDate(m.sent_at)}{mine&&m.read_by_recipient&&<span style={{marginLeft:4}}>✓✓</span>}{mine&&!m.read_by_recipient&&<span style={{marginLeft:4}}>✓</span>}</div>
                             {!mine&&orgLabel&&<div style={{fontSize:"0.58rem",color:"#a09890",marginTop:2,fontStyle:"italic"}}>{orgLabel}</div>}
                           </div>
@@ -2197,7 +2258,7 @@ return (
           </div>
           {/* Right: inbox + user + signout */}
           <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
-            <button onClick={()=>{setShowInbox(true);loadInbox();}} style={{position:"relative",width:32,height:32,borderRadius:7,border:"1px solid #c8c2b8",background:"#f5f2ee",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.9rem"}}>
+            <button onClick={()=>{setShowInbox(true);loadInbox();loadConsents();}} style={{position:"relative",width:32,height:32,borderRadius:7,border:"1px solid #c8c2b8",background:"#f5f2ee",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.9rem"}}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
               {unreadCount>0&&<span style={{position:"absolute",top:-4,right:-4,background:"#dc2626",color:"#fff",borderRadius:999,fontSize:"0.55rem",fontWeight:800,minWidth:15,height:15,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 3px",border:"2px solid #fff"}}>{unreadCount}</span>}
             </button>
