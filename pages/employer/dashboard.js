@@ -1502,7 +1502,6 @@ export default function EmployerDashboard() {
   const [bulkBusy,       setBulkBusy]       = useState(false);
   const [bulkValidating, setBulkValidating] = useState(false);
   const [bulkValidated,  setBulkValidated]  = useState(null);   // null=not yet | array=validated
-  const [msgRecipient,   setMsgRecipient]   = useState("Employee"); // "Employee" | "BGV Team" | "Both"
   const [xlsDragging,    setXlsDragging]    = useState(false);
   const [xlsParsed,      setXlsParsed]      = useState(""); // "12 emails found from Sheet1"
   const [candStatus,     setCandStatus]     = useState({}); // email → {status,completeness,name}
@@ -1535,6 +1534,14 @@ export default function EmployerDashboard() {
   const [msgAttach,      setMsgAttach]      = useState(null);
   const [msgAttaching,   setMsgAttaching]   = useState(false);
   const [msgSubject,     setMsgSubject]     = useState("");
+  // @employeeName → candidate only (private). @bgv → BGV vendor only (private). @here → both.
+  const detectRecipientEmployer = (text) => {
+    const t = (text||"").toLowerCase();
+    if (/@here\b/.test(t)) return "both";
+    if (/@bgv\b/.test(t))  return "bgv";
+    return "employee";
+  };
+  const recipientLabelEmployer = (rt) => rt==="bgv" ? "→ BGV Vendor only (private)" : rt==="both" ? "→ Everyone (Candidate + BGV Vendor)" : "→ Candidate only (private)";
   const [msgSending,     setMsgSending]     = useState(false);
   const [msgErr,         setMsgErr]         = useState("");
   const [unreadCount,    setUnreadCount]    = useState(0);
@@ -1884,7 +1891,7 @@ export default function EmployerDashboard() {
     try {
       const r = await apiFetch(`${API}/messages/send`, {
         method: "POST",
-        body: JSON.stringify({ consent_id: activeThread, body: msgBody.trim(), subject: msgSubject.trim(), recipient_type: msgRecipient, attachment_s3_key: msgAttach?.s3_key || "" }),
+        body: JSON.stringify({ consent_id: activeThread, body: msgBody.trim(), subject: msgSubject.trim(), recipient_type: detectRecipientEmployer(msgBody), attachment_s3_key: msgAttach?.s3_key || "" }),
       });
       if (r.ok) {
         setMsgBody(""); setMsgSubject(""); setMsgAttach(null);
@@ -2069,7 +2076,8 @@ return (
                         const mine=m.sender_email===user?.email;
                         // For incoming messages, show sender name and — if the message came via/about
                         // the BGV side — the BGV company/org name beneath the bubble.
-                        const orgLabel = m.sender_org || m.bgv_company || (m.recipient_type==="BGV Team"||m.recipient_type==="Both" ? "BGV Team" : "");
+                        const rtLower = (m.recipient_type||"").toLowerCase();
+                        const orgLabel = m.sender_org || m.bgv_company || (rtLower==="bgv"||rtLower==="both" ? "BGV Team" : "");
                         return(
                           <div key={m.message_id||i} className={`msg-bubble-wrap ${mine?"mine":"theirs"}`}>
                             {!mine&&<div className="msg-sender">{m.sender_name||m.sender_email}</div>}
@@ -2099,19 +2107,23 @@ return (
                       })}
                     </div>
                     <div className="msg-compose">
-                      {/* Recipient selector — complete isolation: Employee / BGV Team / Both */}
-                      <div style={{display:"flex",gap:"0.4rem",marginBottom:"0.5rem"}}>
-                        {["Employee","BGV Team","Both"].map(r=>(
-                          <button key={r} onClick={()=>setMsgRecipient(r)}
-                            style={{flex:1,padding:"0.35rem 0.5rem",borderRadius:7,border:`1.5px solid ${msgRecipient===r?"#0d6e6e":"#c8c2b8"}`,background:msgRecipient===r?"#0d6e6e":"#f5f2ee",color:msgRecipient===r?"#fff":"#7a6e64",fontSize:"0.66rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit",textAlign:"center"}}>
-                            {r}
-                          </button>
-                        ))}
+                      {/* @mention recipient selector — same isolation rules as before, now explicit by name */}
+                      <div style={{display:"flex",gap:"0.4rem",marginBottom:"0.45rem",flexWrap:"wrap"}}>
+                        {(() => {
+                          const t = inboxThreads.find(x=>x.thread_id===activeThread);
+                          const employeeName = t?.employee_name || "Candidate";
+                          const hasBgv = !!(t?.bgv_email);
+                          const bgvName = t?.bgv_name || "BGV";
+                          const btnStyle = {padding:"0.3rem 0.6rem",borderRadius:999,border:"1.5px solid #c8c2b8",background:"#f5f2ee",color:"#7a6e64",fontSize:"0.66rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"};
+                          return (<>
+                            <button type="button" onClick={()=>setMsgBody(b=>b.includes(`@${employeeName}`)?b:`@${employeeName} ${b}`)} style={btnStyle}>@{employeeName}</button>
+                            {hasBgv && <button type="button" onClick={()=>setMsgBody(b=>/@bgv\b/i.test(b)?b:`@bgv ${b}`)} style={btnStyle}>@{bgvName}</button>}
+                            {hasBgv && <button type="button" onClick={()=>setMsgBody(b=>/@here\b/i.test(b)?b:`@here ${b}`)} style={btnStyle}>@here</button>}
+                          </>);
+                        })()}
                       </div>
-                      <div style={{fontSize:"0.6rem",color:"#a09890",marginBottom:"0.45rem"}}>
-                        {msgRecipient==="Employee"&&"Sends to the candidate only — isolated from BGV team."}
-                        {msgRecipient==="BGV Team"&&"Sends to the BGV team only — isolated from candidate."}
-                        {msgRecipient==="Both"&&"Sends to both — visible in each party's own inbox."}
+                      <div style={{fontSize:"0.6rem",color:"#a09890",marginBottom:"0.45rem",fontWeight:700}}>
+                        {recipientLabelEmployer(detectRecipientEmployer(msgBody))}
                       </div>
                       <input placeholder="Subject (optional)" value={msgSubject} onChange={e=>setMsgSubject(e.target.value)} style={{width:"100%",padding:"0.45rem 0.75rem",background:"#f5f2ee",border:"1.5px solid #c8c2b8",borderRadius:7,fontFamily:"inherit",fontSize:"0.75rem",color:"#111",outline:"none",marginBottom:"0.4rem"}}/>
                       <div style={{marginBottom:"0.4rem"}}>

@@ -147,7 +147,17 @@ export default function BgvDashboard() {
   const [activeThread, setActiveThread] = useState(null);
   const [threadMsgs, setThreadMsgs] = useState([]);
   const [msgBody, setMsgBody]     = useState("");
-  const [msgRecipient, setMsgRecipient] = useState("employee");
+  // @employeeName → candidate, employer CC'd. @employerName → employer only, private.
+  const detectRecipientBgv = (text) => {
+    const t = inbox.find(x=>x.consent_id===activeThread);
+    const employeeName = t?.employee_name || t?.candidate_name || "";
+    const employerName = t?.employer_name || "";
+    const body = text||"";
+    if (employerName && body.includes(`@${employerName}`)) return "employer";
+    if (employeeName && body.includes(`@${employeeName}`)) return "employee";
+    return "employee";
+  };
+  const recipientLabelBgv = (rt) => rt==="employer" ? "→ Employer only (private)" : "→ Candidate (Employer will also see this)";
   const [msgAttach, setMsgAttach] = useState(null);
   const [msgAttaching, setMsgAttaching] = useState(false);
   const [msgAttachUrls, setMsgAttachUrls] = useState({});
@@ -328,6 +338,27 @@ export default function BgvDashboard() {
     setSubmittingReport(false);
   };
 
+  const sendHoldRequest = async (consentId) => {
+    if (!consentId || !holdMsg.trim()) return;
+    setHoldSending(true);
+    try {
+      const res = await apiFetch(`${API}/bgv/request-info`, {
+        method: "POST",
+        body: JSON.stringify({ consent_id: consentId, message: holdMsg.trim() }),
+      });
+      if (res.ok) {
+        setHoldMsg("");
+        setSaveStatus("✓ Case put on hold — employee notified (employer CC'd)");
+        const cRes = await apiFetch(`${API}/bgv/cases`);
+        if (cRes.ok) setCases(await cRes.json());
+      } else {
+        const d = await res.json().catch(()=>({}));
+        setSaveStatus(d.detail || "Could not put case on hold");
+      }
+    } catch(_) { setSaveStatus("Network error"); }
+    setHoldSending(false);
+  };
+
   const loadThread = async (consentId) => {
     setActiveThread(consentId);
     setShowNewMsg(false);
@@ -371,7 +402,7 @@ export default function BgvDashboard() {
     try {
       const res = await apiFetch(`${API}/messages/send`, {
         method: "POST",
-        body: JSON.stringify({ consent_id: activeThread, body: msgBody, recipient_type: msgRecipient, attachment_s3_key: msgAttach?.s3_key || "" }),
+        body: JSON.stringify({ consent_id: activeThread, body: msgBody, recipient_type: detectRecipientBgv(msgBody), attachment_s3_key: msgAttach?.s3_key || "" }),
       });
       if (res.ok) {
         setMsgBody(""); setMsgAttach(null);
@@ -790,12 +821,22 @@ export default function BgvDashboard() {
                         </label>
                       )}
                     </div>
+                    <div style={{padding:"0.5rem 1.25rem 0",display:"flex",gap:"0.4rem",flexWrap:"wrap"}}>
+                      {(() => {
+                        const t = inbox.find(x=>x.consent_id===activeThread);
+                        const employeeName = t?.employee_name || t?.candidate_name || "Candidate";
+                        const employerName = t?.employer_name || "Employer";
+                        const btnStyle = {padding:"0.3rem 0.6rem",borderRadius:999,border:`1.5px solid ${detectRecipientBgv(msgBody)==="employee"?"#4f46e5":"#e2e8f0"}`,background:detectRecipientBgv(msgBody)==="employee"?"#eef2ff":"#f8fafc",color:"#4f46e5",fontSize:"0.68rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"};
+                        const btnStyle2 = {padding:"0.3rem 0.6rem",borderRadius:999,border:`1.5px solid ${detectRecipientBgv(msgBody)==="employer"?"#4f46e5":"#e2e8f0"}`,background:detectRecipientBgv(msgBody)==="employer"?"#eef2ff":"#f8fafc",color:"#4f46e5",fontSize:"0.68rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"};
+                        return (<>
+                          <button type="button" onClick={()=>setMsgBody(b=>b.includes(`@${employeeName}`)?b:`@${employeeName} ${b}`)} style={btnStyle}>@{employeeName}</button>
+                          <button type="button" onClick={()=>setMsgBody(b=>b.includes(`@${employerName}`)?b:`@${employerName} ${b}`)} style={btnStyle2}>@{employerName}</button>
+                          <span style={{marginLeft:"auto",fontSize:"0.66rem",fontWeight:700,color:"#94a3b8",alignSelf:"center"}}>{recipientLabelBgv(detectRecipientBgv(msgBody))}</span>
+                        </>);
+                      })()}
+                    </div>
                     <div className="msg-input-row">
-                      <select className="recipient-sel" value={msgRecipient} onChange={e=>setMsgRecipient(e.target.value)}>
-                        <option value="employee">→ Candidate (employer CC'd)</option>
-                        <option value="employer">→ Employer only</option>
-                      </select>
-                      <textarea className="msg-textarea" value={msgBody} onChange={e=>setMsgBody(e.target.value)} placeholder="Type a message…" onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg();}}}/>
+                      <textarea className="msg-textarea" value={msgBody} onChange={e=>setMsgBody(e.target.value)} placeholder="Type a message… @employee name or @employer name" onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg();}}}/>
                       <button className="msg-send-btn" onClick={sendMsg} disabled={sendingMsg||!msgBody.trim()}>
                         {sendingMsg?"…":"Send"}
                       </button>
