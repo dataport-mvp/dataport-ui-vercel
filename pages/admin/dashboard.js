@@ -440,7 +440,7 @@ export default function AdminDashboard() {
         body: JSON.stringify({ old_email: emailOverride.old.trim().toLowerCase(), new_email: emailOverride.new.trim().toLowerCase() }),
       });
       const d = await r.json();
-      if (!r.ok) setEmailOverride(v=>({...v,loading:false,err:d.detail||"Failed"}));
+      if (!r.ok) setEmailOverride(v=>({...v,loading:false,err:errToStr(d)}));
       else setEmailOverride(v=>({...v,loading:false,msg:d.message,old:"",new:""}));
     } catch(_) { setEmailOverride(v=>({...v,loading:false,err:"Network error"})); }
   };
@@ -457,6 +457,14 @@ export default function AdminDashboard() {
     setVendorLoading(false);
   }, [apiFetch]);
 
+  const errToStr = (d) => {
+    if (!d) return "Failed";
+    if (typeof d.detail === "string") return d.detail;
+    if (Array.isArray(d.detail)) return d.detail.map(e => e.msg || JSON.stringify(e)).join("; ") || "Failed";
+    if (d.detail) return JSON.stringify(d.detail);
+    return "Failed";
+  };
+
   const approveVendor = async (email) => {
     setVendorMsg("");
     try {
@@ -465,7 +473,7 @@ export default function AdminDashboard() {
         body: JSON.stringify({ email })
       });
       if (r.ok) { setVendorMsg(`✓ ${email} approved`); loadVendors(); }
-      else { const d = await r.json(); setVendorMsg(d.detail || "Failed"); }
+      else { const d = await r.json(); setVendorMsg(errToStr(d)); }
     } catch(_) { setVendorMsg("Network error"); }
   };
 
@@ -477,7 +485,7 @@ export default function AdminDashboard() {
         body: JSON.stringify({ email })
       });
       if (r.ok) { setVendorMsg(`✗ ${email} rejected`); loadVendors(); }
-      else { const d = await r.json(); setVendorMsg(d.detail || "Failed"); }
+      else { const d = await r.json(); setVendorMsg(errToStr(d)); }
     } catch(_) { setVendorMsg("Network error"); }
   };
 
