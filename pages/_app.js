@@ -13,6 +13,9 @@ const NO_NAV_ROUTES = [
   "/employee/login",
   "/employer/login",
   "/employer/dashboard",
+  "/bgv/login",
+  "/bgv/dashboard",
+  "/admin/dashboard",
   "/consent",
 ];
 
