@@ -259,7 +259,7 @@ async function printProfile(profile, empHistory, documents, employerName) {
 
   ${section("Personal Information", [
     row("Date of Birth",    isoToDisplay(d.dob)),
-    row("Gender",           d.gender),
+    row("Gender",           d.gender==="Other"&&d.genderOther?`Other — ${d.genderOther}`:d.gender),
     row("Religion",         d.religion),
     row("Category",         d.category),
     row("Nationality",      d.nationality),
@@ -877,7 +877,7 @@ function OverviewTab({ data }) {
         <div className="kv-grid">
           <KV k="Full Name"           v={[data.firstName,data.middleName,data.lastName].filter(Boolean).join(" ")} />
           <KV k="Date of Birth"       v={isoToDisplay(data.dob)} />
-          <KV k="Gender"              v={data.gender} />
+          <KV k="Gender"              v={data.gender==="Other"&&data.genderOther?`Other — ${data.genderOther}`:data.gender} />
           <KV k="Religion"            v={data.religion} />
           <KV k="Category"            v={data.category} />
           <KV k="Nationality"         v={data.nationality} />
@@ -2074,17 +2074,19 @@ return (
                           <div key={m.message_id||i} className={`msg-bubble-wrap ${mine?"mine":"theirs"}`}>
                             {!mine&&<div className="msg-sender">{m.sender_name||m.sender_email}</div>}
                             <div className={`msg-bubble ${mine?"mine":"theirs"}`}>
+                              {m.subject && <div style={{fontSize:"0.68rem",fontWeight:800,marginBottom:"0.3rem",opacity:0.85,textTransform:"uppercase",letterSpacing:"0.3px"}}>Sub: {m.subject}</div>}
                               {m.body}
                               {m.attachment_s3_key && (
-                                <div style={{marginTop: m.body ? "0.5rem" : 0}}>
+                                <div style={{marginTop: (m.body||m.subject) ? "0.5rem" : 0,background:"#fff",border:"1px solid #d8d4c8",borderRadius:9,overflow:"hidden"}}>
                                   {/^\.(png|jpe?g|gif|webp)$/i.test(m.attachment_s3_key.slice(m.attachment_s3_key.lastIndexOf("."))) && msgAttachUrls[m.attachment_s3_key] ? (
-                                    <a href={msgAttachUrls[m.attachment_s3_key]} target="_blank" rel="noopener noreferrer">
-                                      <img src={msgAttachUrls[m.attachment_s3_key]} alt="attachment" style={{maxWidth:"100%",maxHeight:180,borderRadius:8,display:"block"}}/>
+                                    <a href={msgAttachUrls[m.attachment_s3_key]} target="_blank" rel="noopener noreferrer" style={{display:"block"}}>
+                                      <img src={msgAttachUrls[m.attachment_s3_key]} alt="attachment" style={{width:"100%",maxHeight:180,objectFit:"cover",display:"block"}}/>
                                     </a>
                                   ) : (
                                     <a href={msgAttachUrls[m.attachment_s3_key]||"#"} target="_blank" rel="noopener noreferrer"
-                                       style={{display:"flex",alignItems:"center",gap:"0.4rem",padding:"0.4rem 0.6rem",borderRadius:8,fontSize:"0.72rem",fontWeight:600,textDecoration:"none",background:mine?"rgba(255,255,255,0.15)":"#fff",border:mine?"1px solid rgba(255,255,255,0.25)":"1px solid #c8c2b8",color:mine?"#fff":"#0d6e6e"}}>
-                                      📎 {m.attachment_s3_key.split("/").pop()}
+                                       style={{display:"flex",alignItems:"center",gap:"0.5rem",padding:"0.55rem 0.7rem",fontSize:"0.72rem",fontWeight:600,textDecoration:"none",color:"#3d3527"}}>
+                                      <span style={{width:26,height:26,borderRadius:6,background:"#f5f2ee",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.85rem",flexShrink:0}}>📄</span>
+                                      <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.attachment_s3_key.split("/").pop()}</span>
                                     </a>
                                   )}
                                 </div>

@@ -754,17 +754,19 @@ export default function BgvDashboard() {
                               <div style={{fontSize:"0.68rem",fontWeight:700,marginBottom:"0.25rem",opacity:0.7}}>
                                 {m.sender_name} ({m.sender_role}) {isEmployerCC&&!isMine?"— 👁 employer CC'd":""}
                               </div>
+                              {m.subject && <div style={{fontSize:"0.68rem",fontWeight:800,marginBottom:"0.3rem",opacity:0.85,textTransform:"uppercase",letterSpacing:"0.3px"}}>Sub: {m.subject}</div>}
                               {m.body}
                               {m.attachment_s3_key && (
-                                <div style={{marginTop: m.body ? "0.5rem" : 0}}>
+                                <div style={{marginTop: (m.body||m.subject) ? "0.5rem" : 0,background:"#fff",border:"1px solid #e2e8f0",borderRadius:9,overflow:"hidden"}}>
                                   {/^\.(png|jpe?g|gif|webp)$/i.test(m.attachment_s3_key.slice(m.attachment_s3_key.lastIndexOf("."))) && msgAttachUrls[m.attachment_s3_key] ? (
-                                    <a href={msgAttachUrls[m.attachment_s3_key]} target="_blank" rel="noopener noreferrer">
-                                      <img src={msgAttachUrls[m.attachment_s3_key]} alt="attachment" style={{maxWidth:"100%",maxHeight:180,borderRadius:8,display:"block"}}/>
+                                    <a href={msgAttachUrls[m.attachment_s3_key]} target="_blank" rel="noopener noreferrer" style={{display:"block"}}>
+                                      <img src={msgAttachUrls[m.attachment_s3_key]} alt="attachment" style={{width:"100%",maxHeight:180,objectFit:"cover",display:"block"}}/>
                                     </a>
                                   ) : (
                                     <a href={msgAttachUrls[m.attachment_s3_key]||"#"} target="_blank" rel="noopener noreferrer"
-                                       style={{display:"flex",alignItems:"center",gap:"0.4rem",padding:"0.4rem 0.6rem",borderRadius:8,fontSize:"0.72rem",fontWeight:600,textDecoration:"none",background:isMine?"rgba(255,255,255,0.15)":"#fff",border:isMine?"1px solid rgba(255,255,255,0.25)":"1px solid #e2e8f0",color:isMine?"#fff":"#4f46e5"}}>
-                                      📎 {m.attachment_s3_key.split("/").pop()}
+                                       style={{display:"flex",alignItems:"center",gap:"0.5rem",padding:"0.55rem 0.7rem",fontSize:"0.72rem",fontWeight:600,textDecoration:"none",color:"#1e293b"}}>
+                                      <span style={{width:26,height:26,borderRadius:6,background:"#f8fafc",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.85rem",flexShrink:0}}>📄</span>
+                                      <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.attachment_s3_key.split("/").pop()}</span>
                                     </a>
                                   )}
                                 </div>

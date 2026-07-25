@@ -653,6 +653,7 @@ export default function ReviewPage() {
         <div className="topbar">
           <span className="logo-text">Datagate</span>
           <div className="topbar-right">
+            <button title="Home — Personal Details" onClick={()=>router.push("/employee/personal")} style={{width:32,height:32,borderRadius:7,border:"1px solid #dddaf0",background:"#f5f4f0",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.9rem"}}>🏠</button>
             <span className="user-name">👤 {user.name || user.email}</span>
             <ConsentBell apiFetch={apiFetch} router={router}/>
             <button className="signout-btn" onClick={()=>setShowSignout(true)}>Sign out</button>

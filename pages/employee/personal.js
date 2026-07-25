@@ -728,7 +728,11 @@ export default function PersonalDetails() {
   const [msgBody,       setMsgBody]        = useState("");
   const [msgSending,    setMsgSending]     = useState(false);
   const [msgErr,        setMsgErr]         = useState("");
+  const [msgAttach,     setMsgAttach]      = useState(null);
+  const [msgAttaching,  setMsgAttaching]   = useState(false);
+  const [msgAttachUrls, setMsgAttachUrls]  = useState({});
   const [inboxLoading,  setInboxLoading]   = useState(false);
+  const [inboxSearch,   setInboxSearch]    = useState("");
   const [inboxUnread,   setInboxUnread]    = useState(0);
   const [completeness,  setCompleteness]    = useState(null); // 0-100 or null=loading
   const [saveStatus,setSaveStatus]       = useState("");
@@ -763,11 +767,48 @@ export default function PersonalDetails() {
     setActiveThread(consentId); setThreadMsgs([]); setThreadLoading(true); setMsgErr("");
     try {
       const r = await apiFetch(`${API}/messages/thread/${consentId}`);
-      if (r.ok) { const d = await r.json(); setThreadMsgs(d.messages || []); }
+      if (r.ok) {
+        const d = await r.json();
+        const msgs = d.messages || [];
+        setThreadMsgs(msgs);
+        const keys = [...new Set(msgs.filter(m=>m.attachment_s3_key).map(m=>m.attachment_s3_key))];
+        keys.forEach(async (key) => {
+          if (msgAttachUrls[key]) return;
+          try {
+            const ur = await apiFetch(`${API}/messages/attachment-url?consent_id=${encodeURIComponent(consentId)}&s3_key=${encodeURIComponent(key)}`, { method: "POST" });
+            if (ur.ok) { const ud = await ur.json(); setMsgAttachUrls(prev => ({ ...prev, [key]: ud.url })); }
+          } catch(_) {}
+        });
+      }
     } catch(_) {}
     setThreadLoading(false);
     apiFetch(`${API}/messages/unread-count`).then(r=>r.ok?r.json():null).then(d=>{ if(d) setInboxUnread(d.unread||0); }).catch(()=>{});
   };
+
+  const uploadMsgAttachment = async (file) => {
+    if (!file || !activeThread) return;
+    setMsgAttaching(true);
+    try {
+      const pr = await apiFetch(`${API}/messages/attachment-upload-url`, {
+        method: "POST",
+        body: JSON.stringify({ consent_id: activeThread, filename: file.name, content_type: file.type })
+      });
+      if (!pr.ok) { setMsgErr("Attachment upload failed"); setMsgAttaching(false); return; }
+      const { upload_url, s3_key, view_url } = await pr.json();
+      await fetch(upload_url, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      setMsgAttach({ name: file.name, s3_key, url: view_url });
+    } catch(_) { setMsgErr("Attachment upload failed"); }
+    setMsgAttaching(false);
+  };
+
+  // @bgv → sends to BGV vendor, employer auto-CC'd. @here → everyone. Otherwise → employer only, private.
+  const detectRecipient = (text) => {
+    const t = (text||"").toLowerCase();
+    if (/@here\b/.test(t)) return "both";
+    if (/@bgv\b/.test(t))  return "bgv";
+    return "employer";
+  };
+  const recipientLabel = (rt) => rt==="bgv" ? "→ BGV Vendor (Employer will also see this)" : rt==="both" ? "→ Everyone (Employer + BGV Vendor)" : "→ Employer only (private)";
 
   const sendReply = async () => {
     if (!msgBody.trim() || !activeThread) return;
@@ -775,9 +816,9 @@ export default function PersonalDetails() {
     try {
       const r = await apiFetch(`${API}/messages/send`, {
         method: "POST",
-        body: JSON.stringify({ consent_id: activeThread, body: msgBody.trim() }),
+        body: JSON.stringify({ consent_id: activeThread, body: msgBody.trim(), recipient_type: detectRecipient(msgBody), attachment_s3_key: msgAttach?.s3_key || "" }),
       });
-      if (r.ok) { setMsgBody(""); await loadThread(activeThread); loadInbox(); }
+      if (r.ok) { setMsgBody(""); setMsgAttach(null); await loadThread(activeThread); loadInbox(); }
       else { const d = await r.json(); setMsgErr(d.detail || "Failed to send"); }
     } catch(_) { setMsgErr("Network error"); }
     setMsgSending(false);
@@ -802,6 +843,7 @@ export default function PersonalDetails() {
   const [motherDob,setMotherDob]         = useState("");
   const [dob,setDob]                     = useState("");
   const [gender,setGender]               = useState("");
+  const [genderOther,setGenderOther]     = useState("");
   const [religion,setReligion]           = useState("");
   const [category,setCategory]           = useState("");
   const [nationality,setNationality]     = useState("");
@@ -917,6 +959,7 @@ export default function PersonalDetails() {
           if (d.spouseDob)    setSpouseDob(d.spouseDob);
           if (d.dob)          setDob(d.dob);
           if (d.gender)       setGender(d.gender);
+          if (d.genderOther)  setGenderOther(d.genderOther);
           if (d.religion)     setReligion(d.religion);
           if (d.category)     setCategory(d.category);
           if (d.nationality)  setNationality(d.nationality);
@@ -1007,7 +1050,7 @@ export default function PersonalDetails() {
     spouseDob:  maritalStatus==="Married" ? spouseDob  : "",
     fatherName: `${fatherFirst} ${fatherMiddle} ${fatherLast}`.trim(),
     motherName: `${motherFirst} ${motherMiddle} ${motherLast}`.trim(),
-    dob, gender, religion, category, nationality, mobile, email,
+    dob, gender, genderOther: gender==="Other"?genderOther:"", religion, category, nationality, mobile, email,
     aadhaar: aadhar.length <= 4 ? aadhar : aadhar.slice(-4),
     nameAsPerAadhaar,
     pan, nameAsPerPan,
@@ -1284,6 +1327,15 @@ export default function PersonalDetails() {
                 {/* Thread list */}
                 <div style={{background:"#fff",borderRadius:12,border:"1px solid #ebe9f5",overflow:"hidden"}}>
                   <div style={{padding:"0.65rem 0.9rem",borderBottom:"1px solid #ebe9f5",fontSize:"0.65rem",fontWeight:700,color:"#8b88b0",textTransform:"uppercase",letterSpacing:0.8}}>Conversations</div>
+                  <div style={{padding:"0.5rem 0.7rem",borderBottom:"1px solid #ebe9f5"}}>
+                    <input
+                      type="text"
+                      placeholder="🔍 Search…"
+                      value={inboxSearch}
+                      onChange={e=>setInboxSearch(e.target.value)}
+                      style={{width:"100%",padding:"0.4rem 0.6rem",background:"#f8f7ff",border:"1.5px solid #ede9f8",borderRadius:7,fontFamily:"inherit",fontSize:"0.7rem",color:"#1a1730",outline:"none",boxSizing:"border-box"}}
+                    />
+                  </div>
                   {inboxLoading && <div style={{padding:"1rem",fontSize:"0.72rem",color:"#94a3b8"}}>Loading…</div>}
                   {!inboxLoading && inboxThreads.length===0 && (
                     <div style={{padding:"2rem 1rem",textAlign:"center"}}>
@@ -1292,7 +1344,18 @@ export default function PersonalDetails() {
                       <div style={{fontSize:"0.62rem",color:"#c4bfdb",marginTop:"0.3rem"}}>Employers will message you here</div>
                     </div>
                   )}
-                  {inboxThreads.map(t=>(
+                  {!inboxLoading && inboxThreads.length>0 && (inboxSearch ? inboxThreads.filter(t=>
+                    (t.other_party_name||"").toLowerCase().includes(inboxSearch.toLowerCase()) ||
+                    (t.other_party_email||"").toLowerCase().includes(inboxSearch.toLowerCase()) ||
+                    (t.latest_message||"").toLowerCase().includes(inboxSearch.toLowerCase())
+                  ) : inboxThreads).length===0 && (
+                    <div style={{padding:"1.5rem 1rem",textAlign:"center",fontSize:"0.7rem",color:"#94a3b8"}}>No matches</div>
+                  )}
+                  {(inboxSearch ? inboxThreads.filter(t=>
+                    (t.other_party_name||"").toLowerCase().includes(inboxSearch.toLowerCase()) ||
+                    (t.other_party_email||"").toLowerCase().includes(inboxSearch.toLowerCase()) ||
+                    (t.latest_message||"").toLowerCase().includes(inboxSearch.toLowerCase())
+                  ) : inboxThreads).map(t=>(
                     <div key={t.thread_id} onClick={()=>loadThread(t.thread_id)}
                       style={{padding:"0.65rem 0.9rem",cursor:"pointer",borderBottom:"1px solid #f5f3ff",background:activeThread===t.thread_id?"#eef2ff":"#fff",borderLeft:activeThread===t.thread_id?"3px solid #0d6e6e":"3px solid transparent",transition:"all 0.1s"}}>
                       <div style={{fontSize:"0.71rem",fontWeight:700,color:"#1a1730",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.other_party_name||t.other_party_email}</div>
@@ -1327,9 +1390,24 @@ export default function PersonalDetails() {
                           return (
                             <div key={m.message_id||i} style={{display:"flex",flexDirection:"column",alignItems:mine?"flex-end":"flex-start"}}>
                               {!mine&&<div style={{fontSize:"0.6rem",color:"#94a3b8",marginBottom:2,fontWeight:600}}>{m.sender_name||m.sender_email}</div>}
-                              {m.subject&&<div style={{fontSize:"0.62rem",fontWeight:700,color:mine?"#0d6e6e":"#6366f1",marginBottom:"0.2rem"}}>{m.subject}</div>}
                               <div style={{maxWidth:"78%",padding:"0.6rem 0.85rem",borderRadius:mine?"12px 12px 3px 12px":"12px 12px 12px 3px",background:mine?"#0d6e6e":"#f5f3ff",color:mine?"#fff":"#1a1730",fontSize:"0.82rem",lineHeight:1.55,border:mine?"none":"1px solid #ede9f8"}}>
+                                {m.subject&&<div style={{fontSize:"0.68rem",fontWeight:800,marginBottom:"0.3rem",opacity:0.85,textTransform:"uppercase",letterSpacing:"0.3px"}}>Sub: {m.subject}</div>}
                                 {m.body}
+                                {m.attachment_s3_key && (
+                                  <div style={{marginTop:(m.body||m.subject)?"0.5rem":0,background:"#fff",border:"1px solid #ede9f8",borderRadius:9,overflow:"hidden"}}>
+                                    {/^\.(png|jpe?g|gif|webp)$/i.test(m.attachment_s3_key.slice(m.attachment_s3_key.lastIndexOf("."))) && msgAttachUrls[m.attachment_s3_key] ? (
+                                      <a href={msgAttachUrls[m.attachment_s3_key]} target="_blank" rel="noopener noreferrer" style={{display:"block"}}>
+                                        <img src={msgAttachUrls[m.attachment_s3_key]} alt="attachment" style={{width:"100%",maxHeight:180,objectFit:"cover",display:"block"}}/>
+                                      </a>
+                                    ) : (
+                                      <a href={msgAttachUrls[m.attachment_s3_key]||"#"} target="_blank" rel="noopener noreferrer"
+                                         style={{display:"flex",alignItems:"center",gap:"0.5rem",padding:"0.5rem 0.65rem",fontSize:"0.72rem",fontWeight:600,textDecoration:"none",color:"#1a1730"}}>
+                                        <span style={{width:24,height:24,borderRadius:6,background:"#f5f3ff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.8rem",flexShrink:0}}>📄</span>
+                                        <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.attachment_s3_key.split("/").pop()}</span>
+                                      </a>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                               <div style={{fontSize:"0.58rem",color:"#c4bfdb",marginTop:2}}>
                                 {new Date(m.sent_at).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"})}
@@ -1341,12 +1419,28 @@ export default function PersonalDetails() {
                       </div>
                       {/* Reply */}
                       <div style={{padding:"0.75rem 1rem",borderTop:"1px solid #ebe9f5",background:"#fff"}}>
+                        <div style={{display:"flex",gap:"0.4rem",marginBottom:"0.4rem"}}>
+                          <button type="button" onClick={()=>setMsgBody(b=>/@bgv\b/i.test(b)?b:`@bgv ${b}`)} style={{padding:"0.25rem 0.6rem",borderRadius:999,border:"1.5px solid #ddd8f5",background:"#f8f7ff",color:"#6366f1",fontSize:"0.66rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>@bgv</button>
+                          <button type="button" onClick={()=>setMsgBody(b=>/@here\b/i.test(b)?b:`@here ${b}`)} style={{padding:"0.25rem 0.6rem",borderRadius:999,border:"1.5px solid #ddd8f5",background:"#f8f7ff",color:"#6366f1",fontSize:"0.66rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>@here</button>
+                          <span style={{marginLeft:"auto",fontSize:"0.66rem",fontWeight:700,color:"#8b88b0",alignSelf:"center"}}>{recipientLabel(detectRecipient(msgBody))}</span>
+                        </div>
                         <textarea
                           value={msgBody} onChange={e=>setMsgBody(e.target.value)}
                           onKeyDown={e=>{if(e.key==="Enter"&&e.ctrlKey){e.preventDefault();sendReply();}}}
-                          placeholder="Type your reply… (Ctrl+Enter to send)"
+                          placeholder="Type your reply… @bgv to loop in the BGV vendor, @here for everyone. (Ctrl+Enter to send)"
                           style={{width:"100%",padding:"0.55rem 0.75rem",background:"#f8f7ff",border:"1.5px solid #ddd8f5",borderRadius:9,fontFamily:"inherit",fontSize:"0.82rem",color:"#1a1730",outline:"none",resize:"none",minHeight:60,marginBottom:"0.4rem",transition:"border-color 0.15s"}}
                         />
+                        {msgAttach ? (
+                          <div style={{display:"flex",alignItems:"center",gap:"0.4rem",padding:"0.3rem 0.6rem",background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:6,fontSize:"0.72rem",marginBottom:"0.4rem"}}>
+                            <span style={{color:"#16a34a",fontWeight:600}}>📎 {msgAttach.name}</span>
+                            <button onClick={()=>setMsgAttach(null)} style={{marginLeft:"auto",background:"none",border:"none",cursor:"pointer",color:"#ef4444",fontSize:"0.72rem",fontWeight:700}}>✕</button>
+                          </div>
+                        ) : (
+                          <label style={{display:"inline-flex",alignItems:"center",gap:"0.3rem",cursor:"pointer",fontSize:"0.72rem",color:"#6b6894",padding:"0.3rem 0.65rem",background:"#f8f7ff",border:"1px solid #ddd8f5",borderRadius:6,marginBottom:"0.4rem"}}>
+                            {msgAttaching ? "Uploading…" : "📎 Attach file"}
+                            <input type="file" style={{display:"none"}} onChange={e=>e.target.files[0]&&uploadMsgAttachment(e.target.files[0])} disabled={msgAttaching}/>
+                          </label>
+                        )}
                         {msgErr&&<div style={{fontSize:"0.68rem",color:"#ef4444",marginBottom:"0.3rem",fontWeight:600}}>{msgErr}</div>}
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                           <span style={{fontSize:"0.62rem",color:"#94a3b8"}}>Ctrl+Enter to send</span>
@@ -1469,7 +1563,8 @@ export default function PersonalDetails() {
                 <div className="fr">
                   {/* DOB — no calendar */}
                   <DateField l="Date of Birth" v={dob} s={dirty(setDob)} />
-                  <FS l="Gender" v={gender} s={dirty(setGender)} o={GENDER_OPTIONS} />
+                  <FS l="Gender" v={gender} s={v=>{dirty(setGender)(v);if(v!=="Other")dirty(setGenderOther)("");}} o={GENDER_OPTIONS} />
+                  {gender==="Other" && <F l="Please specify" v={genderOther} s={dirty(setGenderOther)} />}
                   <F l="Nationality" v={nationality} s={dirty(setNationality)} />
                 </div>
                 <div className="fr">
