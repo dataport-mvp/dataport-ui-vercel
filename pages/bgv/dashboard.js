@@ -148,6 +148,11 @@ export default function BgvDashboard() {
   const [threadMsgs, setThreadMsgs] = useState([]);
   const [msgBody, setMsgBody]     = useState("");
   const [msgRecipient, setMsgRecipient] = useState("employee");
+  const [msgAttach, setMsgAttach] = useState(null);
+  const [msgAttaching, setMsgAttaching] = useState(false);
+  const [msgAttachUrls, setMsgAttachUrls] = useState({});
+  const [showNewMsg, setShowNewMsg] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [sendingMsg, setSendingMsg] = useState(false);
 
   // Check update
@@ -181,6 +186,20 @@ export default function BgvDashboard() {
       setLoadingCases(false);
     };
     load();
+  }, [ready, user, apiFetch]);
+
+  // Poll unread message count regardless of active tab
+  useEffect(() => {
+    if (!ready || !user) return;
+    const loadUnread = async () => {
+      try {
+        const res = await apiFetch(`${API}/messages/unread-count`);
+        if (res.ok) { const d = await res.json(); setUnreadCount(d.unread || 0); }
+      } catch(_) {}
+    };
+    loadUnread();
+    const id = setInterval(loadUnread, 30000);
+    return () => clearInterval(id);
   }, [ready, user, apiFetch]);
 
   // Load inbox
@@ -311,10 +330,39 @@ export default function BgvDashboard() {
 
   const loadThread = async (consentId) => {
     setActiveThread(consentId);
+    setShowNewMsg(false);
     try {
       const res = await apiFetch(`${API}/messages/thread/${consentId}`);
-      if (res.ok) { const d = await res.json(); setThreadMsgs(d.messages || []); }
+      if (res.ok) {
+        const d = await res.json();
+        const msgs = d.messages || [];
+        setThreadMsgs(msgs);
+        const keys = [...new Set(msgs.filter(m=>m.attachment_s3_key).map(m=>m.attachment_s3_key))];
+        keys.forEach(async (key) => {
+          if (msgAttachUrls[key]) return;
+          try {
+            const ur = await apiFetch(`${API}/messages/attachment-url?consent_id=${encodeURIComponent(consentId)}&s3_key=${encodeURIComponent(key)}`, { method: "POST" });
+            if (ur.ok) { const ud = await ur.json(); setMsgAttachUrls(prev => ({ ...prev, [key]: ud.url })); }
+          } catch(_) {}
+        });
+      }
     } catch(_) {}
+  };
+
+  const uploadMsgAttachment = async (file) => {
+    if (!file || !activeThread) return;
+    setMsgAttaching(true);
+    try {
+      const pr = await apiFetch(`${API}/messages/attachment-upload-url`, {
+        method: "POST",
+        body: JSON.stringify({ consent_id: activeThread, filename: file.name, content_type: file.type })
+      });
+      if (!pr.ok) { setMsgAttaching(false); return; }
+      const { upload_url, s3_key, view_url } = await pr.json();
+      await fetch(upload_url, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      setMsgAttach({ name: file.name, s3_key, url: view_url });
+    } catch(_) {}
+    setMsgAttaching(false);
   };
 
   const sendMsg = async () => {
@@ -323,10 +371,10 @@ export default function BgvDashboard() {
     try {
       const res = await apiFetch(`${API}/messages/send`, {
         method: "POST",
-        body: JSON.stringify({ consent_id: activeThread, body: msgBody, recipient_type: msgRecipient }),
+        body: JSON.stringify({ consent_id: activeThread, body: msgBody, recipient_type: msgRecipient, attachment_s3_key: msgAttach?.s3_key || "" }),
       });
       if (res.ok) {
-        setMsgBody("");
+        setMsgBody(""); setMsgAttach(null);
         await loadThread(activeThread);
         const iRes = await apiFetch(`${API}/messages/inbox`); if (iRes.ok) setInbox(await iRes.json());
       }
@@ -355,6 +403,10 @@ export default function BgvDashboard() {
             <span className="logo-badge">BGV Portal</span>
           </div>
           <div className="topbar-right">
+            <button onClick={()=>setTab("inbox")} style={{position:"relative",width:32,height:32,borderRadius:7,border:"1px solid #e2e8f0",background:tab==="inbox"?"#4f46e5":"#f8fafc",color:tab==="inbox"?"#fff":"#475569",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.9rem"}} title="Messages">
+              ✉️
+              {unreadCount>0 && <span style={{position:"absolute",top:-4,right:-4,background:"#ef4444",color:"#fff",fontSize:"0.6rem",fontWeight:700,borderRadius:999,minWidth:15,height:15,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 3px"}}>{unreadCount>9?"9+":unreadCount}</span>}
+            </button>
             <span className="user-name">🏢 {user.name || user.email}</span>
             <button className="signout-btn" onClick={()=>{logout();router.replace("/bgv/login");}}>Sign out</button>
           </div>
@@ -637,7 +689,10 @@ export default function BgvDashboard() {
             <div style={{display:"grid",gridTemplateColumns:"300px 1fr",gap:"1rem",background:"#fff",borderRadius:14,overflow:"hidden",boxShadow:"0 2px 8px rgba(30,26,62,0.08)",minHeight:480}}>
               {/* Thread list */}
               <div style={{borderRight:"1px solid #f1f5f9"}}>
-                <div style={{padding:"0.9rem 1.25rem",borderBottom:"1px solid #f1f5f9",fontWeight:700,fontSize:"0.84rem",color:"#0f172a"}}>Threads</div>
+                <div style={{padding:"0.9rem 1.25rem",borderBottom:"1px solid #f1f5f9",fontWeight:700,fontSize:"0.84rem",color:"#0f172a",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  Threads
+                  <button onClick={()=>setShowNewMsg(v=>!v)} style={{padding:"0.25rem 0.6rem",borderRadius:6,border:`1.5px solid ${showNewMsg?"#4f46e5":"#e2e8f0"}`,background:showNewMsg?"#4f46e5":"#f8fafc",color:showNewMsg?"#fff":"#475569",fontSize:"0.66rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>✎ New</button>
+                </div>
                 <div style={{padding:"0.4rem 0 0.5rem"}}>
                   <input
                     type="text"
@@ -647,22 +702,35 @@ export default function BgvDashboard() {
                     style={{width:"100%",padding:"0.45rem 0.8rem",border:"1.5px solid #e2e8f0",borderRadius:7,fontSize:"0.8rem",fontFamily:"inherit",outline:"none",boxSizing:"border-box",background:"#fafafa"}}
                   />
                 </div>
-                {inbox.length === 0 && <div className="empty-state">No messages yet.</div>}
-                {(inboxSearch
-                  ? inbox.filter(t =>
-                      (t.subject||"").toLowerCase().includes(inboxSearch.toLowerCase()) ||
-                      (t.last_message||t.body||t.preview||"").toLowerCase().includes(inboxSearch.toLowerCase()) ||
-                      (t.employer_name||t.employer_email||"").toLowerCase().includes(inboxSearch.toLowerCase()))
-                  : inbox).map(t=>(
-                  <div key={t.consent_id} className={`inbox-thread${activeThread===t.consent_id?" active":""}`} onClick={()=>loadThread(t.consent_id)}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:"0.5rem"}}>
-                      <div style={{fontWeight:700,fontSize:"0.84rem",color:"#0f172a"}}>{t.candidate_name}</div>
-                      {t.unread_count>0 && <div className="unread-dot"/>}
+                {showNewMsg ? (
+                  cases.length === 0 ? <div className="empty-state">No assigned cases yet.</div> :
+                  cases.map(c => (
+                    <div key={c.consent_id} className="inbox-thread" onClick={()=>{loadThread(c.consent_id);setShowNewMsg(false);}}>
+                      <div style={{fontWeight:700,fontSize:"0.84rem",color:"#0f172a"}}>{c.candidate_name}</div>
+                      <div style={{fontSize:"0.72rem",color:"#64748b",margin:"0.15rem 0"}}>Employer: {c.requestor_name||c.requestor_email}</div>
+                      {inbox.some(t=>t.consent_id===c.consent_id) && <div style={{fontSize:"0.65rem",color:"#4f46e5",fontWeight:600}}>Existing thread</div>}
                     </div>
-                    <div style={{fontSize:"0.72rem",color:"#64748b",margin:"0.15rem 0"}}>{t.other_party_email}</div>
-                    <div style={{fontSize:"0.75rem",color:"#94a3b8",fontStyle:"italic",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.latest_message}</div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <>
+                    {inbox.length === 0 && <div className="empty-state">No messages yet — tap "✎ New" to message a case.</div>}
+                    {(inboxSearch
+                      ? inbox.filter(t =>
+                          (t.subject||"").toLowerCase().includes(inboxSearch.toLowerCase()) ||
+                          (t.last_message||t.body||t.preview||"").toLowerCase().includes(inboxSearch.toLowerCase()) ||
+                          (t.employer_name||t.employer_email||"").toLowerCase().includes(inboxSearch.toLowerCase()))
+                      : inbox).map(t=>(
+                      <div key={t.consent_id} className={`inbox-thread${activeThread===t.consent_id?" active":""}`} onClick={()=>loadThread(t.consent_id)}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:"0.5rem"}}>
+                          <div style={{fontWeight:700,fontSize:"0.84rem",color:"#0f172a"}}>{t.candidate_name}</div>
+                          {t.unread_count>0 && <div className="unread-dot"/>}
+                        </div>
+                        <div style={{fontSize:"0.72rem",color:"#64748b",margin:"0.15rem 0"}}>{t.other_party_email}</div>
+                        <div style={{fontSize:"0.75rem",color:"#94a3b8",fontStyle:"italic",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.latest_message}</div>
+                      </div>
+                    ))}
+                  </>
+                )}
               </div>
 
               {/* Thread viewer */}
@@ -687,11 +755,38 @@ export default function BgvDashboard() {
                                 {m.sender_name} ({m.sender_role}) {isEmployerCC&&!isMine?"— 👁 employer CC'd":""}
                               </div>
                               {m.body}
+                              {m.attachment_s3_key && (
+                                <div style={{marginTop: m.body ? "0.5rem" : 0}}>
+                                  {/^\.(png|jpe?g|gif|webp)$/i.test(m.attachment_s3_key.slice(m.attachment_s3_key.lastIndexOf("."))) && msgAttachUrls[m.attachment_s3_key] ? (
+                                    <a href={msgAttachUrls[m.attachment_s3_key]} target="_blank" rel="noopener noreferrer">
+                                      <img src={msgAttachUrls[m.attachment_s3_key]} alt="attachment" style={{maxWidth:"100%",maxHeight:180,borderRadius:8,display:"block"}}/>
+                                    </a>
+                                  ) : (
+                                    <a href={msgAttachUrls[m.attachment_s3_key]||"#"} target="_blank" rel="noopener noreferrer"
+                                       style={{display:"flex",alignItems:"center",gap:"0.4rem",padding:"0.4rem 0.6rem",borderRadius:8,fontSize:"0.72rem",fontWeight:600,textDecoration:"none",background:isMine?"rgba(255,255,255,0.15)":"#fff",border:isMine?"1px solid rgba(255,255,255,0.25)":"1px solid #e2e8f0",color:isMine?"#fff":"#4f46e5"}}>
+                                      📎 {m.attachment_s3_key.split("/").pop()}
+                                    </a>
+                                  )}
+                                </div>
+                              )}
                               <div className="msg-meta">{new Date(m.sent_at).toLocaleString("en-IN",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}</div>
                             </div>
                           </div>
                         );
                       })}
+                    </div>
+                    <div style={{padding:"0.5rem 1.25rem 0"}}>
+                      {msgAttach ? (
+                        <div style={{display:"flex",alignItems:"center",gap:"0.4rem",padding:"0.3rem 0.6rem",background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:6,fontSize:"0.72rem",marginBottom:"0.4rem"}}>
+                          <span style={{color:"#16a34a",fontWeight:600}}>📎 {msgAttach.name}</span>
+                          <button onClick={()=>setMsgAttach(null)} style={{marginLeft:"auto",background:"none",border:"none",cursor:"pointer",color:"#dc2626",fontSize:"0.72rem",fontWeight:700}}>✕</button>
+                        </div>
+                      ) : (
+                        <label style={{display:"inline-flex",alignItems:"center",gap:"0.3rem",cursor:"pointer",fontSize:"0.72rem",color:"#475569",padding:"0.3rem 0.65rem",background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:6,marginBottom:"0.4rem"}}>
+                          {msgAttaching ? "Uploading…" : "📎 Attach file"}
+                          <input type="file" style={{display:"none"}} onChange={e=>e.target.files[0]&&uploadMsgAttachment(e.target.files[0])} disabled={msgAttaching}/>
+                        </label>
+                      )}
                     </div>
                     <div className="msg-input-row">
                       <select className="recipient-sel" value={msgRecipient} onChange={e=>setMsgRecipient(e.target.value)}>
