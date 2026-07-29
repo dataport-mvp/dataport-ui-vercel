@@ -1,5 +1,5 @@
 // pages/employer/dashboard.js
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "../../utils/AuthContext";
 import { parseError } from "../../utils/apiError";
@@ -425,6 +425,13 @@ async function printProfile(profile, empHistory, documents, employerName) {
     row(d.familyDetails.parentsCoverage === "My Parents" ? "Mother's Name" : "Mother-in-law's Name", d.familyDetails.excludeMother ? "Excluded — passed away" : d.familyDetails.motherName),
     row(d.familyDetails.parentsCoverage === "My Parents" ? "Mother's DOB"  : "Mother-in-law's DOB",  d.familyDetails.excludeMother ? "" : anyDobToDisplay(d.familyDetails.motherDob)),
   ].join(""), "#334155") : ""}
+
+  ${section("EPFO Declarations & Digital Signature", [
+    row("PF Nomination Declaration (Form 2 — Part A)",      d.epfoDeclarations?.pfNomAck ? "✓ Agreed" : "Not agreed"),
+    row("Pension Nomination Declaration (Form 2 — Part B)", d.epfoDeclarations?.pensionNomAck ? "✓ Agreed" : "Not agreed"),
+    row("General EPFO Declaration",                          d.epfoDeclarations?.epfoDecl ? "✓ Agreed" : "Not agreed"),
+    row("Digital Signature", d.epfoSignature?.s3Key ? `✓ Signed${d.epfoSignature?.timestamp ? " on " + new Date(d.epfoSignature.timestamp).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}) : ""}` : "⚠ Not yet signed"),
+  ].join(""), "#334155")}
 
   <!-- ══ SECTION 5: DOCUMENTS ══ -->
   <div style="font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:2px;margin-bottom:14px;margin-top:20px">Documents — In Sequence Order</div>
@@ -1176,6 +1183,23 @@ function UanTab({ data }) {
           )}
         </Sec>
       )}
+      <Sec title="EPFO Declarations &amp; Digital Signature">
+        <div className="kv-grid">
+          <KV k="PF Nomination Declaration (Form 2 — Part A)"      v={data.epfoDeclarations?.pfNomAck ? "✓ Agreed" : "Not agreed"} />
+          <KV k="Pension Nomination Declaration (Form 2 — Part B)" v={data.epfoDeclarations?.pensionNomAck ? "✓ Agreed" : "Not agreed"} />
+          <KV k="General EPFO Declaration"                         v={data.epfoDeclarations?.epfoDecl ? "✓ Agreed" : "Not agreed"} />
+        </div>
+        <div style={{marginTop:"0.7rem",paddingTop:"0.7rem",borderTop:"1px solid #f0eef8"}}>
+          {data.epfoSignature?.s3Key ? (
+            <div style={{fontSize:"0.78rem",color:"#16a34a",fontWeight:600}}>
+              ✓ Digitally signed{data.epfoSignature?.timestamp ? ` on ${new Date(data.epfoSignature.timestamp).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}` : ""}
+              <span style={{display:"block",fontSize:"0.68rem",color:"#8b88b0",fontWeight:500,marginTop:"0.2rem"}}>See the signature image itself under the Documents tab (UAN / EPFO Documents).</span>
+            </div>
+          ) : (
+            <div style={{fontSize:"0.78rem",color:"#d97706",fontWeight:600}}>⚠️ Not yet signed</div>
+          )}
+        </div>
+      </Sec>
     </div>
   );
 }
@@ -1508,6 +1532,11 @@ export default function EmployerDashboard() {
   const [remindBusy,     setRemindBusy]     = useState(false);
   const [bulkRemindBusy, setBulkRemindBusy] = useState(false);
   const [bulkRemindMsg,  setBulkRemindMsg]  = useState("");
+  const [bulkMsgMode,     setBulkMsgMode]     = useState(false);
+  const [bulkMsgSelected, setBulkMsgSelected] = useState(() => new Set());
+  const [bulkMsgText,     setBulkMsgText]     = useState("");
+  const [bulkMsgSending,  setBulkMsgSending]  = useState(false);
+  const [bulkMsgResults,  setBulkMsgResults]  = useState([]);
   const [showPwModal,    setShowPwModal]    = useState(false);
   const [pwCurrent,      setPwCurrent]      = useState("");
   const [pwNew,          setPwNew]          = useState("");
@@ -1529,12 +1558,24 @@ export default function EmployerDashboard() {
   const [msgAttachUrls,  setMsgAttachUrls]  = useState({}); // s3_key -> presigned view URL
   const [showNewMsg,     setShowNewMsg]     = useState(false);
   const [threadMsgs,     setThreadMsgs]     = useState([]);
+  const msgListRef       = useRef(null);
+  useEffect(() => {
+    if (msgListRef.current) msgListRef.current.scrollTop = msgListRef.current.scrollHeight;
+  }, [threadMsgs]);
   const [threadLoading,  setThreadLoading]  = useState(false);
   const [msgBody,        setMsgBody]        = useState("");
   const [msgAttach,      setMsgAttach]      = useState(null);
   const [msgAttaching,   setMsgAttaching]   = useState(false);
   const [msgSubject,     setMsgSubject]     = useState("");
   // @employeeName → candidate only (private). @bgv → BGV vendor only (private). @here → both.
+  const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const setMention = (token, otherTokens) => {
+    setMsgBody(b => {
+      let cleaned = b;
+      [token, ...otherTokens].forEach(t => { if (t) cleaned = cleaned.replace(new RegExp(`@${escRe(t)}\\s*`, "gi"), ""); });
+      return `@${token} ${cleaned}`;
+    });
+  };
   const detectRecipientEmployer = (text) => {
     const t = (text||"").toLowerCase();
     if (/@here\b/.test(t)) return "both";
@@ -1733,27 +1774,49 @@ export default function EmployerDashboard() {
   };
 
   // Bulk invite — sends consent requests to multiple emails at once
+  const sendBulkMessage = async () => {
+    if (!bulkMsgText.trim() || bulkMsgSelected.size === 0) return;
+    setBulkMsgSending(true);
+    setBulkMsgResults([]);
+    try {
+      const r = await apiFetch(`${API}/messages/send/bulk`, {
+        method: "POST",
+        body: JSON.stringify({ consent_ids: [...bulkMsgSelected], body: bulkMsgText.trim(), recipient_type: "employee" }),
+      });
+      const d = await r.json();
+      if (r.ok && Array.isArray(d.results)) {
+        setBulkMsgResults(d.results.map(x => ({ email: x.employee_email, ok: x.ok, msg: x.ok ? "Sent ✓" : (x.error || "Failed") })));
+        if (d.sent > 0) { setBulkMsgText(""); setBulkMsgSelected(new Set()); }
+      } else {
+        setBulkMsgResults([{ email: "", ok: false, msg: d.detail || "Failed to send" }]);
+      }
+    } catch(_) {
+      setBulkMsgResults([{ email: "", ok: false, msg: "Network error" }]);
+    }
+    setBulkMsgSending(false);
+  };
+
   const sendBulkRequest = async (emailsOverride) => {
     const emails = emailsOverride || bulkEmails.split(/[\n,;]+/).map(e => e.trim().toLowerCase()).filter(Boolean);
     if (!emails.length) return;
     setBulkBusy(true);
     setBulkResults([]);
-    const results = [];
-    for (const email of emails) {
-      try {
-        const r = await apiFetch(`${API}/consent/request`, {
-          method: "POST",
-          body: JSON.stringify({ employee_email: email, message: reqMsg.trim() || undefined }),
-        });
-        const d = await r.json();
-        results.push({ email, ok: r.ok, msg: r.ok ? "Sent ✓" : (d.detail || `Error ${r.status}`) });
-      } catch(_) {
-        results.push({ email, ok: false, msg: "Network error" });
+    try {
+      const r = await apiFetch(`${API}/consent/request/bulk`, {
+        method: "POST",
+        body: JSON.stringify({ employee_emails: emails, message: reqMsg.trim() || "" }),
+      });
+      const d = await r.json();
+      if (r.ok && Array.isArray(d.results)) {
+        setBulkResults(d.results.map(x => ({ email: x.email, ok: x.ok, msg: x.ok ? (x.already_pending ? "Already pending" : "Sent ✓") : (x.error || "Failed") })));
+        if (d.sent > 0 || d.already_pending > 0) loadConsents();
+      } else {
+        setBulkResults(emails.map(email => ({ email, ok: false, msg: d.detail || "Request failed" })));
       }
+    } catch(_) {
+      setBulkResults(emails.map(email => ({ email, ok: false, msg: "Network error" })));
     }
-    setBulkResults(results);
     setBulkBusy(false);
-    if (results.some(r => r.ok)) loadConsents();
   };
 
   // Validate bulk emails against registered employees before sending
@@ -2069,7 +2132,7 @@ return (
                       <div style={{fontSize:"0.78rem",fontWeight:700,color:"#111"}}>{inboxThreads.find(t=>t.thread_id===activeThread)?.other_party_email||activeThread}</div>
                       <div style={{fontSize:"0.62rem",color:"#a09890",marginTop:1}}>{threadMsgs.length} message{threadMsgs.length!==1?"s":""}</div>
                     </div>
-                    <div className="msg-list">
+                    <div className="msg-list" ref={msgListRef}>
                       {threadLoading&&<div style={{textAlign:"center",fontSize:"0.72rem",color:"#a09890",padding:"1rem"}}>Loading…</div>}
                       {!threadLoading&&threadMsgs.length===0&&<div style={{textAlign:"center",fontSize:"0.72rem",color:"#a09890",padding:"2rem"}}>No messages yet.</div>}
                       {threadMsgs.map((m,i)=>{
@@ -2116,9 +2179,9 @@ return (
                           const bgvName = t?.bgv_name || "BGV";
                           const btnStyle = {padding:"0.3rem 0.6rem",borderRadius:999,border:"1.5px solid #c8c2b8",background:"#f5f2ee",color:"#7a6e64",fontSize:"0.66rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"};
                           return (<>
-                            <button type="button" onClick={()=>setMsgBody(b=>b.includes(`@${employeeName}`)?b:`@${employeeName} ${b}`)} style={btnStyle}>@{employeeName}</button>
-                            {hasBgv && <button type="button" onClick={()=>setMsgBody(b=>/@bgv\b/i.test(b)?b:`@bgv ${b}`)} style={btnStyle}>@{bgvName}</button>}
-                            {hasBgv && <button type="button" onClick={()=>setMsgBody(b=>/@here\b/i.test(b)?b:`@here ${b}`)} style={btnStyle}>@here</button>}
+                            <button type="button" onClick={()=>setMention(employeeName,["bgv","here"])} style={btnStyle}>@{employeeName}</button>
+                            {hasBgv && <button type="button" onClick={()=>setMention("bgv",[employeeName,"here"])} style={btnStyle}>@{bgvName}</button>}
+                            {hasBgv && <button type="button" onClick={()=>setMention("here",[employeeName,"bgv"])} style={btnStyle}>@here</button>}
                           </>);
                         })()}
                       </div>
@@ -2444,6 +2507,31 @@ return (
                   {bulkRemindMsg&&<div style={{fontSize:"0.62rem",marginTop:"0.3rem",color:bulkRemindMsg.startsWith("✓")?"#86efac":"#fca5a5",fontWeight:600}}>{bulkRemindMsg}</div>}
                 </div>
               )}
+              {cTab==="approved"&&approved.length>0&&(
+                <div style={{padding:"0.3rem 1.3rem 0.5rem",borderBottom:"1px solid rgba(255,255,255,0.07)"}}>
+                  <button onClick={()=>{setBulkMsgMode(v=>!v);setBulkMsgSelected(new Set());setBulkMsgResults([]);}} style={{width:"100%",padding:"0.42rem 0.75rem",background:bulkMsgMode?"#0d6e6e":"rgba(13,110,110,0.18)",border:"1.5px solid rgba(13,110,110,0.4)",borderRadius:7,color:bulkMsgMode?"#fff":"#5eead4",fontSize:"0.65rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                    {bulkMsgMode?"✕ Cancel bulk message":"✉️ Message multiple candidates"}
+                  </button>
+                  {bulkMsgMode&&(
+                    <div style={{marginTop:"0.5rem"}}>
+                      <div style={{fontSize:"0.6rem",color:"#8a8378",marginBottom:"0.4rem"}}>{bulkMsgSelected.size} selected — tick candidates below</div>
+                      <textarea value={bulkMsgText} onChange={e=>setBulkMsgText(e.target.value)} placeholder="Message to all selected candidates (private, employee only)…"
+                        style={{width:"100%",minHeight:60,padding:"0.4rem 0.55rem",background:"#1a1a1a",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,color:"#e5e5e5",fontFamily:"inherit",fontSize:"0.68rem",resize:"vertical",marginBottom:"0.4rem",boxSizing:"border-box"}}/>
+                      <button onClick={sendBulkMessage} disabled={bulkMsgSending||!bulkMsgText.trim()||bulkMsgSelected.size===0}
+                        style={{width:"100%",padding:"0.4rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:6,fontSize:"0.65rem",fontWeight:700,cursor:(bulkMsgSending||!bulkMsgText.trim()||bulkMsgSelected.size===0)?"not-allowed":"pointer",opacity:(bulkMsgSending||!bulkMsgText.trim()||bulkMsgSelected.size===0)?0.5:1,fontFamily:"inherit"}}>
+                        {bulkMsgSending?"Sending…":`Send to ${bulkMsgSelected.size} candidate(s)`}
+                      </button>
+                      {bulkMsgResults.length>0&&(
+                        <div style={{marginTop:"0.4rem",maxHeight:100,overflowY:"auto"}}>
+                          {bulkMsgResults.map((r,i)=>(
+                            <div key={i} style={{fontSize:"0.6rem",color:r.ok?"#86efac":"#fca5a5",fontWeight:600}}>{r.email}: {r.msg}</div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="c-list" style={{flex:1,overflowY:"auto"}}>
                 {loading?<div className="c-empty">Loading…</div>
                 :list.length===0?<div className="c-empty">{search?"No matches":`No ${cTab} requests`}</div>
@@ -2451,7 +2539,13 @@ return (
                   const dot=c.status==="approved"?"#16a34a":c.status==="pending"?"#f59e0b":"#ef4444";
                   const ts=c.status==="approved"?(c.responded_at||c.approved_at):(c.requested_at||c.created_at);
                   return(
-                    <div key={gcid(c)} className={`c-item${gcid(selected)===gcid(c)?" sel":""}`} onClick={()=>selectConsent(c)}>
+                    <div key={gcid(c)} className={`c-item${gcid(selected)===gcid(c)?" sel":""}`} onClick={()=>{ if(bulkMsgMode&&cTab==="approved") return; selectConsent(c); }}>
+                      {bulkMsgMode&&cTab==="approved"&&(
+                        <input type="checkbox" checked={bulkMsgSelected.has(gcid(c))} onChange={e=>{
+                          e.stopPropagation();
+                          setBulkMsgSelected(prev=>{ const n=new Set(prev); if(e.target.checked) n.add(gcid(c)); else n.delete(gcid(c)); return n; });
+                        }} onClick={e=>e.stopPropagation()} style={{marginRight:"0.5rem",flexShrink:0}}/>
+                      )}
                       <div className="c-dot" style={{background:dot}}/>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"0.3rem"}}>
