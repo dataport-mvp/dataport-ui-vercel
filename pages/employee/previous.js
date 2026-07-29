@@ -261,7 +261,7 @@ function ExitAckModal({ onSaveAndExit, onExitWithout, onCancel }) {
 
 function StepNav({ current, onNavigate }) {
   const steps = [
-    { n:1, label:"Personal",   icon:"👤", path:"/employee/personal"  },
+    { n:1, label:"Personal",   icon:"���", path:"/employee/personal"  },
     { n:2, label:"Education",  icon:"🎓", path:"/employee/education" },
     { n:3, label:"Employment", icon:"💼", path:"/employee/previous"  },
     { n:4, label:"UAN",        icon:"🏦", path:"/employee/uan"       },
@@ -305,9 +305,727 @@ function TA({ l, v, s, r=true, errKey, errors, onFix }) {
   return (<div style={{width:"100%",marginBottom:"0.75rem"}}><span className="fl">{l}{r&&<span style={{color:"#ef4444",marginLeft:2}}>*</span>}</span><textarea className={`ta${hasErr?" err":""}`} value={v||""} onChange={e=>{s(e.target.value);if(onFix&&hasErr)onFix(errKey);}}/>{hasErr&&<span className="err-msg">Required</span>}</div>);
 }
 
+// ── Self-export PDF helpers (mirrors employer dashboard's report builder,
+//    adapted so an employee can download their own profile) ──────────────
+const normalizeEducationSelf = (ed = {}) => {
+  const isNewFormat = !!(ed.xSchool || ed.xBoard || ed.xiiSchool || ed.degCollege || ed.pgCollege);
+  const base = isNewFormat ? {
+    classX:        { school: ed.xSchool, board: ed.xBoard, yearOfPassing: ed.xYear, resultValue: ed.xPercent },
+    intermediate:  { school: ed.xiiSchool, board: ed.xiiBoard, yearOfPassing: ed.xiiYear, resultValue: ed.xiiPercent },
+    undergraduate: { college: ed.degCollege, course: ed.degName, branch: ed.degBranch, yearOfPassing: ed.degYear, resultValue: ed.degPercent },
+    postgraduate:  { college: ed.pgCollege, course: ed.pgName, branch: ed.pgBranch, yearOfPassing: ed.pgYear, resultValue: ed.pgPercent },
+  } : {
+    classX:        ed?.classX        || ed?.class_x   || {},
+    intermediate:  ed?.intermediate  || ed?.classXII  || ed?.class_xii || {},
+    undergraduate: ed?.undergraduate || ed?.ug        || {},
+    postgraduate:  ed?.postgraduate  || ed?.pg        || {},
+  };
+  return {
+    ...base,
+    diploma:                    ed?.diploma                    || {},
+    certifications:             Array.isArray(ed?.certifications)             ? ed.certifications             : [],
+    professionalQualifications: Array.isArray(ed?.professionalQualifications) ? ed.professionalQualifications : [],
+    articleships:               Array.isArray(ed?.articleships)               ? ed.articleships               : [],
+    hasEduGap:      ed?.hasEduGap      || "",
+    eduGapReason:   ed?.eduGapReason   || "",
+    eduGapFrom:     ed?.eduGapFrom     || "",
+    eduGapTo:       ed?.eduGapTo       || "",
+    hasDip:         ed?.hasDip         || "",
+    hasCerts:       ed?.hasCerts       || "",
+    hasProfQual:    ed?.hasProfQual    || "",
+    hasArticleship: ed?.hasArticleship || "",
+  };
+};
+
+const normalizeProfileSelf = (snap = {}) => {
+  const u = snap?.uanMaster || snap?.uan_master || {};
+  return {
+    ...snap,
+    education:    normalizeEducationSelf(snap?.education || {}),
+    uanNumber:    snap?.uanNumber    || snap?.uan_number    || u?.uanNumber    || u?.uan_number,
+    nameAsPerUan: snap?.nameAsPerUan || snap?.name_as_per_uan || u?.nameAsPerUan || u?.name_as_per_uan,
+    mobileLinked: snap?.mobileLinked || snap?.mobile_linked  || u?.mobileLinked || u?.mobile_linked,
+    isActive:     snap?.isActive     || snap?.is_active      || u?.isActive     || u?.is_active,
+    pfRecords:    Array.isArray(snap?.pfRecords) ? snap.pfRecords : Array.isArray(snap?.pf_records) ? snap.pf_records : [],
+  };
+};
+
+// familyDetails mixes two DOB formats: ISO (yyyy-mm-dd) when copied straight from Personal
+// Details ("My Parents"), and dd-mm-yyyy from NomineeDobField everywhere else (spouse,
+// children, in-laws). Detect which one we've got and format either correctly.
+function anyDobToDisplaySelf(val) {
+  if (!val) return "";
+  const parts = val.split("-");
+  if (parts.length !== 3) return val;
+  return parts[0].length === 4 ? isoToDisplay(val) : ddmmyyyyToDisplaySelf(val);
+}
+function ddmmyyyyToDisplaySelf(val) {
+  if (!val || val.length !== 10) return val || "";
+  const [dd, mm, yyyy] = val.split("-");
+  const idx = parseInt(mm, 10) - 1;
+  const mName = MONTH_NAMES[idx];
+  if (!mName) return val;
+  return `${parseInt(dd, 10)} ${mName} ${yyyy}`;
+}
+
+async function buildMyProfilePdf(profile, empHistory, documents, employeeSelfName) {
+  const d   = profile || {};
+  const cur  = d.currentAddress   || {};
+  const perm = d.permanentAddress || {};
+  const edu  = d.education        || {};
+
+  // Build ordered document list with base64 images
+  // Sequence: personal → education → employment → uan
+  const DOC_ORDER = [
+    // ── Personal (Page 1) ──────────────────────────────────────────
+    { key: "photo",          label: "Profile Photo",                  group: "personal" },
+    { key: "aadhaar",        label: "Aadhaar Card",                   group: "personal" },
+    { key: "pan",            label: "PAN Card",                       group: "personal" },
+    { key: "passport",       label: "Passport",                       group: "personal" },
+    // ── Education (Page 2) — same order as form ───────────────────
+    { key: "classX",         label: "Class X Certificate",            group: "education" },
+    { key: "intermediate",   label: "Intermediate Certificate",       group: "education" },
+    { key: "diploma",        label: "Diploma Certificate",            group: "education" },
+    { key: "ug_provisional", label: "UG Provisional Marksheet",       group: "education" },
+    { key: "ug_convocation", label: "UG Convocation Certificate",     group: "education" },
+    { key: "ug_equivalency", label: "UG Equivalency Certificate (Foreign Degree)", group: "education" },
+    { key: "pg_provisional", label: "PG Provisional Marksheet",       group: "education" },
+    { key: "pg_convocation", label: "PG Convocation Certificate",     group: "education" },
+    { key: "pg_equivalency", label: "PG Equivalency Certificate (Foreign Degree)", group: "education" },
+    { key: /^profqual_/,     label: "Professional Qualification",     group: "education" },
+    { key: /^articleship_/,  label: "Articleship / Training Letter",  group: "education" },
+    // NOTE: cert_ (Professional Certifications) intentionally excluded from PDF
+    // ── Employment (Page 3) — CV first, then per-employer docs ────
+    { key: "cv",             label: "Resume / CV",                    group: "general" },
+    { key: "offerLetter",    label: "Offer Letter",                   group: "employment" },
+    { key: "payslips",       label: "Payslips (Last 3 Months)",       group: "employment" },
+    { key: "resignation",    label: "Resignation Acceptance",         group: "employment" },
+    { key: "experience",     label: "Experience / Relieving Letter",  group: "employment" },
+    { key: "idCard",         label: "Company ID Card",                group: "employment" },
+    // ── UAN (Page 4) ──────────────────────────────────────────────
+    { key: "uanCard",        label: "UAN Card / Passbook",            group: "uan" },
+    { key: "serviceHistory", label: "Service History Snapshot",       group: "uan" },
+    { key: "signature",      label: "Digital Signature (latest)",     group: "uan" },
+  ];
+
+  // Flatten all documents
+  const allDocs = [];
+  if (documents) {
+    for (const [group, docs] of Object.entries(documents)) {
+      for (const [subKey, doc] of Object.entries(docs)) {
+        allDocs.push({ subKey, doc, group });
+      }
+    }
+  }
+
+  // Sort by DOC_ORDER
+  const sortedDocs = [];
+  for (const orderEntry of DOC_ORDER) {
+    const matches = allDocs.filter(({ subKey, group }) => {
+      const keyMatch = typeof orderEntry.key === "string"
+        ? subKey === orderEntry.key
+        : orderEntry.key.test(subKey);
+      return keyMatch;
+    });
+    for (const m of matches) {
+      const idx = sortedDocs.findIndex(x => x.subKey === m.subKey && x.group === m.group);
+      if (idx === -1) sortedDocs.push({ ...m, label: orderEntry.label });
+    }
+  }
+  // Add any not matched — but never include cert_ (Professional Certifications excluded from PDF)
+  for (const item of allDocs) {
+    if (!sortedDocs.find(x => x.subKey === item.subKey && x.group === item.group)) {
+      if (/^cert_/.test(item.subKey)) continue; // Professional Certifications excluded
+      sortedDocs.push({ ...item, label: item.subKey });
+    }
+  }
+
+  // Build doc list with type info — use URLs directly (avoids S3 CORS issues with fetch)
+  const docsWithData = sortedDocs.map((item) => {
+    const url = item.doc.url || item.doc.signedUrl || item.doc.signed_url || item.doc.downloadUrl || item.doc.download_url || item.doc.presignedUrl || item.doc.presigned_url || item.doc.link || item.doc.href || "";
+    const filename = item.doc.filename || "";
+    const isImage = /\.(jpg|jpeg|png)$/i.test(filename);
+    const isPdf   = /\.pdf$/i.test(filename);
+    return { ...item, isImage, isPdf, url };
+  });
+
+  const row = (label, value) => value && value !== "—" ? `
+    <tr>
+      <td style="padding:5px 12px 5px 0;color:#64748b;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;width:36%;border-bottom:1px solid #f1f5f9;vertical-align:top">${label}</td>
+      <td style="padding:5px 0 5px 0;color:#0f172a;font-size:12px;border-bottom:1px solid #f1f5f9">${value}</td>
+    </tr>` : "";
+
+  const section = (title, rows, color = "#1e293b") => rows.trim() ? `
+    <div style="margin-bottom:22px;page-break-inside:avoid">
+      <div style="background:${color};color:#fff;padding:5px 12px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;border-radius:4px 4px 0 0;margin-bottom:0">${title}</div>
+      <table style="width:100%;border-collapse:collapse;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 4px 4px">${rows}</table>
+    </div>` : "";
+
+  const eduSection = (title, s, color) => {
+    if (!s || !Object.values(s).some(Boolean)) return "";
+    return section(title, [
+      row("Institution",          s.school || s.college || s.institute),
+      row("Board / University",   s.board || s.university),
+      row("Country",              s.country === "Outside India" ? (s.countryName || "Outside India") : ""),
+      row("Stream",               s.stream),
+      row("Course / Degree",      s.course),
+      row("Branch / Specialization", s.branch || s.specialization),
+      row("Year of Passing",      s.yearOfPassing),
+      row("From",                 isoToDisplay(s.from)),
+      row("To",                   isoToDisplay(s.to)),
+      row("Hall Ticket / Roll No.", s.hallTicket),
+      row("Result",               s.resultValue ? `${s.resultType || ""} ${s.resultValue}`.trim() : ""),
+      row("Mode",                 s.mode),
+      row("Medium",               s.medium),
+      row("Backlogs",             s.backlogs),
+      row("Equivalency Certificate", s.country === "Outside India" ? (s.equivalencyKey ? "Uploaded" : "Not yet uploaded") : ""),
+      row("Address",              s.address),
+    ].join(""), color);
+  };
+
+  // Return HTML string instead of opening new tab
+  const htmlString = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <title>My Profile — ${[d.firstName, d.lastName].filter(Boolean).join(" ") || "Employee"}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; color: #0f172a; font-size: 12px; line-height: 1.5; }
+    @page { margin: 20mm 15mm; }
+    @media print {
+      .no-print { display: none !important; }
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .page-break { page-break-before: always; }
+    }
+  </style>
+</head>
+<body style="padding:32px;max-width:900px;margin:0 auto">
+
+  <!-- Report Header -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:14px;border-bottom:2.5px solid #1e293b">
+    <div>
+      <div style="font-size:20px;font-weight:800;color:#1e293b;letter-spacing:-0.5px">Datagate</div>
+      <div style="font-size:9px;color:#94a3b8;letter-spacing:2px;text-transform:uppercase;margin-top:2px">Your Profile — Self-Downloaded Copy</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:10px;color:#64748b">Generated: ${new Date().toLocaleString("en-IN",{timeZone:"Asia/Kolkata"})}</div>
+      <div style="font-size:10px;color:#64748b;margin-top:1px">Downloaded by: <strong>${employeeSelfName || "—"}</strong> (self-export)</div>
+      <div style="margin-top:6px;display:inline-block;background:#dcfce7;color:#15803d;padding:3px 10px;border-radius:999px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">📄 Your Own Copy — Not an Employer-Shared Report</div>
+    </div>
+  </div>
+
+  <!-- Name Banner -->
+  <div style="background:#1e293b;color:#fff;padding:14px 18px;border-radius:8px;margin-bottom:22px">
+    <div style="font-size:17px;font-weight:700">${[d.firstName, d.middleName, d.lastName].filter(Boolean).join(" ") || "—"}</div>
+    <div style="font-size:10px;color:#94a3b8;margin-top:3px">${d.email || ""} ${d.mobile ? "· +91 " + d.mobile : ""}</div>
+  </div>
+
+  <!-- ══ SECTION 1: PERSONAL ══ -->
+  <div style="font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;margin-top:4px">Page 1 — Personal Details</div>
+
+  ${section("Personal Information", [
+    row("Date of Birth",    isoToDisplay(d.dob)),
+    row("Gender",           d.gender==="Other"&&d.genderOther?`Other — ${d.genderOther}`:d.gender),
+    row("Religion",         d.religion),
+    row("Category",         d.category),
+    row("Nationality",      d.nationality),
+    row("Blood Group",      d.bloodGroup),
+    row("Marital Status",   d.maritalStatus),
+  ].join(""))}
+
+  ${section("Family", [
+    row("Father's Name", d.fatherName || [d.fatherFirst, d.fatherMiddle, d.fatherLast].filter(Boolean).join(" ")),
+    row("Father's Date of Birth", isoToDisplay(d.fatherDob)),
+    row("Mother's Name", d.motherName || [d.motherFirst, d.motherMiddle, d.motherLast].filter(Boolean).join(" ")),
+    row("Mother's Date of Birth", isoToDisplay(d.motherDob)),
+    d.maritalStatus === "Married" ? row("Spouse Name", d.spouseName) : "",
+    d.maritalStatus === "Married" ? row("Spouse Date of Birth", isoToDisplay(d.spouseDob)) : "",
+  ].join(""))}
+
+  ${section("Identity Documents", [
+    row("Aadhaar Number",     d.aadhaar || d.aadhar),
+    row("Name as per Aadhaar", d.nameAsPerAadhaar),
+    row("PAN Number",         d.pan),
+    row("Name as per PAN",    d.nameAsPerPan),
+    row("Has Passport",       d.hasPassport),
+    d.hasPassport === "Yes" ? row("Passport Number",   d.passport)      : "",
+    d.hasPassport === "Yes" ? row("Issue Date",         isoToDisplay(d.passportIssue)) : "",
+    d.hasPassport === "Yes" ? row("Expiry Date",        isoToDisplay(d.passportExpiry)): "",
+  ].join(""))}
+
+  ${section("Emergency Contact", [
+    row("Name",         d.emergName),
+    row("Relationship", d.emergRel),
+    row("Phone",        d.emergPhone),
+  ].join(""))}
+
+  ${section("Current Address", [
+    row("Door / Street",   cur.door),
+    row("Village / Area",  cur.village),
+    row("Tehsil / Taluk",  cur.locality),
+    row("District",        cur.district),
+    row("State",           cur.state),
+    row("Pincode",         cur.pin),
+    row("Residing From",   isoToDisplay(cur.from)),
+  ].join(""))}
+
+  ${(perm.door || perm.state) ? section("Permanent / Native Address", [
+    row("Door / Street",   perm.door),
+    row("Village / Area",  perm.village),
+    row("Tehsil / Taluk",  perm.locality),
+    row("District",        perm.district),
+    row("State",           perm.state),
+    row("Pincode",         perm.pin),
+  ].join("")) : ""}
+
+  ${section("Bank Account Details", [
+    row("Bank Name",           d.bankName === "Other" && d.bankOther ? `Other — ${d.bankOther}` : d.bankName),
+    row("Account Holder Name", d.bankAccountName),
+    row("IFSC Code",           d.ifsc),
+    row("Branch",              d.branch),
+    row("Account Type",        d.accountType),
+    row("Account Number",      d.accountFull || (d.accountLast4 ? `••••••••${d.accountLast4}` : "")),
+  ].join(""))}
+
+  <!-- ══ SECTION 2: EDUCATION ══ -->
+  <div style="font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;margin-top:20px">Page 2 — Education</div>
+
+  ${eduSection("Class X — SSC / Matriculation",      edu.classX,        "#334155")}
+  ${eduSection("Intermediate — HSC / 12th",           edu.intermediate,  "#334155")}
+  ${(edu.hasDip==="Yes"||edu.diploma?.institute) && edu.diploma && Object.values(edu.diploma).some(Boolean) ? eduSection("Diploma / Technical / Vocational", edu.diploma, "#334155") : ""}
+  ${eduSection("Undergraduate / Degree",              edu.undergraduate, "#334155")}
+  ${edu.postgraduate?.college ? eduSection("Postgraduate / Masters", edu.postgraduate, "#334155") : ""}
+
+  ${Array.isArray(edu.professionalQualifications) && edu.professionalQualifications.length > 0 ? section("Professional Qualifications", edu.professionalQualifications.map((q,i) => [
+    row(`Qualification ${i+1} — Type`,  q.type==="Other"?(q.otherType||"Other"):q.type),
+    row(`Qualification ${i+1} — Level`, q.level),
+    row(`Qualification ${i+1} — Year`,  q.year || (q.level === "Pursuing" ? "Pursuing" : "")),
+  ].join("")).join(""), "#334155") : ""}
+
+  ${Array.isArray(edu.articleships) && edu.articleships.length > 0 ? section("Articleship / Practical Training", edu.articleships.map((a,i) => [
+    row(`Training ${i+1} — Type`,      a.type==="Other Practical Training"?(a.otherType||a.type):a.type),
+    row(`Training ${i+1} — Firm`,      a.firm),
+    row(`Training ${i+1} — City`,      a.city),
+    row(`Training ${i+1} — Principal`, a.principalName),
+    row(`Training ${i+1} — Reg. No.`,  a.regNo),
+    row(`Training ${i+1} — From`,      a.from),
+    row(`Training ${i+1} — To`,        a.to || (a.isOngoing === "Ongoing" ? "Ongoing" : "")),
+  ].join("")).join(""), "#334155") : ""}
+
+  ${Array.isArray(edu.certifications) && edu.certifications.length > 0 ? section("Certifications", edu.certifications.map((c,i) => row(`Certification ${i+1}`, c.name)).join(""), "#334155") : ""}
+
+  ${edu.hasEduGap === "Yes" ? section("Education Gap Before First Job", [
+    row("Had Gap",  edu.hasEduGap),
+    row("From",     isoToDisplay(edu.eduGapFrom)),
+    row("To",       isoToDisplay(edu.eduGapTo)),
+    row("Reason",   edu.eduGapReason),
+  ].join(""), "#334155") : ""}
+
+  <!-- ══ SECTION 3: EMPLOYMENT ══ -->
+  <div style="font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;margin-top:20px">Page 3 — Employment History</div>
+
+  ${empHistory.length === 0 ? `<div style="padding:10px;color:#94a3b8;font-size:11px">No employment history provided.</div>` : [...empHistory].sort((a,b)=>(Number(a.sort_order??999))-(Number(b.sort_order??999))).map((e,i,arr) => section(
+    i === arr.length-1 ? "Current / Most Recent Employer" : `Previous Employer ${i+1}`,
+    [
+      row("Company Name",          e.companyName),
+      row("Designation",           e.designation),
+      row("Department",            e.department),
+      row("Employment Type",       e.employmentType),
+      row("Employee ID",           e.employeeId),
+      row("Work Email",            e.workEmail),
+      row("Office Address",        e.officeAddress),
+      row("Date of Joining",       isoToDisplay(e.startDate)),
+      i === arr.length-1 ? row("Currently Working", e.currentlyWorking === "Yes" ? "Yes — Still Employed" : "No") : row("Date of Leaving", isoToDisplay(e.endDate)),
+      i === arr.length-1 && e.currentlyWorking === "No" ? row("Date of Leaving", isoToDisplay(e.endDate)) : "",
+      row("Reason for Leaving",    e.reasonForRelieving),
+      row("Duties",                e.duties),
+      e.employmentType === "Contract" ? row("Vendor Company", e.contractVendor?.company) : "",
+      e.employmentType === "Contract" ? row("Vendor Email",   e.contractVendor?.email)   : "",
+      e.employmentType === "Contract" ? row("Vendor Mobile",  e.contractVendor?.mobile)  : "",
+      row("Reference Name",        e.reference?.name),
+      row("Reference Role",        e.reference?.role),
+      row("Reference Email",       e.reference?.email),
+      row("Reference Mobile",      e.reference?.mobile),
+      e.gap?.hasGap === "Yes" ? row("Employment Gap", e.gap?.reason) : "",
+      e.gap?.hasGap === "Yes" ? row("Employment Gap From", isoToDisplay(e.gap?.from)) : "",
+      e.gap?.hasGap === "Yes" ? row("Employment Gap To",   isoToDisplay(e.gap?.to))   : "",
+    ].join(""), i === arr.length-1 ? "#18151f" : "#334155"
+  )).join("")}
+
+  <!-- ══ SECTION 4: UAN / EPFO ══ -->
+  <div style="font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;margin-top:20px">Page 4 — UAN / EPFO</div>
+
+  ${section("UAN Details", [
+    row("Has UAN",           d.hasUan === "yes" || d.hasUan === true ? "Yes" : "No"),
+    row("UAN Number",        d.uanNumber),
+    row("Name as per UAN",   d.nameAsPerUan),
+    row("Mobile Linked",     d.mobileLinked),
+    row("UAN Active",        d.isActive),
+  ].join(""), "#334155")}
+
+  ${Array.isArray(d.pfRecords) && d.pfRecords.length > 0 ? d.pfRecords.filter(pf => pf.companyName).map((pf,i) => section(
+    `PF Record — ${pf.companyName}`,
+    pf.hasPf === "No"
+      ? row("PF Status", "PF not maintained by this employer")
+      : [
+          row("PF Type",          pf.pfType === "Trust" ? "Company's Own PF Trust (Exempted)" : pf.pfType === "EPFO" ? "EPFO (Government)" : ""),
+          row("PF Member ID",     pf.pfMemberId),
+          row("Date of Joining",  pf.dojEpfo),
+          row("Date of Exit",     pf.doeEpfo),
+          row("PF Transferred",   pf.pfTransferred),
+        ].join(""),
+    "#334155"
+  )).join("") : ""}
+
+  ${d.familyDetails && (d.familyDetails.spouseName || d.familyDetails.spouseDob || d.familyDetails.hasChildren === "Yes" || (d.familyDetails.parentsCoverage && d.familyDetails.parentsCoverage !== "Not Applicable")) ? section("Family Details — Health Insurance", [
+    row("Spouse Name",             d.familyDetails.spouseName),
+    row("Spouse Date of Birth",    anyDobToDisplaySelf(d.familyDetails.spouseDob)),
+    ...(Array.isArray(d.familyDetails.children) ? d.familyDetails.children.flatMap((c,i) => [
+      row(`Child ${i+1} Name`,   c.name),
+      row(`Child ${i+1} DOB`,    anyDobToDisplaySelf(c.dob)),
+      row(`Child ${i+1} Gender`, c.gender),
+    ]) : []),
+    d.familyDetails.parentsCoverage && d.familyDetails.parentsCoverage !== "Not Applicable" ? row("Parents Covered", d.familyDetails.parentsCoverage) : "",
+    row(d.familyDetails.parentsCoverage === "My Parents" ? "Father's Name" : "Father-in-law's Name", d.familyDetails.excludeFather ? "Excluded — passed away" : d.familyDetails.fatherName),
+    row(d.familyDetails.parentsCoverage === "My Parents" ? "Father's DOB"  : "Father-in-law's DOB",  d.familyDetails.excludeFather ? "" : anyDobToDisplaySelf(d.familyDetails.fatherDob)),
+    row(d.familyDetails.parentsCoverage === "My Parents" ? "Mother's Name" : "Mother-in-law's Name", d.familyDetails.excludeMother ? "Excluded — passed away" : d.familyDetails.motherName),
+    row(d.familyDetails.parentsCoverage === "My Parents" ? "Mother's DOB"  : "Mother-in-law's DOB",  d.familyDetails.excludeMother ? "" : anyDobToDisplaySelf(d.familyDetails.motherDob)),
+  ].join(""), "#334155") : ""}
+
+  ${section("EPFO Declarations & Digital Signature", [
+    row("PF Nomination Declaration (Form 2 — Part A)",      d.epfoDeclarations?.pfNomAck ? "✓ Agreed" : "Not agreed"),
+    row("Pension Nomination Declaration (Form 2 — Part B)", d.epfoDeclarations?.pensionNomAck ? "✓ Agreed" : "Not agreed"),
+    row("General EPFO Declaration",                          d.epfoDeclarations?.epfoDecl ? "✓ Agreed" : "Not agreed"),
+    row("Digital Signature", d.epfoSignature?.s3Key ? `✓ Signed${d.epfoSignature?.timestamp ? " on " + new Date(d.epfoSignature.timestamp).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}) : ""}` : "⚠ Not yet signed"),
+  ].join(""), "#334155")}
+
+  <!-- ══ SECTION 5: DOCUMENTS ══ -->
+  <div style="font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:2px;margin-bottom:14px;margin-top:20px">Documents — In Sequence Order</div>
+
+  ${docsWithData.length > 0 ? (() => {
+    // Group docs by employer — sort by employment history order
+    const sortedEmp = [...(empHistory||[])].sort((a,b)=>(Number(a.sort_order??999))-(Number(b.sort_order??999)));
+    const groups = {};
+    const nonEmpDocs = [];
+    docsWithData.forEach(item => {
+      if (item.group.startsWith("employment/")) {
+        const cid = item.group.split("/")[1];
+        if (!groups[cid]) groups[cid] = [];
+        groups[cid].push(item);
+      } else {
+        nonEmpDocs.push(item);
+      }
+    });
+    const docBlock = (item, label) => `
+    <div style="margin-bottom:16px;page-break-inside:avoid">
+      <div style="background:#475569;color:#fff;padding:4px 10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;border-radius:4px 4px 0 0">${label}</div>
+      <div style="border:1px solid #e2e8f0;border-top:none;border-radius:0 0 4px 4px;padding:10px;background:#fafafa">
+        <div style="font-size:9px;color:#94a3b8;margin-bottom:6px;font-family:monospace">${item.doc.filename || item.subKey}</div>
+        ${!item.url ? `<div style="padding:8px;background:#fef2f2;border-radius:4px;font-size:10px;color:#dc2626">⚠ No URL found.</div>`
+          : item.isImage ? `<img src="${item.url}" referrerpolicy="no-referrer" style="max-width:100%;max-height:400px;object-fit:contain;border-radius:4px;border:1px solid #e2e8f0;display:block" />`
+          : item.isPdf ? `<div style="padding:12px;background:#eff6ff;border-radius:4px;border:1px solid #bfdbfe;text-align:center"><div style="font-size:12px;margin-bottom:4px">📄 PDF Document</div><a href="${item.url}" target="_blank" style="color:#2563eb;font-size:10px;font-weight:600">Open PDF ↗</a><div style="font-size:9px;color:#94a3b8;margin-top:3px">Links expire in 1 hour</div></div>`
+          : `<a href="${item.url}" target="_blank" style="color:#2563eb;font-size:10px">View Document ↗</a>`}
+      </div>
+    </div>`;
+    // Non-employment docs first (resume, identity etc)
+    let html = nonEmpDocs.map(item => docBlock(item, item.label)).join("");
+    // Then per-employer grouped docs in employment history order
+    sortedEmp.forEach((emp, ei) => {
+      const empDocs = groups[emp.company_id] || [];
+      if (empDocs.length === 0) return;
+      const empLabel = ei === sortedEmp.length - 1 ? "Current Employer" : `Previous Employer ${ei + 1}`;
+      html += `<div style="margin-top:20px;margin-bottom:8px;padding:6px 12px;background:#1e293b;color:#fff;border-radius:6px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;page-break-before:auto">${empLabel} — ${emp.companyName || emp.company_id}</div>`;
+      html += empDocs.map(item => docBlock(item, item.label)).join("");
+    });
+    return html;
+  })() : `<div style="padding:14px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;font-size:11px;color:#92400e">No documents on file for this candidate.</div>`}
+
+  <!-- Footer -->
+  <div style="border-top:1px solid #e2e8f0;padding-top:10px;margin-top:24px;display:flex;justify-content:space-between">
+    <div style="font-size:9px;color:#94a3b8">Generated by Datagate · datagate.co.in</div>
+    <div style="font-size:9px;color:#94a3b8">Self-reported data. Not independently verified by Datagate.</div>
+  </div>
+
+  <!-- Print Button -->
+  <div class="no-print" style="position:fixed;bottom:20px;right:20px;display:flex;gap:10px;z-index:999">
+    <button onclick="window.print()" style="padding:10px 22px;background:#1e293b;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.2)">🖨 Print / Save PDF</button>
+    <button onclick="window.close()" style="padding:10px 18px;background:#f1f5f9;color:#475569;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Close</button>
+  </div>
+</body>
+</html>`;
+  return htmlString;
+}
+
+function MyPrintPreviewModal({ html, onClose }) {
+  if (!html) return null;
+  return (
+    <div style={{position:"fixed",inset:0,zIndex:999,display:"flex",flexDirection:"column",background:"#1a1a1a"}}>
+      <div className="no-print" style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0.6rem 1.2rem",background:"#111",borderBottom:"1px solid #2a2a2a",flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:"0.75rem"}}>
+          <span style={{color:"#fff",fontWeight:700,fontSize:"0.9rem",fontFamily:"inherit"}}>📄 Your Profile — Preview</span>
+          <span style={{color:"#94a3b8",fontSize:"0.72rem"}}>Review before printing or saving as PDF</span>
+        </div>
+        <div style={{display:"flex",gap:"0.6rem"}}>
+          <button
+            onClick={() => {
+              const iframe = document.getElementById("dg-my-print-frame");
+              if (iframe) { iframe.contentWindow.focus(); iframe.contentWindow.print(); }
+            }}
+            style={{padding:"0.45rem 1.1rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:7,fontFamily:"inherit",fontSize:"0.78rem",fontWeight:700,cursor:"pointer"}}>
+            🖨 Print / Save as PDF
+          </button>
+          <button
+            onClick={onClose}
+            style={{padding:"0.45rem 0.9rem",background:"#2a2a2a",color:"#94a3b8",border:"1px solid #3a3a3a",borderRadius:7,fontFamily:"inherit",fontSize:"0.78rem",fontWeight:600,cursor:"pointer"}}>
+            ✕ Close
+          </button>
+        </div>
+      </div>
+      <iframe
+        id="dg-my-print-frame"
+        srcDoc={html}
+        style={{flex:1,border:"none",background:"#fff"}}
+        title="My Profile Preview"
+      />
+    </div>
+  );
+}
+
+function DeleteAccountModal({ onConfirm, onCancel, loading }) {
+  const [typed, setTyped] = useState("");
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(15,12,40,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000,backdropFilter:"blur(4px)"}}>
+      <div style={{background:"#fff",borderRadius:18,padding:"2rem",maxWidth:400,width:"90%",boxShadow:"0 24px 60px rgba(15,12,40,0.3)"}}>
+        <div style={{fontSize:34,marginBottom:"0.75rem",textAlign:"center"}}>⚠️</div>
+        <h3 style={{margin:"0 0 0.5rem",color:"#1a1730",fontWeight:800,fontSize:"1.05rem",textAlign:"center"}}>Delete your account?</h3>
+        <p style={{color:"#6b6894",fontSize:"0.84rem",marginBottom:"1rem",lineHeight:1.6,textAlign:"center"}}>This permanently deletes your profile, all documents, and consent history. <strong>This cannot be undone.</strong></p>
+        <p style={{fontSize:"0.78rem",color:"#6b6894",marginBottom:"0.4rem",fontWeight:600}}>Type <strong>DELETE</strong> to confirm:</p>
+        <input
+          style={{width:"100%",padding:"0.65rem 0.875rem",background:"#fff8f8",border:"1.5px solid #fecaca",borderRadius:9,fontFamily:"inherit",fontSize:"0.875rem",color:"#1a1730",outline:"none",marginBottom:"1rem",letterSpacing:"0.05em"}}
+          value={typed} onChange={e=>setTyped(e.target.value.toUpperCase())} placeholder="Type DELETE here"
+        />
+        <div style={{display:"flex",gap:"0.75rem"}}>
+          <button onClick={onCancel} style={{flex:1,padding:"0.7rem",borderRadius:9,border:"1.5px solid #dddaf0",background:"#f7f6fd",cursor:"pointer",fontWeight:600,color:"#6b6894",fontFamily:"inherit",fontSize:"0.875rem"}}>Cancel</button>
+          <button onClick={onConfirm} disabled={typed!=="DELETE"||loading} style={{flex:1,padding:"0.7rem",borderRadius:9,border:"none",background:typed==="DELETE"?"#ef4444":"#fecaca",color:"#fff",cursor:typed==="DELETE"&&!loading?"pointer":"not-allowed",fontWeight:700,fontFamily:"inherit",fontSize:"0.875rem",transition:"background 0.15s"}}>{loading?"Deleting…":"Delete forever"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SupportModal({ apiFetch, onClose }) {
+  const CATS = ["account","consent","document","bgv","billing","other"];
+  const [tab,     setTab]     = useState("new");   // "new" | "tickets"
+  const [cat,     setCat]     = useState("account");
+  const [subject, setSubject] = useState("");
+  const [body,    setBody]    = useState("");
+  const [busy,    setBusy]    = useState(false);
+  const [ok,      setOk]      = useState("");
+  const [err,     setErr]     = useState("");
+  const [tickets, setTickets] = useState([]);
+  const [tLoading,setTLoading]= useState(false);
+
+  const loadTickets = async () => {
+    setTLoading(true);
+    try {
+      const r = await apiFetch(`${API}/support/tickets`);
+      if (r.ok) setTickets(await r.json());
+    } catch(_) {}
+    setTLoading(false);
+  };
+
+  const submit = async () => {
+    if (!subject.trim() || !body.trim()) { setErr("Subject and message are required"); return; }
+    setBusy(true); setErr("");
+    try {
+      const r = await apiFetch(`${API}/support/tickets`, {
+        method: "POST",
+        body: JSON.stringify({ category: cat, subject: subject.trim(), body: body.trim() }),
+      });
+      const d = await r.json();
+      if (!r.ok) { setErr(d.detail || "Failed to submit"); setBusy(false); return; }
+      setOk("✅ Ticket submitted! We'll get back to you within 2 business days.");
+      setSubject(""); setBody(""); setCat("account");
+      setTimeout(() => { setOk(""); setTab("tickets"); loadTickets(); }, 1800);
+    } catch(_) { setErr("Network error — please try again"); }
+    setBusy(false);
+  };
+
+  const statusColor = { open:"#f59e0b", in_progress:"#3b82f6", resolved:"#16a34a" };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(15,12,40,0.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:3000,backdropFilter:"blur(4px)"}}>
+      <div style={{background:"#fff",borderRadius:18,padding:"1.75rem",maxWidth:460,width:"92%",maxHeight:"85vh",overflow:"auto",boxShadow:"0 24px 60px rgba(15,12,40,0.3)"}}>
+        {/* Header */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"1.1rem"}}>
+          <div>
+            <div style={{fontWeight:800,fontSize:"1rem",color:"#1a1730"}}>🎧 Help & Support</div>
+            <div style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:2}}>Datagate support team · usually replies in 1–2 days</div>
+          </div>
+          <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.2rem",cursor:"pointer",color:"#8b88b0",lineHeight:1}}>✕</button>
+        </div>
+
+        {/* Tabs */}
+        <div style={{display:"flex",borderBottom:"2px solid #ebe9f5",marginBottom:"1.1rem"}}>
+          {[["new","✍️ New Ticket"],["tickets","📋 My Tickets"]].map(([k,l])=>(
+            <button key={k} onClick={()=>{setTab(k);if(k==="tickets")loadTickets();}}
+              style={{padding:"0.45rem 0.9rem",background:"none",border:"none",borderBottom:`2.5px solid ${tab===k?"#0d6e6e":"transparent"}`,marginBottom:-2,cursor:"pointer",fontFamily:"inherit",fontSize:"0.75rem",fontWeight:700,color:tab===k?"#0d6e6e":"#94a3b8"}}>
+              {l}
+            </button>
+          ))}
+        </div>
+
+        {tab === "new" ? (
+          <div style={{display:"flex",flexDirection:"column",gap:"0.75rem"}}>
+            {/* Category */}
+            <div>
+              <div style={{fontSize:"0.65rem",fontWeight:700,color:"#8b88b0",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.35rem"}}>Category</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:"0.4rem"}}>
+                {CATS.map(c=>(
+                  <button key={c} onClick={()=>setCat(c)}
+                    style={{padding:"0.3rem 0.75rem",borderRadius:999,border:`1.5px solid ${cat===c?"#0d6e6e":"#ddd8f5"}`,background:cat===c?"#0d6e6e":"#f8f7ff",color:cat===c?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.72rem",fontWeight:600,fontFamily:"inherit",transition:"all 0.12s",textTransform:"capitalize"}}>
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Subject */}
+            <div>
+              <div style={{fontSize:"0.65rem",fontWeight:700,color:"#8b88b0",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.35rem"}}>Subject <span style={{color:"#ef4444"}}>*</span></div>
+              <input value={subject} onChange={e=>setSubject(e.target.value)} placeholder="Brief summary of your issue"
+                style={{width:"100%",padding:"0.6rem 0.875rem",background:"#f8f7ff",border:"1.5px solid #ddd8f5",borderRadius:9,fontFamily:"inherit",fontSize:"0.84rem",color:"#1a1730",outline:"none"}}/>
+            </div>
+
+            {/* Body */}
+            <div>
+              <div style={{fontSize:"0.65rem",fontWeight:700,color:"#8b88b0",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.35rem"}}>Message <span style={{color:"#ef4444"}}>*</span></div>
+              <textarea value={body} onChange={e=>setBody(e.target.value)} placeholder="Describe your issue in detail…" rows={5}
+                style={{width:"100%",padding:"0.6rem 0.875rem",background:"#f8f7ff",border:"1.5px solid #ddd8f5",borderRadius:9,fontFamily:"inherit",fontSize:"0.84rem",color:"#1a1730",outline:"none",resize:"vertical"}}/>
+            </div>
+
+            {err && <div style={{fontSize:"0.72rem",color:"#ef4444",fontWeight:600}}>{err}</div>}
+            {ok  && <div style={{fontSize:"0.72rem",color:"#16a34a",fontWeight:600,background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:8,padding:"0.5rem 0.75rem"}}>{ok}</div>}
+
+            <button onClick={submit} disabled={busy}
+              style={{padding:"0.7rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:10,fontFamily:"inherit",fontSize:"0.875rem",fontWeight:700,cursor:busy?"not-allowed":"pointer",opacity:busy?0.6:1,transition:"all 0.15s"}}>
+              {busy?"Submitting…":"Submit Ticket"}
+            </button>
+          </div>
+        ) : (
+          <div>
+            {tLoading && <div style={{textAlign:"center",padding:"2rem",fontSize:"0.8rem",color:"#94a3b8"}}>Loading…</div>}
+            {!tLoading && tickets.length === 0 && (
+              <div style={{textAlign:"center",padding:"2.5rem 1rem"}}>
+                <div style={{fontSize:32,opacity:0.2,marginBottom:"0.5rem"}}>🎫</div>
+                <div style={{fontSize:"0.8rem",color:"#94a3b8"}}>No tickets yet</div>
+              </div>
+            )}
+            {tickets.map(t=>(
+              <div key={t.ticket_id} style={{border:"1px solid #ebe9f5",borderRadius:10,padding:"0.85rem 1rem",marginBottom:"0.6rem"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"0.35rem"}}>
+                  <div style={{fontWeight:700,fontSize:"0.84rem",color:"#1a1730",flex:1,paddingRight:"0.5rem"}}>{t.subject}</div>
+                  <span style={{fontSize:"0.65rem",fontWeight:700,color:statusColor[t.status]||"#94a3b8",background:`${statusColor[t.status]||"#94a3b8"}15`,padding:"2px 8px",borderRadius:999,whiteSpace:"nowrap",textTransform:"capitalize"}}>{t.status?.replace("_"," ")}</span>
+                </div>
+                <div style={{display:"flex",gap:"0.5rem",fontSize:"0.65rem",color:"#94a3b8"}}>
+                  <span style={{background:"#f0ece6",padding:"1px 7px",borderRadius:999,textTransform:"capitalize"}}>{t.category}</span>
+                  <span>{new Date(t.created_at).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</span>
+                </div>
+                {t.replies?.length > 0 && (
+                  <div style={{marginTop:"0.5rem",fontSize:"0.72rem",color:"#0d6e6e",fontWeight:600}}>💬 {t.replies.length} repl{t.replies.length===1?"y":"ies"}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function PreviousCompany() {
   const router = useRouter();
   const { user, apiFetch, logout, ready } = useAuth();
+
+  const [showSupport, setShowSupport]   = useState(false);
+  const [showGearMenu, setShowGearMenu] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [myPrintHtml, setMyPrintHtml] = useState(null);
+  const [showDeleteModal,setShowDeleteModal] = useState(false);
+  const [deleteLoading,setDeleteLoading]     = useState(false);
+  const [showPwChange,  setShowPwChange]    = useState(false);
+  const [pwCurrent,     setPwCurrent]       = useState("");
+  const [pwNew,         setPwNew]           = useState("");
+  const [pwConfirm,     setPwConfirm]       = useState("");
+  const [pwErr,         setPwErr]           = useState("");
+  const [pwOk,          setPwOk]            = useState("");
+  const [pwBusy,        setPwBusy]          = useState(false);
+
+  const handleChangePassword = async () => {
+    setPwErr(""); setPwOk("");
+    if (!pwCurrent || !pwNew || !pwConfirm) { setPwErr("All fields required"); return; }
+    if (pwNew !== pwConfirm) { setPwErr("Passwords do not match"); return; }
+    if (pwNew.length < 8) { setPwErr("Must be at least 8 characters"); return; }
+    setPwBusy(true);
+    try {
+      const r = await apiFetch(`${API}/auth/change-password`, {
+        method: "POST",
+        body: JSON.stringify({ current_password: pwCurrent, new_password: pwNew }),
+      });
+      const d = await r.json();
+      if (!r.ok) { setPwErr(d.detail || "Failed to change password"); return; }
+      setPwOk("Password changed! You will be signed out shortly.");
+      setPwCurrent(""); setPwNew(""); setPwConfirm("");
+      setTimeout(() => { setShowPwChange(false); logout(); }, 2500);
+    } catch(_) { setPwErr("Network error. Please try again."); }
+    finally { setPwBusy(false); }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true);
+    try {
+      const res = await apiFetch(`${API}/employee/account`, { method: "DELETE" });
+      if (res.ok) {
+        logout();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.detail || "Could not delete account. Please try again.");
+        setDeleteLoading(false);
+        setShowDeleteModal(false);
+      }
+    } catch (_) {
+      alert("Network error. Please try again.");
+      setDeleteLoading(false);
+      setShowDeleteModal(false);
+    }
+  };
+
+  const downloadMyProfile = async () => {
+    setDownloadingPdf(true);
+    try {
+      const draftRes = await apiFetch(`${API}/employee/draft`);
+      if (!draftRes.ok) { setDownloadingPdf(false); return; }
+      const draft = await draftRes.json();
+      if (!draft.employee_id) { setDownloadingPdf(false); return; }
+
+      const [histRes, docsRes] = await Promise.all([
+        apiFetch(`${API}/employee/employment-history/${draft.employee_id}`).catch(()=>null),
+        apiFetch(`${API}/documents/${draft.employee_id}`).catch(()=>null),
+      ]);
+      const histData = histRes && histRes.ok ? await histRes.json() : {};
+      const docsData = docsRes && docsRes.ok ? await docsRes.json() : {};
+
+      const normalized = normalizeProfileSelf(draft);
+      const employments = Array.isArray(histData.employments) ? histData.employments : [];
+      const selfName = [draft.firstName, draft.lastName].filter(Boolean).join(" ") || user?.name || user?.email;
+
+      const html = await buildMyProfilePdf(normalized, employments, docsData.documents || {}, selfName);
+      setMyPrintHtml(html);
+    } catch (_) {}
+    setDownloadingPdf(false);
+  };
+
   const [showSignout,setShowSignout]   = useState(false);
   const [showExitAck,setShowExitAck]   = useState(false);
   const [exitTarget,setExitTarget]     = useState(null);
@@ -509,6 +1227,33 @@ export default function PreviousCompany() {
       <style>{G}</style>
       <div className="pg">
         {showSignout&&<SignoutModal onConfirm={()=>{isDirtyRef.current=false;logout();}} onCancel={()=>setShowSignout(false)}/>}
+        {myPrintHtml && <MyPrintPreviewModal html={myPrintHtml} onClose={() => setMyPrintHtml(null)} />}
+        {showSupport && <SupportModal apiFetch={apiFetch} onClose={()=>setShowSupport(false)} />}
+        {showDeleteModal && <DeleteAccountModal onConfirm={handleDeleteAccount} onCancel={()=>{setShowDeleteModal(false);}} loading={deleteLoading}/>}
+        {showPwChange && (
+          <div style={{position:"fixed",inset:0,background:"rgba(15,12,40,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000,backdropFilter:"blur(4px)"}}>
+            <div style={{background:"#fff",borderRadius:14,padding:"1.75rem",maxWidth:360,width:"90%",boxShadow:"0 32px 80px rgba(0,0,0,0.2)"}}>
+              <div style={{fontSize:"0.95rem",fontWeight:700,color:"#0f172a",marginBottom:"1rem"}}>Change Password</div>
+              {[["Current password",pwCurrent,setPwCurrent],["New password",pwNew,setPwNew],["Confirm new password",pwConfirm,setPwConfirm]].map(([label,val,setter])=>(
+                <div key={label} style={{marginBottom:"0.65rem"}}>
+                  <div style={{fontSize:"0.65rem",fontWeight:600,color:"#6b7280",marginBottom:"0.3rem",textTransform:"uppercase",letterSpacing:"0.4px"}}>{label}</div>
+                  <input type="password" value={val} onChange={e=>setter(e.target.value)}
+                    style={{width:"100%",padding:"0.6rem 0.8rem",border:"1.5px solid #dddaf0",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",outline:"none",background:"#f8f7ff"}}/>
+                </div>
+              ))}
+              {pwErr && <div style={{fontSize:"0.72rem",color:"#ef4444",marginBottom:"0.6rem",fontWeight:600}}>{pwErr}</div>}
+              {pwOk  && <div style={{fontSize:"0.72rem",color:"#16a34a",marginBottom:"0.6rem",fontWeight:600}}>{pwOk}</div>}
+              <div style={{display:"flex",gap:"0.6rem",marginTop:"0.5rem"}}>
+                <button onClick={()=>{setShowPwChange(false);setPwErr("");setPwOk("");setPwCurrent("");setPwNew("");setPwConfirm("");}}
+                  style={{flex:1,padding:"0.6rem",borderRadius:7,border:"1px solid #dddaf0",background:"#f5f4f0",cursor:"pointer",fontWeight:600,color:"#6b7280",fontFamily:"inherit",fontSize:"0.82rem"}}>Cancel</button>
+                <button onClick={handleChangePassword} disabled={pwBusy}
+                  style={{flex:1,padding:"0.6rem",borderRadius:7,border:"none",background:"#0d6e6e",color:"#fff",cursor:pwBusy?"not-allowed":"pointer",fontWeight:700,fontFamily:"inherit",fontSize:"0.82rem",opacity:pwBusy?0.6:1}}>
+                  {pwBusy?"Saving…":"Change Password"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         {showExitAck&&<ExitAckModal onSaveAndExit={onSaveAndExit} onExitWithout={onExitWithout} onCancel={()=>setShowExitAck(false)}/>}
 
         <div className="topbar">
@@ -517,6 +1262,20 @@ export default function PreviousCompany() {
             <button className="bell-btn" title="Home — Personal Details" onClick={()=>router.push("/employee/personal")}>🏠</button>
             <span className="user-name">👤 {user.name||user.email}</span>
             <ConsentBell apiFetch={apiFetch} router={router}/>
+            <div style={{position:"relative"}}>
+              <button className="bell-btn" title="Settings" onClick={()=>setShowGearMenu(g=>!g)}>⚙️</button>
+              {showGearMenu && (
+                <>
+                  <div style={{position:"fixed",inset:0,zIndex:199}} onClick={()=>setShowGearMenu(false)}/>
+                  <div style={{position:"absolute",top:"calc(100% + 8px)",right:0,background:"#fff",border:"1.5px solid #dddaf0",borderRadius:10,boxShadow:"0 12px 32px rgba(26,23,48,0.14)",minWidth:210,zIndex:200,overflow:"hidden"}}>
+                    <button onClick={()=>{setShowGearMenu(false);setShowPwChange(true);}} style={{display:"flex",alignItems:"center",gap:"0.6rem",width:"100%",textAlign:"left",padding:"0.6rem 0.9rem",background:"none",border:"none",fontSize:"0.8rem",fontWeight:600,color:"#1a1730",cursor:"pointer",fontFamily:"inherit"}}>🔑 Change password</button>
+                    <button onClick={()=>{setShowGearMenu(false);downloadMyProfile();}} disabled={downloadingPdf} style={{display:"flex",alignItems:"center",gap:"0.6rem",width:"100%",textAlign:"left",padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #f0eef8",fontSize:"0.8rem",fontWeight:600,color:"#1a1730",cursor:downloadingPdf?"not-allowed":"pointer",fontFamily:"inherit"}}>{downloadingPdf ? "⏳ Preparing…" : "📄 Download My Profile (PDF)"}</button>
+                    <button onClick={()=>{setShowGearMenu(false);setShowSupport(true);}} style={{display:"flex",alignItems:"center",gap:"0.6rem",width:"100%",textAlign:"left",padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #f0eef8",fontSize:"0.8rem",fontWeight:600,color:"#1a1730",cursor:"pointer",fontFamily:"inherit"}}>🎧 Help & Support</button>
+                    <button onClick={()=>{setShowGearMenu(false);setShowDeleteModal(true);}} style={{display:"flex",alignItems:"center",gap:"0.6rem",width:"100%",textAlign:"left",padding:"0.6rem 0.9rem",background:"none",border:"none",borderTop:"1px solid #f0eef8",fontSize:"0.8rem",fontWeight:600,color:"#ef4444",cursor:"pointer",fontFamily:"inherit"}}>🗑️ Delete account</button>
+                  </div>
+                </>
+              )}
+            </div>
             <button className="signout-btn" onClick={()=>setShowSignout(true)} style={{borderColor:"#ef4444",color:"#ef4444"}}>Sign out</button>
           </div>
         </div>

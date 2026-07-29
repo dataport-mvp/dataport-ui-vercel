@@ -839,6 +839,136 @@ function PrintPreviewModal({ html, onClose }) {
   );
 }
 
+function SupportModal({ apiFetch, onClose }) {
+  const CATS = ["account","consent","document","bgv","billing","other"];
+  const [tab,     setTab]     = useState("new");   // "new" | "tickets"
+  const [cat,     setCat]     = useState("account");
+  const [subject, setSubject] = useState("");
+  const [body,    setBody]    = useState("");
+  const [busy,    setBusy]    = useState(false);
+  const [ok,      setOk]      = useState("");
+  const [err,     setErr]     = useState("");
+  const [tickets, setTickets] = useState([]);
+  const [tLoading,setTLoading]= useState(false);
+
+  const loadTickets = async () => {
+    setTLoading(true);
+    try {
+      const r = await apiFetch(`${API}/support/tickets`);
+      if (r.ok) setTickets(await r.json());
+    } catch(_) {}
+    setTLoading(false);
+  };
+
+  const submit = async () => {
+    if (!subject.trim() || !body.trim()) { setErr("Subject and message are required"); return; }
+    setBusy(true); setErr("");
+    try {
+      const r = await apiFetch(`${API}/support/tickets`, {
+        method: "POST",
+        body: JSON.stringify({ category: cat, subject: subject.trim(), body: body.trim() }),
+      });
+      const d = await r.json();
+      if (!r.ok) { setErr(d.detail || "Failed to submit"); setBusy(false); return; }
+      setOk("✅ Ticket submitted! We'll get back to you within 2 business days.");
+      setSubject(""); setBody(""); setCat("account");
+      setTimeout(() => { setOk(""); setTab("tickets"); loadTickets(); }, 1800);
+    } catch(_) { setErr("Network error — please try again"); }
+    setBusy(false);
+  };
+
+  const statusColor = { open:"#f59e0b", in_progress:"#3b82f6", resolved:"#16a34a" };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(15,12,40,0.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:3000,backdropFilter:"blur(4px)"}}>
+      <div style={{background:"#fff",borderRadius:18,padding:"1.75rem",maxWidth:460,width:"92%",maxHeight:"85vh",overflow:"auto",boxShadow:"0 24px 60px rgba(15,12,40,0.3)"}}>
+        {/* Header */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"1.1rem"}}>
+          <div>
+            <div style={{fontWeight:800,fontSize:"1rem",color:"#1a1730"}}>🎧 Help & Support</div>
+            <div style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:2}}>Datagate support team · usually replies in 1–2 days</div>
+          </div>
+          <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.2rem",cursor:"pointer",color:"#8b88b0",lineHeight:1}}>✕</button>
+        </div>
+
+        {/* Tabs */}
+        <div style={{display:"flex",borderBottom:"2px solid #ebe9f5",marginBottom:"1.1rem"}}>
+          {[["new","✍️ New Ticket"],["tickets","📋 My Tickets"]].map(([k,l])=>(
+            <button key={k} onClick={()=>{setTab(k);if(k==="tickets")loadTickets();}}
+              style={{padding:"0.45rem 0.9rem",background:"none",border:"none",borderBottom:`2.5px solid ${tab===k?"#0d6e6e":"transparent"}`,marginBottom:-2,cursor:"pointer",fontFamily:"inherit",fontSize:"0.75rem",fontWeight:700,color:tab===k?"#0d6e6e":"#94a3b8"}}>
+              {l}
+            </button>
+          ))}
+        </div>
+
+        {tab === "new" ? (
+          <div style={{display:"flex",flexDirection:"column",gap:"0.75rem"}}>
+            {/* Category */}
+            <div>
+              <div style={{fontSize:"0.65rem",fontWeight:700,color:"#8b88b0",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.35rem"}}>Category</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:"0.4rem"}}>
+                {CATS.map(c=>(
+                  <button key={c} onClick={()=>setCat(c)}
+                    style={{padding:"0.3rem 0.75rem",borderRadius:999,border:`1.5px solid ${cat===c?"#0d6e6e":"#ddd8f5"}`,background:cat===c?"#0d6e6e":"#f8f7ff",color:cat===c?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.72rem",fontWeight:600,fontFamily:"inherit",transition:"all 0.12s",textTransform:"capitalize"}}>
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Subject */}
+            <div>
+              <div style={{fontSize:"0.65rem",fontWeight:700,color:"#8b88b0",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.35rem"}}>Subject <span style={{color:"#ef4444"}}>*</span></div>
+              <input value={subject} onChange={e=>setSubject(e.target.value)} placeholder="Brief summary of your issue"
+                style={{width:"100%",padding:"0.6rem 0.875rem",background:"#f8f7ff",border:"1.5px solid #ddd8f5",borderRadius:9,fontFamily:"inherit",fontSize:"0.84rem",color:"#1a1730",outline:"none"}}/>
+            </div>
+
+            {/* Body */}
+            <div>
+              <div style={{fontSize:"0.65rem",fontWeight:700,color:"#8b88b0",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.35rem"}}>Message <span style={{color:"#ef4444"}}>*</span></div>
+              <textarea value={body} onChange={e=>setBody(e.target.value)} placeholder="Describe your issue in detail…" rows={5}
+                style={{width:"100%",padding:"0.6rem 0.875rem",background:"#f8f7ff",border:"1.5px solid #ddd8f5",borderRadius:9,fontFamily:"inherit",fontSize:"0.84rem",color:"#1a1730",outline:"none",resize:"vertical"}}/>
+            </div>
+
+            {err && <div style={{fontSize:"0.72rem",color:"#ef4444",fontWeight:600}}>{err}</div>}
+            {ok  && <div style={{fontSize:"0.72rem",color:"#16a34a",fontWeight:600,background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:8,padding:"0.5rem 0.75rem"}}>{ok}</div>}
+
+            <button onClick={submit} disabled={busy}
+              style={{padding:"0.7rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:10,fontFamily:"inherit",fontSize:"0.875rem",fontWeight:700,cursor:busy?"not-allowed":"pointer",opacity:busy?0.6:1,transition:"all 0.15s"}}>
+              {busy?"Submitting…":"Submit Ticket"}
+            </button>
+          </div>
+        ) : (
+          <div>
+            {tLoading && <div style={{textAlign:"center",padding:"2rem",fontSize:"0.8rem",color:"#94a3b8"}}>Loading…</div>}
+            {!tLoading && tickets.length === 0 && (
+              <div style={{textAlign:"center",padding:"2.5rem 1rem"}}>
+                <div style={{fontSize:32,opacity:0.2,marginBottom:"0.5rem"}}>🎫</div>
+                <div style={{fontSize:"0.8rem",color:"#94a3b8"}}>No tickets yet</div>
+              </div>
+            )}
+            {tickets.map(t=>(
+              <div key={t.ticket_id} style={{border:"1px solid #ebe9f5",borderRadius:10,padding:"0.85rem 1rem",marginBottom:"0.6rem"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"0.35rem"}}>
+                  <div style={{fontWeight:700,fontSize:"0.84rem",color:"#1a1730",flex:1,paddingRight:"0.5rem"}}>{t.subject}</div>
+                  <span style={{fontSize:"0.65rem",fontWeight:700,color:statusColor[t.status]||"#94a3b8",background:`${statusColor[t.status]||"#94a3b8"}15`,padding:"2px 8px",borderRadius:999,whiteSpace:"nowrap",textTransform:"capitalize"}}>{t.status?.replace("_"," ")}</span>
+                </div>
+                <div style={{display:"flex",gap:"0.5rem",fontSize:"0.65rem",color:"#94a3b8"}}>
+                  <span style={{background:"#f0ece6",padding:"1px 7px",borderRadius:999,textTransform:"capitalize"}}>{t.category}</span>
+                  <span>{new Date(t.created_at).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</span>
+                </div>
+                {t.replies?.length > 0 && (
+                  <div style={{marginTop:"0.5rem",fontSize:"0.72rem",color:"#0d6e6e",fontWeight:600}}>💬 {t.replies.length} repl{t.replies.length===1?"y":"ies"}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function SignoutModal({ onConfirm, onCancel }) {
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,backdropFilter:"blur(3px)"}}>
@@ -1538,6 +1668,8 @@ export default function EmployerDashboard() {
   const [bulkMsgSending,  setBulkMsgSending]  = useState(false);
   const [bulkMsgResults,  setBulkMsgResults]  = useState([]);
   const [showPwModal,    setShowPwModal]    = useState(false);
+  const [showGear,       setShowGear]       = useState(false);
+  const [showSupport,    setShowSupport]    = useState(false);
   const [pwCurrent,      setPwCurrent]      = useState("");
   const [pwNew,          setPwNew]          = useState("");
   const [pwConfirm,      setPwConfirm]      = useState("");
@@ -2021,6 +2153,7 @@ return (
       <style>{G}</style>
 
       {showSignout && <SignoutModal onConfirm={logout} onCancel={() => setShowSignout(false)} />}
+      {showSupport && <SupportModal apiFetch={apiFetch} onClose={()=>setShowSupport(false)} />}
       {printHtml && <PrintPreviewModal html={printHtml} onClose={() => setPrintHtml(null)} />}
 
       {/* ── Change Password Modal ── */}
@@ -2344,7 +2477,18 @@ return (
               <span style={{fontSize:12,fontWeight:600,color:"#111"}}>{user.name||user.email}</span>
               <span style={{fontSize:9,fontWeight:700,background:"#e0f0ee",color:"#0a5656",padding:"1px 6px",borderRadius:4,textTransform:"uppercase",letterSpacing:.5}}>Employer</span>
             </div>
-            <button onClick={()=>setShowPwModal(true)} style={{padding:"5px 10px",border:"1px solid #c8c2b8",borderRadius:6,background:"#f5f2ee",fontSize:11,fontWeight:600,color:"#7a6e64",cursor:"pointer",fontFamily:"inherit"}}>Change password</button>
+            <div style={{position:"relative"}}>
+              <button onClick={()=>setShowGear(g=>!g)} style={{padding:"5px 10px",border:`1.5px solid ${showGear?"#0d6e6e":"#c8c2b8"}`,borderRadius:6,background:showGear?"#e0f0ee":"#f5f2ee",fontSize:12,fontWeight:600,color:"#7a6e64",cursor:"pointer",fontFamily:"inherit"}}>⚙️ Settings</button>
+              {showGear && (
+                <>
+                  <div style={{position:"fixed",inset:0,zIndex:199}} onClick={()=>setShowGear(false)}/>
+                  <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,background:"#fff",border:"1px solid #c8c2b8",borderRadius:8,boxShadow:"0 8px 24px rgba(17,13,10,0.14)",minWidth:190,zIndex:200,overflow:"hidden"}}>
+                    <button onClick={()=>{setShowGear(false);setShowPwModal(true);}} style={{display:"block",width:"100%",textAlign:"left",padding:"0.6rem 0.9rem",background:"none",border:"none",fontSize:"0.78rem",fontWeight:600,color:"#1a1a1a",cursor:"pointer",fontFamily:"inherit"}}>🔑 Change password</button>
+                    <button onClick={()=>{setShowGear(false);setShowSupport(true);}} style={{display:"block",width:"100%",textAlign:"left",padding:"0.6rem 0.9rem",background:"none",border:"none",fontSize:"0.78rem",fontWeight:600,color:"#1a1a1a",cursor:"pointer",fontFamily:"inherit",borderTop:"1px solid #f0eee9"}}>🎧 Help & Support</button>
+                  </div>
+                </>
+              )}
+            </div>
             <button onClick={()=>setShowSignout(true)} style={{padding:"5px 10px",border:"1.5px solid #fca5a5",borderRadius:6,background:"#fef2f2",fontSize:11,fontWeight:700,color:"#dc2626",cursor:"pointer",fontFamily:"inherit"}}>Sign out</button>
             <button onClick={()=>setShowDrawer(true)} style={{padding:"6px 14px",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:7,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 8px rgba(13,110,110,.3)"}}>+ Request Data Access</button>
           </div>

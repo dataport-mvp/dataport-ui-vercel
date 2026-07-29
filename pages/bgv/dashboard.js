@@ -127,6 +127,136 @@ function isoDate(ts) {
   return new Date(ts).toLocaleDateString("en-IN", { day:"2-digit", month:"short", year:"numeric" });
 }
 
+function SupportModal({ apiFetch, onClose }) {
+  const CATS = ["account","consent","document","bgv","billing","other"];
+  const [tab,     setTab]     = useState("new");   // "new" | "tickets"
+  const [cat,     setCat]     = useState("account");
+  const [subject, setSubject] = useState("");
+  const [body,    setBody]    = useState("");
+  const [busy,    setBusy]    = useState(false);
+  const [ok,      setOk]      = useState("");
+  const [err,     setErr]     = useState("");
+  const [tickets, setTickets] = useState([]);
+  const [tLoading,setTLoading]= useState(false);
+
+  const loadTickets = async () => {
+    setTLoading(true);
+    try {
+      const r = await apiFetch(`${API}/support/tickets`);
+      if (r.ok) setTickets(await r.json());
+    } catch(_) {}
+    setTLoading(false);
+  };
+
+  const submit = async () => {
+    if (!subject.trim() || !body.trim()) { setErr("Subject and message are required"); return; }
+    setBusy(true); setErr("");
+    try {
+      const r = await apiFetch(`${API}/support/tickets`, {
+        method: "POST",
+        body: JSON.stringify({ category: cat, subject: subject.trim(), body: body.trim() }),
+      });
+      const d = await r.json();
+      if (!r.ok) { setErr(d.detail || "Failed to submit"); setBusy(false); return; }
+      setOk("✅ Ticket submitted! We'll get back to you within 2 business days.");
+      setSubject(""); setBody(""); setCat("account");
+      setTimeout(() => { setOk(""); setTab("tickets"); loadTickets(); }, 1800);
+    } catch(_) { setErr("Network error — please try again"); }
+    setBusy(false);
+  };
+
+  const statusColor = { open:"#f59e0b", in_progress:"#3b82f6", resolved:"#16a34a" };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(15,12,40,0.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:3000,backdropFilter:"blur(4px)"}}>
+      <div style={{background:"#fff",borderRadius:18,padding:"1.75rem",maxWidth:460,width:"92%",maxHeight:"85vh",overflow:"auto",boxShadow:"0 24px 60px rgba(15,12,40,0.3)"}}>
+        {/* Header */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"1.1rem"}}>
+          <div>
+            <div style={{fontWeight:800,fontSize:"1rem",color:"#1a1730"}}>🎧 Help & Support</div>
+            <div style={{fontSize:"0.7rem",color:"#8b88b0",marginTop:2}}>Datagate support team · usually replies in 1–2 days</div>
+          </div>
+          <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.2rem",cursor:"pointer",color:"#8b88b0",lineHeight:1}}>✕</button>
+        </div>
+
+        {/* Tabs */}
+        <div style={{display:"flex",borderBottom:"2px solid #ebe9f5",marginBottom:"1.1rem"}}>
+          {[["new","✍️ New Ticket"],["tickets","📋 My Tickets"]].map(([k,l])=>(
+            <button key={k} onClick={()=>{setTab(k);if(k==="tickets")loadTickets();}}
+              style={{padding:"0.45rem 0.9rem",background:"none",border:"none",borderBottom:`2.5px solid ${tab===k?"#0d6e6e":"transparent"}`,marginBottom:-2,cursor:"pointer",fontFamily:"inherit",fontSize:"0.75rem",fontWeight:700,color:tab===k?"#0d6e6e":"#94a3b8"}}>
+              {l}
+            </button>
+          ))}
+        </div>
+
+        {tab === "new" ? (
+          <div style={{display:"flex",flexDirection:"column",gap:"0.75rem"}}>
+            {/* Category */}
+            <div>
+              <div style={{fontSize:"0.65rem",fontWeight:700,color:"#8b88b0",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.35rem"}}>Category</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:"0.4rem"}}>
+                {CATS.map(c=>(
+                  <button key={c} onClick={()=>setCat(c)}
+                    style={{padding:"0.3rem 0.75rem",borderRadius:999,border:`1.5px solid ${cat===c?"#0d6e6e":"#ddd8f5"}`,background:cat===c?"#0d6e6e":"#f8f7ff",color:cat===c?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.72rem",fontWeight:600,fontFamily:"inherit",transition:"all 0.12s",textTransform:"capitalize"}}>
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Subject */}
+            <div>
+              <div style={{fontSize:"0.65rem",fontWeight:700,color:"#8b88b0",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.35rem"}}>Subject <span style={{color:"#ef4444"}}>*</span></div>
+              <input value={subject} onChange={e=>setSubject(e.target.value)} placeholder="Brief summary of your issue"
+                style={{width:"100%",padding:"0.6rem 0.875rem",background:"#f8f7ff",border:"1.5px solid #ddd8f5",borderRadius:9,fontFamily:"inherit",fontSize:"0.84rem",color:"#1a1730",outline:"none"}}/>
+            </div>
+
+            {/* Body */}
+            <div>
+              <div style={{fontSize:"0.65rem",fontWeight:700,color:"#8b88b0",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.35rem"}}>Message <span style={{color:"#ef4444"}}>*</span></div>
+              <textarea value={body} onChange={e=>setBody(e.target.value)} placeholder="Describe your issue in detail…" rows={5}
+                style={{width:"100%",padding:"0.6rem 0.875rem",background:"#f8f7ff",border:"1.5px solid #ddd8f5",borderRadius:9,fontFamily:"inherit",fontSize:"0.84rem",color:"#1a1730",outline:"none",resize:"vertical"}}/>
+            </div>
+
+            {err && <div style={{fontSize:"0.72rem",color:"#ef4444",fontWeight:600}}>{err}</div>}
+            {ok  && <div style={{fontSize:"0.72rem",color:"#16a34a",fontWeight:600,background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:8,padding:"0.5rem 0.75rem"}}>{ok}</div>}
+
+            <button onClick={submit} disabled={busy}
+              style={{padding:"0.7rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:10,fontFamily:"inherit",fontSize:"0.875rem",fontWeight:700,cursor:busy?"not-allowed":"pointer",opacity:busy?0.6:1,transition:"all 0.15s"}}>
+              {busy?"Submitting…":"Submit Ticket"}
+            </button>
+          </div>
+        ) : (
+          <div>
+            {tLoading && <div style={{textAlign:"center",padding:"2rem",fontSize:"0.8rem",color:"#94a3b8"}}>Loading…</div>}
+            {!tLoading && tickets.length === 0 && (
+              <div style={{textAlign:"center",padding:"2.5rem 1rem"}}>
+                <div style={{fontSize:32,opacity:0.2,marginBottom:"0.5rem"}}>🎫</div>
+                <div style={{fontSize:"0.8rem",color:"#94a3b8"}}>No tickets yet</div>
+              </div>
+            )}
+            {tickets.map(t=>(
+              <div key={t.ticket_id} style={{border:"1px solid #ebe9f5",borderRadius:10,padding:"0.85rem 1rem",marginBottom:"0.6rem"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"0.35rem"}}>
+                  <div style={{fontWeight:700,fontSize:"0.84rem",color:"#1a1730",flex:1,paddingRight:"0.5rem"}}>{t.subject}</div>
+                  <span style={{fontSize:"0.65rem",fontWeight:700,color:statusColor[t.status]||"#94a3b8",background:`${statusColor[t.status]||"#94a3b8"}15`,padding:"2px 8px",borderRadius:999,whiteSpace:"nowrap",textTransform:"capitalize"}}>{t.status?.replace("_"," ")}</span>
+                </div>
+                <div style={{display:"flex",gap:"0.5rem",fontSize:"0.65rem",color:"#94a3b8"}}>
+                  <span style={{background:"#f0ece6",padding:"1px 7px",borderRadius:999,textTransform:"capitalize"}}>{t.category}</span>
+                  <span>{new Date(t.created_at).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</span>
+                </div>
+                {t.replies?.length > 0 && (
+                  <div style={{marginTop:"0.5rem",fontSize:"0.72rem",color:"#0d6e6e",fontWeight:600}}>💬 {t.replies.length} repl{t.replies.length===1?"y":"ies"}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function BgvDashboard() {
   const router = useRouter();
   const { user, apiFetch, logout, ready } = useAuth();
@@ -146,7 +276,19 @@ export default function BgvDashboard() {
   const [inboxSearch, setInboxSearch] = useState("");
   const [activeThread, setActiveThread] = useState(null);
   const [threadMsgs, setThreadMsgs] = useState([]);
+  const msgListRef = useRef(null);
+  useEffect(() => {
+    if (msgListRef.current) msgListRef.current.scrollTop = msgListRef.current.scrollHeight;
+  }, [threadMsgs]);
   const [msgBody, setMsgBody]     = useState("");
+  const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const setMention = (token, otherTokens) => {
+    setMsgBody(b => {
+      let cleaned = b;
+      [token, ...otherTokens].forEach(t => { if (t) cleaned = cleaned.replace(new RegExp(`@${escRe(t)}\\s*`, "gi"), ""); });
+      return `@${token} ${cleaned}`;
+    });
+  };
   // @employeeName → candidate, employer CC'd. @employerName → employer only, private.
   const detectRecipientBgv = (text) => {
     const t = inbox.find(x=>x.consent_id===activeThread);
@@ -163,6 +305,15 @@ export default function BgvDashboard() {
   const [msgAttachUrls, setMsgAttachUrls] = useState({});
   const [showNewMsg, setShowNewMsg] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showGear,    setShowGear]    = useState(false);
+  const [showPwModal, setShowPwModal] = useState(false);
+  const [showSupport, setShowSupport] = useState(false);
+  const [pwCurrent,   setPwCurrent]   = useState("");
+  const [pwNew,       setPwNew]       = useState("");
+  const [pwConfirm,   setPwConfirm]   = useState("");
+  const [pwErr,       setPwErr]       = useState("");
+  const [pwOk,        setPwOk]        = useState("");
+  const [pwBusy,      setPwBusy]      = useState(false);
   const [sendingMsg, setSendingMsg] = useState(false);
 
   // Check update
@@ -338,6 +489,26 @@ export default function BgvDashboard() {
     setSubmittingReport(false);
   };
 
+  const handleChangePassword = async () => {
+    setPwErr(""); setPwOk("");
+    if (!pwCurrent || !pwNew || !pwConfirm) { setPwErr("All fields are required"); return; }
+    if (pwNew !== pwConfirm) { setPwErr("New passwords do not match"); return; }
+    if (pwNew.length < 8) { setPwErr("New password must be at least 8 characters"); return; }
+    setPwBusy(true);
+    try {
+      const r = await apiFetch(`${API}/auth/change-password`, {
+        method: "POST",
+        body: JSON.stringify({ current_password: pwCurrent, new_password: pwNew }),
+      });
+      const d = await r.json();
+      if (!r.ok) { setPwErr(d.detail || "Failed to change password"); return; }
+      setPwOk("Password changed! You will be signed out shortly.");
+      setPwCurrent(""); setPwNew(""); setPwConfirm("");
+      setTimeout(() => { setShowPwModal(false); logout(); }, 2500);
+    } catch(_) { setPwErr("Network error. Please try again."); }
+    finally { setPwBusy(false); }
+  };
+
   const sendHoldRequest = async (consentId) => {
     if (!consentId || !holdMsg.trim()) return;
     setHoldSending(true);
@@ -439,9 +610,42 @@ export default function BgvDashboard() {
               {unreadCount>0 && <span style={{position:"absolute",top:-4,right:-4,background:"#ef4444",color:"#fff",fontSize:"0.6rem",fontWeight:700,borderRadius:999,minWidth:15,height:15,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 3px"}}>{unreadCount>9?"9+":unreadCount}</span>}
             </button>
             <span className="user-name">🏢 {user.name || user.email}</span>
+            <div style={{position:"relative"}}>
+              <button onClick={()=>setShowGear(g=>!g)} style={{padding:"5px 10px",border:`1.5px solid ${showGear?"#4f46e5":"#e2e8f0"}`,borderRadius:6,background:showGear?"#eef2ff":"#f8fafc",fontSize:12,fontWeight:600,color:"#475569",cursor:"pointer",fontFamily:"inherit"}}>⚙️ Settings</button>
+              {showGear && (
+                <>
+                  <div style={{position:"fixed",inset:0,zIndex:199}} onClick={()=>setShowGear(false)}/>
+                  <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,boxShadow:"0 8px 24px rgba(15,23,42,0.14)",minWidth:190,zIndex:200,overflow:"hidden"}}>
+                    <button onClick={()=>{setShowGear(false);setShowPwModal(true);}} style={{display:"block",width:"100%",textAlign:"left",padding:"0.6rem 0.9rem",background:"none",border:"none",fontSize:"0.78rem",fontWeight:600,color:"#0f172a",cursor:"pointer",fontFamily:"inherit"}}>🔑 Change password</button>
+                    <button onClick={()=>{setShowGear(false);setShowSupport(true);}} style={{display:"block",width:"100%",textAlign:"left",padding:"0.6rem 0.9rem",background:"none",border:"none",fontSize:"0.78rem",fontWeight:600,color:"#0f172a",cursor:"pointer",fontFamily:"inherit",borderTop:"1px solid #f1f5f9"}}>🎧 Help & Support</button>
+                  </div>
+                </>
+              )}
+            </div>
             <button className="signout-btn" onClick={()=>{logout();router.replace("/bgv/login");}}>Sign out</button>
           </div>
         </div>
+
+        {showPwModal && (
+          <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000,backdropFilter:"blur(4px)"}}>
+            <div style={{background:"#fff",borderRadius:14,padding:"1.75rem",maxWidth:380,width:"90%",boxShadow:"0 32px 80px rgba(0,0,0,0.2)",border:"1px solid #e2e8f0"}}>
+              <div style={{fontSize:"0.95rem",fontWeight:700,color:"#0f172a",marginBottom:"1rem"}}>Change Password</div>
+              {[["Current password","password",pwCurrent,setPwCurrent],["New password","password",pwNew,setPwNew],["Confirm new password","password",pwConfirm,setPwConfirm]].map(([label,type,val,setter])=>(
+                <div key={label} style={{marginBottom:"0.65rem"}}>
+                  <div style={{fontSize:"0.65rem",fontWeight:600,color:"#64748b",marginBottom:"0.3rem",textTransform:"uppercase",letterSpacing:"0.4px"}}>{label}</div>
+                  <input type={type} value={val} onChange={e=>setter(e.target.value)} style={{width:"100%",padding:"0.6rem 0.8rem",border:"1.5px solid #e2e8f0",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",outline:"none",background:"#f8fafc"}}/>
+                </div>
+              ))}
+              {pwErr && <div style={{fontSize:"0.72rem",color:"#ef4444",marginBottom:"0.6rem",fontWeight:600}}>{pwErr}</div>}
+              {pwOk  && <div style={{fontSize:"0.72rem",color:"#16a34a",marginBottom:"0.6rem",fontWeight:600}}>{pwOk}</div>}
+              <div style={{display:"flex",gap:"0.6rem",marginTop:"0.5rem"}}>
+                <button onClick={()=>{setShowPwModal(false);setPwErr("");setPwOk("");setPwCurrent("");setPwNew("");setPwConfirm("");}} style={{flex:1,padding:"0.6rem",borderRadius:7,border:"1px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:600,color:"#475569",fontFamily:"inherit",fontSize:"0.82rem"}}>Cancel</button>
+                <button onClick={handleChangePassword} disabled={pwBusy} style={{flex:1,padding:"0.6rem",borderRadius:7,border:"none",background:"#4f46e5",color:"#fff",cursor:pwBusy?"not-allowed":"pointer",fontWeight:700,fontFamily:"inherit",fontSize:"0.82rem",opacity:pwBusy?0.6:1}}>{pwBusy?"Saving…":"Change Password"}</button>
+              </div>
+            </div>
+          </div>
+        )}
+        {showSupport && <SupportModal apiFetch={apiFetch} onClose={()=>setShowSupport(false)} />}
 
         <div className="wrap">
           {/* Tab Nav */}
@@ -774,7 +978,7 @@ export default function BgvDashboard() {
                       Conversation
                       <span style={{fontSize:"0.7rem",fontWeight:500,color:"#64748b",marginLeft:"0.5rem"}}>Messages visible to you based on your role</span>
                     </div>
-                    <div className="msg-thread">
+                    <div className="msg-thread" ref={msgListRef}>
                       {threadMsgs.length===0 && <div style={{color:"#94a3b8",fontSize:"0.84rem",textAlign:"center",padding:"2rem"}}>No messages yet.</div>}
                       {threadMsgs.map(m=>{
                         const isMine = m.sender_role === "bgv";
@@ -829,8 +1033,8 @@ export default function BgvDashboard() {
                         const btnStyle = {padding:"0.3rem 0.6rem",borderRadius:999,border:`1.5px solid ${detectRecipientBgv(msgBody)==="employee"?"#4f46e5":"#e2e8f0"}`,background:detectRecipientBgv(msgBody)==="employee"?"#eef2ff":"#f8fafc",color:"#4f46e5",fontSize:"0.68rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"};
                         const btnStyle2 = {padding:"0.3rem 0.6rem",borderRadius:999,border:`1.5px solid ${detectRecipientBgv(msgBody)==="employer"?"#4f46e5":"#e2e8f0"}`,background:detectRecipientBgv(msgBody)==="employer"?"#eef2ff":"#f8fafc",color:"#4f46e5",fontSize:"0.68rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"};
                         return (<>
-                          <button type="button" onClick={()=>setMsgBody(b=>b.includes(`@${employeeName}`)?b:`@${employeeName} ${b}`)} style={btnStyle}>@{employeeName}</button>
-                          <button type="button" onClick={()=>setMsgBody(b=>b.includes(`@${employerName}`)?b:`@${employerName} ${b}`)} style={btnStyle2}>@{employerName}</button>
+                          <button type="button" onClick={()=>setMention(employeeName,[employerName])} style={btnStyle}>@{employeeName}</button>
+                          <button type="button" onClick={()=>setMention(employerName,[employeeName])} style={btnStyle2}>@{employerName}</button>
                           <span style={{marginLeft:"auto",fontSize:"0.66rem",fontWeight:700,color:"#94a3b8",alignSelf:"center"}}>{recipientLabelBgv(detectRecipientBgv(msgBody))}</span>
                         </>);
                       })()}
