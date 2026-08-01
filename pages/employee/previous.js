@@ -261,7 +261,7 @@ function ExitAckModal({ onSaveAndExit, onExitWithout, onCancel }) {
 
 function StepNav({ current, onNavigate }) {
   const steps = [
-    { n:1, label:"Personal",   icon:"���", path:"/employee/personal"  },
+    { n:1, label:"Personal",   icon:"👤", path:"/employee/personal"  },
     { n:2, label:"Education",  icon:"🎓", path:"/employee/education" },
     { n:3, label:"Employment", icon:"💼", path:"/employee/previous"  },
     { n:4, label:"UAN",        icon:"🏦", path:"/employee/uan"       },
@@ -1088,7 +1088,7 @@ export default function PreviousCompany() {
     fetchData();
   },[ready,user,apiFetch]);
 
-  // Mark edited — resets declaration so user must re-confirm, on EVERY edit, not just the first
+  // Mark edited — resets declaration so user must re-confirm
   const markEdited = () => {
     wasEdited.current = true;
     setDeclared(false);
