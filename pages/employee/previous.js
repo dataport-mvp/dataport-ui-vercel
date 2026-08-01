@@ -261,7 +261,7 @@ function ExitAckModal({ onSaveAndExit, onExitWithout, onCancel }) {
 
 function StepNav({ current, onNavigate }) {
   const steps = [
-    { n:1, label:"Personal",   icon:"👤", path:"/employee/personal"  },
+    { n:1, label:"Personal",   icon:"���", path:"/employee/personal"  },
     { n:2, label:"Education",  icon:"🎓", path:"/employee/education" },
     { n:3, label:"Employment", icon:"💼", path:"/employee/previous"  },
     { n:4, label:"UAN",        icon:"🏦", path:"/employee/uan"       },
@@ -1344,7 +1344,7 @@ export default function PreviousCompany() {
             <div key={emp.company_id} className="emp-card">
               <div className="emp-hdr">
                 <div style={{display:"flex",alignItems:"center",gap:"0.55rem",flexWrap:"wrap"}}>
-                  <span className="emp-title">{isLast?"Current / Most Recent Employer":index===0?"First Job / Oldest Employer":`Employer ${index + 1}`}</span>
+                  <span className="emp-title">{employments.length===1?`Employer 1${emp.currentlyWorking==="Yes"?" — Current":""}`:isLast?"Current / Most Recent Employer":index===0?"First Job / Oldest Employer":`Employer ${index + 1}`}</span>
                   {isLast&&isCurrentlyWorking&&<span className="cur-badge">✓ Currently working here</span>}
                 </div>
                 <div className="emp-hdr-right">

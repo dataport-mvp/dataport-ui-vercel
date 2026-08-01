@@ -1798,6 +1798,7 @@ export default function UanDetails() {
 
             <div className="fi" style={{marginBottom:"0.85rem",marginTop:"0.4rem"}}>
               <span className="fl">Do you have children to add?</span>
+              <p style={{fontSize:"0.68rem",color:"#8b88b0",margin:"0.2rem 0 0.4rem"}}>Optional — if you have children, you can add up to 2 for health insurance coverage. Applies regardless of marital status.</p>
               <div style={{display:"flex",gap:"0.55rem",marginTop:"0.15rem",maxWidth:280}}>
                 {["Yes","No"].map(v=>(
                   <button key={v} type="button" onClick={()=>{setHasChildren(v);flagPostSignEdit();}} style={{flex:1,padding:"0.55rem 0",borderRadius:9,border:hasChildren===v?"2px solid #7c3aed":"1.5px solid #d8d4e3",background:hasChildren===v?"#7c3aed":"#f5f4f0",color:hasChildren===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.78rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}>{v}</button>
@@ -1827,7 +1828,7 @@ export default function UanDetails() {
                   </div>
                 </div>
               ))}
-              {children.length < 4 && <button className="add-btn" onClick={()=>{setChildren(p=>[...p,makeChild()]);flagPostSignEdit();}}>+ Add Another Child</button>}
+              {children.length < 2 && <button className="add-btn" onClick={()=>{setChildren(p=>[...p,makeChild()]);flagPostSignEdit();}}>+ Add Another Child</button>}
             </>)}
 
             <div className="fi" style={{marginBottom:"0.5rem",marginTop:"0.9rem"}}>

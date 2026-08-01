@@ -1729,6 +1729,12 @@ export default function PersonalDetails() {
     if (!curDistrict)   e.curDistrict = true;
     if (!curState)      e.curState = true;
     if (!curPin)        e.curPin = true;
+    if (!sameAsCurrent) {
+      if (!permDoor)     e.permDoor = true;
+      if (!permDistrict) e.permDistrict = true;
+      if (!permState)    e.permState = true;
+      if (!permPin)      e.permPin = true;
+    }
     if (!aadhaarKey)    e.aadhaarKey = true;
     if (!panKey)        e.panKey = true;
     if (!photoKey)      e.photoKey = true;
@@ -2467,15 +2473,15 @@ export default function PersonalDetails() {
                     <DateField l="Residing From" v={permFrom} s={dirty(setPermFrom)} r={false} />
                     <div className="fi" />
                   </div>
-                  <div className="fr"><F l="Door No. & Street" v={permDoor} s={dirty(setPermDoor)} r={false} /></div>
+                  <div className="fr"><F l="Door No. & Street" v={permDoor} s={dirty(setPermDoor)} /></div>
                   <div className="fr">
                     <F l="Village / Area"          v={permVillage}  s={dirty(setPermVillage)} r={false} />
                     <F l="Tehsil / Taluk / Mandal" v={permLocality} s={dirty(setPermLocality)} r={false} />
                   </div>
                   <div className="fr">
-                    <F l="District" v={permDistrict} s={dirty(setPermDistrict)} r={false} />
-                    <F l="State"    v={permState}    s={dirty(setPermState)}    r={false} />
-                    <F l="Pincode"  v={permPin}      s={(v) => dirty(setPermPin)(v.replace(/\D/g,"").slice(0,6))} r={false} />
+                    <F l="District" v={permDistrict} s={dirty(setPermDistrict)} />
+                    <F l="State"    v={permState}    s={dirty(setPermState)} />
+                    <F l="Pincode"  v={permPin}      s={(v) => dirty(setPermPin)(v.replace(/\D/g,"").slice(0,6))} />
                   </div>
                 </>)}
                 {sameAsCurrent && (
