@@ -261,7 +261,7 @@ function ExitAckModal({ onSaveAndExit, onExitWithout, onCancel }) {
 
 function StepNav({ current, onNavigate }) {
   const steps = [
-    { n:1, label:"Personal",   icon:"í±¤", path:"/employee/personal"  },
+    { n:1, label:"Personal",   icon:"ğŸ‘¤", path:"/employee/personal"  },
     { n:2, label:"Education",  icon:"ğŸ“", path:"/employee/education" },
     { n:3, label:"Employment", icon:"ğŸ’¼", path:"/employee/previous"  },
     { n:4, label:"UAN",        icon:"ğŸ¦", path:"/employee/uan"       },
