@@ -29,11 +29,22 @@ export function AuthProvider({ children }) {
     return () => events.forEach(e => window.removeEventListener(e, handler));
   }, [resetInactivityTimer]);
 
-  const doRefresh = useCallback(async () => {
+  // doRefresh now returns a precise result instead of a bare token|null:
+  //   { ok: true, token }               — refresh succeeded
+  //   { ok: false, invalid: true }      — backend explicitly said this refresh token is dead
+  //   { ok: false, invalid: false }     — couldn't confirm either way (network/timeout/5xx),
+  //                                        already retried a few times — NOT proof of an
+  //                                        invalid session, so callers must not force-logout
+  //                                        on this outcome, only on invalid:true.
+  const doRefresh = useCallback(async (attempt = 1) => {
     const rt = localStorage.getItem("dg_refresh_token");
-    if (!rt) return null;
+    if (!rt) return { ok: false, invalid: true };
+
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 10000);
+    // 15s instead of the old 10s — Lambda cold starts can legitimately take longer than 10s,
+    // and a timeout here must never be mistaken for "this token is invalid".
+    const timer = setTimeout(() => controller.abort(), 15000);
+
     try {
       const res = await fetch(`${API}/auth/refresh`, {
         method:  "POST",
@@ -42,15 +53,37 @@ export function AuthProvider({ children }) {
         signal:  controller.signal,
       });
       clearTimeout(timer);
-      if (!res.ok) return null;
+
+      if (res.status === 401) {
+        // Backend explicitly rejected this refresh token — genuinely dead, not a fluke.
+        return { ok: false, invalid: true };
+      }
+
+      if (!res.ok) {
+        // Some other server-side hiccup (500/502/503/etc.) — says nothing about whether
+        // the token itself is valid. Retry a few times before giving up.
+        if (attempt < 3) {
+          await new Promise(r => setTimeout(r, 1000 * attempt));
+          return doRefresh(attempt + 1);
+        }
+        return { ok: false, invalid: false };
+      }
+
       const data     = await res.json();
       const newToken = data.access_token;
-      if (!newToken) return null;
+      if (!newToken) return { ok: false, invalid: false };
+
       accessTokenRef.current = newToken;
-      return newToken;
-    } catch {
+      return { ok: true, token: newToken };
+    } catch (err) {
       clearTimeout(timer);
-      return null;
+      // Network error, timeout, or aborted request — not proof the refresh token is invalid,
+      // just that we couldn't reach the server this time. Retry before giving up.
+      if (attempt < 3) {
+        await new Promise(r => setTimeout(r, 1000 * attempt));
+        return doRefresh(attempt + 1);
+      }
+      return { ok: false, invalid: false };
     }
   }, []);
 
@@ -68,17 +101,19 @@ export function AuthProvider({ children }) {
         const rt = localStorage.getItem("dg_refresh_token");
         const u  = localStorage.getItem("dg_user");
         if (rt && rt !== "undefined" && rt !== "null" && u && u !== "undefined" && u !== "null") {
-          const newToken = await doRefresh();
-          if (newToken) {
+          const result = await doRefresh();
+          if (result.ok) {
             setUser(JSON.parse(u));
             resetInactivityTimer();
-          } else {
-            // Refresh failed — token invalid or expired or DynamoDB cleared
-            // Do NOT fall back to cached user: accessTokenRef is null,
-            // every apiFetch would get 401 and trigger logout loop.
-            // Clear cleanly and let user log in fresh.
+          } else if (result.invalid) {
+            // Genuinely dead refresh token — clear storage, user must log in fresh.
             localStorage.removeItem("dg_refresh_token");
             localStorage.removeItem("dg_user");
+          } else {
+            // Could not confirm either way (server unreachable after retries). Don't wipe
+            // the stored refresh token — it may still be valid. Just show the login screen
+            // for now; a normal reload once connectivity returns will pick it back up
+            // without forcing a fresh password login.
           }
         }
       } catch (_) {}
@@ -107,17 +142,27 @@ export function AuthProvider({ children }) {
       }
 
       isRefreshing.current = true;
-      const newToken       = await doRefresh();
+      const result          = await doRefresh();
       isRefreshing.current = false;
 
-      if (newToken) {
-        refreshQueue.current.forEach(({ resolve }) => resolve(newToken));
+      if (result.ok) {
+        refreshQueue.current.forEach(({ resolve }) => resolve(result.token));
         refreshQueue.current = [];
-        res = await makeRequest(newToken);
-      } else {
+        res = await makeRequest(result.token);
+      } else if (result.invalid) {
+        // Genuinely dead session — this is the only case that should force a logout.
         refreshQueue.current.forEach(({ reject }) => reject(new Error("Session expired")));
         refreshQueue.current = [];
         logoutRef.current?.("expired");
+        return res;
+      } else {
+        // Temporary failure (network/timeout/5xx) even after retries inside doRefresh.
+        // Do NOT log the user out or navigate away — that would silently discard whatever
+        // they're in the middle of filling. Just let this one request fail; the page's own
+        // error handling shows a normal "couldn't save, try again" message, and the next
+        // action (e.g. clicking Save again) will attempt a fresh refresh.
+        refreshQueue.current.forEach(({ reject }) => reject(new Error("Network error")));
+        refreshQueue.current = [];
         return res;
       }
     }
