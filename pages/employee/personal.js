@@ -810,6 +810,7 @@ function ConsentTab({ apiFetch, profileStatus }) {
   const router = useRouter();
   const [consents,setConsents]=useState([]);
   const [fieldChanges,setFieldChanges]=useState([]);
+  const [expandedActivity,setExpandedActivity]=useState(()=>new Set());
   const [loading,setLoading]=useState(true);
   const [acting,setActing]=useState(null);
   const [actionError,setActionError]=useState({});
@@ -943,13 +944,16 @@ function ConsentTab({ apiFetch, profileStatus }) {
       color: c.status==="approved"?"#16a34a":c.status==="pending"?"#f59e0b":c.status==="revoked"?"#94a3b8":"#ef4444",
       consent_id: c.consent_id,
     })),
-    ...fieldChanges.map(e=>({
+    ...fieldChanges.map((e,idx)=>({
       kind: "field_change",
       employer: e.field_label || e.field_name,
-      action: e.old_value && e.new_value ? `Changed from "${e.old_value}" to "${e.new_value}"` : e.new_value ? `Set to "${e.new_value}"` : "Updated",
+      action: "Changed",
       time: e.changed_at,
       color: "#6366f1",
       consent_id: null,
+      old_value: e.old_value,
+      new_value: e.new_value,
+      _key: `fc-${e.changed_at}-${idx}`,
     })),
   ].sort((a,b)=>(b.time||0)-(a.time||0));
 
@@ -1007,15 +1011,39 @@ function ConsentTab({ apiFetch, profileStatus }) {
           </div>
         ) : (
           <div style={{background:"#fff",border:"1px solid #ebe9f5",borderRadius:12,padding:"0.75rem 1rem"}}>
-            {pagedList.map((ev,i)=>(
-              <div key={`${ev.kind}-${ev.consent_id||""}-${ev.time}-${i}`} style={{display:"flex",alignItems:"flex-start",gap:"0.65rem",padding:"0.55rem 0",borderBottom:i<pagedList.length-1?"1px solid #f5f3ff":"none"}}>
-                <div style={{width:8,height:8,borderRadius:"50%",background:ev.color,flexShrink:0,marginTop:6}}/>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:"0.78rem",color:"#1a1730",fontWeight:600}}>{ev.kind==="field_change"?"✏️ ":""}{ev.employer}</div>
-                  <div style={{fontSize:"0.71rem",color:"#8b88b0",marginTop:1}}>{ev.action} · {toIST(ev.time)}</div>
+            {pagedList.map((ev,i)=>{
+              const rowKey = ev._key || `${ev.kind}-${ev.consent_id||""}-${ev.time}-${i}`;
+              const isFieldChange = ev.kind==="field_change";
+              const isExpanded = expandedActivity.has(rowKey);
+              return (
+              <div key={rowKey} style={{padding:"0.55rem 0",borderBottom:i<pagedList.length-1?"1px solid #f5f3ff":"none"}}>
+                <div
+                  style={{display:"flex",alignItems:"flex-start",gap:"0.65rem",cursor:isFieldChange?"pointer":"default"}}
+                  onClick={()=>{
+                    if(!isFieldChange)return;
+                    setExpandedActivity(prev=>{const n=new Set(prev);n.has(rowKey)?n.delete(rowKey):n.add(rowKey);return n;});
+                  }}
+                >
+                  <div style={{width:8,height:8,borderRadius:"50%",background:ev.color,flexShrink:0,marginTop:6}}/>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:"0.78rem",color:"#1a1730",fontWeight:600,display:"flex",alignItems:"center",gap:"0.4rem"}}>
+                      {isFieldChange?"✏️ ":""}{ev.employer}
+                      {isFieldChange&&<span style={{fontSize:"0.65rem",color:"#c4bfdb",marginLeft:"auto"}}>{isExpanded?"▲":"▼"}</span>}
+                    </div>
+                    <div style={{fontSize:"0.71rem",color:"#8b88b0",marginTop:1}}>{ev.action} · {toIST(ev.time)}</div>
+                  </div>
                 </div>
+                {isFieldChange&&isExpanded&&(
+                  <div style={{marginTop:"0.5rem",marginLeft:"1.15rem",padding:"0.55rem 0.7rem",background:"#f8f7ff",borderRadius:8,fontSize:"0.72rem"}}>
+                    <div style={{color:"#94a3b8",marginBottom:"0.2rem"}}>Previous value</div>
+                    <div style={{color:"#1a1730",fontWeight:600,marginBottom:"0.5rem"}}>{ev.old_value||"—"}</div>
+                    <div style={{color:"#94a3b8",marginBottom:"0.2rem"}}>New value</div>
+                    <div style={{color:"#16a34a",fontWeight:600}}>{ev.new_value||"—"}</div>
+                  </div>
+                )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )
       )}
