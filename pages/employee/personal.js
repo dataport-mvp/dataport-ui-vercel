@@ -807,6 +807,7 @@ function StepNav({ current, onNavigate }) {
 }
 
 function ConsentTab({ apiFetch, profileStatus }) {
+  const router = useRouter();
   const [consents,setConsents]=useState([]);
   const [loading,setLoading]=useState(true);
   const [acting,setActing]=useState(null);
@@ -883,7 +884,14 @@ function ConsentTab({ apiFetch, profileStatus }) {
       </div>
       <span style={{padding:"0.18rem 0.7rem",borderRadius:999,fontSize:"0.7rem",fontWeight:700,color:sColor[c.status]||"#64748b",background:sBg[c.status]||"#f8fafc",whiteSpace:"nowrap",marginLeft:"0.75rem",border:`1px solid ${(sColor[c.status]||"#94a3b8")}33`}}>{c.status.charAt(0).toUpperCase()+c.status.slice(1)}</span>
     </div>
-    {actionError[c.consent_id]&&<p style={{fontSize:"0.75rem",color:"#ef4444",marginTop:"0.5rem",fontWeight:600}}>⚠️ {actionError[c.consent_id]}</p>}
+    {actionError[c.consent_id]&&(
+      <p style={{fontSize:"0.75rem",color:"#ef4444",marginTop:"0.5rem",fontWeight:600}}>
+        ⚠️ {actionError[c.consent_id]}
+        {actionError[c.consent_id].includes("Review page")&&(
+          <button onClick={()=>router.push("/employee/review")} style={{marginLeft:"0.5rem",padding:"0.2rem 0.6rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:6,fontSize:"0.7rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Go to Review →</button>
+        )}
+      </p>
+    )}
     {c.status==="pending"&&(<div style={{marginTop:"0.8rem"}}>
       {profileNotSubmitted&&<div style={{fontSize:"0.75rem",color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:"0.5rem 0.75rem",marginBottom:"0.6rem"}}>⚠️ Complete and submit your profile before approving consent requests.</div>}
       <textarea className="cmsg" placeholder="Optional message to employer…" value={replyMsg[c.consent_id]||""} onFocus={()=>{textareaFocused.current=true;}} onBlur={()=>{textareaFocused.current=false;}} onChange={e=>{const val=e.target.value;setReplyMsg(p=>({...p,[c.consent_id]:val}));}} style={{marginBottom:"0.5rem"}}/>
