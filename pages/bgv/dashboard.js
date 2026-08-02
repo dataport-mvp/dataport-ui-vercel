@@ -276,6 +276,7 @@ export default function BgvDashboard() {
   const [inboxSearch, setInboxSearch] = useState("");
   const [activeThread, setActiveThread] = useState(null);
   const [threadMsgs, setThreadMsgs] = useState([]);
+  const [threadSegments, setThreadSegments] = useState({});
   const msgListRef = useRef(null);
   useEffect(() => {
     if (msgListRef.current) msgListRef.current.scrollTop = msgListRef.current.scrollHeight;
@@ -539,6 +540,7 @@ export default function BgvDashboard() {
         const d = await res.json();
         const msgs = d.messages || [];
         setThreadMsgs(msgs);
+        setThreadSegments(d.consent_segments || {});
         const keys = [...new Set(msgs.filter(m=>m.attachment_s3_key).map(m=>m.attachment_s3_key))];
         keys.forEach(async (key) => {
           if (msgAttachUrls[key]) return;
@@ -980,11 +982,24 @@ export default function BgvDashboard() {
                     </div>
                     <div className="msg-thread" ref={msgListRef}>
                       {threadMsgs.length===0 && <div style={{color:"#94a3b8",fontSize:"0.84rem",textAlign:"center",padding:"2rem"}}>No messages yet.</div>}
-                      {threadMsgs.map(m=>{
+                      {threadMsgs.map((m,i)=>{
                         const isMine = m.sender_role === "bgv";
                         const isEmployerCC = m.visible_to?.includes("employer") && m.sender_role !== "employer";
+                        const isNewSegment = m.consent_id && m.consent_id!==threadMsgs[i-1]?.consent_id;
+                        const seg = isNewSegment ? (threadSegments[m.consent_id]||{}) : null;
                         return (
-                          <div key={m.message_id} style={{display:"flex",flexDirection:"column",alignItems:isMine?"flex-end":"flex-start"}}>
+                          <div key={m.message_id}>
+                          {isNewSegment && (
+                            <div style={{display:"flex",alignItems:"center",gap:"0.6rem",margin:"0.9rem 0 0.6rem"}}>
+                              <div style={{flex:1,height:1,background:"#e2e8f0"}}/>
+                              <div style={{fontSize:"0.66rem",color:"#94a3b8",fontWeight:600,whiteSpace:"nowrap",textAlign:"center"}}>
+                                {seg.requested_at ? new Date(seg.requested_at).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}) : ""}
+                                {seg.bgv_vendor_name ? ` — BGV: ${seg.bgv_vendor_name}` : ""}
+                              </div>
+                              <div style={{flex:1,height:1,background:"#e2e8f0"}}/>
+                            </div>
+                          )}
+                          <div style={{display:"flex",flexDirection:"column",alignItems:isMine?"flex-end":"flex-start"}}>
                             <div className={`msg-bubble${isMine?" mine":isEmployerCC?" employer-cc":" theirs"}`}>
                               <div style={{fontSize:"0.68rem",fontWeight:700,marginBottom:"0.25rem",opacity:0.7}}>
                                 {m.sender_name} ({m.sender_role}) {isEmployerCC&&!isMine?"— 👁 employer CC'd":""}
@@ -1008,6 +1023,7 @@ export default function BgvDashboard() {
                               )}
                               <div className="msg-meta">{new Date(m.sent_at).toLocaleString("en-IN",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}</div>
                             </div>
+                          </div>
                           </div>
                         );
                       })}

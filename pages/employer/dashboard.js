@@ -1690,6 +1690,7 @@ export default function EmployerDashboard() {
   const [msgAttachUrls,  setMsgAttachUrls]  = useState({}); // s3_key -> presigned view URL
   const [showNewMsg,     setShowNewMsg]     = useState(false);
   const [threadMsgs,     setThreadMsgs]     = useState([]);
+  const [threadSegments, setThreadSegments] = useState({});
   const msgListRef       = useRef(null);
   useEffect(() => {
     if (msgListRef.current) msgListRef.current.scrollTop = msgListRef.current.scrollHeight;
@@ -2047,6 +2048,7 @@ export default function EmployerDashboard() {
         const d = await r.json();
         const msgs = d.messages || [];
         setThreadMsgs(msgs);
+        setThreadSegments(d.consent_segments || {});
         // Resolve a viewable URL for every attachment in this thread
         const keys = [...new Set(msgs.filter(m=>m.attachment_s3_key).map(m=>m.attachment_s3_key))];
         keys.forEach(async (key) => {
@@ -2274,8 +2276,21 @@ return (
                         // the BGV side — the BGV company/org name beneath the bubble.
                         const rtLower = (m.recipient_type||"").toLowerCase();
                         const orgLabel = m.sender_org || m.bgv_company || (rtLower==="bgv"||rtLower==="both" ? "BGV Team" : "");
+                        const isNewSegment = m.consent_id && m.consent_id!==threadMsgs[i-1]?.consent_id;
+                        const seg = isNewSegment ? (threadSegments[m.consent_id]||{}) : null;
                         return(
-                          <div key={m.message_id||i} className={`msg-bubble-wrap ${mine?"mine":"theirs"}`}>
+                          <div key={m.message_id||i}>
+                          {isNewSegment && (
+                            <div style={{display:"flex",alignItems:"center",gap:"0.6rem",margin:"0.9rem 0 0.6rem"}}>
+                              <div style={{flex:1,height:1,background:"#e5decf"}}/>
+                              <div style={{fontSize:"0.66rem",color:"#a09890",fontWeight:600,whiteSpace:"nowrap",textAlign:"center"}}>
+                                {seg.requested_at ? new Date(seg.requested_at).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}) : ""}
+                                {seg.bgv_vendor_name ? ` — BGV: ${seg.bgv_vendor_name}` : ""}
+                              </div>
+                              <div style={{flex:1,height:1,background:"#e5decf"}}/>
+                            </div>
+                          )}
+                          <div className={`msg-bubble-wrap ${mine?"mine":"theirs"}`}>
                             {!mine&&<div className="msg-sender">{m.sender_name||m.sender_email}</div>}
                             <div className={`msg-bubble ${mine?"mine":"theirs"}`}>
                               {m.subject && <div style={{fontSize:"0.68rem",fontWeight:800,marginBottom:"0.3rem",opacity:0.85,textTransform:"uppercase",letterSpacing:"0.3px"}}>Sub: {m.subject}</div>}
@@ -2298,6 +2313,7 @@ return (
                             </div>
                             <div className={`msg-time ${mine?"mine":"theirs"}`}>{toISTDate(m.sent_at)}{mine&&m.read_by_recipient&&<span style={{marginLeft:4}}>✓✓</span>}{mine&&!m.read_by_recipient&&<span style={{marginLeft:4}}>✓</span>}</div>
                             {!mine&&orgLabel&&<div style={{fontSize:"0.58rem",color:"#a09890",marginTop:2,fontStyle:"italic"}}>{orgLabel}</div>}
+                          </div>
                           </div>
                         );
                       })}

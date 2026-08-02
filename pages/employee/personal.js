@@ -809,6 +809,7 @@ function StepNav({ current, onNavigate }) {
 function ConsentTab({ apiFetch, profileStatus }) {
   const router = useRouter();
   const [consents,setConsents]=useState([]);
+  const [fieldChanges,setFieldChanges]=useState([]);
   const [loading,setLoading]=useState(true);
   const [acting,setActing]=useState(null);
   const [actionError,setActionError]=useState({});
@@ -818,6 +819,7 @@ function ConsentTab({ apiFetch, profileStatus }) {
     // Skip background poll while user is typing — prevents textarea remount mid-input
     if(textareaFocused.current)return;
     try{const res=await apiFetch(`${API}/consent/my`);if(res.ok)setConsents(await res.json());}catch(_){}
+    try{const res2=await apiFetch(`${API}/employee/activity-log`);if(res2.ok)setFieldChanges(await res2.json());}catch(_){}
     setLoading(false);
   },[apiFetch]);
   useEffect(()=>{load();},[load]);
@@ -932,13 +934,24 @@ function ConsentTab({ apiFetch, profileStatus }) {
 
   // ── tabMap lists already populated above ──────────────────────────
 
-  const auditEvents = [...all].sort((a,b)=>(b.responded_at||b.requested_at||0)-(a.responded_at||a.requested_at||0)).map(c=>({
-    employer: c.requestor_name||c.employer_name||c.requestor_email||c.employer_email||"Unknown",
-    action: c.status==="pending"?"Requested access":c.status==="approved"?"You approved access":c.status==="declined"?"You declined":c.status==="revoked"?"You withdrew consent":"Unknown",
-    time: c.responded_at||c.requested_at,
-    color: c.status==="approved"?"#16a34a":c.status==="pending"?"#f59e0b":c.status==="revoked"?"#94a3b8":"#ef4444",
-    consent_id: c.consent_id,
-  }));
+  const auditEvents = [
+    ...[...all].sort((a,b)=>(b.responded_at||b.requested_at||0)-(a.responded_at||a.requested_at||0)).map(c=>({
+      kind: "consent",
+      employer: c.requestor_name||c.employer_name||c.requestor_email||c.employer_email||"Unknown",
+      action: c.status==="pending"?"Requested access":c.status==="approved"?"You approved access":c.status==="declined"?"You declined":c.status==="revoked"?"You withdrew consent":"Unknown",
+      time: c.responded_at||c.requested_at,
+      color: c.status==="approved"?"#16a34a":c.status==="pending"?"#f59e0b":c.status==="revoked"?"#94a3b8":"#ef4444",
+      consent_id: c.consent_id,
+    })),
+    ...fieldChanges.map(e=>({
+      kind: "field_change",
+      employer: e.field_label || e.field_name,
+      action: e.old_value && e.new_value ? `Changed from "${e.old_value}" to "${e.new_value}"` : e.new_value ? `Set to "${e.new_value}"` : "Updated",
+      time: e.changed_at,
+      color: "#6366f1",
+      consent_id: null,
+    })),
+  ].sort((a,b)=>(b.time||0)-(a.time||0));
 
   const activeList   = cInnerTab === "activity" ? auditEvents : (tabMap[cInnerTab]?.list || []);
   const totalPages   = Math.max(1, Math.ceil(activeList.length / PER_PAGE));
@@ -995,10 +1008,10 @@ function ConsentTab({ apiFetch, profileStatus }) {
         ) : (
           <div style={{background:"#fff",border:"1px solid #ebe9f5",borderRadius:12,padding:"0.75rem 1rem"}}>
             {pagedList.map((ev,i)=>(
-              <div key={ev.consent_id+i} style={{display:"flex",alignItems:"flex-start",gap:"0.65rem",padding:"0.55rem 0",borderBottom:i<pagedList.length-1?"1px solid #f5f3ff":"none"}}>
+              <div key={`${ev.kind}-${ev.consent_id||""}-${ev.time}-${i}`} style={{display:"flex",alignItems:"flex-start",gap:"0.65rem",padding:"0.55rem 0",borderBottom:i<pagedList.length-1?"1px solid #f5f3ff":"none"}}>
                 <div style={{width:8,height:8,borderRadius:"50%",background:ev.color,flexShrink:0,marginTop:6}}/>
                 <div style={{flex:1}}>
-                  <div style={{fontSize:"0.78rem",color:"#1a1730",fontWeight:600}}>{ev.employer}</div>
+                  <div style={{fontSize:"0.78rem",color:"#1a1730",fontWeight:600}}>{ev.kind==="field_change"?"✏️ ":""}{ev.employer}</div>
                   <div style={{fontSize:"0.71rem",color:"#8b88b0",marginTop:1}}>{ev.action} · {toIST(ev.time)}</div>
                 </div>
               </div>
@@ -1222,6 +1235,7 @@ export default function PersonalDetails() {
   const [inboxThreads,  setInboxThreads]   = useState([]);
   const [activeThread,  setActiveThread]   = useState(null);
   const [threadMsgs,    setThreadMsgs]     = useState([]);
+  const [threadSegments, setThreadSegments] = useState({});
   const msgListRef      = useRef(null);
   useEffect(() => {
     if (msgListRef.current) msgListRef.current.scrollTop = msgListRef.current.scrollHeight;
@@ -1273,6 +1287,7 @@ export default function PersonalDetails() {
         const d = await r.json();
         const msgs = d.messages || [];
         setThreadMsgs(msgs);
+        setThreadSegments(d.consent_segments || {});
         const keys = [...new Set(msgs.filter(m=>m.attachment_s3_key).map(m=>m.attachment_s3_key))];
         keys.forEach(async (key) => {
           if (msgAttachUrls[key]) return;
@@ -1933,8 +1948,21 @@ export default function PersonalDetails() {
                         {!threadLoading&&threadMsgs.length===0&&<div style={{textAlign:"center",fontSize:"0.72rem",color:"#94a3b8",padding:"2rem"}}>No messages yet. Send a reply below.</div>}
                         {threadMsgs.map((m,i)=>{
                           const mine = m.sender_role==="employee";
+                          const isNewSegment = m.consent_id && m.consent_id!==threadMsgs[i-1]?.consent_id;
+                          const seg = isNewSegment ? (threadSegments[m.consent_id]||{}) : null;
                           return (
-                            <div key={m.message_id||i} style={{display:"flex",flexDirection:"column",alignItems:mine?"flex-end":"flex-start"}}>
+                            <React.Fragment key={m.message_id||i}>
+                            {isNewSegment && (
+                              <div style={{display:"flex",alignItems:"center",gap:"0.6rem",margin:"0.9rem 0 0.6rem"}}>
+                                <div style={{flex:1,height:1,background:"#ede9f8"}}/>
+                                <div style={{fontSize:"0.66rem",color:"#8b88b0",fontWeight:600,whiteSpace:"nowrap",textAlign:"center"}}>
+                                  {seg.requested_at ? new Date(seg.requested_at).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}) : ""}
+                                  {seg.bgv_vendor_name ? ` — BGV: ${seg.bgv_vendor_name}` : ""}
+                                </div>
+                                <div style={{flex:1,height:1,background:"#ede9f8"}}/>
+                              </div>
+                            )}
+                            <div style={{display:"flex",flexDirection:"column",alignItems:mine?"flex-end":"flex-start"}}>
                               {!mine&&<div style={{fontSize:"0.6rem",color:"#94a3b8",marginBottom:2,fontWeight:600}}>{m.sender_name||m.sender_email}</div>}
                               <div style={{maxWidth:"78%",padding:"0.6rem 0.85rem",borderRadius:mine?"12px 12px 3px 12px":"12px 12px 12px 3px",background:mine?"#0d6e6e":"#f5f3ff",color:mine?"#fff":"#1a1730",fontSize:"0.82rem",lineHeight:1.55,border:mine?"none":"1px solid #ede9f8"}}>
                                 {m.subject&&<div style={{fontSize:"0.68rem",fontWeight:800,marginBottom:"0.3rem",opacity:0.85,textTransform:"uppercase",letterSpacing:"0.3px"}}>Sub: {m.subject}</div>}
@@ -1960,6 +1988,7 @@ export default function PersonalDetails() {
                                 {mine&&<span style={{marginLeft:4}}>{m.read_by_recipient?"✓✓":"✓"}</span>}
                               </div>
                             </div>
+                            </React.Fragment>
                           );
                         })}
                       </div>
