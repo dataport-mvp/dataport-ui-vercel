@@ -150,14 +150,6 @@ const ACK_DEFS = [
   { key:"civil", title:"Civil Judgments or Regulatory Actions", question:"Have you ever had a civil judgment entered against you, or been subject to a regulatory finding, ban, or sanction by any court, tribunal, or regulatory authority?", detail:"This includes money decrees, injunctions, adverse orders in consumer or labour disputes." },
 ];
 
-const GUIDE_STEPS = [
-  { label:"First Job",       sub:"oldest"       },
-  { label:"Company 2",       sub:"after that"   },
-  { label:"Company 3",       sub:""             },
-  { label:"Company 4",       sub:""             },
-  { label:"Current Company", sub:"most recent"  },
-];
-
 // ── DateField: no calendar, DD/MM/YYYY input, shows month name below ──
 function FDate({ l, v, s, r=true, errKey, errors, onFix }) {
   const [raw, setRaw] = useState(()=>{
@@ -1287,19 +1279,8 @@ export default function PreviousCompany() {
           <div className="guide-banner">
             <div style={{fontSize:"1.2rem",flexShrink:0}}>💡</div>
             <div style={{flex:1}}>
-              <div style={{fontSize:"0.82rem",fontWeight:700,color:"#3730a3",marginBottom:"0.25rem"}}>Start with your first job and work forward to your current employer</div>
-              <div style={{fontSize:"0.72rem",color:"#6b6894",marginBottom:"0.5rem",lineHeight:1.5}}>Add employers in chronological order — oldest first, current employer last.</div>
-              <div className="guide-steps">
-                {GUIDE_STEPS.map((s,i,arr)=>(
-                  <span key={i} style={{display:"inline-flex",alignItems:"center",gap:"0.4rem"}}>
-                    <span className="guide-step" style={{display:"inline-flex",flexDirection:"column",alignItems:"center",gap:"1px"}}>
-                      <span>{s.label}</span>
-                      {s.sub&&<span style={{fontSize:"0.6rem",fontWeight:500,color:"#818cf8"}}>{s.sub}</span>}
-                    </span>
-                    {i<arr.length-1&&<span className="guide-arrow">→</span>}
-                  </span>
-                ))}
-              </div>
+              <div style={{fontSize:"0.82rem",fontWeight:700,color:"#3730a3",marginBottom:"0.25rem"}}>Employment History — Chronological Order</div>
+              <div style={{fontSize:"0.72rem",color:"#6b6894",lineHeight:1.5}}>Please add your employment history in chronological order, beginning with your first role and concluding with your current or most recent position.</div>
             </div>
           </div>
 
