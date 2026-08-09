@@ -19,14 +19,17 @@ export default function ForgotPassword() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      if (res.status === 404) {
-        setError("No account found with that email address");
-        setStatus("error");
-        return;
-      }
       if (!res.ok) {
-        const data = await res.json();
-        setError(data.detail || "Something went wrong");
+        // Deliberately generic — never distinguish "email not found" from any other
+        // failure. The backend never reveals whether an email is registered (always
+        // 200 either way), and the frontend must not undermine that by special-casing
+        // a 404 that would leak account existence if the backend ever changed.
+        let detail = "Something went wrong. Please try again.";
+        try {
+          const data = await res.json();
+          if (data.detail) detail = data.detail;
+        } catch {}
+        setError(detail);
         setStatus("error");
         return;
       }
