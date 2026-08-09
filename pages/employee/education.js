@@ -1,5 +1,6 @@
 // pages/employee/education.js  — Page 2 of 5
 import { useState, useEffect, useRef } from "react";
+import PasswordInput from "../../components/PasswordInput";
 import { useRouter } from "next/router";
 import { useAuth } from "../../utils/AuthContext";
 import { parseError } from "../../utils/apiError";
@@ -1194,8 +1195,8 @@ export default function EducationDetails() {
               {[["Current password",pwCurrent,setPwCurrent],["New password",pwNew,setPwNew],["Confirm new password",pwConfirm,setPwConfirm]].map(([label,val,setter])=>(
                 <div key={label} style={{marginBottom:"0.65rem"}}>
                   <div style={{fontSize:"0.65rem",fontWeight:600,color:"#6b7280",marginBottom:"0.3rem",textTransform:"uppercase",letterSpacing:"0.4px"}}>{label}</div>
-                  <input type="password" value={val} onChange={e=>setter(e.target.value)}
-                    style={{width:"100%",padding:"0.6rem 0.8rem",border:"1.5px solid #dddaf0",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",outline:"none",background:"#f8f7ff"}}/>
+                  <PasswordInput value={val} onChange={e=>setter(e.target.value)}
+                    inputStyle={{width:"100%",padding:"0.6rem 0.8rem",border:"1.5px solid #dddaf0",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",outline:"none",background:"#f8f7ff"}} />
                 </div>
               ))}
               {pwErr && <div style={{fontSize:"0.72rem",color:"#ef4444",marginBottom:"0.6rem",fontWeight:600}}>{pwErr}</div>}

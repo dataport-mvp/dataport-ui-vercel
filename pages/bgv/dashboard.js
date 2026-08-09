@@ -1,5 +1,6 @@
 // pages/bgv/dashboard.js
 import { useState, useEffect, useRef, useCallback } from "react";
+import PasswordInput from "../../components/PasswordInput";
 import { useRouter } from "next/router";
 import { useAuth } from "../../utils/AuthContext";
 
@@ -635,7 +636,7 @@ export default function BgvDashboard() {
               {[["Current password","password",pwCurrent,setPwCurrent],["New password","password",pwNew,setPwNew],["Confirm new password","password",pwConfirm,setPwConfirm]].map(([label,type,val,setter])=>(
                 <div key={label} style={{marginBottom:"0.65rem"}}>
                   <div style={{fontSize:"0.65rem",fontWeight:600,color:"#64748b",marginBottom:"0.3rem",textTransform:"uppercase",letterSpacing:"0.4px"}}>{label}</div>
-                  <input type={type} value={val} onChange={e=>setter(e.target.value)} style={{width:"100%",padding:"0.6rem 0.8rem",border:"1.5px solid #e2e8f0",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",outline:"none",background:"#f8fafc"}}/>
+                  <PasswordInput value={val} onChange={e=>setter(e.target.value)} inputStyle={{border:"1.5px solid #e2e8f0",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",background:"#f8fafc"}}/>
                 </div>
               ))}
               {pwErr && <div style={{fontSize:"0.72rem",color:"#ef4444",marginBottom:"0.6rem",fontWeight:600}}>{pwErr}</div>}

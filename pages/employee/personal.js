@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import PasswordInput from "../../components/PasswordInput";
+import AlphaStrip, { sortAlpha, AlphaHeader } from "../../components/AlphaStrip";
 // pages/employee/personal.js  — Page 1 of 5
 // Fixes:
 // 1. DateField — no calendar, DD/MM/YYYY input, shows "📅 15 March 2023" below
@@ -1277,6 +1279,7 @@ export default function PersonalDetails() {
   const [msgAttachUrls, setMsgAttachUrls]  = useState({});
   const [inboxLoading,  setInboxLoading]   = useState(false);
   const [inboxSearch,   setInboxSearch]    = useState("");
+  const employeeInboxListRef = useRef(null);
   const [inboxUnread,   setInboxUnread]    = useState(0);
   const [completeness,  setCompleteness]    = useState(null); // 0-100 or null=loading
   const [saveStatus,setSaveStatus]       = useState("");
@@ -1848,8 +1851,8 @@ export default function PersonalDetails() {
               {[["Current password",pwCurrent,setPwCurrent],["New password",pwNew,setPwNew],["Confirm new password",pwConfirm,setPwConfirm]].map(([label,val,setter])=>(
                 <div key={label} style={{marginBottom:"0.65rem"}}>
                   <div style={{fontSize:"0.65rem",fontWeight:600,color:"#6b7280",marginBottom:"0.3rem",textTransform:"uppercase",letterSpacing:"0.4px"}}>{label}</div>
-                  <input type="password" value={val} onChange={e=>setter(e.target.value)}
-                    style={{width:"100%",padding:"0.6rem 0.8rem",border:"1.5px solid #e0dcf5",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",outline:"none",background:"#f8f7ff"}}/>
+                  <PasswordInput value={val} onChange={e=>setter(e.target.value)}
+                    inputStyle={{width:"100%",padding:"0.6rem 0.8rem",border:"1.5px solid #e0dcf5",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",outline:"none",background:"#f8f7ff"}} />
                 </div>
               ))}
               {pwErr && <div style={{fontSize:"0.72rem",color:"#ef4444",marginBottom:"0.6rem",fontWeight:600}}>{pwErr}</div>}
@@ -1933,28 +1936,45 @@ export default function PersonalDetails() {
                       <div style={{fontSize:"0.62rem",color:"#c4bfdb",marginTop:"0.3rem"}}>Once you approve an employer's request, they'll appear here</div>
                     </div>
                   )}
-                  {!inboxLoading && inboxThreads.length>0 && (inboxSearch ? inboxThreads.filter(t=>
-                    (t.other_party_name||"").toLowerCase().includes(inboxSearch.toLowerCase()) ||
-                    (t.other_party_email||"").toLowerCase().includes(inboxSearch.toLowerCase()) ||
-                    (t.latest_message||"").toLowerCase().includes(inboxSearch.toLowerCase())
-                  ) : inboxThreads).length===0 && (
-                    <div style={{padding:"1.5rem 1rem",textAlign:"center",fontSize:"0.7rem",color:"#94a3b8"}}>No matches</div>
-                  )}
-                  {(inboxSearch ? inboxThreads.filter(t=>
-                    (t.other_party_name||"").toLowerCase().includes(inboxSearch.toLowerCase()) ||
-                    (t.other_party_email||"").toLowerCase().includes(inboxSearch.toLowerCase()) ||
-                    (t.latest_message||"").toLowerCase().includes(inboxSearch.toLowerCase())
-                  ) : inboxThreads).map(t=>(
-                    <div key={t.thread_id} onClick={()=>loadThread(t.thread_id)}
-                      style={{padding:"0.65rem 0.9rem",cursor:"pointer",borderBottom:"1px solid #f5f3ff",background:activeThread===t.thread_id?"#eef2ff":"#fff",borderLeft:activeThread===t.thread_id?"3px solid #0d6e6e":"3px solid transparent",transition:"all 0.1s"}}>
-                      <div style={{fontSize:"0.71rem",fontWeight:700,color:"#1a1730",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.other_party_name||t.other_party_email}</div>
-                      <div style={{fontSize:"0.62rem",color:t.has_messages?"#94a3b8":"#8b88b0",fontStyle:t.has_messages?"normal":"italic",marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.latest_message||"No messages yet — tap to start"}</div>
-                      <div style={{display:"flex",justifyContent:"space-between",marginTop:2}}>
-                        <span style={{fontSize:"0.58rem",color:"#c4bfdb"}}>{t.latest_at?new Date(t.latest_at).toLocaleDateString("en-IN"):""}</span>
-                        {t.unread_count>0&&<span style={{background:"#0d6e6e",color:"#fff",fontSize:"0.55rem",fontWeight:800,padding:"1px 6px",borderRadius:999}}>{t.unread_count}</span>}
+                  {(() => {
+                    if (inboxLoading || inboxThreads.length===0) return null;
+                    const filteredThreads = inboxSearch ? inboxThreads.filter(t=>
+                      (t.other_party_name||"").toLowerCase().includes(inboxSearch.toLowerCase()) ||
+                      (t.other_party_email||"").toLowerCase().includes(inboxSearch.toLowerCase()) ||
+                      (t.latest_message||"").toLowerCase().includes(inboxSearch.toLowerCase())
+                    ) : inboxThreads;
+                    if (filteredThreads.length===0) return <div style={{padding:"1.5rem 1rem",textAlign:"center",fontSize:"0.7rem",color:"#94a3b8"}}>No matches</div>;
+                    const { sorted, available } = sortAlpha(filteredThreads, t=>t.other_party_name, t=>t.other_party_email);
+                    let lastLetter = null;
+                    return (
+                      <div style={{display:"flex",height:420}}>
+                        <div ref={employeeInboxListRef} style={{flex:1,overflowY:"auto",minHeight:0}}>
+                          {sorted.map(t=>{
+                            const name = t.other_party_name || t.other_party_email || "";
+                            const rawLetter = name.trim()[0]?.toUpperCase() || "#";
+                            const letter = /[A-Z]/.test(rawLetter) ? rawLetter : "#";
+                            const showHeader = letter !== lastLetter;
+                            lastLetter = letter;
+                            return (
+                              <div key={t.thread_id}>
+                                {showHeader && <AlphaHeader letter={letter} accentColor="#0d6e6e" />}
+                                <div onClick={()=>loadThread(t.thread_id)}
+                                  style={{padding:"0.65rem 0.9rem",cursor:"pointer",borderBottom:"1px solid #f5f3ff",background:activeThread===t.thread_id?"#eef2ff":"#fff",borderLeft:activeThread===t.thread_id?"3px solid #0d6e6e":"3px solid transparent",transition:"all 0.1s"}}>
+                                  <div style={{fontSize:"0.71rem",fontWeight:700,color:"#1a1730",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.other_party_name||t.other_party_email}</div>
+                                  <div style={{fontSize:"0.62rem",color:t.has_messages?"#94a3b8":"#8b88b0",fontStyle:t.has_messages?"normal":"italic",marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.latest_message||"No messages yet — tap to start"}</div>
+                                  <div style={{display:"flex",justifyContent:"space-between",marginTop:2}}>
+                                    <span style={{fontSize:"0.58rem",color:"#c4bfdb"}}>{t.latest_at?new Date(t.latest_at).toLocaleDateString("en-IN"):""}</span>
+                                    {t.unread_count>0&&<span style={{background:"#0d6e6e",color:"#fff",fontSize:"0.55rem",fontWeight:800,padding:"1px 6px",borderRadius:999}}>{t.unread_count}</span>}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <AlphaStrip available={available} containerRef={employeeInboxListRef} accentColor="#0d6e6e" />
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })()}
                 </div>
 
                 {/* Message thread */}

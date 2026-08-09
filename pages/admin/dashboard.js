@@ -1,5 +1,6 @@
 // pages/admin/dashboard.js
 import { useState, useEffect, useCallback } from "react";
+import PasswordInput from "../../components/PasswordInput";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
@@ -388,6 +389,12 @@ export default function AdminDashboard() {
   };
 
   const [tab, setTab]               = useState("overview");
+  const [broadcastAudiences, setBroadcastAudiences] = useState([]);
+  const [broadcastSubject,   setBroadcastSubject]   = useState("");
+  const [broadcastMessage,   setBroadcastMessage]   = useState("");
+  const [broadcastSending,   setBroadcastSending]   = useState(false);
+  const [broadcastResult,    setBroadcastResult]    = useState(null);
+  const [broadcastConfirm,   setBroadcastConfirm]   = useState(false);
   const [vendors, setVendors]       = useState([]);
   const [vendorLoading, setVendorLoading] = useState(false);
   const [vendorMsg, setVendorMsg]   = useState("");
@@ -487,6 +494,28 @@ export default function AdminDashboard() {
       if (r.ok) { setVendorMsg(`✗ ${email} rejected`); loadVendors(); }
       else { const d = await r.json(); setVendorMsg(errToStr(d)); }
     } catch(_) { setVendorMsg("Network error"); }
+  };
+
+  const sendBroadcast = async () => {
+    setBroadcastSending(true);
+    setBroadcastResult(null);
+    try {
+      const r = await apiFetch(`${API}/admin/broadcast`, {
+        method: "POST",
+        body: JSON.stringify({ audiences: broadcastAudiences, subject: broadcastSubject.trim(), message: broadcastMessage.trim() }),
+      });
+      const d = await r.json();
+      if (r.ok) {
+        setBroadcastResult(d);
+        setBroadcastSubject(""); setBroadcastMessage(""); setBroadcastAudiences([]);
+      } else {
+        setBroadcastResult({ sent: 0, failed: 0, total_matched: 0, error: d.detail || "Failed to send" });
+      }
+    } catch (_) {
+      setBroadcastResult({ sent: 0, failed: 0, total_matched: 0, error: "Network error" });
+    }
+    setBroadcastConfirm(false);
+    setBroadcastSending(false);
   };
 
   const loadOverview = useCallback(async () => {
@@ -649,11 +678,11 @@ export default function AdminDashboard() {
                 </div>
                 <div style={{marginBottom:"1rem"}}>
                   <label style={{display:"block",fontSize:"0.6rem",fontWeight:700,color:"#7a9494",textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:"0.4rem"}}>Password</label>
-                  <input type="password" value={loginPw}
+                  <PasswordInput value={loginPw}
                     onChange={e => setLoginPw(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && handleLogin()}
                     placeholder="Your admin password"
-                    style={{width:"100%",padding:"0.65rem 0.875rem",background:"#f2efe9",border:"1px solid #1e1b2e",borderRadius:"8px",fontFamily:"inherit",fontSize:"0.875rem",color:"#1c2b2b",outline:"none"}}/>
+                    inputStyle={{background:"#f2efe9",border:"1px solid #1e1b2e",borderRadius:"8px",fontFamily:"inherit",fontSize:"0.875rem",color:"#1c2b2b"}}/>
                 </div>
                 <button onClick={handleLogin} disabled={loginBusy}
                   style={{width:"100%",padding:"0.75rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:"8px",fontFamily:"inherit",fontSize:"0.875rem",fontWeight:700,cursor:loginBusy?"not-allowed":"pointer",opacity:loginBusy?0.6:1,marginBottom:"0.75rem"}}>
@@ -707,8 +736,8 @@ export default function AdminDashboard() {
             {[["Current password", pwCurrent, setPwCurrent], ["New password", pwNew, setPwNew], ["Confirm new password", pwConfirm, setPwConfirm]].map(([label, val, setter]) => (
               <div key={label} style={{marginBottom:"0.65rem"}}>
                 <div style={{fontSize:"0.6rem",fontWeight:700,color:"#7a9494",textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:"0.35rem"}}>{label}</div>
-                <input type="password" value={val} onChange={e => setter(e.target.value)}
-                  style={{width:"100%",padding:"0.6rem 0.75rem",background:"#f2efe9",border:"1px solid #1e1b2e",borderRadius:"7px",fontFamily:"inherit",fontSize:"0.82rem",color:"#1c2b2b",outline:"none"}}/>
+                <PasswordInput value={val} onChange={e => setter(e.target.value)}
+                  inputStyle={{background:"#f2efe9",border:"1px solid #1e1b2e",borderRadius:"7px",fontFamily:"inherit",fontSize:"0.82rem",color:"#1c2b2b"}}/>
               </div>
             ))}
             {pwErr && <div style={{fontSize:"0.72rem",color:"#fca5a5",marginBottom:"0.5rem",fontWeight:600}}>{pwErr}</div>}
@@ -737,6 +766,8 @@ export default function AdminDashboard() {
               { id: "users",    icon: "⊛", label: "Users",
                 badge: stats ? (stats.users.suspended + stats.users.blocked) || null : null },
               { id: "vendors",  icon: "🏢", label: "BGV Vendors",
+                badge: null },
+              { id: "broadcast", icon: "📣", label: "Broadcast",
                 badge: null },
               { id: "tickets",  icon: "⊡", label: "Support",
                 badge: stats?.tickets?.open || null },
@@ -855,6 +886,80 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </>
+          )}
+
+          {/* ── BROADCAST ── */}
+          {tab === "broadcast" && (
+            <div style={{maxWidth:640}}>
+              <h2 style={{fontSize:"1.1rem",fontWeight:800,marginBottom:"0.3rem"}}>Broadcast Announcement</h2>
+              <p style={{fontSize:"0.82rem",color:"#64748b",marginBottom:"1.5rem"}}>
+                Sends an individual email to each matching user's registered address — every email goes out
+                separately, so no recipient ever sees another recipient's address. Test accounts (@ci.datagate.co.in) are automatically excluded.
+              </p>
+
+              <div style={{marginBottom:"1.25rem"}}>
+                <div style={{fontSize:"0.72rem",fontWeight:700,color:"#334155",marginBottom:"0.5rem",textTransform:"uppercase",letterSpacing:"0.4px"}}>Audience</div>
+                <div style={{display:"flex",gap:"0.6rem",flexWrap:"wrap"}}>
+                  {[
+                    {id:"employee", label:"Employees", count: stats?.users?.employees},
+                    {id:"employer", label:"Employers", count: stats?.users?.employers},
+                    {id:"bgv",      label:"BGV Vendors", count: stats?.users?.bgv},
+                  ].map(a=>(
+                    <button key={a.id} type="button"
+                      onClick={()=>setBroadcastAudiences(prev=>prev.includes(a.id)?prev.filter(x=>x!==a.id):[...prev,a.id])}
+                      style={{padding:"0.55rem 1rem",borderRadius:9,border:`1.5px solid ${broadcastAudiences.includes(a.id)?"#4f46e5":"#e2e8f0"}`,background:broadcastAudiences.includes(a.id)?"#eef2ff":"#fff",color:broadcastAudiences.includes(a.id)?"#4f46e5":"#475569",fontWeight:700,fontSize:"0.82rem",cursor:"pointer",fontFamily:"inherit"}}>
+                      {a.label}{typeof a.count==="number"?` (~${a.count})`:""}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{marginBottom:"1.1rem"}}>
+                <div style={{fontSize:"0.72rem",fontWeight:700,color:"#334155",marginBottom:"0.4rem",textTransform:"uppercase",letterSpacing:"0.4px"}}>Subject</div>
+                <input value={broadcastSubject} onChange={e=>setBroadcastSubject(e.target.value)} placeholder="e.g. Scheduled maintenance this weekend"
+                  style={{width:"100%",padding:"0.65rem 0.85rem",border:"1.5px solid #e2e8f0",borderRadius:8,fontFamily:"inherit",fontSize:"0.85rem",outline:"none",boxSizing:"border-box"}}/>
+              </div>
+
+              <div style={{marginBottom:"1.25rem"}}>
+                <div style={{fontSize:"0.72rem",fontWeight:700,color:"#334155",marginBottom:"0.4rem",textTransform:"uppercase",letterSpacing:"0.4px"}}>Message</div>
+                <textarea value={broadcastMessage} onChange={e=>setBroadcastMessage(e.target.value)} rows={7} placeholder="Write the announcement..."
+                  style={{width:"100%",padding:"0.65rem 0.85rem",border:"1.5px solid #e2e8f0",borderRadius:8,fontFamily:"inherit",fontSize:"0.85rem",outline:"none",resize:"vertical",boxSizing:"border-box"}}/>
+              </div>
+
+              {broadcastResult && (
+                <div style={{padding:"0.7rem 0.9rem",borderRadius:8,marginBottom:"1rem",background:broadcastResult.failed>0?"#fef3c7":"#f0fdf4",border:`1px solid ${broadcastResult.failed>0?"#fbbf24":"#bbf7d0"}`,fontSize:"0.82rem",fontWeight:600,color:broadcastResult.failed>0?"#92400e":"#166534"}}>
+                  Sent to {broadcastResult.sent} of {broadcastResult.total_matched} matching users.
+                  {broadcastResult.failed>0 && ` ${broadcastResult.failed} failed to send.`}
+                </div>
+              )}
+
+              {!broadcastConfirm ? (
+                <button
+                  disabled={broadcastAudiences.length===0||!broadcastSubject.trim()||!broadcastMessage.trim()}
+                  onClick={()=>setBroadcastConfirm(true)}
+                  style={{padding:"0.65rem 1.4rem",background:"#4f46e5",color:"#fff",border:"none",borderRadius:8,fontWeight:700,fontSize:"0.85rem",cursor:"pointer",fontFamily:"inherit",opacity:(broadcastAudiences.length===0||!broadcastSubject.trim()||!broadcastMessage.trim())?0.5:1}}>
+                  Review &amp; Send
+                </button>
+              ) : (
+                <div style={{padding:"1rem",background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:10}}>
+                  <div style={{fontSize:"0.85rem",fontWeight:700,color:"#92400e",marginBottom:"0.4rem"}}>⚠️ Confirm send</div>
+                  <div style={{fontSize:"0.82rem",color:"#78350f",marginBottom:"0.9rem"}}>
+                    This will email every {broadcastAudiences.map(a=>a==="employee"?"Employee":a==="employer"?"Employer":"BGV Vendor").join(" + ")}
+                    {" "}account (excluding test accounts). This can't be undone once sent.
+                  </div>
+                  <div style={{display:"flex",gap:"0.6rem"}}>
+                    <button onClick={()=>setBroadcastConfirm(false)} disabled={broadcastSending}
+                      style={{padding:"0.55rem 1.1rem",background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:8,fontWeight:700,fontSize:"0.82rem",cursor:"pointer",fontFamily:"inherit",color:"#475569"}}>
+                      Cancel
+                    </button>
+                    <button onClick={sendBroadcast} disabled={broadcastSending}
+                      style={{padding:"0.55rem 1.1rem",background:"#dc2626",color:"#fff",border:"none",borderRadius:8,fontWeight:700,fontSize:"0.82rem",cursor:broadcastSending?"not-allowed":"pointer",fontFamily:"inherit",opacity:broadcastSending?0.6:1}}>
+                      {broadcastSending?"Sending…":"Yes, Send Now"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           {/* ── USERS ── */}

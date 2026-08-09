@@ -1,5 +1,7 @@
 // pages/employer/dashboard.js
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import PasswordInput from "../../components/PasswordInput";
+import AlphaStrip, { sortAlpha, AlphaHeader } from "../../components/AlphaStrip";
 import { useRouter } from "next/router";
 import { useAuth } from "../../utils/AuthContext";
 import { parseError } from "../../utils/apiError";
@@ -1662,11 +1664,6 @@ export default function EmployerDashboard() {
   const [remindBusy,     setRemindBusy]     = useState(false);
   const [bulkRemindBusy, setBulkRemindBusy] = useState(false);
   const [bulkRemindMsg,  setBulkRemindMsg]  = useState("");
-  const [bulkMsgMode,     setBulkMsgMode]     = useState(false);
-  const [bulkMsgSelected, setBulkMsgSelected] = useState(() => new Set());
-  const [bulkMsgText,     setBulkMsgText]     = useState("");
-  const [bulkMsgSending,  setBulkMsgSending]  = useState(false);
-  const [bulkMsgResults,  setBulkMsgResults]  = useState([]);
   const [showPwModal,    setShowPwModal]    = useState(false);
   const [showGear,       setShowGear]       = useState(false);
   const [showSupport,    setShowSupport]    = useState(false);
@@ -1683,6 +1680,7 @@ export default function EmployerDashboard() {
   const [printHtml,      setPrintHtml]      = useState(null);  // null = closed, string = open
   const [showInbox,      setShowInbox]      = useState(false);
   const [inboxSearch,    setInboxSearch]    = useState("");
+  const employerInboxListRef = useRef(null);
   const [mainTab,       setMainTab]        = useState("Overview");
   const [inboxThreads,   setInboxThreads]   = useState([]);
   const [inboxLoading,   setInboxLoading]   = useState(false);
@@ -1904,29 +1902,6 @@ export default function EmployerDashboard() {
         setCandStatus(prev => ({...prev, [email]: d}));
       }
     } catch(_) {}
-  };
-
-  // Bulk invite — sends consent requests to multiple emails at once
-  const sendBulkMessage = async () => {
-    if (!bulkMsgText.trim() || bulkMsgSelected.size === 0) return;
-    setBulkMsgSending(true);
-    setBulkMsgResults([]);
-    try {
-      const r = await apiFetch(`${API}/messages/send/bulk`, {
-        method: "POST",
-        body: JSON.stringify({ consent_ids: [...bulkMsgSelected], body: bulkMsgText.trim(), recipient_type: "employee" }),
-      });
-      const d = await r.json();
-      if (r.ok && Array.isArray(d.results)) {
-        setBulkMsgResults(d.results.map(x => ({ email: x.employee_email, ok: x.ok, msg: x.ok ? "Sent ✓" : (x.error || "Failed") })));
-        if (d.sent > 0) { setBulkMsgText(""); setBulkMsgSelected(new Set()); }
-      } else {
-        setBulkMsgResults([{ email: "", ok: false, msg: d.detail || "Failed to send" }]);
-      }
-    } catch(_) {
-      setBulkMsgResults([{ email: "", ok: false, msg: "Network error" }]);
-    }
-    setBulkMsgSending(false);
   };
 
   const sendBulkRequest = async (emailsOverride) => {
@@ -2166,7 +2141,7 @@ return (
             {[["Current password","password",pwCurrent,setPwCurrent],["New password","password",pwNew,setPwNew],["Confirm new password","password",pwConfirm,setPwConfirm]].map(([label,type,val,setter])=>(
               <div key={label} style={{marginBottom:"0.65rem"}}>
                 <div style={{fontSize:"0.65rem",fontWeight:600,color:"#7a6e64",marginBottom:"0.3rem",textTransform:"uppercase",letterSpacing:"0.4px"}}>{label}</div>
-                <input type={type} value={val} onChange={e=>setter(e.target.value)} style={{width:"100%",padding:"0.6rem 0.8rem",border:"1.5px solid #c8c2b8",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",outline:"none",background:"#f5f2ee"}}/>
+                <PasswordInput value={val} onChange={e=>setter(e.target.value)} inputStyle={{border:"1.5px solid #c8c2b8",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",background:"#f5f2ee"}}/>
               </div>
             ))}
             {pwErr && <div style={{fontSize:"0.72rem",color:"#ef4444",marginBottom:"0.6rem",fontWeight:600}}>{pwErr}</div>}
@@ -2232,26 +2207,48 @@ return (
                   <>
                     {inboxLoading && <div style={{padding:"1rem",fontSize:"0.72rem",color:"#a09890"}}>Loading…</div>}
                     {!inboxLoading && inboxThreads.length===0 && <div style={{padding:"2rem 1rem",textAlign:"center"}}><div style={{fontSize:"1.5rem",opacity:.2,marginBottom:"0.5rem"}}>✉️</div><div style={{fontSize:"0.72rem",color:"#a09890"}}>No messages yet — tap "✎ New" to message an approved candidate</div></div>}
-                    {(inboxSearch ? inboxThreads.filter(t=>
-                      (t.other_party_email||"").toLowerCase().includes(inboxSearch.toLowerCase())||
-                      (t.other_party_name||"").toLowerCase().includes(inboxSearch.toLowerCase())||
-                      (t.latest_message||"").toLowerCase().includes(inboxSearch.toLowerCase())
-                    ) : inboxThreads).map(t=>(
-                  <div key={t.thread_id} className={`thread-item${activeThread===t.thread_id?" active":""}`} onClick={()=>loadThread(t.thread_id)}>
-                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}>
-                      <div className="thread-email" style={{flex:1}}>{t.other_party_email}</div>
-                      {t.recipient_type&&t.recipient_type!=="Employee"&&(
-                        <span style={{fontSize:"0.55rem",fontWeight:700,padding:"1px 6px",borderRadius:4,background:t.recipient_type==="Both"?"rgba(124,58,237,0.15)":"rgba(217,119,6,0.15)",color:t.recipient_type==="Both"?"#7c3aed":"#d97706",textTransform:"uppercase",letterSpacing:.4,flexShrink:0}}>{t.recipient_type}</span>
-                      )}
-                    </div>
-                    {t.other_party_name&&<div style={{fontSize:"0.62rem",color:"#7a6e64",marginTop:1}}>{t.other_party_name}</div>}
-                    <div className="thread-preview">{t.latest_message||"No messages"}</div>
-                    <div className="thread-meta">
-                      <span className="thread-time">{t.latest_at?toISTDate(t.latest_at):""}</span>
-                      {t.unread_count>0&&<span className="unread-badge">{t.unread_count}</span>}
-                    </div>
-                  </div>
-                ))}
+                    {(() => {
+                      const filteredThreads = inboxSearch ? inboxThreads.filter(t=>
+                        (t.other_party_email||"").toLowerCase().includes(inboxSearch.toLowerCase())||
+                        (t.other_party_name||"").toLowerCase().includes(inboxSearch.toLowerCase())||
+                        (t.latest_message||"").toLowerCase().includes(inboxSearch.toLowerCase())
+                      ) : inboxThreads;
+                      const { sorted, available } = sortAlpha(filteredThreads, t=>t.other_party_name, t=>t.other_party_email);
+                      let lastLetter = null;
+                      return (
+                        <div style={{display:"flex",flex:1,minHeight:0}}>
+                          <div ref={employerInboxListRef} style={{flex:1,overflowY:"auto",minHeight:0}}>
+                            {sorted.map(t=>{
+                              const name = t.other_party_name || t.other_party_email || "";
+                              const rawLetter = name.trim()[0]?.toUpperCase() || "#";
+                              const letter = /[A-Z]/.test(rawLetter) ? rawLetter : "#";
+                              const showHeader = letter !== lastLetter;
+                              lastLetter = letter;
+                              return (
+                                <div key={t.thread_id}>
+                                  {showHeader && <AlphaHeader letter={letter} accentColor="#0d6e6e" />}
+                                  <div className={`thread-item${activeThread===t.thread_id?" active":""}`} onClick={()=>loadThread(t.thread_id)}>
+                                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}>
+                                      <div className="thread-email" style={{flex:1}}>{t.other_party_name || t.other_party_email}</div>
+                                      {t.recipient_type&&t.recipient_type!=="Employee"&&(
+                                        <span style={{fontSize:"0.55rem",fontWeight:700,padding:"1px 6px",borderRadius:4,background:t.recipient_type==="Both"?"rgba(124,58,237,0.15)":"rgba(217,119,6,0.15)",color:t.recipient_type==="Both"?"#7c3aed":"#d97706",textTransform:"uppercase",letterSpacing:.4,flexShrink:0}}>{t.recipient_type}</span>
+                                      )}
+                                    </div>
+                                    <div style={{fontSize:"0.62rem",color:"#7a6e64",marginTop:1}}>{t.other_party_email}</div>
+                                    <div className="thread-preview">{t.latest_message||"No messages"}</div>
+                                    <div className="thread-meta">
+                                      <span className="thread-time">{t.latest_at?toISTDate(t.latest_at):""}</span>
+                                      {t.unread_count>0&&<span className="unread-badge">{t.unread_count}</span>}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <AlphaStrip available={available} containerRef={employerInboxListRef} accentColor="#0d6e6e" />
+                        </div>
+                      );
+                    })()}
                   </>
                 )}
               </div>
@@ -2264,8 +2261,8 @@ return (
                 ):(
                   <>
                     <div style={{padding:"0.75rem 1.25rem",borderBottom:"1px solid #c8c2b8",background:"#f5f2ee",flexShrink:0}}>
-                      <div style={{fontSize:"0.78rem",fontWeight:700,color:"#111"}}>{inboxThreads.find(t=>t.thread_id===activeThread)?.other_party_email||activeThread}</div>
-                      <div style={{fontSize:"0.62rem",color:"#a09890",marginTop:1}}>{threadMsgs.length} message{threadMsgs.length!==1?"s":""}</div>
+                      <div style={{fontSize:"0.78rem",fontWeight:700,color:"#111"}}>{inboxThreads.find(t=>t.thread_id===activeThread)?.other_party_name || inboxThreads.find(t=>t.thread_id===activeThread)?.other_party_email || activeThread}</div>
+                      <div style={{fontSize:"0.62rem",color:"#a09890",marginTop:1}}>{inboxThreads.find(t=>t.thread_id===activeThread)?.other_party_email}{inboxThreads.find(t=>t.thread_id===activeThread)?.other_party_email ? " · " : ""}{threadMsgs.length} message{threadMsgs.length!==1?"s":""}</div>
                     </div>
                     <div className="msg-list" ref={msgListRef}>
                       {threadLoading&&<div style={{textAlign:"center",fontSize:"0.72rem",color:"#a09890",padding:"1rem"}}>Loading…</div>}
@@ -2667,31 +2664,6 @@ return (
                   {bulkRemindMsg&&<div style={{fontSize:"0.62rem",marginTop:"0.3rem",color:bulkRemindMsg.startsWith("✓")?"#86efac":"#fca5a5",fontWeight:600}}>{bulkRemindMsg}</div>}
                 </div>
               )}
-              {cTab==="approved"&&approved.length>0&&(
-                <div style={{padding:"0.3rem 1.3rem 0.5rem",borderBottom:"1px solid rgba(255,255,255,0.07)"}}>
-                  <button onClick={()=>{setBulkMsgMode(v=>!v);setBulkMsgSelected(new Set());setBulkMsgResults([]);}} style={{width:"100%",padding:"0.42rem 0.75rem",background:bulkMsgMode?"#0d6e6e":"rgba(13,110,110,0.18)",border:"1.5px solid rgba(13,110,110,0.4)",borderRadius:7,color:bulkMsgMode?"#fff":"#5eead4",fontSize:"0.65rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                    {bulkMsgMode?"✕ Cancel bulk message":"✉️ Message multiple candidates"}
-                  </button>
-                  {bulkMsgMode&&(
-                    <div style={{marginTop:"0.5rem"}}>
-                      <div style={{fontSize:"0.6rem",color:"#8a8378",marginBottom:"0.4rem"}}>{bulkMsgSelected.size} selected — tick candidates below</div>
-                      <textarea value={bulkMsgText} onChange={e=>setBulkMsgText(e.target.value)} placeholder="Message to all selected candidates (private, employee only)…"
-                        style={{width:"100%",minHeight:60,padding:"0.4rem 0.55rem",background:"#1a1a1a",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,color:"#e5e5e5",fontFamily:"inherit",fontSize:"0.68rem",resize:"vertical",marginBottom:"0.4rem",boxSizing:"border-box"}}/>
-                      <button onClick={sendBulkMessage} disabled={bulkMsgSending||!bulkMsgText.trim()||bulkMsgSelected.size===0}
-                        style={{width:"100%",padding:"0.4rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:6,fontSize:"0.65rem",fontWeight:700,cursor:(bulkMsgSending||!bulkMsgText.trim()||bulkMsgSelected.size===0)?"not-allowed":"pointer",opacity:(bulkMsgSending||!bulkMsgText.trim()||bulkMsgSelected.size===0)?0.5:1,fontFamily:"inherit"}}>
-                        {bulkMsgSending?"Sending…":`Send to ${bulkMsgSelected.size} candidate(s)`}
-                      </button>
-                      {bulkMsgResults.length>0&&(
-                        <div style={{marginTop:"0.4rem",maxHeight:100,overflowY:"auto"}}>
-                          {bulkMsgResults.map((r,i)=>(
-                            <div key={i} style={{fontSize:"0.6rem",color:r.ok?"#86efac":"#fca5a5",fontWeight:600}}>{r.email}: {r.msg}</div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
               <div className="c-list" style={{flex:1,overflowY:"auto"}}>
                 {loading?<div className="c-empty">Loading…</div>
                 :list.length===0?<div className="c-empty">{search?"No matches":`No ${cTab} requests`}</div>
@@ -2699,13 +2671,7 @@ return (
                   const dot=c.status==="approved"?"#16a34a":c.status==="pending"?"#f59e0b":"#ef4444";
                   const ts=c.status==="approved"?(c.responded_at||c.approved_at):(c.requested_at||c.created_at);
                   return(
-                    <div key={gcid(c)} className={`c-item${gcid(selected)===gcid(c)?" sel":""}`} onClick={()=>{ if(bulkMsgMode&&cTab==="approved") return; selectConsent(c); }}>
-                      {bulkMsgMode&&cTab==="approved"&&(
-                        <input type="checkbox" checked={bulkMsgSelected.has(gcid(c))} onChange={e=>{
-                          e.stopPropagation();
-                          setBulkMsgSelected(prev=>{ const n=new Set(prev); if(e.target.checked) n.add(gcid(c)); else n.delete(gcid(c)); return n; });
-                        }} onClick={e=>e.stopPropagation()} style={{marginRight:"0.5rem",flexShrink:0}}/>
-                      )}
+                    <div key={gcid(c)} className={`c-item${gcid(selected)===gcid(c)?" sel":""}`} onClick={()=>selectConsent(c)}>
                       <div className="c-dot" style={{background:dot}}/>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"0.3rem"}}>
