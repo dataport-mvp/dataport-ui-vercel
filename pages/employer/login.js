@@ -37,7 +37,7 @@ export default function EmployerLogin() {
         return;
       }
       const body = mode==="signup"
-        ? {email, password, name:company, phone:"0000000000", role:"employer", terms_accepted_at: new Date().toISOString()}
+        ? {email, password, name:company, company_name:company, phone:"0000000000", role:"employer", terms_accepted_at: new Date().toISOString()}
         : {email, password};
       const res  = await fetch(`${API}${mode==="signup"?"/auth/register":"/auth/login"}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
       const d    = await res.json();

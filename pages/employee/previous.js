@@ -1,8 +1,7 @@
 // pages/employee/previous.js  — Page 3 of 5
 // Fixes: DateField no calendar + DD/MM/YYYY with month name display
 // Ack cascade: if user edits page 3, flags page3_edited in DB so page 5 knows to re-ask acks
-import { useState, useEffect, useRef } from "react";
-import PasswordInput from "../../components/PasswordInput";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "../../utils/AuthContext";
 import { parseError } from "../../utils/apiError";
@@ -1030,6 +1029,8 @@ export default function PreviousCompany() {
   const [resumeKey,setResumeKey]       = useState("");
   const [hasExperience,setHasExperience] = useState("");
   const [employments,setEmployments]   = useState([emptyEmployment()]);
+  const [activeUploads, setActiveUploads] = useState(0);
+  const handleUploadState = useCallback((active) => setActiveUploads(c => Math.max(0, c + (active ? 1 : -1))), []);
   const [ack,setAck]                   = useState({business:emptyAck(),dismissed:emptyAck(),criminal:emptyAck(),civil:emptyAck()});
   const [declared,setDeclared]         = useState(false);
   const [errors,setErrors]             = useState({});
@@ -1144,7 +1145,18 @@ export default function PreviousCompany() {
         if(!stillWorking&&!emp.reference.mobile) e[`${i}_refMobile`]=true;
         if(!stillWorking&&!emp.documents.payslipsKey) e[`${i}_payslips`]=true;
         if(!emp.documents.offerLetterKey) e[`${i}_offerLetter`]=true;
-        if(i===lastIdx&&emp.currentlyWorking==="No"&&!emp.documents.resignationKey) e[`${i}_resignation`]=true;
+        // Resignation Acceptance proves you properly left the employer immediately
+        // before your current/latest one — it belongs on the second-to-last entry,
+        // never the latest (you can't resign from a job you're still doing), and
+        // never further back (only the immediate hand-off matters for verification).
+        // This is fully dynamic: if you later add a new current employer and mark
+        // an old "current" entry as ended, whichever entry is now second-to-last
+        // automatically becomes the one requiring this — no manual re-tagging needed.
+        // Resignation Acceptance is required from whoever is the LAST employer in the
+        // list — but only once THEY have an end date (no longer currently working).
+        // Nothing is required while the last entry is still marked as current — there's
+        // no completed transition to document yet.
+        if(i===lastIdx && emp.currentlyWorking==="No" && !emp.documents.resignationKey) e[`${i}_resignation`]=true;
         // Experience letter not required for current employer (no end date yet)
         // Experience/Relieving Letter is NOT a submission blocker — former employers can take
         // weeks to issue these. We just remind the employee to attach it once they have it
@@ -1183,7 +1195,14 @@ export default function PreviousCompany() {
     isDirtyRef.current=false;
   };
 
-  const handleSaveSignout=async()=>{try{await saveHistory();}catch(_){}logout();};
+  const handleSaveSignout=async()=>{
+    try {
+      await saveHistory();
+      logout();
+    } catch (e) {
+      alert("Your changes could not be saved. Please check your connection and try again before signing out — signing out now would lose them.");
+    }
+  };
   const handleMidSave=async()=>{
     setMidSaveStatus("Saving…");
     try{await saveHistory();setMidSaveStatus("Saved ✓");setTimeout(()=>setMidSaveStatus(""),2000);}
@@ -1230,8 +1249,8 @@ export default function PreviousCompany() {
               {[["Current password",pwCurrent,setPwCurrent],["New password",pwNew,setPwNew],["Confirm new password",pwConfirm,setPwConfirm]].map(([label,val,setter])=>(
                 <div key={label} style={{marginBottom:"0.65rem"}}>
                   <div style={{fontSize:"0.65rem",fontWeight:600,color:"#6b7280",marginBottom:"0.3rem",textTransform:"uppercase",letterSpacing:"0.4px"}}>{label}</div>
-                  <PasswordInput value={val} onChange={e=>setter(e.target.value)}
-                    inputStyle={{width:"100%",padding:"0.6rem 0.8rem",border:"1.5px solid #dddaf0",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",outline:"none",background:"#f8f7ff"}} />
+                  <input type="password" value={val} onChange={e=>setter(e.target.value)}
+                    style={{width:"100%",padding:"0.6rem 0.8rem",border:"1.5px solid #dddaf0",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",outline:"none",background:"#f8f7ff"}}/>
                 </div>
               ))}
               {pwErr && <div style={{fontSize:"0.72rem",color:"#ef4444",marginBottom:"0.6rem",fontWeight:600}}>{pwErr}</div>}
@@ -1307,7 +1326,7 @@ export default function PreviousCompany() {
               <span style={{fontSize:"0.93rem",fontWeight:700,color:"#1a1730"}}>Latest Resume / CV <span style={{color:"#ef4444",fontSize:"0.82rem"}}>*</span></span>
             </div>
             {errors.resumeKey&&<span className="err-msg" style={{marginBottom:"0.5rem",display:"block"}}>Resume upload is required</span>}
-            <FileUpload label="Upload Resume / CV *" category="general" subKey="cv" employeeId={employeeId} apiFetch={apiFetch} value={resumeKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setResumeKey(key);markEdited();fixErr("resumeKey");}}/>
+            <FileUpload onUploadStateChange={handleUploadState} label="Upload Resume / CV *" category="general" subKey="cv" employeeId={employeeId} apiFetch={apiFetch} value={resumeKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setResumeKey(key);markEdited();fixErr("resumeKey");}}/>
           </div>
 
           {/* ── Employer cards ── */}
@@ -1420,7 +1439,7 @@ export default function PreviousCompany() {
                 <div className="att-wrap">
                   <span className="att-lbl">Offer Letter <span style={{color:"#ef4444"}}>*</span></span>
                   {errors[`${index}_offerLetter`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
-                  <FileUpload label="Offer Letter" category="employment" subKey="offerLetter" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.offerLetterKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.offerLetterKey",k);fixErr(`${index}_offerLetter`);}}/>
+                  <FileUpload onUploadStateChange={handleUploadState} label="Offer Letter" category="employment" subKey="offerLetter" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.offerLetterKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.offerLetterKey",k);fixErr(`${index}_offerLetter`);}}/>
                 </div>
 
                 {/* Currently employed — no other docs needed yet */}
@@ -1436,12 +1455,15 @@ export default function PreviousCompany() {
                     <span className="att-lbl">Payslips — Last 3 Months <span style={{color:"#ef4444"}}>*</span></span>
                     <p style={{fontSize:"0.68rem",color:"#6b6894",margin:"0.15rem 0 0.35rem",lineHeight:1.4}}>Merge your last 3 months payslips into one PDF before uploading.</p>
                     {errors[`${index}_payslips`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
-                    <FileUpload label="Payslips" category="employment" subKey="payslips" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.payslipsKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.payslipsKey",k);fixErr(`${index}_payslips`);}}/>
+                    <FileUpload onUploadStateChange={handleUploadState} label="Payslips" category="employment" subKey="payslips" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.payslipsKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.payslipsKey",k);fixErr(`${index}_payslips`);}}/>
                   </div>
                   <div className="att-wrap">
-                    <span className="att-lbl">Resignation Acceptance{isLast&&<span style={{color:"#ef4444"}}> *</span>}</span>
+                    <span className="att-lbl">Resignation Acceptance{(isLast && emp.currentlyWorking==="No")&&<span style={{color:"#ef4444"}}> *</span>}</span>
+                    {(isLast && emp.currentlyWorking==="No") && (
+                      <p style={{fontSize:"0.68rem",color:"#6b6894",margin:"0.15rem 0 0.35rem",lineHeight:1.4}}>Proves you properly resigned from this role.</p>
+                    )}
                     {errors[`${index}_resignation`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
-                    <FileUpload label="Resignation" category="employment" subKey="resignation" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.resignationKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.resignationKey",k);fixErr(`${index}_resignation`);}}/>
+                    <FileUpload onUploadStateChange={handleUploadState} label="Resignation" category="employment" subKey="resignation" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.resignationKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.resignationKey",k);fixErr(`${index}_resignation`);}}/>
                   </div>
                   <div className="att-wrap">
                     <span className="att-lbl">Experience / Relieving Letter</span>
@@ -1450,11 +1472,11 @@ export default function PreviousCompany() {
                         💡 Haven't received it yet? No worries, just come back and add it whenever you receive it — it'll make future onboarding and BGV seamless.
                       </p>
                     )}
-                    <FileUpload label="Experience Letter" category="employment" subKey="experience" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.experienceKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.experienceKey",k);}}/>
+                    <FileUpload onUploadStateChange={handleUploadState} label="Experience Letter" category="employment" subKey="experience" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.experienceKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.experienceKey",k);}}/>
                   </div>
                   <div className="att-wrap">
                     <span className="att-lbl">Company ID Card</span>
-                    <FileUpload label="ID Card" category="employment" subKey="idCard" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.idCardKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.idCardKey",k);}}/>
+                    <FileUpload onUploadStateChange={handleUploadState} label="ID Card" category="employment" subKey="idCard" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.idCardKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.idCardKey",k);}}/>
                   </div>
                 </>)}
               </div>
@@ -1519,7 +1541,7 @@ export default function PreviousCompany() {
             <span className={`ss${saveStatus==="Saved ✓"?" ok":saveStatus.startsWith("Error")||saveStatus.includes("required")?" err":""}`}>{saveStatus}</span>
             <div style={{display:"flex",gap:"0.65rem",alignItems:"center"}}>
               <button className="sbtn" onClick={handleMidSave} style={{fontSize:"0.8rem"}}>{midSaveStatus||"Save draft"}</button>
-              <button className="pbtn" onClick={handleNext}>Save & Continue →</button>
+              <button className="pbtn" onClick={handleNext} disabled={activeUploads>0} title={activeUploads>0?"Please wait for the upload to finish before saving":""}>{activeUploads>0?"Uploading…":"Save & Continue →"}</button>
             </div>
           </div>
         </div>

@@ -20,7 +20,8 @@ export default function FileUpload({
   apiFetch,
   value,
   onChange,
-  disabled
+  disabled,
+  onUploadStateChange
 }) {
   const [status,   setStatus]   = useState("");
   const [progress, setProgress] = useState(0);
@@ -61,6 +62,7 @@ export default function FileUpload({
     setError("");
     setStatus("uploading");
     setProgress(15);
+    onUploadStateChange?.(true);
 
     const localPreviewUrl = file.type.startsWith("image/")
       ? URL.createObjectURL(file)
@@ -110,11 +112,13 @@ export default function FileUpload({
       setStatus("done");
 
       onChange(s3_key, localPreviewUrl);
+      onUploadStateChange?.(false);
 
     } catch (err) {
       setStatus("error");
       setError(typeof err.message === "string" ? err.message : "Upload failed");
       setProgress(0);
+      onUploadStateChange?.(false);
 
       if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
     }
@@ -125,6 +129,7 @@ export default function FileUpload({
 
     setError("");
     setStatus("deleting");
+    onUploadStateChange?.(true);
 
     try {
       const res = await apiFetch(
@@ -139,10 +144,12 @@ export default function FileUpload({
 
       setStatus("");
       onChange("", null);
+      onUploadStateChange?.(false);
 
     } catch (err) {
       setStatus("error");
       setError(typeof err.message === "string" ? err.message : "Delete failed");
+      onUploadStateChange?.(false);
     }
   };
 

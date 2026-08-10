@@ -9,8 +9,7 @@
 // 4. Every signature that gets replaced is archived (signatureHistory, unique S3 key per
 //    signing) rather than silently overwritten — see chat for the retention rationale.
 // 5. page4_edited flag saved to DB → page 5 knows to re-ask review acks
-import { useState, useEffect, useRef } from "react";
-import PasswordInput from "../../components/PasswordInput";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "../../utils/AuthContext";
 import { parseError } from "../../utils/apiError";
@@ -1097,6 +1096,8 @@ export default function UanDetails() {
 
   // ── UAN fields ──
   const [hasUan,       setHasUan]       = useState("");
+  const [activeUploads, setActiveUploads] = useState(0);
+  const handleUploadState = useCallback((active) => setActiveUploads(c => Math.max(0, c + (active ? 1 : -1))), []);
   const [uanNumber,    setUanNumber]    = useState("");
   const [nameAsPerUan, setNameAsPerUan] = useState("");
   const [mobileLinked, setMobileLinked] = useState("");
@@ -1452,12 +1453,23 @@ export default function UanDetails() {
     router.push(dest);
   };
   const handleSignout = async () => {
-    if (isDirtyRef.current) { try { await saveDraft(); } catch(_) {} }
+    if (isDirtyRef.current) {
+      try {
+        await saveDraft();
+      } catch (e) {
+        alert("Your changes could not be saved. Please check your connection and try again before signing out — signing out now would lose them.");
+        return;
+      }
+    }
     logout();
   };
   const handleSaveSignout = async () => {
-    try { await saveDraft(); } catch(_) {}
-    logout();
+    try {
+      await saveDraft();
+      logout();
+    } catch (e) {
+      alert("Your changes could not be saved. Please check your connection and try again before signing out — signing out now would lose them.");
+    }
   };
   const handleMidSave = async () => {
     setSaveStatus("Saving…");
@@ -1520,8 +1532,8 @@ export default function UanDetails() {
               {[["Current password",pwCurrent,setPwCurrent],["New password",pwNew,setPwNew],["Confirm new password",pwConfirm,setPwConfirm]].map(([label,val,setter])=>(
                 <div key={label} style={{marginBottom:"0.65rem"}}>
                   <div style={{fontSize:"0.65rem",fontWeight:600,color:"#6b7280",marginBottom:"0.3rem",textTransform:"uppercase",letterSpacing:"0.4px"}}>{label}</div>
-                  <PasswordInput value={val} onChange={e=>setter(e.target.value)}
-                    inputStyle={{width:"100%",padding:"0.6rem 0.8rem",border:"1.5px solid #dddaf0",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",outline:"none",background:"#f8f7ff"}} />
+                  <input type="password" value={val} onChange={e=>setter(e.target.value)}
+                    style={{width:"100%",padding:"0.6rem 0.8rem",border:"1.5px solid #dddaf0",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",outline:"none",background:"#f8f7ff"}}/>
                 </div>
               ))}
               {pwErr && <div style={{fontSize:"0.72rem",color:"#ef4444",marginBottom:"0.6rem",fontWeight:600}}>{pwErr}</div>}
@@ -1602,12 +1614,12 @@ export default function UanDetails() {
                 </div>
                 <div style={{marginTop:"0.75rem"}}>
                   <span className="fl" style={{display:"block",marginBottom:"0.4rem"}}>UAN Card <span style={{color:"#ef4444"}}>*</span></span>
-                  <FileUpload label="Upload UAN Card *" category="uan" subKey="uanCard" employeeId={draft?.employee_id || ""} apiFetch={apiFetch} value={epfoKey} onChange={k => { setEpfoKey(k); flagPostSignEdit(); }}/>
+                  <FileUpload onUploadStateChange={handleUploadState} label="Upload UAN Card *" category="uan" subKey="uanCard" employeeId={draft?.employee_id || ""} apiFetch={apiFetch} value={epfoKey} onChange={k => { setEpfoKey(k); flagPostSignEdit(); }}/>
                 </div>
                 <div style={{marginTop:"0.75rem"}}>
                   <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Service History Record Snapshot <span style={{color:"#ef4444"}}>*</span></span>
                   <p style={{fontSize:"0.7rem",color:"#6b6894",marginBottom:"0.4rem",fontWeight:500,lineHeight:1.5}}>Download from EPFO Member Portal (passbook.epfindia.gov.in) and upload screenshot or PDF.</p>
-                  <FileUpload label="Upload Service History Snapshot *" category="uan" subKey="serviceHistory" employeeId={draft?.employee_id || ""} apiFetch={apiFetch} value={serviceHistoryKey} onChange={k => { const key = typeof k==="string"?k:(k?.key||k?.s3_key||""); setServiceHistoryKey(key); flagPostSignEdit(); }}/>
+                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Service History Snapshot *" category="uan" subKey="serviceHistory" employeeId={draft?.employee_id || ""} apiFetch={apiFetch} value={serviceHistoryKey} onChange={k => { const key = typeof k==="string"?k:(k?.key||k?.s3_key||""); setServiceHistoryKey(key); flagPostSignEdit(); }}/>
                 </div>
               </>
             )}
@@ -2080,7 +2092,7 @@ export default function UanDetails() {
             <span className={`ss${saveStatus==="Saved ✓"?" ok":saveStatus.startsWith("Error")||saveStatus.startsWith("⚠️")?" err":""}`}>{saveStatus}</span>
             <div style={{display:"flex",gap:"0.65rem",alignItems:"center"}}>
               <button className="sbtn" onClick={handleMidSave} style={{fontSize:"0.8rem"}}>Save draft</button>
-              <button className="pbtn" onClick={handleNext}>Save & Continue →</button>
+              <button className="pbtn" onClick={handleNext} disabled={activeUploads>0} title={activeUploads>0?"Please wait for the upload to finish before saving":""}>{activeUploads>0?"Uploading…":"Save & Continue →"}</button>
             </div>
           </div>
         </div>
