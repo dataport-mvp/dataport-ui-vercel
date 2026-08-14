@@ -1262,6 +1262,14 @@ export default function UanDetails() {
 
           // ── Restore signature ──
           // Priority: s3Key (fetch signed URL for preview) > legacy dataUrl
+          // Kick off employment-history fetch now, in the background — it only needs
+          // d.employee_id (already available) and has nothing to do with the signature
+          // logic below. Previously this didn't even start until after the signature
+          // fetch fully completed, needlessly doubling wait time on every page load.
+          const histPromise = d.employee_id
+            ? apiFetch(`${API}/employee/employment-history/${d.employee_id}`).catch(() => null)
+            : Promise.resolve(null);
+
           if (d.epfoSignature?.s3Key) {
             setSigS3Key(d.epfoSignature.s3Key);
             wasSignedRef.current = true;
@@ -1296,11 +1304,12 @@ export default function UanDetails() {
           if (d.epfoSignature?.timestamp) setSigTimestamp(d.epfoSignature.timestamp);
           if (Array.isArray(d.signatureHistory)) setSignatureHistory(d.signatureHistory);
 
-          // Load employment history for PF pre-fill
+          // Load employment history for PF pre-fill — this was already kicked off
+          // above, in parallel with the signature fetch; just await it here now.
           if (d.employee_id) {
             try {
-              const histRes = await apiFetch(`${API}/employee/employment-history/${d.employee_id}`);
-              if (histRes.ok) {
+              const histRes = await histPromise;
+              if (histRes && histRes.ok) {
                 const hist = await histRes.json();
                 const emps = Array.isArray(hist.employments) ? hist.employments : [];
                 const lastEmpIdx = emps.length - 1;

@@ -1233,11 +1233,19 @@ export default function ReviewPage() {
           }
         }
 
-        // Employment history
+        // Employment history + signed document URLs — run in parallel instead of
+        // sequentially, since they're independent of each other. This was previously
+        // waiting for employment-history to fully complete before even starting the
+        // documents fetch, roughly doubling wait time on every single page load for
+        // no reason — the two calls don't depend on each other's results.
         if (d.employee_id) {
+          const [eRes, docRes] = await Promise.all([
+            apiFetch(`${API}/employee/employment-history/${d.employee_id}`).catch(() => null),
+            apiFetch(`${API}/documents/${d.employee_id}`).catch(() => null),
+          ]);
+
           try {
-            const eRes = await apiFetch(`${API}/employee/employment-history/${d.employee_id}`);
-            if (eRes.ok) {
+            if (eRes && eRes.ok) {
               const ed = await eRes.json();
               const emps = ed.employments || (Array.isArray(ed) ? ed : (ed.items || []));
               setEmpHistory(emps);
@@ -1245,10 +1253,8 @@ export default function ReviewPage() {
             }
           } catch (_) {}
 
-          // Signed document URLs
           try {
-            const docRes = await apiFetch(`${API}/documents/${d.employee_id}`);
-            if (docRes.ok) {
+            if (docRes && docRes.ok) {
               const docData = await docRes.json();
               const urls = {};
               const flatten = (obj, depth=0) => {
