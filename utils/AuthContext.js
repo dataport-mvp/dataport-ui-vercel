@@ -4,17 +4,34 @@ import { createContext, useContext, useState, useEffect, useRef, useCallback } f
 const AuthContext = createContext(null);
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 const INACTIVITY_LIMIT = 60 * 60 * 1000; // 60 minutes
+const WARNING_LEAD_TIME = 5 * 60 * 1000; // show warning 5 minutes before logout
 
 export function AuthProvider({ children }) {
   const accessTokenRef   = useRef(null);
   const [user, setUser]  = useState(undefined);
   const [ready, setReady] = useState(false);
   const inactivityTimer  = useRef(null);
+  const warningTimer     = useRef(null);
+  const countdownInterval = useRef(null);
   const isRefreshing     = useRef(false);
   const refreshQueue     = useRef([]);
+  const [showInactivityWarning, setShowInactivityWarning] = useState(false);
+  const [secondsUntilLogout, setSecondsUntilLogout] = useState(0);
 
   const resetInactivityTimer = useCallback(() => {
     if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+    if (warningTimer.current) clearTimeout(warningTimer.current);
+    if (countdownInterval.current) clearInterval(countdownInterval.current);
+    setShowInactivityWarning(false);
+
+    warningTimer.current = setTimeout(() => {
+      setSecondsUntilLogout(Math.floor(WARNING_LEAD_TIME / 1000));
+      setShowInactivityWarning(true);
+      countdownInterval.current = setInterval(() => {
+        setSecondsUntilLogout(prev => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }, INACTIVITY_LIMIT - WARNING_LEAD_TIME);
+
     inactivityTimer.current = setTimeout(() => {
       logoutRef.current?.("inactivity");
     }, INACTIVITY_LIMIT);
@@ -193,6 +210,9 @@ export function AuthProvider({ children }) {
       }).catch(() => {});
     }
     if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+    if (warningTimer.current) clearTimeout(warningTimer.current);
+    if (countdownInterval.current) clearInterval(countdownInterval.current);
+    setShowInactivityWarning(false);
     accessTokenRef.current = null;
     setUser(null);
     localStorage.removeItem("dg_refresh_token");
@@ -206,9 +226,45 @@ export function AuthProvider({ children }) {
 
   const getToken = useCallback(() => accessTokenRef.current, []);
 
+  const stayLoggedIn = useCallback(() => {
+    resetInactivityTimer();
+  }, [resetInactivityTimer]);
+
+  const mm = String(Math.floor(secondsUntilLogout / 60)).padStart(2, "0");
+  const ss = String(secondsUntilLogout % 60).padStart(2, "0");
+
   return (
     <AuthContext.Provider value={{ user, login, logout: logoutFull, apiFetch, getToken, ready }}>
       {children}
+      {showInactivityWarning && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(15,23,42,0.55)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 99999,
+        }}>
+          <div style={{
+            background: "#fff", borderRadius: 14, padding: "28px 32px", maxWidth: 380,
+            width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", textAlign: "center",
+          }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: "#0f172a", marginBottom: 8 }}>
+              Still there?
+            </div>
+            <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: "0 0 18px" }}>
+              You've been inactive for a while. For your security, you'll be signed out in{" "}
+              <strong style={{ color: "#dc2626" }}>{mm}:{ss}</strong> unless you continue.
+              Anything you've already saved is safe — this only affects work you haven't saved yet.
+            </p>
+            <button
+              onClick={stayLoggedIn}
+              style={{
+                width: "100%", padding: "11px", background: "#0d6e6e", color: "#fff",
+                border: "none", borderRadius: 9, fontSize: 14, fontWeight: 700, cursor: "pointer",
+              }}
+            >
+              I'm still here — keep me signed in
+            </button>
+          </div>
+        </div>
+      )}
     </AuthContext.Provider>
   );
 }
