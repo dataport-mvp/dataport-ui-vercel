@@ -753,7 +753,7 @@ function ConsentBell({ apiFetch, router }) {
   );
 }
 
-function SignoutModal({ onConfirm, onCancel }) {
+function SignoutModal({ onConfirm, onCancel, onSignOutAll }) {
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(15,12,40,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,backdropFilter:"blur(3px)"}}>
       <div style={{background:"#fff",borderRadius:18,padding:"2rem",maxWidth:340,width:"90%",textAlign:"center",boxShadow:"0 24px 60px rgba(15,12,40,0.3)"}}>
@@ -764,6 +764,7 @@ function SignoutModal({ onConfirm, onCancel }) {
           <button onClick={onCancel} style={{flex:1,padding:"0.7rem",borderRadius:9,border:"1.5px solid #dddaf0",background:"inherit",cursor:"pointer",fontWeight:600,color:"#6b6894",fontFamily:"inherit",fontSize:"0.875rem"}}>Stay</button>
           <button onClick={onConfirm} style={{flex:1,padding:"0.7rem",borderRadius:9,border:"none",background:"#ef4444",color:"#fff",cursor:"pointer",fontWeight:700,fontFamily:"inherit",fontSize:"0.875rem"}}>Sign out</button>
         </div>
+        <button onClick={onSignOutAll} style={{marginTop:"0.9rem",background:"none",border:"none",color:"#6b6894",fontSize:"0.78rem",fontWeight:600,textDecoration:"underline",cursor:"pointer",fontFamily:"inherit"}}>Sign out from all devices</button>
       </div>
     </div>
   );
@@ -1833,6 +1834,11 @@ export default function PersonalDetails() {
     router.push(dest);
   };
   const handleSignout  = async () => { if (isDirtyRef.current) { try { await saveDraft(); } catch (_) {} } logout(); };
+  const handleSignoutAll = async () => {
+    if (isDirtyRef.current) { try { await saveDraft(); } catch (_) {} }
+    try { await apiFetch(`${API}/auth/logout-all`, { method: "POST" }); } catch (_) {}
+    logout();
+  };
 
   const aadhaarDisplay = aadhaarEditing
     ? aadhar
@@ -1845,7 +1851,7 @@ export default function PersonalDetails() {
     <>
       <style>{G}</style>
       <div className="pg">
-        {showSignout && <SignoutModal onConfirm={handleSignout} onCancel={() => setShowSignout(false)} />}
+        {showSignout && <SignoutModal onConfirm={handleSignout} onCancel={() => setShowSignout(false)} onSignOutAll={handleSignoutAll} />}
         {myPrintHtml && <MyPrintPreviewModal html={myPrintHtml} onClose={() => setMyPrintHtml(null)} />}
         {showSupport && <SupportModal apiFetch={apiFetch} onClose={()=>setShowSupport(false)} />}
         {showDeleteModal && <DeleteAccountModal onConfirm={handleDeleteAccount} onCancel={()=>{setShowDeleteModal(false);}} loading={deleteLoading}/>}

@@ -971,7 +971,7 @@ function SupportModal({ apiFetch, onClose }) {
   );
 }
 
-function SignoutModal({ onConfirm, onCancel }) {
+function SignoutModal({ onConfirm, onCancel, onSignOutAll }) {
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,backdropFilter:"blur(3px)"}}>
       <div style={{background:"#fff",borderRadius:10,padding:"1.5rem",maxWidth:300,width:"90%",textAlign:"center",boxShadow:"0 16px 48px rgba(0,0,0,0.14)"}}>
@@ -982,6 +982,7 @@ function SignoutModal({ onConfirm, onCancel }) {
           <button onClick={onCancel}  style={{flex:1,padding:"0.6rem",borderRadius:6,border:"1px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:600,color:"#475569",fontSize:"0.8rem",fontFamily:"inherit"}}>Stay</button>
           <button onClick={onConfirm} style={{flex:1,padding:"0.6rem",borderRadius:6,border:"none",background:"#ef4444",color:"#fff",cursor:"pointer",fontWeight:700,fontSize:"0.8rem",fontFamily:"inherit"}}>Sign out</button>
         </div>
+        <button onClick={onSignOutAll} style={{marginTop:"0.8rem",background:"none",border:"none",color:"#64748b",fontSize:"0.74rem",fontWeight:600,textDecoration:"underline",cursor:"pointer",fontFamily:"inherit"}}>Sign out from all devices</button>
       </div>
     </div>
   );
@@ -1631,6 +1632,10 @@ function DocumentsTab({ documents, loading, empSnap }) {
 export default function EmployerDashboard() {
   const { user, apiFetch, logout, ready } = useAuth();
   const router = useRouter();
+  const handleSignoutAll = async () => {
+    try { await apiFetch(`${API}/auth/logout-all`, { method: "POST" }); } catch (_) {}
+    logout();
+  };
 
   const [showSignout,    setShowSignout]    = useState(false);
   const [termsAccepted,  setTermsAccepted]  = useState(false);
@@ -2129,7 +2134,7 @@ return (
     <>
       <style>{G}</style>
 
-      {showSignout && <SignoutModal onConfirm={logout} onCancel={() => setShowSignout(false)} />}
+      {showSignout && <SignoutModal onConfirm={logout} onCancel={() => setShowSignout(false)} onSignOutAll={handleSignoutAll} />}
       {showSupport && <SupportModal apiFetch={apiFetch} onClose={()=>setShowSupport(false)} />}
       {printHtml && <PrintPreviewModal html={printHtml} onClose={() => setPrintHtml(null)} />}
 

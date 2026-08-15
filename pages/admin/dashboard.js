@@ -364,6 +364,11 @@ export default function AdminDashboard() {
     setAdminToken(null); setAdminUser(null);
   };
 
+  const handleLogoutAll = async () => {
+    try { await apiFetch(`${API}/auth/logout-all`, { method: "POST" }); } catch (_) {}
+    handleLogout();
+  };
+
   // FIX BUG-1: change password handler
   const handleChangePassword = async () => {
     setPwErr(""); setPwOk("");
@@ -789,6 +794,9 @@ export default function AdminDashboard() {
             </button>
             <button className="signout-btn" onClick={handleLogout}>
               Sign out
+            </button>
+            <button onClick={handleLogoutAll} style={{marginTop:"0.35rem",width:"100%",background:"none",border:"none",color:"#94a3b8",fontSize:"0.72rem",fontWeight:600,textDecoration:"underline",cursor:"pointer",fontFamily:"inherit",padding:"0.2rem"}}>
+              Sign out from all devices
             </button>
           </div>
         </aside>

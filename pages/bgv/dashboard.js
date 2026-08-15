@@ -261,6 +261,11 @@ function SupportModal({ apiFetch, onClose }) {
 export default function BgvDashboard() {
   const router = useRouter();
   const { user, apiFetch, logout, ready } = useAuth();
+  const handleSignoutAll = async () => {
+    try { await apiFetch(`${API}/auth/logout-all`, { method: "POST" }); } catch (_) {}
+    logout();
+    router.replace("/bgv/login");
+  };
 
   const [tab, setTab]             = useState("cases");
   const [holdMsg,     setHoldMsg]    = useState("");
@@ -625,7 +630,10 @@ export default function BgvDashboard() {
                 </>
               )}
             </div>
-            <button className="signout-btn" onClick={()=>{logout();router.replace("/bgv/login");}}>Sign out</button>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"stretch",gap:4}}>
+              <button className="signout-btn" onClick={()=>{logout();router.replace("/bgv/login");}}>Sign out</button>
+              <button onClick={handleSignoutAll} style={{background:"none",border:"none",color:"#94a3b8",fontSize:"0.68rem",fontWeight:600,textDecoration:"underline",cursor:"pointer",fontFamily:"inherit",padding:0}}>Sign out all devices</button>
+            </div>
           </div>
         </div>
 
