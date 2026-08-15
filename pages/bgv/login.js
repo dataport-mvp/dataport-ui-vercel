@@ -40,7 +40,7 @@ export default function BgvLogin() {
         if (!termsAgreed)        { setError("Please accept the BGV Vendor Terms before registering"); setLoading(false); return; }
       }
       const body = mode === "register"
-        ? { email: email.trim().toLowerCase(), password, name: name.trim(), company_name: company.trim(), phone, role: "bgv", terms_accepted_at: new Date().toISOString() }
+        ? { email: email.trim().toLowerCase(), password, name: name.trim(), company_name: company.trim(), phone, role: "bgv" }
         : { email: email.trim().toLowerCase(), password };
       const res  = await fetch(`${API}${mode==="register"?"/auth/register":"/auth/login"}`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
@@ -51,7 +51,7 @@ export default function BgvLogin() {
         else { setError(data.detail || "Something went wrong — please try again"); }
         setLoading(false); return;
       }
-      if (data.role !== "bgv") { setError("This portal is for BGV vendors only."); setLoading(false); return; }
+      if (data.role !== "bgv") { setError("Invalid email or password."); setLoading(false); return; }
       if (mode === "register") { setRegistered(true); setLoading(false); return; }
       login(data.access_token, data.refresh_token, {
         role:  data.role,

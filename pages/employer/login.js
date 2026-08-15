@@ -43,7 +43,7 @@ export default function EmployerLogin() {
       const d    = await res.json();
       if (!res.ok) { setError(parseError(d)); return; }
       if (d.role !== "employer") {
-        setError("These credentials belong to a " + d.role + " account. Please use the correct portal.");
+        setError("Invalid email or password.");
         return;
       }
       login(d.access_token, d.refresh_token, {role:d.role,name:d.name||company||email,email:d.email||email});
