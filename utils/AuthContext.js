@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect, useRef, useCallback } f
 
 const AuthContext = createContext(null);
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
-const INACTIVITY_LIMIT = 60 * 60 * 1000; // 60 minutes
+const INACTIVITY_LIMIT = 30 * 60 * 1000; // 30 minutes
 const WARNING_LEAD_TIME = 5 * 60 * 1000; // show warning 5 minutes before logout
 
 export function AuthProvider({ children }) {
