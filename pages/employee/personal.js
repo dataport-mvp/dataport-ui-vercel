@@ -932,19 +932,19 @@ function ConsentTab({ apiFetch, profileStatus }) {
       </div>)}
     </div>)}
   </div>);
-  const toIST=(ts)=>{if(!ts)return"—";try{return new Date(typeof ts==="number"&&ts<1e12?ts*1000:ts).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});}catch{return"—";}};
+  const toIST=(ts)=>{
+    if(!ts) return {date:"—", time:""};
+    try{
+      const d = new Date(typeof ts==="number"&&ts<1e12?ts*1000:ts);
+      const date = d.toLocaleDateString("en-IN",{timeZone:"Asia/Kolkata",day:"2-digit",month:"short",year:"numeric"});
+      const time = d.toLocaleTimeString("en-IN",{timeZone:"Asia/Kolkata",hour:"2-digit",minute:"2-digit",hour12:true});
+      return {date, time};
+    }catch{return {date:"—", time:""};}
+  };
 
   // ── tabMap lists already populated above ──────────────────────────
 
   const auditEvents = [
-    ...[...all].sort((a,b)=>(b.responded_at||b.requested_at||0)-(a.responded_at||a.requested_at||0)).map(c=>({
-      kind: "consent",
-      employer: c.requestor_name||c.employer_name||c.requestor_email||c.employer_email||"Unknown",
-      action: c.status==="pending"?"Requested access":c.status==="approved"?"You approved access":c.status==="declined"?"You declined":c.status==="revoked"?"You withdrew consent":"Unknown",
-      time: c.responded_at||c.requested_at,
-      color: c.status==="approved"?"#16a34a":c.status==="pending"?"#f59e0b":c.status==="revoked"?"#94a3b8":"#ef4444",
-      consent_id: c.consent_id,
-    })),
     ...fieldChanges.map((e,idx)=>({
       kind: "field_change",
       employer: e.field_label || e.field_name,
@@ -1031,7 +1031,9 @@ function ConsentTab({ apiFetch, profileStatus }) {
                       {isFieldChange?"✏️ ":""}{ev.employer}
                       {isFieldChange&&<span style={{fontSize:"0.65rem",color:"#c4bfdb",marginLeft:"auto"}}>{isExpanded?"▲":"▼"}</span>}
                     </div>
-                    <div style={{fontSize:"0.71rem",color:"#8b88b0",marginTop:1}}>{ev.action} · {toIST(ev.time)}</div>
+                    <div style={{fontSize:"0.71rem",color:"#8b88b0",marginTop:1}}>{ev.action}</div>
+                    <div style={{fontSize:"0.71rem",color:"#8b88b0",marginTop:1}}>{toIST(ev.time).date}</div>
+                    <div style={{fontSize:"0.71rem",color:"#8b88b0"}}>{toIST(ev.time).time}</div>
                   </div>
                 </div>
                 {isFieldChange&&isExpanded&&(
@@ -2576,7 +2578,7 @@ export default function PersonalDetails() {
               {freshnessWarn && (
                 <div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:"0.65rem 1rem",marginBottom:"0.75rem",display:"flex",alignItems:"center",justifyContent:"space-between",gap:"0.75rem"}}>
                   <div style={{fontSize:"0.75rem",color:"#92400e",lineHeight:1.5}}>
-                    <strong>⚠️ Your profile data is over 6 months old.</strong> Employers who have approved access will automatically receive your latest data when they view your profile — but please review and update any details that may have changed (address, bank account, etc.) and save to keep everything current.
+                    <strong>⚠️ Your profile data is over 6 months old.</strong> Please review and update any details that may have changed (address, bank account, etc.). Note: employers you've already approved will keep seeing the data as it was at the time you approved them — updating your profile here does not change what they see. If you'd like an existing employer to see your current data, you'll need to provide them a fresh consent.
                   </div>
                   <button onClick={()=>setFreshnessWarn(false)} style={{background:"none",border:"none",color:"#92400e",cursor:"pointer",fontSize:"1rem",flexShrink:0}}>✕</button>
                 </div>
