@@ -117,6 +117,7 @@ async function printProfile(profile, empHistory, documents, employerName) {
     { key: "aadhaar",        label: "Aadhaar Card",                   group: "personal" },
     { key: "pan",            label: "PAN Card",                       group: "personal" },
     { key: "passport",       label: "Passport",                       group: "personal" },
+    { key: "bankProof",      label: "Bank Proof (Passbook / Statement)", group: "personal" },
     // ── Education (Page 2) — same order as form ───────────────────
     { key: "classX",         label: "Class X Certificate",            group: "education" },
     { key: "intermediate",   label: "Intermediate Certificate",       group: "education" },
@@ -399,7 +400,7 @@ async function printProfile(profile, empHistory, documents, employerName) {
     row("UAN Active",        d.isActive),
   ].join(""), "#334155")}
 
-  ${Array.isArray(d.pfRecords) && d.pfRecords.length > 0 ? d.pfRecords.filter(pf => pf.companyName).map((pf,i) => section(
+  ${Array.isArray(d.pfRecords) && d.pfRecords.filter(pf => pf.companyName && (pf.hasPf === "No" || pf.pfMemberId || pf.dojEpfo || pf.doeEpfo)).length > 0 ? d.pfRecords.filter(pf => pf.companyName && (pf.hasPf === "No" || pf.pfMemberId || pf.dojEpfo || pf.doeEpfo)).map((pf,i) => section(
     `PF Record — ${pf.companyName}`,
     pf.hasPf === "No"
       ? row("PF Status", "PF not maintained by this employer")
@@ -1007,7 +1008,7 @@ function Sec({ title, children }) {
 }
 
 // ── Overview Tab ──────────────────────────────────────────────────────
-function OverviewTab({ data }) {
+function OverviewTab({ data, docUrls }) {
   if (!data) return <div className="nd-box">No profile data</div>;
   const cur  = data.currentAddress   || {};
   const perm = data.permanentAddress || {};
@@ -1093,6 +1094,9 @@ function OverviewTab({ data }) {
             <KV k="Account Type"   v={data.accountType} />
             <KV k="Account No."    v={data.accountFull || (data.accountLast4 ? `••••••••${data.accountLast4}` : "")} mono />
           </div>
+          {data.bankProofKey && docUrls?.["bankProof"] && (
+            <a href={docUrls["bankProof"]} target="_blank" rel="noopener noreferrer" className="doc-view" style={{display:"inline-flex",alignItems:"center",gap:"0.35rem",marginTop:"0.6rem"}}>📄 View Bank Proof (Passbook / Statement) ↗</a>
+          )}
         </Sec>
       )}
     </div>
@@ -1265,9 +1269,9 @@ function UanTab({ data }) {
           </>}
         </div>
       </Sec>
-      {Array.isArray(data.pfRecords)&&data.pfRecords.length>0&&(
+      {Array.isArray(data.pfRecords)&&data.pfRecords.filter(pf=>pf.hasPf==="No"||pf.pfMemberId||pf.dojEpfo||pf.doeEpfo).length>0&&(
         <Sec title="PF Records per Employer">
-          {data.pfRecords.map((pf,i)=>(
+          {data.pfRecords.filter(pf=>pf.hasPf==="No"||pf.pfMemberId||pf.dojEpfo||pf.doeEpfo).map((pf,i)=>(
             <div key={i} style={{padding:"0.6rem 0.8rem",background:"#f8fafc",border:"1px solid #e8ecf2",borderRadius:6,marginBottom:"0.4rem"}}>
               <div style={{fontSize:"0.62rem",fontWeight:700,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.4rem"}}>{pf.companyName||`Employer ${i+1}`}</div>
               {pf.hasPf==="No"
@@ -2751,7 +2755,7 @@ return (
                         <div className="note-bar">⚠️ <strong>Self-reported data.</strong> All information was filled and submitted by the employee. Not independently verified by Datagate unless a verified check has been explicitly completed.</div>
                         <div className="tab-nav">{DATA_TABS.map(t=><button key={t} className={`tab-btn${activeTab===t?" on":""}`} onClick={()=>setActiveTab(t)}>{t}</button>)}</div>
                         <div className="tab-pane">
-                          {activeTab==="Overview"&&<OverviewTab data={profileData.profile_snapshot}/>}
+                          {activeTab==="Overview"&&<OverviewTab data={profileData.profile_snapshot} docUrls={Object.values(documents||{}).reduce((acc,grp)=>({...acc,...Object.fromEntries(Object.entries(grp).map(([k,v])=>[k,v.url]))}),{})}/>}
                           {activeTab==="Education"&&<EducationTab data={profileData.profile_snapshot?.education}/>}
                           {activeTab==="Employment"&&<EmploymentTab data={profileData.employment_snapshot} resumeKey={profileData.profile_snapshot?.resumeKey} docUrls={Object.values(documents||{}).reduce((acc,grp)=>({...acc,...Object.fromEntries(Object.entries(grp).map(([k,v])=>[k,v.url]))}),{})}/>}
                           {activeTab==="UAN & PF"&&<UanTab data={profileData.profile_snapshot}/>}

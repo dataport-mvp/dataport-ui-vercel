@@ -1449,6 +1449,7 @@ export default function PersonalDetails() {
   const [permPin,setPermPin]             = useState("");
   const [aadhaarKey,setAadhaarKey]       = useState("");
   const [panKey,setPanKey]               = useState("");
+  const [bankProofKey,setBankProofKey]   = useState("");
   const [photoKey,setPhotoKey]           = useState("");
   const [activeUploads, setActiveUploads] = useState(0);
   const handleUploadState = useCallback((active) => setActiveUploads(c => Math.max(0, c + (active ? 1 : -1))), []);
@@ -1540,6 +1541,7 @@ export default function PersonalDetails() {
           if (d.emergPhone)   setEmergPhone(d.emergPhone);
           if (d.aadhaarKey)   setAadhaarKey(d.aadhaarKey);
           if (d.panKey)       setPanKey(d.panKey);
+          if (d.bankProofKey) setBankProofKey(d.bankProofKey);
           if (d.photoKey)     setPhotoKey(d.photoKey);
           if (d.bankName)        setBankName(d.bankName);
           if (d.bankOther)       setBankOther(d.bankOther);
@@ -1615,7 +1617,7 @@ export default function PersonalDetails() {
     pan, nameAsPerPan,
     hasPassport, passport, passportIssue, passportExpiry, passportKey, bloodGroup, maritalStatus,
     emergName, emergRel, emergPhone,
-    aadhaarKey, panKey, photoKey,
+    aadhaarKey, panKey, photoKey, bankProofKey,
     sameAsCurrent,
     bankName: bankName === "Other" ? (bankOther || bankName) : bankName,
     bankOther,
@@ -2517,6 +2519,17 @@ export default function PersonalDetails() {
                         )}
                       </>
                     )}
+                  </div>
+                </div>
+
+                {/* ── Bank proof — verified document for salary processing ── */}
+                <div className="fr" style={{marginTop:"0.6rem"}}>
+                  <div className="fi" style={{flex:"1 1 100%"}}>
+                    <span className="fl">Bank Proof — Passbook Front Page or Bank Statement</span>
+                    <p style={{fontSize:"0.72rem",color:"#6b6894",margin:"0.15rem 0 0.4rem",fontWeight:500,lineHeight:1.5}}>
+                      Recommended — gives your employer a verified record of your account details for accurate salary processing, especially useful if your account number was saved before this option was available.
+                    </p>
+                    <FileUpload onUploadStateChange={handleUploadState} label="Upload Passbook Front Page or Bank Statement" category="personal" subKey="bankProof" employeeId={employeeIdRef.current || employeeId} disabled={!draftReady} apiFetch={apiFetch} value={bankProofKey} onChange={(k) => { const key=typeof k==="string"?k:(k?.key||k?.s3_key||""); setBankProofKey(key); dirty(() => {})(""); }} />
                   </div>
                 </div>
               </div>

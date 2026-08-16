@@ -930,7 +930,7 @@ export default function BgvDashboard() {
                                 <span className="profile-key">UAN Number</span>
                                 <span className="profile-val">{caseDetail.profile.uanNumber}</span>
                               </div>
-                              {(caseDetail.profile?.pfRecords||[]).filter(p=>p?.companyName).map((p,i)=>(
+                              {(caseDetail.profile?.pfRecords||[]).filter(p=>p?.companyName && (p.hasPf==="No"||p.pfMemberId||p.dojEpfo||p.doeEpfo)).map((p,i)=>(
                                 <div key={`pf-${i}`} className="profile-kv">
                                   <span className="profile-key">PF Record</span>
                                   <span className="profile-val" style={{fontSize:"0.8rem"}}>

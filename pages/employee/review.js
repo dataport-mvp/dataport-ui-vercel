@@ -812,7 +812,7 @@ async function buildMyProfilePdf(profile, empHistory, documents, employeeSelfNam
     row("UAN Active",        d.isActive),
   ].join(""), "#334155")}
 
-  ${Array.isArray(d.pfRecords) && d.pfRecords.length > 0 ? d.pfRecords.filter(pf => pf.companyName).map((pf,i) => section(
+  ${Array.isArray(d.pfRecords) && d.pfRecords.filter(pf => pf.companyName && (pf.hasPf === "No" || pf.pfMemberId || pf.dojEpfo || pf.doeEpfo)).length > 0 ? d.pfRecords.filter(pf => pf.companyName && (pf.hasPf === "No" || pf.pfMemberId || pf.dojEpfo || pf.doeEpfo)).map((pf,i) => section(
     `PF Record — ${pf.companyName}`,
     pf.hasPf === "No"
       ? row("PF Status", "PF not maintained by this employer")
@@ -1744,10 +1744,10 @@ export default function ReviewPage() {
                 <KV label="UAN Active"      value={d.isActive}/>
               </>}
             </div>
-            {Array.isArray(d.pfRecords) && d.pfRecords.length > 0 && (
+            {Array.isArray(d.pfRecords) && d.pfRecords.filter(pf => pf.hasPf === "No" || pf.pfMemberId || pf.dojEpfo || pf.doeEpfo).length > 0 && (
               <div style={{marginTop:"0.85rem"}}>
                 <div className="sec-divider">PF Details per Employer</div>
-                {d.pfRecords.map((pf, i) => (
+                {d.pfRecords.filter(pf => pf.hasPf === "No" || pf.pfMemberId || pf.dojEpfo || pf.doeEpfo).map((pf, i) => (
                   <div key={i} style={{background:"#f8f7ff",border:"1px solid #e4e2f0",borderRadius:10,padding:"0.75rem 0.9rem",marginBottom:"0.6rem"}}>
                     <div style={{fontSize:"0.68rem",fontWeight:800,color:"#7c3aed",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.4rem"}}>{pf.companyName||`Employer ${i+1}`}</div>
                     {pf.hasPf==="No"
