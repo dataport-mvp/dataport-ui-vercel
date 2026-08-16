@@ -67,6 +67,10 @@ const G = `
     background: transparent; color: #8b92a8; font-size: 0.82rem; cursor: pointer;
     font-weight: 600; font-family: inherit; transition: all 0.2s; }
   .signout-btn:hover { border-color: #fca5a5; color: #ef4444; background: rgba(239,68,68,0.08); }
+  .bell-btn { position: relative; width: 32px; height: 32px; border-radius: 7px;
+    border: 1.5px solid #2a2535; background: transparent; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 0.9rem; transition: all 0.2s; }
+  .bell-btn:hover { border-color: #0d6e6e; background: rgba(167,139,250,0.1); }
 
   .sc { background: #ffffff; border-radius: 16px; padding: 1.5rem 1.6rem;
     margin-bottom: 1.1rem; box-shadow: 0 6px 28px rgba(30,26,62,0.22), 0 2px 8px rgba(30,26,62,0.12);
@@ -1248,7 +1252,8 @@ export default function ReviewPage() {
             if (eRes && eRes.ok) {
               const ed = await eRes.json();
               const emps = ed.employments || (Array.isArray(ed) ? ed : (ed.items || []));
-              setEmpHistory(emps);
+              const sortedEmps = [...emps].sort((a,b)=>(Number(a.sort_order??999))-(Number(b.sort_order??999)));
+              setEmpHistory(sortedEmps);
               setEmpAcksData({ acknowledgements: ed.acknowledgements || {}, declared: !!ed.declared, resumeKey: ed.resumeKey || "", hasExperience: ed.hasExperience || "" });
             }
           } catch (_) {}
@@ -1417,11 +1422,11 @@ export default function ReviewPage() {
         <div className="topbar">
           <span className="logo-text">Datagate</span>
           <div className="topbar-right">
-            <button title="Home — Personal Details" onClick={()=>router.push("/employee/personal")} style={{width:32,height:32,borderRadius:7,border:"1px solid #dddaf0",background:"#f5f4f0",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.9rem"}}>🏠</button>
+            <button className="bell-btn" title="Home — Personal Details" onClick={()=>router.push("/employee/personal")}>🏠</button>
             <span className="user-name">👤 {user.name || user.email}</span>
             <ConsentBell apiFetch={apiFetch} router={router}/>
             <div style={{position:"relative"}}>
-              <button title="Settings" onClick={()=>setShowGearMenu(g=>!g)} style={{width:32,height:32,borderRadius:7,border:"1px solid #dddaf0",background:"#f5f4f0",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.9rem"}}>⚙️</button>
+              <button className="bell-btn" title="Settings" onClick={()=>setShowGearMenu(g=>!g)}>⚙️</button>
               {showGearMenu && (
                 <>
                   <div style={{position:"fixed",inset:0,zIndex:199}} onClick={()=>setShowGearMenu(false)}/>
@@ -1678,10 +1683,12 @@ export default function ReviewPage() {
             {d.resumeKey && <div style={{marginBottom:"0.85rem"}}><div className="att-grid"><AttChip label="Latest Resume / CV" docKey={d.resumeKey} urls={docUrls}/></div></div>}
             {empHistory.length === 0 ? (
               <p style={{color:"#d8d4e3",fontSize:"0.875rem",fontStyle:"italic"}}>No employment history added.</p>
-            ) : empHistory.map((e, idx) => (
+            ) : empHistory.map((e, idx) => {
+              const isCurrent = idx === empHistory.length - 1;
+              return (
               <div key={e.company_id||idx} style={{marginBottom:"0.9rem",paddingBottom:"0.9rem",borderBottom:"1px solid #f0eef8"}}>
                 <div style={{fontSize:"0.72rem",fontWeight:700,color:"#7c3aed",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.5rem"}}>
-                  {idx===0?"Current / Most Recent Employer":`Previous Employer ${idx}`}
+                  {isCurrent?"Current / Most Recent Employer":`Previous Employer ${idx+1}`}
                 </div>
                 <div className="grid">
                   <KV label="Company"         value={e.companyName}/>
@@ -1689,10 +1696,10 @@ export default function ReviewPage() {
                   <KV label="Department"      value={e.department}/>
                   <KV label="Employment Type" value={e.employmentType}/>
                   <KV label="Date of Joining" value={e.startDate}/>
-                  {idx===0
+                  {isCurrent
                     ?<KV label="Currently Working" value={e.currentlyWorking==="Yes"?"Yes — Still Employed":e.currentlyWorking==="No"?"No":e.currentlyWorking}/>
                     :<KV label="Date of Leaving"   value={e.endDate}/>}
-                  {idx===0&&e.currentlyWorking==="No"&&<KV label="Date of Leaving" value={e.endDate}/>}
+                  {isCurrent&&e.currentlyWorking==="No"&&<KV label="Date of Leaving" value={e.endDate}/>}
                   <KV label="Work Email"      value={e.workEmail}/>
                   {e.employmentType==="Contract"&&<KV label="Vendor" value={e.contractVendor?.company}/>}
                 </div>
@@ -1721,7 +1728,8 @@ export default function ReviewPage() {
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* ── Page 4: UAN ── */}
