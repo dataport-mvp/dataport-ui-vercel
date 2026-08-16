@@ -880,7 +880,7 @@ function SupportModal({ apiFetch, onClose }) {
     setBusy(false);
   };
 
-  const statusColor = { open:"#f59e0b", in_progress:"#3b82f6", resolved:"#16a34a" };
+  const statusColor = { open:"#f59e0b", in_progress:"#3b82f6", resolved:"#16a34a", closed:"#334155" };
 
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(15,12,40,0.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:3000,backdropFilter:"blur(4px)"}}>

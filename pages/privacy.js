@@ -124,6 +124,7 @@ export default function PrivacyPolicy() {
             <li>Full name, email address, mobile number</li>
             <li>Identity: Aadhaar number (masked — last 4 digits only stored and displayed), PAN number</li>
             <li>Employment history: employer names, designations, dates of joining and exit, UAN, PF account details</li>
+            <li>Bank account details for salary processing: bank name, account holder name, IFSC, account number, and a supporting document (passbook or bank statement)</li>
             <li>Education: qualifications, institutions, years of passing, certificate references</li>
             <li>Documents uploaded by you: certificates, payslips, relieving letters, offer letters</li>
             <li>Digital signature (where applicable, for consent records)</li>
@@ -150,7 +151,7 @@ export default function PrivacyPolicy() {
             <li>IP address, browser type, device type, and session identifiers — for security and fraud prevention only</li>
             <li>Platform usage logs — for platform integrity and debugging only</li>
           </ul>
-          <div className="callout"><strong>We do not collect:</strong> Biometric data, caste, religion, political opinion, financial account credentials, or any data not listed above.</div>
+          <div className="callout"><strong>We do not collect:</strong> Biometric data, caste, religion, political opinion, or any data not listed above. Bank details are collected solely for salary-processing purposes, disclosed only to your approved employer, and never used for any other purpose.</div>
         </div>
 
         {/* 4 */}
@@ -186,6 +187,7 @@ export default function PrivacyPolicy() {
             <li>You can withdraw consent at any time from your dashboard — withdrawal is instantaneous</li>
             <li>On withdrawal, the employer's access is revoked immediately and they are notified of their obligation to delete</li>
             <li>Every approval, access event, and withdrawal is cryptographically logged with a timestamp</li>
+            <li>What an employer or BGV vendor receives on approval is fixed at that moment — later changes to your profile do not automatically update what they already have. If you want them to see updated information, you provide a fresh consent</li>
           </ul>
           <div className="callout"><strong>Your consent log is your record.</strong> You can view every consent event — who requested, what purpose was stated, when you approved, and when access was revoked — from your account dashboard at any time.</div>
         </div>
@@ -196,7 +198,7 @@ export default function PrivacyPolicy() {
 
           <p className="p"><strong>Employers you approve:</strong> Only after your explicit consent, strictly for the purpose you approved. Employers are bound by our Employer Terms and Data Sharing Agreement.</p>
 
-          <p className="p"><strong>BGV vendors assigned by your employer:</strong> When an employer assigns a BGV vendor to conduct background checks on their behalf, your data (already approved by you for the employer) may be routed to that vendor through the platform. BGV vendors are separately bound by Datagate's BGV Vendor Terms and operate only within the scope of the employer's authorised check.</p>
+          <p className="p"><strong>BGV vendors assigned by your employer:</strong> When an employer assigns a BGV vendor to conduct background checks on their behalf, your data (already approved by you for the employer) may be routed to that vendor through the platform — including any employment reference contact details (name, role, email, mobile) you provided, which the vendor may contact solely to verify your stated employment. BGV vendors are separately bound by Datagate's BGV Vendor Terms and operate only within the scope of the employer's authorised check.</p>
 
           <p className="p"><strong>Infrastructure and service providers:</strong> We use the following sub-processors to operate the platform. All are bound by data processing agreements and act only on our instructions:</p>
           <div className="table-wrap">
@@ -266,8 +268,9 @@ export default function PrivacyPolicy() {
             <li><strong>Aadhaar number:</strong> Collected with your explicit consent for employment verification purposes only. The full number is never stored or displayed — only the last 4 digits are retained and visible to any party, including employers. We do not authenticate Aadhaar against UIDAI databases.</li>
             <li><strong>PAN number:</strong> Stored in encrypted form. Shared with employers only on your explicit approval and only for the verification purpose stated.</li>
             <li><strong>UAN / PF details:</strong> Used to source EPFO-linked employment records. Shared only after your approval.</li>
+            <li><strong>Bank account details:</strong> Collected for salary-processing purposes only. Shared only with the employer you have explicitly approved, and never used for any other purpose.</li>
           </ul>
-          <p className="p">We do not collect health data, financial account credentials, biometric data, caste, religion, or political affiliations.</p>
+          <p className="p">We do not collect health data, biometric data, caste, religion, or political affiliations.</p>
         </div>
 
         {/* 11 */}

@@ -124,6 +124,7 @@ export default function BGVVendorTerms() {
           <ul className="ul">
             <li><strong>Derived:</strong> You receive access because an employer assigned a case to you. The underlying consent was given by the employee to the employer, not to you directly.</li>
             <li><strong>Scoped:</strong> You access only the data elements necessary for the specific checks you are assigned to conduct</li>
+            <li><strong>Fixed at assignment:</strong> The profile data you see was captured at the moment the employer approved the consent that led to your case. It does not update if the employee later edits their profile.</li>
             <li><strong>Temporary:</strong> Your access exists only for the duration of the assigned case</li>
             <li><strong>Revocable:</strong> Datagate or the instructing employer may revoke your access at any time</li>
           </ul>
@@ -140,6 +141,7 @@ export default function BGVVendorTerms() {
             <li>Communicate with the instructing employer and employee through the platform's messaging system regarding the assigned case</li>
             <li>Submit a final verification report through the platform on completion of assigned checks</li>
           </ul>
+          <p className="p">Where an employment reference's contact details (name, role, email, mobile) are provided as part of the profile, you may contact them solely to verify the candidate's stated employment for the assigned check. You may not use a reference's contact details for any other purpose, including recruitment, marketing, or any check not explicitly assigned to you.</p>
         </div>
 
         {/* 5 */}

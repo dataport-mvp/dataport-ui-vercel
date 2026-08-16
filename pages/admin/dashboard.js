@@ -1189,7 +1189,7 @@ export default function AdminDashboard() {
               <div style={{display:"grid",gridTemplateColumns:"280px 1fr",gap:"1rem"}}>
                 <div>
                   <div className="filter-row">
-                    {["", "open", "in_progress", "resolved"].map(f => (
+                    {["", "open", "in_progress", "resolved", "closed"].map(f => (
                       <button key={f} className={`filter-btn${ticketFilter === f ? " on" : ""}`}
                         onClick={() => setTicketFilter(f)}>{f || "All"}</button>
                     ))}
@@ -1244,22 +1244,33 @@ export default function AdminDashboard() {
                         ))}
                       </div>
                       <div>
-                        <div className="detail-label">Reply</div>
-                        <textarea className="reply-box" placeholder="Type your reply to the user…"
-                          value={replyBody} onChange={e => setReplyBody(e.target.value)} />
-                        <div style={{display:"flex",alignItems:"center",gap:"0.5rem",marginTop:"0.5rem",flexWrap:"wrap"}}>
-                          <span style={{fontSize:"0.65rem",color:"#7a9494"}}>Update status:</span>
-                          {["open","in_progress","resolved"].map(s => (
-                            <button key={s} className={`filter-btn${replyStatus === s ? " on" : ""}`}
-                              onClick={() => setReplyStatus(replyStatus === s ? "" : s)}>
-                              {s.replace("_"," ")}
-                            </button>
-                          ))}
-                          <button className="reply-send-btn" style={{marginLeft:"auto"}}
-                            onClick={doTicketReply} disabled={!replyBody.trim()}>
-                            Send Reply ↗
-                          </button>
-                        </div>
+                        {selTicket.status === "closed" ? (
+                          <div style={{padding:"0.85rem 1rem",background:"#f1f5f9",border:"1px solid #cbd5e1",borderRadius:8,fontSize:"0.75rem",color:"#475569",fontWeight:600}}>
+                            🔒 This ticket is closed and cannot be reopened or replied to. It remains permanently in this record for reference.
+                          </div>
+                        ) : (
+                          <>
+                            <div className="detail-label">Reply</div>
+                            <textarea className="reply-box" placeholder="Type your reply to the user…"
+                              value={replyBody} onChange={e => setReplyBody(e.target.value)} />
+                            <div style={{display:"flex",alignItems:"center",gap:"0.5rem",marginTop:"0.5rem",flexWrap:"wrap"}}>
+                              <span style={{fontSize:"0.65rem",color:"#7a9494"}}>Update status:</span>
+                              {["open","in_progress","resolved","closed"].map(s => (
+                                <button key={s} className={`filter-btn${replyStatus === s ? " on" : ""}`}
+                                  onClick={() => setReplyStatus(replyStatus === s ? "" : s)}>
+                                  {s.replace("_"," ")}
+                                </button>
+                              ))}
+                              <button className="reply-send-btn" style={{marginLeft:"auto"}}
+                                onClick={doTicketReply} disabled={!replyBody.trim()}>
+                                Send Reply ↗
+                              </button>
+                            </div>
+                            {replyStatus === "closed" && (
+                              <p style={{fontSize:"0.68rem",color:"#dc2626",fontWeight:600,marginTop:"0.4rem"}}>⚠️ Closing is permanent — this ticket cannot be reopened or replied to after this.</p>
+                            )}
+                          </>
+                        )}
                       </div>
                     </div>
                   )}
