@@ -1368,8 +1368,6 @@ export default function UanDetails() {
     setPfRecords(prev => prev.map((r, idx) => idx === i ? {...r, [field]: value} : r));
     flagPostSignEdit();
   };
-  const addPfRecord    = () => { setPfRecords(prev => [...prev, makePfRecord()]); flagPostSignEdit(); };
-  const removePfRecord = (i) => { if(i === 0) return; setPfRecords(prev => prev.filter((_, idx) => idx !== i)); flagPostSignEdit(); };
 
   // Upload canvas blob to S3 — filename includes the signing timestamp so each signature
   // lands at its own S3 key rather than overwriting the previous one in place.
@@ -1652,7 +1650,6 @@ export default function UanDetails() {
                         <span className="pf-block-title">{rec.companyName || (p3?.label) || `Employer ${i + 1}`}</span>
                         {p3 && <span className="pf-block-badge">{rec.isCurrent ? "🟢 Current / Most Recent" : `⬅ Previous Employer ${i + 1}`}</span>}
                       </div>
-                      {i > 0 && <button className="rm-btn" onClick={() => removePfRecord(i)}>− Remove</button>}
                     </div>
                     {/* Current employer — no PF fields needed yet */}
                     {rec.isCurrent && (
@@ -1727,7 +1724,6 @@ export default function UanDetails() {
                   </div>
                 );
               })}
-              <button className="add-btn" onClick={addPfRecord} style={{marginTop:"0.25rem"}}>+ Add Another Employer</button>
             </div>
           )}
 
