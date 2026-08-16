@@ -526,15 +526,16 @@ export default function BgvDashboard() {
       });
       if (res.ok) {
         setHoldMsg("");
-        setSaveStatus("✓ Case put on hold — employee notified (employer CC'd)");
+        setHoldResult("✓ Case put on hold — employee notified (employer CC'd)");
         const cRes = await apiFetch(`${API}/bgv/cases`);
         if (cRes.ok) setCases(await cRes.json());
       } else {
         const d = await res.json().catch(()=>({}));
-        setSaveStatus(d.detail || "Could not put case on hold");
+        setHoldResult(d.detail || "Could not put case on hold");
       }
-    } catch(_) { setSaveStatus("Network error"); }
+    } catch(_) { setHoldResult("Network error"); }
     setHoldSending(false);
+    setTimeout(() => setHoldResult(""), 4000);
   };
 
   const loadThread = async (consentId) => {
@@ -702,7 +703,12 @@ export default function BgvDashboard() {
                   return (
                     <div key={c.consent_id} className={`tbl-row${selectedId===c.consent_id?" selected":""}`} onClick={()=>selectCase(c.consent_id)}>
                       <div>
-                        <div className="td-primary">{c.candidate_name}</div>
+                        <div className="td-primary">
+                          {c.candidate_name}
+                          {c.consent_status !== "APPROVED" && (
+                            <span style={{marginLeft:6,padding:"1px 7px",borderRadius:999,background:"#fee2e2",color:"#991b1b",fontSize:"0.62rem",fontWeight:700}}>CONSENT REVOKED</span>
+                          )}
+                        </div>
                         <div className="td-secondary">{c.employee_email}</div>
                       </div>
                       <div>
@@ -747,6 +753,9 @@ export default function BgvDashboard() {
                         </div>
                         <div style={{display:"flex",alignItems:"center",gap:"0.75rem"}}>
                           {saveStatus && <span style={{fontSize:"0.78rem",color:saveStatus.startsWith("✓")?"#4ade80":"#fca5a5",fontWeight:600}}>{saveStatus}</span>}
+                          {caseDetail.consent_status !== "APPROVED" && (
+                            <span className="badge" style={{color:"#991b1b",background:"#fee2e2"}}>CONSENT REVOKED — read-only history</span>
+                          )}
                           {(BGV_STATUS_BADGE[caseDetail.bgv_status]||BGV_STATUS_BADGE.assigned) && (
                             <span className="badge" style={{color:(BGV_STATUS_BADGE[caseDetail.bgv_status]||BGV_STATUS_BADGE.assigned).color,background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.25)",color:"#fff"}}>
                               {(BGV_STATUS_BADGE[caseDetail.bgv_status]||BGV_STATUS_BADGE.assigned).label}
@@ -767,6 +776,7 @@ export default function BgvDashboard() {
                             ["Email", caseDetail.employee_email],
                             ["PAN", caseDetail.profile?.pan],
                             ["Aadhaar (last 4)", caseDetail.profile?.aadhaar || caseDetail.profile?.aadhar],
+                            ["Passport", caseDetail.profile?.passport],
                             ["Nationality", caseDetail.profile?.nationality],
                           ].map(([k,v])=>v?(
                             <div key={k} className="profile-kv">
@@ -785,11 +795,33 @@ export default function BgvDashboard() {
                             </div>
                           )}
 
+                          <div className="panel-title" style={{marginTop:"1rem"}}>Permanent Address</div>
+                          {caseDetail.profile?.permanentAddress && (
+                            <div className="profile-kv">
+                              <span className="profile-key">Address</span>
+                              <span className="profile-val" style={{fontSize:"0.8rem",lineHeight:1.5}}>
+                                {[caseDetail.profile.permanentAddress.door, caseDetail.profile.permanentAddress.street, caseDetail.profile.permanentAddress.city, caseDetail.profile.permanentAddress.state, caseDetail.profile.permanentAddress.pincode].filter(Boolean).join(", ")}
+                              </span>
+                            </div>
+                          )}
+
                           <div className="panel-title" style={{marginTop:"1rem"}}>Education Summary</div>
                           {caseDetail.profile?.education?.classX?.school && (
                             <div className="profile-kv">
                               <span className="profile-key">Class X</span>
                               <span className="profile-val">{caseDetail.profile.education.classX.school} — {caseDetail.profile.education.classX.yearOfPassing}</span>
+                            </div>
+                          )}
+                          {caseDetail.profile?.education?.intermediate?.school && (
+                            <div className="profile-kv">
+                              <span className="profile-key">Class XII / Intermediate</span>
+                              <span className="profile-val">{caseDetail.profile.education.intermediate.school} — {caseDetail.profile.education.intermediate.yearOfPassing}</span>
+                            </div>
+                          )}
+                          {caseDetail.profile?.education?.diploma?.college && (
+                            <div className="profile-kv">
+                              <span className="profile-key">Diploma</span>
+                              <span className="profile-val">{caseDetail.profile.education.diploma.course} — {caseDetail.profile.education.diploma.college}</span>
                             </div>
                           )}
                           {caseDetail.profile?.education?.undergraduate?.college && (
@@ -820,15 +852,95 @@ export default function BgvDashboard() {
                               </span>
                             </div>
                           )}
+                          {(caseDetail.profile?.education?.articleships||[]).filter(a=>a?.firmName).map((a,i)=>(
+                            <div key={`art-${i}`} className="profile-kv">
+                              <span className="profile-key">Articleship</span>
+                              <span className="profile-val">{a.firmName} — {a.startDate} to {a.endDate||"Present"}</span>
+                            </div>
+                          ))}
+                          {(caseDetail.profile?.education?.professionalQualifications||[]).filter(p=>p?.type).map((p,i)=>(
+                            <div key={`pq-${i}`} className="profile-kv">
+                              <span className="profile-key">Professional Qualification</span>
+                              <span className="profile-val">{p.type} — {p.level}</span>
+                            </div>
+                          ))}
 
                           <div className="panel-title" style={{marginTop:"1rem"}}>Employment History</div>
                           {(caseDetail.employment_history||[]).filter(e=>e?.company_id!=="__meta__").map((e,i)=>(
-                            <div key={i} className="profile-kv">
-                              <span className="profile-key">{e.currentlyWorking==="Yes"?"Current":"Previous"}</span>
-                              <span className="profile-val">{e.companyName} — {e.designation}</span>
-                              <span style={{fontSize:"0.72rem",color:"#94a3b8"}}>{e.startDate} to {e.endDate||"Present"}</span>
+                            <div key={i} style={{border:"1px solid #e5e7eb",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.6rem",background:"#fafafa"}}>
+                              <div className="profile-kv">
+                                <span className="profile-key">{e.currentlyWorking==="Yes"?"Current":"Previous"}</span>
+                                <span className="profile-val">{e.companyName} — {e.designation}</span>
+                                <span style={{fontSize:"0.72rem",color:"#94a3b8"}}>{e.startDate} to {e.endDate||"Present"}</span>
+                              </div>
+                              {e.employmentType && (
+                                <div className="profile-kv">
+                                  <span className="profile-key">Type</span>
+                                  <span className="profile-val" style={{fontSize:"0.8rem"}}>{e.employmentType}{e.department ? ` · ${e.department}` : ""}</span>
+                                </div>
+                              )}
+                              {e.officeAddress && (
+                                <div className="profile-kv">
+                                  <span className="profile-key">Office Address</span>
+                                  <span className="profile-val" style={{fontSize:"0.8rem"}}>{e.officeAddress}</span>
+                                </div>
+                              )}
+                              {e.workEmail && (
+                                <div className="profile-kv">
+                                  <span className="profile-key">Work Email</span>
+                                  <span className="profile-val" style={{fontSize:"0.8rem"}}>{e.workEmail}</span>
+                                </div>
+                              )}
+                              {e.reasonForRelieving && (
+                                <div className="profile-kv">
+                                  <span className="profile-key">Reason for Leaving</span>
+                                  <span className="profile-val" style={{fontSize:"0.8rem"}}>{e.reasonForRelieving}</span>
+                                </div>
+                              )}
+                              {e.reference && (e.reference.name || e.reference.email || e.reference.mobile) && (
+                                <div style={{marginTop:"0.4rem",padding:"0.5rem 0.6rem",background:"#eff6ff",borderRadius:6,border:"1px solid #bfdbfe"}}>
+                                  <div style={{fontSize:"0.68rem",fontWeight:700,color:"#1e40af",marginBottom:"0.2rem"}}>VERIFICATION CONTACT</div>
+                                  <div style={{fontSize:"0.8rem",color:"#1e3a5f"}}>
+                                    {e.reference.name}{e.reference.role ? ` — ${e.reference.role}` : ""}
+                                  </div>
+                                  <div style={{fontSize:"0.75rem",color:"#3b5a80"}}>
+                                    {[e.reference.email, e.reference.mobile].filter(Boolean).join(" · ")}
+                                  </div>
+                                </div>
+                              )}
+                              <button className="view-btn" style={{marginTop:"0.4rem"}} onClick={async()=>{
+                                try {
+                                  const r = await apiFetch(`${API}/documents/${caseDetail.employee_id}`);
+                                  if (r.ok) {
+                                    const docs = await r.json();
+                                    const empDocs = docs.documents?.[`employment/${e.company_id}`] || {};
+                                    const available = Object.entries(empDocs);
+                                    if (available.length === 0) { setSaveStatus("No documents uploaded for this employer"); return; }
+                                    available.forEach(([_, d]) => d?.url && window.open(d.url, "_blank"));
+                                  }
+                                } catch(_) {}
+                              }}>View Uploaded Documents</button>
                             </div>
                           ))}
+
+                          {caseDetail.profile?.uanNumber && (
+                            <>
+                              <div className="panel-title" style={{marginTop:"1rem"}}>UAN / PF History</div>
+                              <div className="profile-kv">
+                                <span className="profile-key">UAN Number</span>
+                                <span className="profile-val">{caseDetail.profile.uanNumber}</span>
+                              </div>
+                              {(caseDetail.profile?.pfRecords||[]).filter(p=>p?.companyName).map((p,i)=>(
+                                <div key={`pf-${i}`} className="profile-kv">
+                                  <span className="profile-key">PF Record</span>
+                                  <span className="profile-val" style={{fontSize:"0.8rem"}}>
+                                    {p.companyName} — Member ID: {p.pfMemberId}<br/>
+                                    {p.dojEpfo} to {p.doeEpfo || "Present"}{p.pfTransferred ? ` · Transferred: ${p.pfTransferred}` : ""}
+                                  </span>
+                                </div>
+                              ))}
+                            </>
+                          )}
                         </div>
 
                         {/* Checks Panel */}
@@ -907,7 +1019,7 @@ export default function BgvDashboard() {
                                 </select>
                               </div>
                               <div className="fi">
-                                <span className="fl">Report PDF</span>
+                                <span className="fl">Report PDF <span style={{color:"#dc2626"}}>*</span></span>
                                 <input type="file" accept=".pdf" style={{fontSize:"0.78rem",color:"#64748b"}} onChange={e=>setReportFile(e.target.files[0]||null)}/>
                               </div>
                             </div>
@@ -918,6 +1030,7 @@ export default function BgvDashboard() {
                             <button className="submit-btn" onClick={submitReport} disabled={submittingReport}>
                               {submittingReport ? "Submitting…" : reportDone ? "Re-submit Report" : "Submit Report to Employer →"}
                             </button>
+                            {saveStatus && <div style={{marginTop:"0.5rem",fontSize:"0.78rem",fontWeight:600,color:saveStatus.startsWith("✓")?"#16a34a":"#dc2626"}}>{saveStatus}</div>}
                           </div>
                         </div>
                       </div>
