@@ -124,8 +124,13 @@ export function AuthProvider({ children }) {
             resetInactivityTimer();
           } else if (result.invalid) {
             // Genuinely dead refresh token — clear storage, user must log in fresh.
+            // Critically: also explicitly set user to null (not just leave it at its
+            // initial `undefined`) — pages check for `user === null` specifically to
+            // know when to redirect to login. Without this, user stays undefined
+            // forever, no redirect ever fires, and the page is left blank.
             localStorage.removeItem("dg_refresh_token");
             localStorage.removeItem("dg_user");
+            setUser(null);
           } else {
             // Could not confirm either way (server unreachable after retries). Don't wipe
             // the stored refresh token — it may still be valid. Just show the login screen
