@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { useAuth } from "../../utils/AuthContext";
+import { parseError } from "../../utils/apiError";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
 
@@ -47,8 +48,8 @@ export default function BgvLogin() {
       });
       const data = await res.json();
       if (!res.ok) {
-        if (res.status === 403 && data.detail?.includes("pending")) { setPending(true); }
-        else { setError(data.detail || "Something went wrong — please try again"); }
+        if (res.status === 403 && data.detail?.includes && data.detail.includes("pending")) { setPending(true); }
+        else { setError(parseError(data)); }
         setLoading(false); return;
       }
       if (data.role !== "bgv") { setError("Invalid email or password."); setLoading(false); return; }
@@ -162,7 +163,7 @@ export default function BgvLogin() {
             <div className="lft-logo-icon">
               <svg width="16" height="18" viewBox="0 0 28 32" fill="none"><rect x="7" y="17" width="4" height="10" rx="1.5" fill="white"/><rect x="17" y="17" width="4" height="10" rx="1.5" fill="white"/><path d="M9 17Q14 10 19 17" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"/></svg>
             </div>
-            <div><div className="lft-logo-name">Datagate</div><div className="lft-logo-sub">Verified Employment</div></div>
+            <div><div className="lft-logo-name">datagate.co.in</div><div className="lft-logo-sub">Verified Employment</div></div>
           </Link>
           <div className="lft-body">
             <div className="badge">BGV Vendor Portal</div>
@@ -182,7 +183,7 @@ export default function BgvLogin() {
             </div>
           </div>
           <div className="lft-ft">
-            <span className="lft-ft-copy">© 2026 Datagate</span>
+            <span className="lft-ft-copy">© 2026 datagate.co.in</span>
             <div className="lft-ft-links">
               <Link href="/bgv/terms" className="lft-ft-link">BGV Vendor Terms</Link>
               <Link href="/privacy" className="lft-ft-link">Privacy</Link>
@@ -192,7 +193,7 @@ export default function BgvLogin() {
 
         <div className="rgt">
           <div className="form-wrap">
-            {/* Back to Datagate removed per request */}
+            {/* Back to datagate.co.in removed per request */}
             <div className="form-ey">BGV Vendor Portal</div>
             <div className="fhd">{mode==="register"?"Register your agency":"Welcome back"}</div>
             <div className="fsb">{mode==="register"?"Create your BGV vendor account. Admin approval required before first login.":"Sign in to access your assigned cases."}</div>
@@ -217,7 +218,7 @@ export default function BgvLogin() {
                 <div className="fld"><label className="flb">Work Email <span>*</span></label><input className="fin" type="email" placeholder="ops@youragency.com" value={email} onChange={e=>{setEmail(e.target.value);setError("")}} autoComplete="email"/></div>
                 <div className="fld"><label className="flb">Password <span>*</span></label>
                   <div className="pw-wrap">
-                    <input className="fin" type={showPwd?"text":"password"} placeholder="Min. 8 characters" value={password} onChange={e=>{setPassword(e.target.value);setError("")}} onKeyDown={e=>e.key==="Enter"&&handle()} autoComplete={mode==="login"?"current-password":"new-password"}/>
+                    <input className="fin" type={showPwd?"text":"password"} placeholder={mode==="register"?"Min. 8 chars, incl. a letter, number & symbol":"Password"} value={password} onChange={e=>{setPassword(e.target.value);setError("")}} onKeyDown={e=>e.key==="Enter"&&handle()} autoComplete={mode==="login"?"current-password":"new-password"}/>
                     <button className="ey" type="button" onClick={()=>setShowPwd(v=>!v)} tabIndex={-1}><Eye open={showPwd}/></button>
                   </div>
                 </div>
@@ -225,7 +226,7 @@ export default function BgvLogin() {
                   <div className="terms-row" onClick={()=>setTermsAgreed(v=>!v)}>
                     <div className={`terms-cb${termsAgreed?" checked":""}`}/>
                     <span className="terms-txt">
-                      I have read and agree to Datagate's{" "}
+                      I have read and agree to datagate.co.in's{" "}
                       <a href="/bgv/terms" onClick={e=>e.stopPropagation()} target="_blank" rel="noopener noreferrer">BGV Vendor Terms & Conditions</a>
                       {" "}and{" "}
                       <a href="/privacy" onClick={e=>e.stopPropagation()} target="_blank" rel="noopener noreferrer">Privacy Policy</a>.

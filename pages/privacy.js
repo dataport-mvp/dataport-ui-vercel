@@ -4,9 +4,6 @@ import Link from "next/link";
 // Version 2.0 | DPDP Act 2023 Compliant
 // Jurisdiction: Hyderabad, Telangana, India
 // Data storage: AWS Mumbai (ap-south-1)
-// Replace Datagate Support Team with your full legal name before publishing
-// Replace Datagate with your exact registered entity name
-// Review with a legal professional before going live with paying customers
 
 export default function PrivacyPolicy() {
   return (
@@ -65,9 +62,9 @@ export default function PrivacyPolicy() {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
           </svg>
-          Datagate
+          datagate.co.in
         </Link>
-        <Link href="/" className="nav-brand">Datagate</Link>
+        <Link href="/" className="nav-brand">datagate.co.in</Link>
       </nav>
 
       <div className="wrap">
@@ -98,9 +95,9 @@ export default function PrivacyPolicy() {
         {/* 1 */}
         <div className="sec" id="p1">
           <div className="sec-h">1. Who we are</div>
-          <p className="p">Datagate ("Datagate", "we", "us", "our") operates the consent-based employment verification platform at <strong>datagate.co.in</strong>. The platform is owned and operated by <strong>Datagate</strong>, Hyderabad, Telangana, India.</p>
-          <p className="p">Datagate acts as a <strong>Data Fiduciary</strong> as defined under the Digital Personal Data Protection Act, 2023 ("DPDP Act"). We determine the purpose and means of processing personal data on this platform.</p>
-          <p className="p">Employers who access employee data through this platform are independent Data Fiduciaries for their own processing activities and are bound by Datagate's Employer Terms and Data Sharing Agreement.</p>
+          <p className="p">datagate.co.in ("datagate.co.in", "we", "us", "our") operates the consent-based employment verification platform at <strong>datagate.co.in</strong>. The platform is owned and operated by <strong>datagate.co.in</strong>, Hyderabad, Telangana, India.</p>
+          <p className="p">datagate.co.in acts as a <strong>Data Fiduciary</strong> as defined under the Digital Personal Data Protection Act, 2023 ("DPDP Act"). We determine the purpose and means of processing personal data on this platform.</p>
+          <p className="p">Employers who access employee data through this platform are independent Data Fiduciaries for their own processing activities and are bound by datagate.co.in's Employer Terms and Data Sharing Agreement.</p>
         </div>
 
         {/* 2 */}
@@ -108,7 +105,7 @@ export default function PrivacyPolicy() {
           <div className="sec-h">2. Who this policy applies to</div>
           <p className="p">This policy applies to:</p>
           <ul className="ul">
-            <li><strong>Employees (Data Principals)</strong> — individuals who create a verified employment profile on Datagate</li>
+            <li><strong>Employees (Data Principals)</strong> — individuals who create a verified employment profile on datagate.co.in</li>
             <li><strong>Employers</strong> — organisations that request access to employee profiles for background verification or onboarding</li>
             <li><strong>BGV Vendors</strong> — background verification agencies assigned by employers to conduct checks through the platform</li>
             <li><strong>Visitors</strong> — anyone who accesses datagate.co.in without creating an account</li>
@@ -121,8 +118,11 @@ export default function PrivacyPolicy() {
 
           <p className="p"><strong>From employees:</strong></p>
           <ul className="ul">
-            <li>Full name, email address, mobile number</li>
-            <li>Identity: Aadhaar number (masked — last 4 digits only stored and displayed), PAN number</li>
+            <li>Full name, email address, mobile number, date of birth, gender, nationality, blood group, marital status</li>
+            <li>Identity: Aadhaar number (masked — last 4 digits only stored and displayed), PAN number, passport (where provided)</li>
+            <li>Family details: parents' names, and — where applicable — spouse and children's names and dates of birth, collected for company health insurance enrollment purposes</li>
+            <li>Emergency contact: name, relationship, and phone number of a person you nominate — used only to reach someone on your behalf in an emergency</li>
+            <li>Current and permanent address</li>
             <li>Employment history: employer names, designations, dates of joining and exit, UAN, PF account details</li>
             <li>Bank account details for salary processing: bank name, account holder name, IFSC, account number, and a supporting document (passbook or bank statement)</li>
             <li>Education: qualifications, institutions, years of passing, certificate references</li>
@@ -179,7 +179,7 @@ export default function PrivacyPolicy() {
         {/* 5 */}
         <div className="sec" id="p5">
           <div className="sec-h">5. Consent and control</div>
-          <p className="p">Every data share on Datagate requires your active, informed consent. The consent mechanism works as follows:</p>
+          <p className="p">Every data share on datagate.co.in requires your active, informed consent. The consent mechanism works as follows:</p>
           <ul className="ul">
             <li>You receive a notification identifying the employer and their stated purpose before any data is shared</li>
             <li>You must click <strong>Approve</strong> — we never pre-approve, auto-approve, or infer consent on your behalf</li>
@@ -198,7 +198,7 @@ export default function PrivacyPolicy() {
 
           <p className="p"><strong>Employers you approve:</strong> Only after your explicit consent, strictly for the purpose you approved. Employers are bound by our Employer Terms and Data Sharing Agreement.</p>
 
-          <p className="p"><strong>BGV vendors assigned by your employer:</strong> When an employer assigns a BGV vendor to conduct background checks on their behalf, your data (already approved by you for the employer) may be routed to that vendor through the platform — including any employment reference contact details (name, role, email, mobile) you provided, which the vendor may contact solely to verify your stated employment. BGV vendors are separately bound by Datagate's BGV Vendor Terms and operate only within the scope of the employer's authorised check.</p>
+          <p className="p"><strong>BGV vendors assigned by your employer:</strong> When an employer assigns a BGV vendor to conduct background checks on their behalf, your data (already approved by you for the employer) may be routed to that vendor through the platform — including any employment reference contact details (name, role, email, mobile) you provided, which the vendor may contact solely to verify your stated employment. BGV vendors are separately bound by datagate.co.in's BGV Vendor Terms and operate only within the scope of the employer's authorised check.</p>
 
           <p className="p"><strong>Infrastructure and service providers:</strong> We use the following sub-processors to operate the platform. All are bound by data processing agreements and act only on our instructions:</p>
           <div className="table-wrap">
@@ -221,7 +221,7 @@ export default function PrivacyPolicy() {
         {/* 7 */}
         <div className="sec" id="p7">
           <div className="sec-h">7. Data storage and localisation</div>
-          <p className="p">All personal data processed by Datagate is stored exclusively on servers located in India — specifically on Amazon Web Services' Mumbai region (<strong>ap-south-1</strong>). No personal data is transferred outside India except where required by a lawful order of a competent authority or where you explicitly consent to cross-border transfer for a specific purpose.</p>
+          <p className="p">All personal data processed by datagate.co.in is stored exclusively on servers located in India — specifically on Amazon Web Services' Mumbai region (<strong>ap-south-1</strong>). No personal data is transferred outside India except where required by a lawful order of a competent authority or where you explicitly consent to cross-border transfer for a specific purpose.</p>
           <div className="callout"><strong>DPDP Act compliance:</strong> This storage architecture is designed to comply with data localisation requirements under the Digital Personal Data Protection Act, 2023.</div>
         </div>
 
@@ -235,6 +235,7 @@ export default function PrivacyPolicy() {
               </thead>
               <tbody>
                 <tr><td>Employee profile and documents</td><td>While your account is active. Deleted within 7 days of account deletion request.</td></tr>
+                <tr><td>Messages and support tickets</td><td>The message or ticket text itself is removed on account deletion. A minimal record — sender, recipient, timestamp, and related consent or category — is retained permanently for dispute resolution and fraud prevention.</td></tr>
                 <tr><td>Consent event logs</td><td>7 years from the date of the consent event (legal compliance requirement)</td></tr>
                 <tr><td>Employer notification records (deletion / withdrawal)</td><td>7 years (evidence of obligation communicated)</td></tr>
                 <tr><td>Session and security logs</td><td>90 days</td></tr>
@@ -242,7 +243,7 @@ export default function PrivacyPolicy() {
               </tbody>
             </table>
           </div>
-          <div className="warn"><strong>Why we retain consent logs:</strong> Even after your account is deleted, we retain cryptographic logs of consent events. This protects you — it is evidence that your consent was properly obtained and that employers were notified of their deletion obligation. We do not retain your profile data, documents, or personal information after deletion.</div>
+          <div className="warn"><strong>Why we retain consent logs:</strong> Even after your account is deleted, we retain cryptographic logs of consent events. This protects you — it is evidence that your consent was properly obtained and that employers were notified of their deletion obligation. We also retain a minimal record of messages and support tickets — who was involved, when, and what it related to — with the actual message or ticket text removed. We do not retain your profile data, documents, or the content of your conversations after deletion.</div>
         </div>
 
         {/* 9 */}
@@ -263,14 +264,14 @@ export default function PrivacyPolicy() {
         {/* 10 */}
         <div className="sec" id="p10">
           <div className="sec-h">10. Sensitive personal data</div>
-          <p className="p">The following data elements collected on Datagate are classified as sensitive and handled with additional controls:</p>
+          <p className="p">The following data elements collected on datagate.co.in are classified as sensitive and handled with additional controls:</p>
           <ul className="ul">
             <li><strong>Aadhaar number:</strong> Collected with your explicit consent for employment verification purposes only. The full number is never stored or displayed — only the last 4 digits are retained and visible to any party, including employers. We do not authenticate Aadhaar against UIDAI databases.</li>
             <li><strong>PAN number:</strong> Stored in encrypted form. Shared with employers only on your explicit approval and only for the verification purpose stated.</li>
             <li><strong>UAN / PF details:</strong> Used to source EPFO-linked employment records. Shared only after your approval.</li>
             <li><strong>Bank account details:</strong> Collected for salary-processing purposes only. Shared only with the employer you have explicitly approved, and never used for any other purpose.</li>
           </ul>
-          <p className="p">We do not collect health data, biometric data, caste, religion, or political affiliations.</p>
+          <p className="p">Beyond blood group (collected for emergency purposes), we do not collect health records, medical history, biometric data, caste, religion, or political affiliations.</p>
         </div>
 
         {/* 11 */}
@@ -293,7 +294,7 @@ export default function PrivacyPolicy() {
         <div className="sec" id="p12">
           <div className="sec-h">12. Changes to this policy</div>
           <p className="p">We may update this policy as the platform evolves or as legal requirements change. For material changes — those that affect your rights or how your data is used — we will notify you by email at least <strong>14 days before</strong> the change takes effect and display a prominent notice on the platform. The version date at the top of this page records when it was last updated.</p>
-          <p className="p">Continued use of Datagate after the effective date of a material change constitutes your acceptance of the updated policy.</p>
+          <p className="p">Continued use of datagate.co.in after the effective date of a material change constitutes your acceptance of the updated policy.</p>
         </div>
 
         {/* 13 */}
@@ -302,7 +303,7 @@ export default function PrivacyPolicy() {
           <p className="p">In accordance with the Digital Personal Data Protection Act, 2023, we have designated a Grievance Officer to address any complaints or concerns about the processing of your personal data.</p>
           <div className="box">
             <div className="box-t">Grievance Officer</div>
-            <p><strong>Datagate Support Team</strong></p>
+            <p><strong>datagate.co.in Support Team</strong></p>
             <p>Hyderabad, Telangana, India</p>
             <br/>
             <p>Email: <a href="mailto:grievance@datagate.co.in">grievance@datagate.co.in</a></p>
@@ -316,7 +317,7 @@ export default function PrivacyPolicy() {
         <div className="sec" id="p14">
           <div className="sec-h">14. Contact</div>
           <div className="box">
-            <div className="box-t">General enquiries &nbsp;·&nbsp; Datagate</div>
+            <div className="box-t">General enquiries &nbsp;·&nbsp; datagate.co.in</div>
             <p>Email: <a href="mailto:support@datagate.co.in">support@datagate.co.in</a></p>
             <br/>
             <p>Security issues: <a href="mailto:security@datagate.co.in">security@datagate.co.in</a></p>

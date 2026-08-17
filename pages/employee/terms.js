@@ -2,11 +2,6 @@ import Link from "next/link";
 
 // DATAGATE — EMPLOYEE TERMS OF SERVICE
 // Version 1.0 | DPDP Act 2023 Compliant
-// This document was entirely missing from the platform
-// Employees click through nothing currently — that's a legal gap
-// Add a checkbox on employee signup: "I agree to the Employee Terms of Service"
-// Route: /employee/terms
-// Replace Datagate before publishing
 
 export default function EmployeeTerms() {
   return (
@@ -61,9 +56,9 @@ export default function EmployeeTerms() {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
           </svg>
-          Datagate
+          datagate.co.in
         </Link>
-        <Link href="/" className="nav-brand">Datagate</Link>
+        <Link href="/" className="nav-brand">datagate.co.in</Link>
       </nav>
 
       <div className="wrap">
@@ -93,23 +88,23 @@ export default function EmployeeTerms() {
         {/* 1 */}
         <div className="sec" id="e1">
           <div className="sec-h">1. Acceptance</div>
-          <p className="p">By creating an employee account on Datagate, you agree to these Employee Terms of Service. These terms are a legally binding agreement between you and <strong>Datagate</strong> operating as Datagate.</p>
-          <p className="p">These terms should be read alongside Datagate's <Link href="/privacy">Privacy Policy</Link>, which explains how your personal data is collected, used, and protected.</p>
+          <p className="p">By creating an employee account on <strong>datagate.co.in</strong>, you agree to these Employee Terms of Service. These terms are a legally binding agreement between you and datagate.co.in.</p>
+          <p className="p">These terms should be read alongside datagate.co.in's <Link href="/privacy">Privacy Policy</Link>, which explains how your personal data is collected, used, and protected.</p>
           <p className="p">If you do not agree to these terms, do not create an account.</p>
         </div>
 
         {/* 2 */}
         <div className="sec" id="e2">
           <div className="sec-h">2. Your account</div>
-          <p className="p">You must be at least 18 years old to create a Datagate account. By creating an account, you represent that you meet this requirement.</p>
+          <p className="p">You must be at least 18 years old to create a datagate.co.in account. By creating an account, you represent that you meet this requirement.</p>
           <p className="p">Your account is personal to you. You must not share your login credentials with anyone. You are responsible for all activity on your account. If you believe your account has been compromised, notify us immediately at <a href="mailto:security@datagate.co.in">security@datagate.co.in</a>.</p>
-          <p className="p">Each person may hold only one active employee account on Datagate.</p>
+          <p className="p">Each person may hold only one active employee account on datagate.co.in.</p>
         </div>
 
         {/* 3 */}
         <div className="sec" id="e3">
-          <div className="sec-h">3. What you can do on Datagate</div>
-          <p className="p">With your Datagate account, you can:</p>
+          <div className="sec-h">3. What you can do on datagate.co.in</div>
+          <p className="p">With your datagate.co.in account, you can:</p>
           <ul className="ul">
             <li>Build and maintain a verified employment profile including personal details, education, employment history, and documents</li>
             <li>Receive and review consent requests from employers who wish to access your profile</li>
@@ -124,17 +119,17 @@ export default function EmployeeTerms() {
         {/* 4 */}
         <div className="sec" id="e4">
           <div className="sec-h">4. How consent works</div>
-          <p className="p">Consent on Datagate is always explicit, specific, and revocable. Here is how it works:</p>
+          <p className="p">Consent on datagate.co.in is always explicit, specific, and revocable. Here is how it works:</p>
           <ul className="ul">
             <li>An employer sends you a consent request, identifying themselves and stating their specific purpose (e.g. background verification for a named role)</li>
             <li>You receive a notification and can review the request before deciding</li>
-            <li>You must click <strong>Approve</strong> to grant access — Datagate never auto-approves on your behalf</li>
+            <li>You must click <strong>Approve</strong> to grant access — datagate.co.in never auto-approves on your behalf</li>
             <li>Once approved, the employer can view the data elements relevant to their stated purpose</li>
             <li>You can withdraw consent at any time from your dashboard — withdrawal is immediate</li>
             <li>On withdrawal, the employer loses platform access to your profile instantly and is notified of their obligation to delete all copies</li>
           </ul>
           <div className="callout"><strong>Each consent is separate.</strong> Approving one employer does not affect your decisions about any other employer. You are always in control of who sees what.</div>
-          <p className="p">When you approve a consent request, you also acknowledge that the employer may assign a Datagate-approved background verification agency to conduct checks on their behalf. That agency accesses only the data relevant to their assigned checks and is bound by Datagate's BGV Vendor Terms.</p>
+          <p className="p">When you approve a consent request, you also acknowledge that the employer may assign a datagate.co.in-approved background verification agency to conduct checks on their behalf. That agency accesses only the data relevant to their assigned checks and is bound by datagate.co.in's BGV Vendor Terms.</p>
         </div>
 
         {/* 5 */}
@@ -146,7 +141,7 @@ export default function EmployeeTerms() {
             <li><strong>Correction:</strong> Update any inaccurate or incomplete information in your profile</li>
             <li><strong>Erasure:</strong> Delete your account and all personal data at any time — no questions, no waiting period beyond the technical process</li>
             <li><strong>Withdraw consent:</strong> Revoke any employer's access at any time, instantly</li>
-            <li><strong>Grievance redressal:</strong> Raise a complaint with Datagate's Grievance Officer and, if unsatisfied, with the Data Protection Board of India</li>
+            <li><strong>Grievance redressal:</strong> Raise a complaint with datagate.co.in's Grievance Officer and, if unsatisfied, with the Data Protection Board of India</li>
             <li><strong>Nomination:</strong> Nominate another person to exercise these rights on your behalf in the event of death or incapacity</li>
           </ul>
           <p className="p">We respond to rights requests within <strong>7 business days</strong>.</p>
@@ -155,7 +150,7 @@ export default function EmployeeTerms() {
         {/* 6 */}
         <div className="sec" id="e6">
           <div className="sec-h">6. What you must not do</div>
-          <p className="p">You must not use Datagate to:</p>
+          <p className="p">You must not use datagate.co.in to:</p>
           <ul className="ul">
             <li>Create a profile with false, misleading, or fabricated information about your identity, qualifications, or employment history</li>
             <li>Upload documents that are forged, altered, or do not belong to you</li>
@@ -164,13 +159,13 @@ export default function EmployeeTerms() {
             <li>Use the platform for any purpose other than managing your own employment verification profile</li>
             <li>Interfere with the platform's operation, security, or integrity</li>
           </ul>
-          <div className="warn"><strong>Misrepresentation:</strong> Submitting false information on your profile may have consequences with employers independent of Datagate. Datagate is not liable for any employment decisions made by employers based on information you provided.</div>
+          <div className="warn"><strong>Misrepresentation:</strong> Submitting false information on your profile may have consequences with employers independent of datagate.co.in. datagate.co.in is not liable for any employment decisions made by employers based on information you provided.</div>
         </div>
 
         {/* 7 */}
         <div className="sec" id="e7">
           <div className="sec-h">7. Accuracy of your profile</div>
-          <p className="p">You are responsible for the accuracy and completeness of the information you add to your profile. Datagate does not independently verify all information you enter — we verify what we can through linked sources (such as EPFO), but most profile information is self-reported by you.</p>
+          <p className="p">You are responsible for the accuracy and completeness of the information you add to your profile. datagate.co.in does not independently verify all information you enter — we verify what we can through linked sources (such as EPFO), but most profile information is self-reported by you.</p>
           <p className="p">Keep your profile current. Outdated or inaccurate information may affect how employers evaluate your background verification results.</p>
           <p className="p">You can update any part of your profile at any time. Updates to data that has already been shared with an employer will not retroactively change what they received — but you may notify the employer through the platform's messaging system if a correction is relevant.</p>
         </div>
@@ -180,9 +175,9 @@ export default function EmployeeTerms() {
           <div className="sec-h">8. Deleting your account</div>
           <p className="p">You can delete your account at any time from your profile settings. When you do:</p>
           <ul className="ul">
-            <li>Your profile, documents, and personal data are permanently deleted from Datagate's systems within 7 days</li>
+            <li>Your profile, documents, and personal data are permanently deleted from datagate.co.in's systems within 7 days</li>
             <li>Every employer who accessed your profile is notified immediately and legally required to delete all copies of your data within 72 hours (digital) and 7 days (full system purge)</li>
-            <li>Datagate retains a timestamped log of this notification as evidence that the obligation was communicated — this protects you</li>
+            <li>datagate.co.in retains a timestamped log of this notification as evidence that the obligation was communicated — this protects you</li>
             <li>Your consent event logs are retained for 7 years as required by law, but these do not contain your personal data — only records of consent events</li>
           </ul>
           <p className="p">Account deletion is permanent and cannot be undone. If you create a new account in future, you will start with a blank profile.</p>
@@ -191,7 +186,7 @@ export default function EmployeeTerms() {
         {/* 9 */}
         <div className="sec" id="e9">
           <div className="sec-h">9. Our obligations to you</div>
-          <p className="p">Datagate commits to:</p>
+          <p className="p">datagate.co.in commits to:</p>
           <ul className="ul">
             <li>Never share your data with any employer without your explicit consent</li>
             <li>Never sell your data to any third party, ever</li>
@@ -206,14 +201,14 @@ export default function EmployeeTerms() {
         {/* 10 */}
         <div className="sec" id="e10">
           <div className="sec-h">10. Limitation of liability</div>
-          <p className="p">Datagate's platform facilitates consent-based sharing of your employment data. We are not responsible for:</p>
+          <p className="p">datagate.co.in's platform facilitates consent-based sharing of your employment data. We are not responsible for:</p>
           <ul className="ul">
             <li>Decisions made by employers based on your background verification results</li>
             <li>How employers use data after it has been shared with your consent</li>
             <li>Inaccuracies in your profile that you entered yourself</li>
-            <li>Actions of BGV vendors that violate their obligations to Datagate</li>
+            <li>Actions of BGV vendors that violate their obligations to datagate.co.in</li>
           </ul>
-          <p className="p">To the maximum extent permitted by law, Datagate's total liability to you for any claim arising from your use of the platform shall not exceed ₹5,000.</p>
+          <p className="p">To the maximum extent permitted by law, datagate.co.in's total liability to you for any claim arising from your use of the platform shall not exceed ₹5,000.</p>
           <p className="p">This limitation does not affect your rights under the DPDP Act or other mandatory consumer protection laws.</p>
         </div>
 
@@ -236,7 +231,7 @@ export default function EmployeeTerms() {
         </div>
 
         <div className="box">
-          <div className="box-t">Grievance Officer &nbsp;·&nbsp; Datagate</div>
+          <div className="box-t">Grievance Officer &nbsp;·&nbsp; datagate.co.in</div>
           <p>Email: <a href="mailto:grievance@datagate.co.in">grievance@datagate.co.in</a></p>
           <p>Response time: Within 7 business days</p>
           <br/>

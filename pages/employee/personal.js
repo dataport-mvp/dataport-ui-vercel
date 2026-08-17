@@ -1124,6 +1124,7 @@ function SupportModal({ apiFetch, onClose }) {
   const [ok,      setOk]      = React.useState("");
   const [err,     setErr]     = React.useState("");
   const [tickets, setTickets] = React.useState([]);
+  const [expandedTicket, setExpandedTicket] = React.useState("");
   const [tLoading,setTLoading]= React.useState(false);
 
   const loadTickets = async () => {
@@ -1222,8 +1223,11 @@ function SupportModal({ apiFetch, onClose }) {
                 <div style={{fontSize:"0.8rem",color:"#94a3b8"}}>No tickets yet</div>
               </div>
             )}
-            {tickets.map(t=>(
-              <div key={t.ticket_id} style={{border:"1px solid #ebe9f5",borderRadius:10,padding:"0.85rem 1rem",marginBottom:"0.6rem"}}>
+            {tickets.map(t=>{
+              const isOpen = expandedTicket === t.ticket_id;
+              return (
+              <div key={t.ticket_id} style={{border:"1px solid #ebe9f5",borderRadius:10,padding:"0.85rem 1rem",marginBottom:"0.6rem",cursor:"pointer"}}
+                onClick={()=>setExpandedTicket(isOpen?"":t.ticket_id)}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"0.35rem"}}>
                   <div style={{fontWeight:700,fontSize:"0.84rem",color:"#1a1730",flex:1,paddingRight:"0.5rem"}}>{t.subject}</div>
                   <span style={{fontSize:"0.65rem",fontWeight:700,color:statusColor[t.status]||"#94a3b8",background:`${statusColor[t.status]||"#94a3b8"}15`,padding:"2px 8px",borderRadius:999,whiteSpace:"nowrap",textTransform:"capitalize"}}>{t.status?.replace("_"," ")}</span>
@@ -1233,10 +1237,26 @@ function SupportModal({ apiFetch, onClose }) {
                   <span>{new Date(t.created_at).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</span>
                 </div>
                 {t.replies?.length > 0 && (
-                  <div style={{marginTop:"0.5rem",fontSize:"0.72rem",color:"#0d6e6e",fontWeight:600}}>💬 {t.replies.length} repl{t.replies.length===1?"y":"ies"}</div>
+                  <div style={{marginTop:"0.5rem",fontSize:"0.72rem",color:"#0d6e6e",fontWeight:600}}>💬 {t.replies.length} repl{t.replies.length===1?"y":"ies"} — {isOpen?"tap to collapse":"tap to view"}</div>
+                )}
+                {!t.replies?.length && <div style={{marginTop:"0.5rem",fontSize:"0.7rem",color:"#94a3b8"}}>{isOpen?"tap to collapse":"tap to view your message"}</div>}
+                {isOpen && (
+                  <div style={{marginTop:"0.7rem",paddingTop:"0.7rem",borderTop:"1px solid #f0eef8"}}>
+                    <div style={{background:"#f8f7ff",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.5rem"}}>
+                      <div style={{fontSize:"0.65rem",fontWeight:700,color:"#6b6894",marginBottom:"0.25rem"}}>You wrote:</div>
+                      <div style={{fontSize:"0.8rem",color:"#1a1730",whiteSpace:"pre-wrap"}}>{t.body}</div>
+                    </div>
+                    {(t.replies||[]).map((r,i)=>(
+                      <div key={i} style={{background:"#f0fdf4",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.5rem"}}>
+                        <div style={{fontSize:"0.65rem",fontWeight:700,color:"#16a34a",marginBottom:"0.25rem"}}>Datagate Support — {new Date(r.at).toLocaleString("en-IN",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}</div>
+                        <div style={{fontSize:"0.8rem",color:"#1a1730",whiteSpace:"pre-wrap"}}>{r.body}</div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -2525,10 +2545,7 @@ export default function PersonalDetails() {
                 {/* ── Bank proof — verified document for salary processing ── */}
                 <div className="fr" style={{marginTop:"0.6rem"}}>
                   <div className="fi" style={{flex:"1 1 100%"}}>
-                    <span className="fl">Bank Proof — Passbook Front Page or Bank Statement</span>
-                    <p style={{fontSize:"0.72rem",color:"#6b6894",margin:"0.15rem 0 0.4rem",fontWeight:500,lineHeight:1.5}}>
-                      Recommended — gives your employer a verified record of your account details for accurate salary processing, especially useful if your account number was saved before this option was available.
-                    </p>
+                    <span className="fl">Upload Proof for Salary Processing — Passbook or Bank Statement</span>
                     <FileUpload onUploadStateChange={handleUploadState} label="Upload Passbook Front Page or Bank Statement" category="personal" subKey="bankProof" employeeId={employeeIdRef.current || employeeId} disabled={!draftReady} apiFetch={apiFetch} value={bankProofKey} onChange={(k) => { const key=typeof k==="string"?k:(k?.key||k?.s3_key||""); setBankProofKey(key); dirty(() => {})(""); }} />
                   </div>
                 </div>

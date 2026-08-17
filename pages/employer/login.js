@@ -151,7 +151,7 @@ export default function EmployerLogin() {
               <rect x="22" y="22" width="4.5" height="13" rx="1.8" fill="white"/>
               <path d="M11.5 22Q18 13.5 24.5 22" fill="none" stroke="white" strokeWidth="3.8" strokeLinecap="round"/>
             </svg>
-            <div><div className="lft-logo-name">Datagate</div><div className="lft-logo-sub">Verified Employment</div></div>
+            <div><div className="lft-logo-name">datagate.co.in</div><div className="lft-logo-sub">Verified Employment</div></div>
           </Link>
           <div className="lft-body">
             <div className="badge">Employer Portal</div>
@@ -169,7 +169,7 @@ export default function EmployerLogin() {
             </div>
           </div>
           <div className="lft-ft">
-            <span className="fc">© 2026 Datagate</span>
+            <span className="fc">© 2026 datagate.co.in</span>
             <div className="fl">
               <a href="/privacy" className="fla">Privacy</a>
               <a href="/employer/terms" className="fla">Terms</a>
@@ -181,7 +181,7 @@ export default function EmployerLogin() {
           <div className="form">
             <Link href="/" className="form-back">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-              Back to Datagate
+              Back to datagate.co.in
             </Link>
             <div className="form-ey">Employer Portal</div>
             <div className="fhd">{mode==="signup"?"Create account":"Welcome back"}</div>
@@ -197,7 +197,7 @@ export default function EmployerLogin() {
             <div className="fld"><label className="flb">Work Email <span>*</span></label><input className="fin" type="email" placeholder="hr@yourcompany.com" value={email} onChange={e=>setEmail(e.target.value)}/></div>
             <div className="fld"><label className="flb">Password <span>*</span></label>
               <div className="pw-wrap">
-                <input className="fin" type={showPwd?"text":"password"} placeholder="Min. 8 characters" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handle()}/>
+                <input className="fin" type={showPwd?"text":"password"} placeholder={mode==="signup"?"Min. 8 chars, incl. a letter, number & symbol":"Password"} value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handle()}/>
                 <button className="ey" type="button" onClick={()=>setShowPwd(v=>!v)} tabIndex={-1}><Eye open={showPwd}/></button>
               </div>
             </div>
@@ -205,7 +205,7 @@ export default function EmployerLogin() {
               <div className="terms-row" onClick={()=>setTermsAgreed(v=>!v)}>
                 <div className={`terms-cb${termsAgreed?" checked":""}`}/>
                 <span className="terms-txt">
-                  I have read and agree to Datagate's{" "}
+                  I have read and agree to datagate.co.in's{" "}
                   <a href="/employer/terms" onClick={e=>e.stopPropagation()} target="_blank" rel="noopener noreferrer">Employer Terms & Data Sharing Agreement</a>
                   {" "}and{" "}
                   <a href="/privacy" onClick={e=>e.stopPropagation()} target="_blank" rel="noopener noreferrer">Privacy Policy</a>.

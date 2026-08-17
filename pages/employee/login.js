@@ -194,7 +194,7 @@ export default function EmployeeLogin() {
             <div className="lft-logo-icon">
               <svg width="16" height="18" viewBox="0 0 28 32" fill="none"><rect x="7" y="17" width="4" height="10" rx="1.5" fill="white"/><rect x="17" y="17" width="4" height="10" rx="1.5" fill="white"/><path d="M9 17Q14 10 19 17" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"/></svg>
             </div>
-            <div><div className="lft-logo-name">Datagate</div><div className="lft-logo-sub">Verified Employment</div></div>
+            <div><div className="lft-logo-name">datagate.co.in</div><div className="lft-logo-sub">Verified Employment</div></div>
           </Link>
           <div className="lft-body">
             <div className="badge">Employee Portal</div>
@@ -215,7 +215,7 @@ export default function EmployeeLogin() {
             </div>
           </div>
           <div className="lft-ft">
-            <span className="lft-ft-copy">© 2026 Datagate</span>
+            <span className="lft-ft-copy">© 2026 datagate.co.in</span>
             <div className="lft-ft-links">
               <a href="/privacy" className="lft-ft-link">Privacy Policy</a>
               <a href="mailto:support@datagate.co.in" className="lft-ft-link">Support</a>
@@ -227,7 +227,7 @@ export default function EmployeeLogin() {
           <div className="form-wrap">
             <Link href="/" className="form-back">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-              Back to Datagate
+              Back to datagate.co.in
             </Link>
             <div className="form-ey">Employee Portal</div>
             <div className="fhd">{mode==="forgot"?"Reset password":mode==="signup"?"Create account":"Welcome back"}</div>
@@ -266,7 +266,7 @@ export default function EmployeeLogin() {
             {mode!=="forgot" && (
               <div className="fld"><label className="flb">Password <span>*</span></label>
                 <div className="pw-wrap">
-                  <input className="fin" type={showPwd?"text":"password"} placeholder="Min. 8 characters" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handle()}/>
+                  <input className="fin" type={showPwd?"text":"password"} placeholder={mode==="signup"?"Min. 8 chars, incl. a letter, number & symbol":"Password"} value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handle()}/>
                   <button className="ey" type="button" onClick={()=>setShowPwd(v=>!v)} tabIndex={-1}><Eye open={showPwd}/></button>
                 </div>
               </div>
@@ -276,7 +276,7 @@ export default function EmployeeLogin() {
               <div className="terms-row" onClick={()=>setTermsAgreed(v=>!v)}>
                 <div className={`terms-cb${termsAgreed?" checked":""}`}/>
                 <span className="terms-txt">
-                  I have read and agree to Datagate's{" "}
+                  I have read and agree to datagate.co.in's{" "}
                   <a href="/employee/terms" onClick={e=>e.stopPropagation()} target="_blank" rel="noopener noreferrer">Employee Terms of Service</a>
                   {" "}and{" "}
                   <a href="/privacy" onClick={e=>e.stopPropagation()} target="_blank" rel="noopener noreferrer">Privacy Policy</a>.

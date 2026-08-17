@@ -1,12 +1,10 @@
 import Link from "next/link";
 
-// DATAGATE — BGV VENDOR TERMS & CONDITIONS
-// Version 1.0 | DPDP Act 2023 Compliant
+// DATAGATE — EMPLOYER TERMS & DATA SHARING AGREEMENT
+// Version 2.0 | DPDP Act 2023 Compliant
 // Jurisdiction: Hyderabad, Telangana, India
-// This document was entirely missing from the platform — critical for the 3-sided model
-// Replace Datagate with your exact registered entity name before publishing
 
-export default function BGVVendorTerms() {
+export default function EmployerTerms() {
   return (
     <>
       <style>{`
@@ -61,30 +59,30 @@ export default function BGVVendorTerms() {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
           </svg>
-          Datagate
+          datagate.co.in
         </Link>
-        <Link href="/" className="nav-brand">Datagate</Link>
+        <Link href="/" className="nav-brand">datagate.co.in</Link>
       </nav>
 
       <div className="wrap">
         <div className="lbl">Legal</div>
-        <h1 className="h1">BGV Vendor Terms &amp; Conditions</h1>
-        <p className="meta">Effective date: June 2026 &nbsp;·&nbsp; Version 1.0</p>
+        <h1 className="h1">Employer Terms &amp; Data Sharing Agreement</h1>
+        <p className="meta">Effective date: 22 March 2026 &nbsp;·&nbsp; Version 2.0 &nbsp;·&nbsp; Last updated: June 2026</p>
 
         <div className="summary">
-          <div className="summary-t">What this means for BGV vendors</div>
-          <p>As a background verification vendor on Datagate, you access employee data that has been consented to by the employee for a specific employer's purpose. Your access is limited to that scope — nothing more. You must handle this data with the same care as the employer, and delete it when instructed. Violations of these terms will result in immediate removal from the platform.</p>
+          <div className="summary-t">What this means for you</div>
+          <p>By using datagate.co.in as an employer, you agree to use employee data only for the hiring or verification purpose you stated — nothing else. You cannot share it further, sell it, or keep it after the hiring process ends. When an employee withdraws consent or deletes their account, you must delete all digital copies within 72 hours and complete a full system purge within 7 days. These are legal obligations under Indian law, not guidelines.</p>
         </div>
 
         <div className="toc">
           <div className="toc-t">On this page</div>
           <div className="toc-l">
             {[
-              ["v1","Acceptance and approval"],["v2","Definitions"],["v3","Nature of your access"],
-              ["v4","Permitted use"],["v5","Prohibited use"],["v6","Data handling obligations"],
-              ["v7","Deletion obligations"],["v8","Security requirements"],["v9","Reporting obligations"],
-              ["v10","Accuracy and conduct"],["v11","Liability"],["v12","Termination"],
-              ["v13","Governing law"],["v14","General provisions"],["v15","Contact"]
+              ["t1","Acceptance"],["t2","Definitions"],["t3","Permitted use"],
+              ["t4","Prohibited use"],["t5","Consent withdrawal"],["t6","Account deletion"],
+              ["t7","BGV vendor routing"],["t8","Your responsibilities"],["t9","Data security"],
+              ["t10","Audit trail"],["t11","Liability and indemnity"],["t12","Limitation of liability"],
+              ["t13","Termination"],["t14","Governing law"],["t15","General provisions"],["t16","Contact"]
             ].map(([id,t]) => (
               <a key={id} href={`#${id}`} className="toc-a">{t}</a>
             ))}
@@ -92,195 +90,201 @@ export default function BGVVendorTerms() {
         </div>
 
         {/* 1 */}
-        <div className="sec" id="v1">
-          <div className="sec-h">1. Acceptance and approval process</div>
-          <p className="p">BGV vendors do not self-register on Datagate. Access to the platform as a BGV vendor requires prior approval by Datagate. The approval process includes:</p>
-          <ul className="ul">
-            <li>Submission of company registration documents and operating licences</li>
-            <li>Review of data handling practices and security posture</li>
-            <li>Acceptance of these terms in writing</li>
-            <li>Onboarding by Datagate's admin team</li>
-          </ul>
-          <p className="p">By accepting these terms — whether electronically or in writing — you ("BGV Vendor", "you") agree to be bound by them in full. If you are accepting on behalf of an organisation, you represent that you have authority to do so.</p>
-          <p className="p">These terms are a legally binding agreement between you and <strong>Datagate</strong> ("Datagate") and operate alongside the DPDP Act, 2023.</p>
+        <div className="sec" id="t1">
+          <div className="sec-h">1. Acceptance</div>
+          <p className="p">By creating an employer account, submitting a consent request, or accessing any employee profile data on datagate.co.in, you ("Employer") agree to these Employer Terms and Data Sharing Agreement ("Agreement"). If you are accepting on behalf of a company, you represent that you have authority to bind that company.</p>
+          <p className="p">If you do not agree to this Agreement, do not create an account or access employee data.</p>
+          <p className="p">This Agreement is between you and <strong>datagate.co.in</strong> ("datagate.co.in") and operates alongside applicable law, including the Digital Personal Data Protection Act, 2023 ("DPDP Act") and any rules or regulations issued thereunder.</p>
         </div>
 
         {/* 2 */}
-        <div className="sec" id="v2">
+        <div className="sec" id="t2">
           <div className="sec-h">2. Definitions</div>
           <ul className="ul">
-            <li><strong>"Employee data"</strong> means personal data about a candidate that you access through the platform pursuant to an employer's assignment</li>
-            <li><strong>"Assigned case"</strong> means a specific background verification case assigned to you by an employer through the platform</li>
-            <li><strong>"Instructing employer"</strong> means the employer who assigned the case to you through the platform</li>
-            <li><strong>"Scope of check"</strong> means the specific verification checks you are assigned to conduct — for example, identity, education, employment, address, criminal, court, or reference checks</li>
-            <li><strong>"Platform"</strong> means the Datagate employment verification platform at datagate.co.in</li>
+            <li><strong>"Employee data"</strong> means any personal data about an employee that you access through the datagate.co.in platform following the employee's consent</li>
+            <li><strong>"Consent request"</strong> means a formal request submitted by you through the platform to access a specific employee's profile for a stated purpose</li>
+            <li><strong>"Stated purpose"</strong> means the specific purpose you declared in your consent request (e.g. background verification, onboarding)</li>
+            <li><strong>"BGV vendor"</strong> means a background verification agency assigned by you through the platform to conduct checks on your behalf</li>
+            <li><strong>"Data Fiduciary"</strong> has the meaning given in the DPDP Act — an entity that determines the purpose and means of processing personal data. You are a Data Fiduciary for your own processing of employee data received through this platform.</li>
+            <li><strong>"Platform"</strong> means the datagate.co.in employment verification platform accessible at datagate.co.in</li>
           </ul>
         </div>
 
         {/* 3 */}
-        <div className="sec" id="v3">
-          <div className="sec-h">3. Nature of your access</div>
-          <p className="p">Your access to employee data on Datagate is:</p>
+        <div className="sec" id="t3">
+          <div className="sec-h">3. Permitted use of employee data</div>
+          <p className="p">Once an employee approves your consent request, you may use their data only for:</p>
           <ul className="ul">
-            <li><strong>Derived:</strong> You receive access because an employer assigned a case to you. The underlying consent was given by the employee to the employer, not to you directly.</li>
-            <li><strong>Scoped:</strong> You access only the data elements necessary for the specific checks you are assigned to conduct</li>
-            <li><strong>Fixed at assignment:</strong> The profile data you see was captured at the moment the employer approved the consent that led to your case. It does not update if the employee later edits their profile.</li>
-            <li><strong>Temporary:</strong> Your access exists only for the duration of the assigned case</li>
-            <li><strong>Revocable:</strong> Datagate or the instructing employer may revoke your access at any time</li>
+            <li>Background verification of the specific candidate named in your consent request, for the purpose you stated</li>
+            <li>Onboarding of a candidate who has accepted a confirmed offer of employment from you</li>
+            <li>Compliance with legal obligations arising directly from the employment relationship with that candidate</li>
           </ul>
-          <div className="warn"><strong>You are not the consent holder.</strong> The employee consented to the employer, not to you. If the employee withdraws consent, your access is revoked instantly regardless of the status of the case.</div>
+          <p className="p">Use is strictly limited to the stated purpose. If your purpose changes — even for the same candidate — you must submit a new consent request and obtain fresh approval.</p>
+          <p className="p">The data you receive on approval is fixed at that moment — it does not update automatically if the candidate later edits their profile. If you need current information, you must request a fresh consent.</p>
+          <p className="p">Bank account details are provided solely for salary processing. You may not use them for any other purpose, and you must apply the same security standards to this data as you would to your own payroll records.</p>
+          <div className="callout"><strong>One consent, one purpose.</strong> Receiving consent for background verification does not authorise you to use the data for any other purpose, including onboarding, unless you obtain separate consent for onboarding.</div>
         </div>
 
         {/* 4 */}
-        <div className="sec" id="v4">
-          <div className="sec-h">4. Permitted use</div>
-          <p className="p">You may use employee data accessed through the platform only to:</p>
+        <div className="sec" id="t4">
+          <div className="sec-h">4. Prohibited use</div>
+          <div className="danger"><strong>These are strict prohibitions.</strong> Violation constitutes a breach of this Agreement and may constitute an offence under the DPDP Act, 2023. You bear full legal responsibility as a Data Fiduciary for your own processing of this data.</div>
           <ul className="ul">
-            <li>Conduct the specific background checks assigned to you by the instructing employer</li>
-            <li>Upload evidence, check outcomes, and case documentation through the platform</li>
-            <li>Communicate with the instructing employer and employee through the platform's messaging system regarding the assigned case</li>
-            <li>Submit a final verification report through the platform on completion of assigned checks</li>
+            <li>Do not use employee data for any purpose other than the stated purpose</li>
+            <li>Do not retain employee data beyond the period necessary for the stated purpose</li>
+            <li>Do not share employee data with any third party — including subsidiaries, affiliates, group companies, or partners — without fresh consent from the employee, except as provided in Section 7 (BGV vendor routing)</li>
+            <li>Do not use employee data for marketing, profiling, scoring, or any commercial purpose unrelated to the specific hiring or onboarding process</li>
+            <li>Do not retain copies after the employee withdraws consent</li>
+            <li>Do not retain copies after a candidate is rejected and the hiring process for that candidate is concluded</li>
+            <li>Do not sell, license, sublicense, or transfer employee data to any party under any circumstances</li>
+            <li>Do not use employee data to train machine learning models or any automated system</li>
+            <li>Do not combine employee data received from datagate.co.in with data obtained from other sources to create profiles beyond the stated purpose</li>
           </ul>
-          <p className="p">Where an employment reference's contact details (name, role, email, mobile) are provided as part of the profile, you may contact them solely to verify the candidate's stated employment for the assigned check. You may not use a reference's contact details for any other purpose, including recruitment, marketing, or any check not explicitly assigned to you.</p>
         </div>
 
         {/* 5 */}
-        <div className="sec" id="v5">
-          <div className="sec-h">5. Prohibited use</div>
-          <div className="danger"><strong>Strict prohibitions.</strong> Any violation results in immediate removal from the platform and may constitute a criminal offence under applicable law.</div>
+        <div className="sec" id="t5">
+          <div className="sec-h">5. When an employee withdraws consent</div>
+          <p className="p">An employee may withdraw consent at any time without giving a reason. When this happens:</p>
           <ul className="ul">
-            <li>Do not use employee data for any purpose other than the assigned checks</li>
-            <li>Do not retain employee data after the case is closed or your access is revoked</li>
-            <li>Do not share employee data with any person or system outside the assigned case workflow</li>
-            <li>Do not use employee data to build databases, profiles, or repositories of candidate information</li>
-            <li>Do not sell, license, or transfer employee data under any circumstances</li>
-            <li>Do not conduct checks beyond the scope assigned to you</li>
-            <li>Do not contact the employee directly outside the platform's messaging system</li>
-            <li>Do not use employee data to train AI or machine learning systems</li>
-            <li>Do not share platform credentials with any person not authorised by Datagate</li>
+            <li>Your access to their profile on the platform is revoked <strong>instantly and automatically</strong></li>
+            <li>You receive an email notification immediately</li>
+            <li>You must delete all digital copies of their data within <strong>72 hours</strong> of the notification timestamp</li>
+            <li>You must complete a full purge from all systems — including backups, email, HR platforms, local storage, and any system you shared the data with — within <strong>7 days</strong></li>
+            <li>Where you have assigned a BGV vendor, you must instruct them to delete all copies within the same timeframes</li>
           </ul>
+          <div className="callout"><strong>Legal notice:</strong> The timestamp on the withdrawal notification email constitutes formal, legally valid notice to you under this Agreement. Any use or retention of the employee's data after that timestamp is your sole liability as a Data Fiduciary.</div>
         </div>
 
         {/* 6 */}
-        <div className="sec" id="v6">
-          <div className="sec-h">6. Data handling obligations</div>
-          <p className="p">While a case is active, you must:</p>
+        <div className="sec" id="t6">
+          <div className="sec-h">6. When an employee deletes their account</div>
+          <p className="p">When an employee deletes their datagate.co.in account, you will receive an email notification immediately. Upon receiving it:</p>
           <ul className="ul">
-            <li>Access and process employee data only within the Datagate platform where possible</li>
-            <li>Where data must be accessed outside the platform (e.g. for field verification), store it only on secured, access-controlled systems for the minimum time necessary</li>
-            <li>Ensure all personnel involved in a case are bound by confidentiality obligations at least as protective as these terms</li>
-            <li>Encrypt any data stored or transmitted outside the platform</li>
-            <li>Maintain an internal log of all personnel who accessed employee data for each case</li>
+            <li>Delete all digital copies from all your systems within <strong>72 hours</strong></li>
+            <li>Complete a full purge — including email, HR systems, shared drives, local storage, backups, and any downstream systems — within <strong>7 days</strong></li>
+            <li>Instruct any BGV vendor you assigned to delete all copies within the same timeframes</li>
+            <li>datagate.co.in retains a cryptographically timestamped record of this notification as evidence that the obligation was formally communicated</li>
           </ul>
+          <p className="p">You may not penalise, disadvantage, or discriminate against any employee or candidate for exercising their right to delete their account or withdraw consent.</p>
         </div>
 
         {/* 7 */}
-        <div className="sec" id="v7">
-          <div className="sec-h">7. Deletion obligations</div>
-          <p className="p">You must delete all employee data in your possession:</p>
+        <div className="sec" id="t7">
+          <div className="sec-h">7. BGV vendor routing</div>
+          <p className="p">You may assign a datagate.co.in-approved BGV vendor to conduct background checks on your behalf through the platform. When you do:</p>
           <ul className="ul">
-            <li>Within <strong>72 hours</strong> of case closure</li>
-            <li>Within <strong>72 hours</strong> of your platform access being revoked for any reason</li>
-            <li>Within <strong>72 hours</strong> of receiving notice that the employee has withdrawn consent or deleted their account</li>
+            <li>The assignment is limited to the scope of the employee's original consent</li>
+            <li>The BGV vendor receives access only to the data necessary for the checks they are assigned to conduct</li>
+            <li>The BGV vendor is independently bound by datagate.co.in's BGV Vendor Terms</li>
+            <li>You remain responsible as the instructing Data Fiduciary for the BGV vendor's handling of the employee's data</li>
+            <li>You must not instruct the BGV vendor to conduct checks beyond the scope of the stated purpose</li>
+            <li>On consent withdrawal or account deletion, your instruction to the BGV vendor to delete data is your obligation — datagate.co.in will revoke platform access to the vendor simultaneously</li>
           </ul>
-          <p className="p">Deletion must be secure and complete — including any copies in email, local storage, shared drives, or internal case management systems. Secure deletion means data cannot be recovered.</p>
-          <div className="callout"><strong>Case reports are an exception:</strong> You may retain a de-identified record of a completed case (case reference number, check type, outcome status) for your internal records — but not the employee's personal data.</div>
+          <div className="warn"><strong>Only datagate.co.in-approved BGV vendors</strong> may be assigned through the platform. Routing employee data to unapproved third parties is a prohibited use under Section 4.</div>
         </div>
 
         {/* 8 */}
-        <div className="sec" id="v8">
-          <div className="sec-h">8. Security requirements</div>
-          <p className="p">You must maintain at a minimum:</p>
+        <div className="sec" id="t8">
+          <div className="sec-h">8. Your responsibilities</div>
+          <p className="p">As a Data Fiduciary processing employee data received through datagate.co.in, you agree to:</p>
           <ul className="ul">
-            <li>Access controls limiting employee data to personnel assigned to the specific case</li>
-            <li>Encryption of data at rest and in transit</li>
-            <li>Multi-factor authentication for access to any system holding employee data</li>
-            <li>A documented data breach response procedure</li>
+            <li>Process employee data only for the stated purpose in your consent request</li>
+            <li>Ensure all personnel with access to employee data are bound by appropriate confidentiality obligations</li>
+            <li>Implement and maintain appropriate technical and organisational security measures for all employee data you store</li>
+            <li>Notify datagate.co.in within <strong>72 hours</strong> of becoming aware of any incident involving employee data — including unauthorised access, disclosure, loss, or breach</li>
+            <li>Cooperate with any audit, inspection, or investigation by datagate.co.in or competent regulatory authorities</li>
+            <li>Maintain records of all consent requests submitted and the purposes stated, for a minimum of 7 years</li>
+            <li>Ensure that any BGV vendor you assign complies with all applicable obligations</li>
           </ul>
-          <p className="p">Datagate may request evidence of these controls as part of onboarding or periodic review. Failure to demonstrate adequate controls is grounds for removal from the platform.</p>
         </div>
 
         {/* 9 */}
-        <div className="sec" id="v9">
-          <div className="sec-h">9. Reporting obligations</div>
-          <p className="p">You must notify Datagate within <strong>24 hours</strong> of becoming aware of:</p>
+        <div className="sec" id="t9">
+          <div className="sec-h">9. Data security</div>
+          <p className="p">If you store employee data received through datagate.co.in, you must:</p>
           <ul className="ul">
-            <li>Any actual or suspected breach involving employee data</li>
-            <li>Any unauthorised access to your systems that could affect employee data</li>
-            <li>Any legal order or regulatory inquiry involving employee data from the platform</li>
-            <li>Any change in your organisation's legal status, ownership, or data handling practices material to this Agreement</li>
+            <li>Restrict access to authorised personnel only, on a need-to-know basis</li>
+            <li>Store data only on systems with appropriate access controls and encryption</li>
+            <li>Not store employee data on personal devices, personal email accounts, or unsecured shared drives</li>
+            <li>Implement access logging so that any access to stored employee data is recorded</li>
+            <li>Ensure data is deleted in a manner that makes recovery impossible (secure deletion, not just removal from active systems)</li>
           </ul>
-          <p className="p">Notification must be sent to <a href="mailto:security@datagate.co.in">security@datagate.co.in</a> and must include: the nature of the incident, the data affected, the steps taken or planned, and the likely impact.</p>
         </div>
 
         {/* 10 */}
-        <div className="sec" id="v10">
-          <div className="sec-h">10. Accuracy and professional conduct</div>
-          <p className="p">You agree to:</p>
-          <ul className="ul">
-            <li>Conduct all assigned checks with due diligence, accuracy, and professional care</li>
-            <li>Not submit reports based on unverified or fabricated information</li>
-            <li>Disclose any conflict of interest involving a candidate before accepting a case</li>
-            <li>Communicate with employees and employers through the platform in a professional and respectful manner</li>
-            <li>Not make adverse findings about a candidate without adequate evidence documented in the case record</li>
-          </ul>
-          <div className="warn"><strong>False reports</strong> submitted through the platform may expose you to civil and criminal liability independent of these terms.</div>
+        <div className="sec" id="t10">
+          <div className="sec-h">10. Audit trail</div>
+          <p className="p">datagate.co.in maintains a cryptographic, tamper-evident log of all consent events on the platform — including every consent request, approval, access event, and withdrawal. These logs are the authoritative record of what was consented to, by whom, for what purpose, and when.</p>
+          <div className="callout"><strong>These logs are admissible evidence.</strong> In any dispute, regulatory inquiry, or legal proceeding involving employee data accessed through datagate.co.in, the platform's consent logs are the primary source of truth. Your obligations under this Agreement are timestamped and recorded.</div>
+          <p className="p">You may request a copy of consent logs relating to your account by contacting <a href="mailto:support@datagate.co.in">support@datagate.co.in</a>.</p>
         </div>
 
         {/* 11 */}
-        <div className="sec" id="v11">
+        <div className="sec" id="t11">
           <div className="sec-h">11. Liability and indemnity</div>
-          <p className="p">You agree to indemnify and hold harmless Datagate from any claims, damages, losses, penalties, and costs arising from:</p>
+          <p className="p">You agree to indemnify, defend, and hold harmless datagate.co.in, its officers, employees, and agents from and against any and all claims, damages, losses, penalties, fines, and costs (including reasonable legal fees) arising from:</p>
           <ul className="ul">
-            <li>Your breach of any provision of these terms</li>
-            <li>Your violation of the DPDP Act, 2023 or applicable law</li>
-            <li>Any inaccuracy or negligence in a verification report you submitted</li>
-            <li>Any data breach or security incident attributable to your systems or personnel</li>
+            <li>Your breach of any provision of this Agreement</li>
+            <li>Your violation of the DPDP Act, 2023 or any other applicable data protection law</li>
+            <li>Your misuse of employee data received through the platform</li>
+            <li>Any act or omission of a BGV vendor you assigned that results in a data protection breach</li>
+            <li>Any third-party claim arising from your processing of employee data</li>
           </ul>
-          <p className="p">Datagate's total liability to you for any claim shall not exceed the fees paid by the instructing employer to Datagate for the specific case giving rise to the claim.</p>
         </div>
 
         {/* 12 */}
-        <div className="sec" id="v12">
-          <div className="sec-h">12. Termination and removal</div>
-          <p className="p">Datagate may remove you from the platform immediately and without notice for:</p>
-          <ul className="ul">
-            <li>Any violation of the prohibited uses in Section 5</li>
-            <li>Any data breach or security incident attributable to your systems</li>
-            <li>Submission of inaccurate or fraudulent reports</li>
-            <li>Failure to meet security requirements under Section 8</li>
-            <li>Any conduct that damages the trust of employees or employers on the platform</li>
-          </ul>
-          <p className="p">On removal, your access to all platform data is revoked immediately. Your obligations regarding data already received survive removal.</p>
+        <div className="sec" id="t12">
+          <div className="sec-h">12. Limitation of liability</div>
+          <p className="p">To the maximum extent permitted by applicable law, datagate.co.in's total aggregate liability to you under or in connection with this Agreement — whether in contract, tort, or otherwise — shall not exceed the total fees paid by you to datagate.co.in in the <strong>three calendar months</strong> immediately preceding the event giving rise to the claim.</p>
+          <p className="p">datagate.co.in is not liable for any indirect, incidental, consequential, or punitive damages, including loss of profits, loss of data, or business interruption, even if advised of the possibility of such damages.</p>
+          <p className="p">This limitation does not apply to liability arising from datagate.co.in's fraud, wilful misconduct, or gross negligence.</p>
         </div>
 
         {/* 13 */}
-        <div className="sec" id="v13">
-          <div className="sec-h">13. Governing law</div>
-          <p className="p">This Agreement is governed by the laws of India. Any dispute shall be subject to the exclusive jurisdiction of courts of competent jurisdiction in <strong>Hyderabad, Telangana, India</strong>. Both parties agree to attempt good-faith resolution within 30 days of written notice of any dispute.</p>
+        <div className="sec" id="t13">
+          <div className="sec-h">13. Termination</div>
+          <p className="p">datagate.co.in may suspend or terminate your account immediately and without prior notice for:</p>
+          <ul className="ul">
+            <li>Any violation of the prohibited uses in Section 4</li>
+            <li>Any material breach of this Agreement</li>
+            <li>Any misuse of employee data that could harm employees or the platform</li>
+            <li>Any regulatory action or legal order requiring suspension</li>
+          </ul>
+          <p className="p">On termination, your access to the platform and all employee profiles is immediately revoked. Your obligations under Sections 4, 5, 6, 8, and 9 survive termination and remain in full force with respect to all employee data you received prior to termination.</p>
+          <p className="p">You may terminate your account at any time by contacting support. On account closure, you must delete all employee data in your possession within 7 days.</p>
         </div>
 
         {/* 14 */}
-        <div className="sec" id="v14">
-          <div className="sec-h">14. General provisions</div>
-          <p className="p"><strong>Entire agreement:</strong> These terms, together with Datagate's Privacy Policy, constitute the entire agreement between you and Datagate regarding BGV vendor access to the platform.</p>
-          <p className="p"><strong>Severability:</strong> If any provision is found invalid or unenforceable, the remaining provisions continue in full force.</p>
-          <p className="p"><strong>Changes:</strong> Datagate may update these terms with 14 days' notice for material changes. Continued use constitutes acceptance.</p>
-          <p className="p"><strong>No assignment:</strong> You may not assign these terms or your platform access to any other entity without Datagate's prior written consent.</p>
+        <div className="sec" id="t14">
+          <div className="sec-h">14. Governing law and dispute resolution</div>
+          <p className="p">This Agreement is governed by and construed in accordance with the laws of India. Any dispute arising out of or in connection with this Agreement shall be subject to the exclusive jurisdiction of the courts of competent jurisdiction in <strong>Hyderabad, Telangana, India</strong>.</p>
+          <p className="p">Before initiating legal proceedings, both parties agree to attempt good-faith resolution within 30 days of written notice of the dispute.</p>
         </div>
 
         {/* 15 */}
-        <div className="sec" id="v15">
-          <div className="sec-h">15. Contact</div>
+        <div className="sec" id="t15">
+          <div className="sec-h">15. General provisions</div>
+          <p className="p"><strong>Entire agreement:</strong> This Agreement, together with datagate.co.in's Privacy Policy, constitutes the entire agreement between you and datagate.co.in regarding the subject matter herein and supersedes all prior agreements or representations.</p>
+          <p className="p"><strong>Severability:</strong> If any provision of this Agreement is found to be invalid or unenforceable by a court of competent jurisdiction, that provision shall be modified to the minimum extent necessary to make it enforceable, and the remaining provisions shall continue in full force and effect.</p>
+          <p className="p"><strong>Force majeure:</strong> Neither party shall be liable for failure to perform obligations due to circumstances beyond their reasonable control, including acts of God, natural disasters, government orders, or infrastructure outages, provided the affected party gives prompt notice and takes reasonable steps to mitigate the impact.</p>
+          <p className="p"><strong>Changes to this Agreement:</strong> We may update these terms. For material changes, we will give at least <strong>14 days' notice</strong> by email before they take effect. Continued use after the effective date constitutes acceptance.</p>
+          <p className="p"><strong>No waiver:</strong> Failure by either party to enforce any provision of this Agreement shall not constitute a waiver of the right to enforce it in future.</p>
+          <p className="p"><strong>Assignment:</strong> You may not assign your rights or obligations under this Agreement without datagate.co.in's prior written consent. datagate.co.in may assign this Agreement in connection with a merger, acquisition, or sale of assets.</p>
+        </div>
+
+        {/* 16 */}
+        <div className="sec" id="t16">
+          <div className="sec-h">16. Contact</div>
         </div>
 
         <div className="box">
-          <div className="box-t">BGV Vendor enquiries &nbsp;·&nbsp; Datagate</div>
-          <p>Onboarding: <a href="mailto:vendors@datagate.co.in">vendors@datagate.co.in</a></p>
-          <p>Security incidents: <a href="mailto:security@datagate.co.in">security@datagate.co.in</a></p>
+          <div className="box-t">Questions &nbsp;·&nbsp; datagate.co.in</div>
           <p>General: <a href="mailto:support@datagate.co.in">support@datagate.co.in</a></p>
+          <p>Legal / compliance: <a href="mailto:legal@datagate.co.in">legal@datagate.co.in</a></p>
+          <p>Grievances: <a href="mailto:grievance@datagate.co.in">grievance@datagate.co.in</a></p>
           <br/>
-          <p>We respond within 2 business days for vendor matters.</p>
+          <p>We respond within 5 business days. For legal matters, please send written correspondence to our registered address in Hyderabad, Telangana, India.</p>
         </div>
 
       </div>

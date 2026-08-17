@@ -3,8 +3,6 @@ import Link from "next/link";
 // DATAGATE — BGV VENDOR TERMS & CONDITIONS
 // Version 1.0 | DPDP Act 2023 Compliant
 // Jurisdiction: Hyderabad, Telangana, India
-// This document was entirely missing from the platform — critical for the 3-sided model
-// Replace Datagate with your exact registered entity name before publishing
 
 export default function BGVVendorTerms() {
   return (
@@ -61,9 +59,9 @@ export default function BGVVendorTerms() {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
           </svg>
-          Datagate
+          datagate.co.in
         </Link>
-        <Link href="/" className="nav-brand">Datagate</Link>
+        <Link href="/" className="nav-brand">datagate.co.in</Link>
       </nav>
 
       <div className="wrap">
@@ -73,7 +71,7 @@ export default function BGVVendorTerms() {
 
         <div className="summary">
           <div className="summary-t">What this means for BGV vendors</div>
-          <p>As a background verification vendor on Datagate, you access employee data that has been consented to by the employee for a specific employer's purpose. Your access is limited to that scope — nothing more. You must handle this data with the same care as the employer, and delete it when instructed. Violations of these terms will result in immediate removal from the platform.</p>
+          <p>As a background verification vendor on datagate.co.in, you access employee data that has been consented to by the employee for a specific employer's purpose. Your access is limited to that scope — nothing more. You must handle this data with the same care as the employer, and delete it when instructed. Violations of these terms will result in immediate removal from the platform.</p>
         </div>
 
         <div className="toc">
@@ -94,15 +92,15 @@ export default function BGVVendorTerms() {
         {/* 1 */}
         <div className="sec" id="v1">
           <div className="sec-h">1. Acceptance and approval process</div>
-          <p className="p">BGV vendors do not self-register on Datagate. Access to the platform as a BGV vendor requires prior approval by Datagate. The approval process includes:</p>
+          <p className="p">BGV vendors do not self-register on datagate.co.in. Access to the platform as a BGV vendor requires prior approval by datagate.co.in. The approval process includes:</p>
           <ul className="ul">
             <li>Submission of company registration documents and operating licences</li>
             <li>Review of data handling practices and security posture</li>
             <li>Acceptance of these terms in writing</li>
-            <li>Onboarding by Datagate's admin team</li>
+            <li>Onboarding by datagate.co.in's admin team</li>
           </ul>
           <p className="p">By accepting these terms — whether electronically or in writing — you ("BGV Vendor", "you") agree to be bound by them in full. If you are accepting on behalf of an organisation, you represent that you have authority to do so.</p>
-          <p className="p">These terms are a legally binding agreement between you and <strong>Datagate</strong> ("Datagate") and operate alongside the DPDP Act, 2023.</p>
+          <p className="p">These terms are a legally binding agreement between you and <strong>datagate.co.in</strong> ("datagate.co.in") and operate alongside the DPDP Act, 2023.</p>
         </div>
 
         {/* 2 */}
@@ -113,20 +111,20 @@ export default function BGVVendorTerms() {
             <li><strong>"Assigned case"</strong> means a specific background verification case assigned to you by an employer through the platform</li>
             <li><strong>"Instructing employer"</strong> means the employer who assigned the case to you through the platform</li>
             <li><strong>"Scope of check"</strong> means the specific verification checks you are assigned to conduct — for example, identity, education, employment, address, criminal, court, or reference checks</li>
-            <li><strong>"Platform"</strong> means the Datagate employment verification platform at datagate.co.in</li>
+            <li><strong>"Platform"</strong> means the datagate.co.in employment verification platform at datagate.co.in</li>
           </ul>
         </div>
 
         {/* 3 */}
         <div className="sec" id="v3">
           <div className="sec-h">3. Nature of your access</div>
-          <p className="p">Your access to employee data on Datagate is:</p>
+          <p className="p">Your access to employee data on datagate.co.in is:</p>
           <ul className="ul">
             <li><strong>Derived:</strong> You receive access because an employer assigned a case to you. The underlying consent was given by the employee to the employer, not to you directly.</li>
             <li><strong>Scoped:</strong> You access only the data elements necessary for the specific checks you are assigned to conduct</li>
             <li><strong>Fixed at assignment:</strong> The profile data you see was captured at the moment the employer approved the consent that led to your case. It does not update if the employee later edits their profile.</li>
             <li><strong>Temporary:</strong> Your access exists only for the duration of the assigned case</li>
-            <li><strong>Revocable:</strong> Datagate or the instructing employer may revoke your access at any time</li>
+            <li><strong>Revocable:</strong> datagate.co.in or the instructing employer may revoke your access at any time</li>
           </ul>
           <div className="warn"><strong>You are not the consent holder.</strong> The employee consented to the employer, not to you. If the employee withdraws consent, your access is revoked instantly regardless of the status of the case.</div>
         </div>
@@ -157,7 +155,7 @@ export default function BGVVendorTerms() {
             <li>Do not conduct checks beyond the scope assigned to you</li>
             <li>Do not contact the employee directly outside the platform's messaging system</li>
             <li>Do not use employee data to train AI or machine learning systems</li>
-            <li>Do not share platform credentials with any person not authorised by Datagate</li>
+            <li>Do not share platform credentials with any person not authorised by datagate.co.in</li>
           </ul>
         </div>
 
@@ -166,7 +164,7 @@ export default function BGVVendorTerms() {
           <div className="sec-h">6. Data handling obligations</div>
           <p className="p">While a case is active, you must:</p>
           <ul className="ul">
-            <li>Access and process employee data only within the Datagate platform where possible</li>
+            <li>Access and process employee data only within the datagate.co.in platform where possible</li>
             <li>Where data must be accessed outside the platform (e.g. for field verification), store it only on secured, access-controlled systems for the minimum time necessary</li>
             <li>Ensure all personnel involved in a case are bound by confidentiality obligations at least as protective as these terms</li>
             <li>Encrypt any data stored or transmitted outside the platform</li>
@@ -197,13 +195,13 @@ export default function BGVVendorTerms() {
             <li>Multi-factor authentication for access to any system holding employee data</li>
             <li>A documented data breach response procedure</li>
           </ul>
-          <p className="p">Datagate may request evidence of these controls as part of onboarding or periodic review. Failure to demonstrate adequate controls is grounds for removal from the platform.</p>
+          <p className="p">datagate.co.in may request evidence of these controls as part of onboarding or periodic review. Failure to demonstrate adequate controls is grounds for removal from the platform.</p>
         </div>
 
         {/* 9 */}
         <div className="sec" id="v9">
           <div className="sec-h">9. Reporting obligations</div>
-          <p className="p">You must notify Datagate within <strong>24 hours</strong> of becoming aware of:</p>
+          <p className="p">You must notify datagate.co.in within <strong>24 hours</strong> of becoming aware of:</p>
           <ul className="ul">
             <li>Any actual or suspected breach involving employee data</li>
             <li>Any unauthorised access to your systems that could affect employee data</li>
@@ -230,20 +228,20 @@ export default function BGVVendorTerms() {
         {/* 11 */}
         <div className="sec" id="v11">
           <div className="sec-h">11. Liability and indemnity</div>
-          <p className="p">You agree to indemnify and hold harmless Datagate from any claims, damages, losses, penalties, and costs arising from:</p>
+          <p className="p">You agree to indemnify and hold harmless datagate.co.in from any claims, damages, losses, penalties, and costs arising from:</p>
           <ul className="ul">
             <li>Your breach of any provision of these terms</li>
             <li>Your violation of the DPDP Act, 2023 or applicable law</li>
             <li>Any inaccuracy or negligence in a verification report you submitted</li>
             <li>Any data breach or security incident attributable to your systems or personnel</li>
           </ul>
-          <p className="p">Datagate's total liability to you for any claim shall not exceed the fees paid by the instructing employer to Datagate for the specific case giving rise to the claim.</p>
+          <p className="p">datagate.co.in's total liability to you for any claim shall not exceed the fees paid by the instructing employer to datagate.co.in for the specific case giving rise to the claim.</p>
         </div>
 
         {/* 12 */}
         <div className="sec" id="v12">
           <div className="sec-h">12. Termination and removal</div>
-          <p className="p">Datagate may remove you from the platform immediately and without notice for:</p>
+          <p className="p">datagate.co.in may remove you from the platform immediately and without notice for:</p>
           <ul className="ul">
             <li>Any violation of the prohibited uses in Section 5</li>
             <li>Any data breach or security incident attributable to your systems</li>
@@ -263,10 +261,10 @@ export default function BGVVendorTerms() {
         {/* 14 */}
         <div className="sec" id="v14">
           <div className="sec-h">14. General provisions</div>
-          <p className="p"><strong>Entire agreement:</strong> These terms, together with Datagate's Privacy Policy, constitute the entire agreement between you and Datagate regarding BGV vendor access to the platform.</p>
+          <p className="p"><strong>Entire agreement:</strong> These terms, together with datagate.co.in's Privacy Policy, constitute the entire agreement between you and datagate.co.in regarding BGV vendor access to the platform.</p>
           <p className="p"><strong>Severability:</strong> If any provision is found invalid or unenforceable, the remaining provisions continue in full force.</p>
-          <p className="p"><strong>Changes:</strong> Datagate may update these terms with 14 days' notice for material changes. Continued use constitutes acceptance.</p>
-          <p className="p"><strong>No assignment:</strong> You may not assign these terms or your platform access to any other entity without Datagate's prior written consent.</p>
+          <p className="p"><strong>Changes:</strong> datagate.co.in may update these terms with 14 days' notice for material changes. Continued use constitutes acceptance.</p>
+          <p className="p"><strong>No assignment:</strong> You may not assign these terms or your platform access to any other entity without datagate.co.in's prior written consent.</p>
         </div>
 
         {/* 15 */}
@@ -275,7 +273,7 @@ export default function BGVVendorTerms() {
         </div>
 
         <div className="box">
-          <div className="box-t">BGV Vendor enquiries &nbsp;·&nbsp; Datagate</div>
+          <div className="box-t">BGV Vendor enquiries &nbsp;·&nbsp; datagate.co.in</div>
           <p>Onboarding: <a href="mailto:vendors@datagate.co.in">vendors@datagate.co.in</a></p>
           <p>Security incidents: <a href="mailto:security@datagate.co.in">security@datagate.co.in</a></p>
           <p>General: <a href="mailto:support@datagate.co.in">support@datagate.co.in</a></p>
