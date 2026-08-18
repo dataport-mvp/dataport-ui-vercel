@@ -994,10 +994,12 @@ export default function EducationDetails() {
   const [xSchool,setXSchool]=useState("");const [xBoard,setXBoard]=useState("");const [xHall,setXHall]=useState("");
   const [xFrom,setXFrom]=useState("");const [xTo,setXTo]=useState("");const [xAddress,setXAddress]=useState("");
   const [xYear,setXYear]=useState("");const [xResultType,setXResultType]=useState("");const [xResultValue,setXResultValue]=useState("");const [xMedium,setXMedium]=useState("");const [xCertKey,setXCertKey]=useState("");
+  const [xCountry,setXCountry]=useState("India");const [xCountryName,setXCountryName]=useState("");const [xEquivalencyKey,setXEquivalencyKey]=useState("");
 
   const [iCollege,setICollege]=useState("");const [iBoard,setIBoard]=useState("");const [iHall,setIHall]=useState("");
   const [iFrom,setIFrom]=useState("");const [iTo,setITo]=useState("");const [iAddress,setIAddress]=useState("");const [iMode,setIMode]=useState("");
   const [iYear,setIYear]=useState("");const [iResultType,setIResultType]=useState("");const [iResultValue,setIResultValue]=useState("");const [iMedium,setIMedium]=useState("");const [iCertKey,setICertKey]=useState("");const [iStream,setIStream]=useState("");
+  const [iCountry,setICountry]=useState("India");const [iCountryName,setICountryName]=useState("");const [iEquivalencyKey,setIEquivalencyKey]=useState("");
 
   const [ugCollege,setUgCollege]=useState("");const [ugUniversity,setUgUniversity]=useState("");const [ugCourse,setUgCourse]=useState("");
   const [ugSpecialization,setUgSpecialization]=useState("");
@@ -1016,6 +1018,7 @@ export default function EducationDetails() {
   const [dipInstitute,setDipInstitute]=useState("");const [dipBoard,setDipBoard]=useState("");const [dipCourse,setDipCourse]=useState("");const [dipBacklogs,setDipBacklogs]=useState("");
   const [dipFrom,setDipFrom]=useState("");const [dipTo,setDipTo]=useState("");const [dipYear,setDipYear]=useState("");
   const [dipResultType,setDipResultType]=useState("");const [dipResultValue,setDipResultValue]=useState("");const [dipMode,setDipMode]=useState("");const [dipCertKey,setDipCertKey]=useState("");
+  const [dipCountry,setDipCountry]=useState("India");const [dipCountryName,setDipCountryName]=useState("");const [dipEquivalencyKey,setDipEquivalencyKey]=useState("");
 
   const [certs,setCerts]=useState([{name:"",certKey:"",_k:"cert-init"}]);
   const [profQuals,setProfQuals]=useState([{type:"",otherType:"",level:"",year:"",certKey:"",_k:"pq-init"}]);
@@ -1047,10 +1050,12 @@ export default function EducationDetails() {
           if(x.school)setXSchool(x.school);if(x.board)setXBoard(x.board);if(x.hallTicket)setXHall(x.hallTicket);
           if(x.from)setXFrom(x.from);if(x.to)setXTo(x.to);if(x.address)setXAddress(x.address);
           if(x.yearOfPassing)setXYear(x.yearOfPassing);if(x.resultType)setXResultType(x.resultType);if(x.resultValue)setXResultValue(x.resultValue);if(x.medium)setXMedium(x.medium);if(x.certKey)setXCertKey(x.certKey);
+          setXCountry(x.country||"India");if(x.countryName)setXCountryName(x.countryName);if(x.equivalencyKey)setXEquivalencyKey(x.equivalencyKey);
 
           if(i.college)setICollege(i.college);if(i.board)setIBoard(i.board);if(i.hallTicket)setIHall(i.hallTicket);
           if(i.from)setIFrom(i.from);if(i.to)setITo(i.to);if(i.address)setIAddress(i.address);if(i.mode)setIMode(i.mode);
           if(i.yearOfPassing)setIYear(i.yearOfPassing);if(i.resultType)setIResultType(i.resultType);if(i.resultValue)setIResultValue(i.resultValue);if(i.medium)setIMedium(i.medium);if(i.certKey)setICertKey(i.certKey);if(i.stream)setIStream(i.stream);
+          setICountry(i.country||"India");if(i.countryName)setICountryName(i.countryName);if(i.equivalencyKey)setIEquivalencyKey(i.equivalencyKey);
 
           if(edu.hasUG){setHasUG(edu.hasUG);}else if(ug.college){setHasUG("Yes");}
           if(ug.college)setUgCollege(ug.college);if(ug.university)setUgUniversity(ug.university);if(ug.course)setUgCourse(ug.course);
@@ -1077,6 +1082,7 @@ export default function EducationDetails() {
           if(dip.institute)setDipInstitute(dip.institute);if(dip.board)setDipBoard(dip.board);if(dip.course)setDipCourse(dip.course);if(dip.backlogs)setDipBacklogs(dip.backlogs);
           if(dip.from)setDipFrom(dip.from);if(dip.to)setDipTo(dip.to);if(dip.yearOfPassing)setDipYear(dip.yearOfPassing);
           if(dip.resultType)setDipResultType(dip.resultType);if(dip.resultValue)setDipResultValue(dip.resultValue);if(dip.mode)setDipMode(dip.mode);if(dip.certKey)setDipCertKey(dip.certKey);
+          setDipCountry(dip.country||"India");if(dip.countryName)setDipCountryName(dip.countryName);if(dip.equivalencyKey)setDipEquivalencyKey(dip.equivalencyKey);
 
           if(certsData.length>0)setCerts(certsData.map((c,i)=>({name:typeof c.name==="string"?c.name:"",certKey:typeof c.certKey==="string"?c.certKey:"",_k:c._k||`cert-restored-${i}-${Date.now()}`})));
           if(profData.length>0)setProfQuals(profData.map((q,i)=>({...q,_k:q._k||`pq-restored-${i}-${Date.now()}`})));
@@ -1133,12 +1139,12 @@ export default function EducationDetails() {
   };
 
   const buildEducation=()=>({
-    classX:{school:xSchool,board:xBoard,hallTicket:xHall,from:xFrom,to:xTo,address:xAddress,yearOfPassing:xYear,resultType:xResultType,resultValue:xResultValue,medium:xMedium,certKey:xCertKey},
-    intermediate:{college:iCollege,board:iBoard,hallTicket:iHall,from:iFrom,to:iTo,address:iAddress,mode:iMode,stream:iStream,yearOfPassing:iYear,resultType:iResultType,resultValue:iResultValue,medium:iMedium,certKey:iCertKey},
+    classX:{school:xSchool,board:xBoard,hallTicket:xHall,from:xFrom,to:xTo,address:xAddress,yearOfPassing:xYear,resultType:xResultType,resultValue:xResultValue,medium:xMedium,certKey:xCertKey,country:xCountry,countryName:xCountry==="Outside India"?xCountryName:"",equivalencyKey:xEquivalencyKey},
+    intermediate:{college:iCollege,board:iBoard,hallTicket:iHall,from:iFrom,to:iTo,address:iAddress,mode:iMode,stream:iStream,yearOfPassing:iYear,resultType:iResultType,resultValue:iResultValue,medium:iMedium,certKey:iCertKey,country:iCountry,countryName:iCountry==="Outside India"?iCountryName:"",equivalencyKey:iEquivalencyKey},
     undergraduate:hasUG==="Yes"?{college:ugCollege,university:ugUniversity,course:ugCourse,specialization:ugSpecialization,hallTicket:ugHall,from:ugFrom,to:ugTo,address:ugAddress,mode:ugMode,yearOfPassing:ugYear,resultType:ugResultType,resultValue:ugResultValue,backlogs:ugBacklogs,medium:ugMedium,provKey:ugProvKey,convoKey:ugConvoKey,country:ugCountry,countryName:ugCountry==="Outside India"?ugCountryName:"",equivalencyKey:ugEquivalencyKey}:{},
     postgraduate:hasPG==="Yes"?{college:pgCollege,university:pgUniversity,course:pgCourse,specialization:pgSpecialization,hallTicket:pgHall,from:pgFrom,to:pgTo,address:pgAddress,mode:pgMode,yearOfPassing:pgYear,resultType:pgResultType,resultValue:pgResultValue,backlogs:pgBacklogs,medium:pgMedium,provKey:pgProvKey,convoKey:pgConvoKey,country:pgCountry,countryName:pgCountry==="Outside India"?pgCountryName:"",equivalencyKey:pgEquivalencyKey}:{},
     afterTenth, hasDip, hasCerts, hasProfQual, hasArticleship, hasUG, hasPG,
-    diploma:hasDip==="Yes"?{institute:dipInstitute,board:dipBoard,course:dipCourse,from:dipFrom,to:dipTo,yearOfPassing:dipYear,resultType:dipResultType,resultValue:dipResultValue,mode:dipMode,backlogs:dipBacklogs,certKey:dipCertKey}:{},
+    diploma:hasDip==="Yes"?{institute:dipInstitute,board:dipBoard,course:dipCourse,from:dipFrom,to:dipTo,yearOfPassing:dipYear,resultType:dipResultType,resultValue:dipResultValue,mode:dipMode,backlogs:dipBacklogs,certKey:dipCertKey,country:dipCountry,countryName:dipCountry==="Outside India"?dipCountryName:"",equivalencyKey:dipEquivalencyKey}:{},
     certifications:hasCerts==="Yes"?certs:[],
     professionalQualifications:hasProfQual==="Yes"?profQuals:[],
     articleships:hasArticleship==="Yes"?articleships:[],
@@ -1269,7 +1275,18 @@ export default function EducationDetails() {
           {/* ── Class X ── */}
           <div className="sc ind">
             <div className="sh"><div className="si ind">📚</div><span className="st">Class X — SSC / Matriculation</span></div>
-            <div className="fr"><F l="School Name" v={xSchool} s={d(setXSchool)} errKey="xSchool" errors={errors} onFix={fixErr}/><F l="Board Name" v={xBoard} s={d(setXBoard)} errKey="xBoard" errors={errors} onFix={fixErr}/><F l="Hall Ticket / Roll No." v={xHall} s={d(setXHall)} errKey="xHall" errors={errors} onFix={fixErr}/></div>
+            <div className="fr">
+              <div className="fi">
+                <span className="fl">Where was this completed? <span style={{color:"#ef4444"}}>*</span></span>
+                <div style={{display:"flex",gap:"0.55rem",marginTop:"0.15rem"}}>
+                  {["India","Outside India"].map(v=>(
+                    <button key={v} type="button" onClick={()=>{d(setXCountry)(v);if(v==="India")d(setXCountryName)("");}} style={{flex:1,padding:"0.55rem 0",borderRadius:9,border:xCountry===v?"2px solid #d97706":"1.5px solid #d8d4e3",background:xCountry===v?"#d97706":"#f5f4f0",color:xCountry===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.78rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}>{v}</button>
+                  ))}
+                </div>
+              </div>
+              {xCountry==="Outside India"&&<F l="Country" v={xCountryName} s={d(setXCountryName)} errKey="xCountryName" errors={errors} onFix={fixErr}/>}
+            </div>
+            <div className="fr"><F l="School Name" v={xSchool} s={d(setXSchool)} errKey="xSchool" errors={errors} onFix={fixErr}/><F l="Board Name" v={xBoard} s={d(setXBoard)} errKey="xBoard" errors={errors} onFix={fixErr}/><F l={xCountry==="Outside India"?"Roll No. / Student ID":"Hall Ticket / Roll No."} v={xHall} s={d(setXHall)} errKey="xHall" errors={errors} onFix={fixErr}/></div>
             <div className="fr">
               <DateField l="From" v={xFrom} s={d(setXFrom)} errKey="xFrom" errors={errors} onFix={fixErr}/>
               <DateField l="To" v={xTo} s={d(setXTo)} errKey="xTo" errors={errors} onFix={fixErr}/>
@@ -1278,6 +1295,15 @@ export default function EducationDetails() {
             <div className="fr"><F l="School Address" v={xAddress} s={d(setXAddress)} errKey="xAddress" errors={errors} onFix={fixErr}/></div>
             <div className="fr"><FS l="Result Type" v={xResultType} s={d(setXResultType)} o={["Percentage","CGPA","Grade"]} errKey="xResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={xResultValue} s={d(setXResultValue)} errKey="xResultValue" errors={errors} onFix={fixErr}/><F l="Medium of Study" v={xMedium} s={d(setXMedium)} errKey="xMedium" errors={errors} onFix={fixErr}/></div>
             <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Class X Certificate" errKey="xCertKey"/><FileUpload onUploadStateChange={handleUploadState} label="Upload Class X Certificate" category="education" subKey="classX" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={xCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setXCertKey(key);isDirtyRef.current=true;fixErr("xCertKey");}}/></div>
+            {xCountry==="Outside India"&&(
+              <div className="att-split">
+                <div className="att-box" style={{flex:"0 0 100%"}}>
+                  <span className="att-box-lbl">Equivalency Certificate (AIU / WES)</span>
+                  <p style={{fontSize:"0.7rem",color:"#d97706",fontWeight:600,marginBottom:"0.4rem"}}>⚠️ Recommended for foreign schooling — needed for final BGV verification. Upload later if not yet obtained.</p>
+                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="classx_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={xEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setXEquivalencyKey(key);isDirtyRef.current=true;}}/>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ── After Class X ── */}
@@ -1305,7 +1331,18 @@ export default function EducationDetails() {
           {(afterTenth==="Intermediate"||afterTenth==="Both")&&(
           <div className="sc cyn">
             <div className="sh"><div className="si cyn">🏫</div><span className="st">Intermediate — HSC / 12th</span></div>
-            <div className="fr"><F l="College Name" v={iCollege} s={d(setICollege)} errKey="iCollege" errors={errors} onFix={fixErr}/><F l="Board Name" v={iBoard} s={d(setIBoard)} errKey="iBoard" errors={errors} onFix={fixErr}/><F l="Hall Ticket / Roll No." v={iHall} s={d(setIHall)} errKey="iHall" errors={errors} onFix={fixErr}/></div>
+            <div className="fr">
+              <div className="fi">
+                <span className="fl">Where was this completed? <span style={{color:"#ef4444"}}>*</span></span>
+                <div style={{display:"flex",gap:"0.55rem",marginTop:"0.15rem"}}>
+                  {["India","Outside India"].map(v=>(
+                    <button key={v} type="button" onClick={()=>{d(setICountry)(v);if(v==="India")d(setICountryName)("");}} style={{flex:1,padding:"0.55rem 0",borderRadius:9,border:iCountry===v?"2px solid #d97706":"1.5px solid #d8d4e3",background:iCountry===v?"#d97706":"#f5f4f0",color:iCountry===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.78rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}>{v}</button>
+                  ))}
+                </div>
+              </div>
+              {iCountry==="Outside India"&&<F l="Country" v={iCountryName} s={d(setICountryName)} errKey="iCountryName" errors={errors} onFix={fixErr}/>}
+            </div>
+            <div className="fr"><F l="College Name" v={iCollege} s={d(setICollege)} errKey="iCollege" errors={errors} onFix={fixErr}/><F l="Board Name" v={iBoard} s={d(setIBoard)} errKey="iBoard" errors={errors} onFix={fixErr}/><F l={iCountry==="Outside India"?"Roll No. / Student ID":"Hall Ticket / Roll No."} v={iHall} s={d(setIHall)} errKey="iHall" errors={errors} onFix={fixErr}/></div>
             <div className="fr">
               <DateField l="From" v={iFrom} s={d(setIFrom)} errKey="iFrom" errors={errors} onFix={fixErr}/>
               <DateField l="To" v={iTo} s={d(setITo)} errKey="iTo" errors={errors} onFix={fixErr}/>
@@ -1315,6 +1352,15 @@ export default function EducationDetails() {
             <div className="fr"><FS l="Mode" v={iMode} s={d(setIMode)} o={["Full-time","Part-time","Distance"]} errKey="iMode" errors={errors} onFix={fixErr}/><FS l="Result Type" v={iResultType} s={d(setIResultType)} o={["Percentage","CGPA","Grade"]} errKey="iResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={iResultValue} s={d(setIResultValue)} errKey="iResultValue" errors={errors} onFix={fixErr}/></div>
             <div className="fr"><FS l="Stream" v={iStream} s={d(setIStream)} o={["Science","Commerce","Arts","Vocational"]} errKey="iStream" errors={errors} onFix={fixErr}/><F l="Medium of Study" v={iMedium} s={d(setIMedium)} errKey="iMedium" errors={errors} onFix={fixErr}/></div>
             <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Intermediate Certificate" errKey="iCertKey"/><FileUpload onUploadStateChange={handleUploadState} label="Upload Intermediate Certificate" category="education" subKey="intermediate" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={iCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setICertKey(key);isDirtyRef.current=true;fixErr("iCertKey");}}/></div>
+            {iCountry==="Outside India"&&(
+              <div className="att-split">
+                <div className="att-box" style={{flex:"0 0 100%"}}>
+                  <span className="att-box-lbl">Equivalency Certificate (AIU / WES)</span>
+                  <p style={{fontSize:"0.7rem",color:"#d97706",fontWeight:600,marginBottom:"0.4rem"}}>⚠️ Recommended for foreign schooling — needed for final BGV verification. Upload later if not yet obtained.</p>
+                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="intermediate_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={iEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setIEquivalencyKey(key);isDirtyRef.current=true;}}/>
+                </div>
+              </div>
+            )}
           </div>
           )}
 
@@ -1322,6 +1368,17 @@ export default function EducationDetails() {
           {(afterTenth==="Diploma"||afterTenth==="Both")&&(
           <div className="sc grn">
             <div className="sh"><div className="si grn">🔧</div><span className="st">Diploma — After Class X</span></div>
+            <div className="fr">
+              <div className="fi">
+                <span className="fl">Where was this completed? <span style={{color:"#ef4444"}}>*</span></span>
+                <div style={{display:"flex",gap:"0.55rem",marginTop:"0.15rem"}}>
+                  {["India","Outside India"].map(v=>(
+                    <button key={v} type="button" onClick={()=>{d(setDipCountry)(v);if(v==="India")d(setDipCountryName)("");}} style={{flex:1,padding:"0.55rem 0",borderRadius:9,border:dipCountry===v?"2px solid #16a34a":"1.5px solid #d8d4e3",background:dipCountry===v?"#16a34a":"#f5f4f0",color:dipCountry===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.78rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}>{v}</button>
+                  ))}
+                </div>
+              </div>
+              {dipCountry==="Outside India"&&<F l="Country" v={dipCountryName} s={d(setDipCountryName)} errKey="dipCountryName" errors={errors} onFix={fixErr}/>}
+            </div>
             <div className="fr"><F l="Institute Name" v={dipInstitute} s={d(setDipInstitute)} errKey="dipInstitute" errors={errors} onFix={fixErr}/><F l="Board / University" v={dipBoard} s={d(setDipBoard)} errKey="dipBoard" errors={errors} onFix={fixErr}/><F l="Course / Programme" v={dipCourse} s={d(setDipCourse)} errKey="dipCourse" errors={errors} onFix={fixErr}/></div>
             <div className="fr">
               <DateField l="From" v={dipFrom} s={d(setDipFrom)} errKey="dipFrom" errors={errors} onFix={fixErr}/>
@@ -1330,6 +1387,15 @@ export default function EducationDetails() {
             </div>
             <div className="fr"><FS l="Mode" v={dipMode} s={d(setDipMode)} o={["Full-time","Part-time","Distance"]} errKey="dipMode" errors={errors} onFix={fixErr}/><FS l="Result Type" v={dipResultType} s={d(setDipResultType)} o={["Percentage","CGPA","Grade"]} errKey="dipResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={dipResultValue} s={d(setDipResultValue)} errKey="dipResultValue" errors={errors} onFix={fixErr}/></div>
             <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Diploma Certificate" errKey="dipCertKey"/><FileUpload onUploadStateChange={handleUploadState} label="Upload Diploma Certificate" category="education" subKey="diploma" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={dipCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipCertKey(key);isDirtyRef.current=true;fixErr("dipCertKey");}}/></div>
+            {dipCountry==="Outside India"&&(
+              <div className="att-split">
+                <div className="att-box" style={{flex:"0 0 100%"}}>
+                  <span className="att-box-lbl">Equivalency Certificate (AIU / WES)</span>
+                  <p style={{fontSize:"0.7rem",color:"#d97706",fontWeight:600,marginBottom:"0.4rem"}}>⚠️ Recommended for foreign diplomas — needed for final BGV verification. Upload later if not yet obtained.</p>
+                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="diploma_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={dipEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipEquivalencyKey(key);isDirtyRef.current=true;}}/>
+                </div>
+              </div>
+            )}
           </div>
           )}
 
@@ -1447,6 +1513,17 @@ export default function EducationDetails() {
               ))}
             </div>
             {hasDip==="Yes"&&(<>
+              <div className="fr">
+                <div className="fi">
+                  <span className="fl">Where was this completed? <span style={{color:"#ef4444"}}>*</span></span>
+                  <div style={{display:"flex",gap:"0.55rem",marginTop:"0.15rem"}}>
+                    {["India","Outside India"].map(v=>(
+                      <button key={v} type="button" onClick={()=>{d(setDipCountry)(v);if(v==="India")d(setDipCountryName)("");}} style={{flex:1,padding:"0.55rem 0",borderRadius:9,border:dipCountry===v?"2px solid #16a34a":"1.5px solid #d8d4e3",background:dipCountry===v?"#16a34a":"#f5f4f0",color:dipCountry===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.78rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s"}}>{v}</button>
+                    ))}
+                  </div>
+                </div>
+                {dipCountry==="Outside India"&&<F l="Country" v={dipCountryName} s={d(setDipCountryName)} errKey="dipCountryName" errors={errors} onFix={fixErr}/>}
+              </div>
               <div className="fr"><F l="Institute Name" v={dipInstitute} s={d(setDipInstitute)} errKey="dipInstitute" errors={errors} onFix={fixErr}/><F l="Board / University" v={dipBoard} s={d(setDipBoard)} errKey="dipBoard" errors={errors} onFix={fixErr}/><F l="Course / Programme" v={dipCourse} s={d(setDipCourse)} errKey="dipCourse" errors={errors} onFix={fixErr}/></div>
               <div className="fr">
                 <DateField l="From" v={dipFrom} s={d(setDipFrom)} errKey="dipFrom" errors={errors} onFix={fixErr}/>
@@ -1460,6 +1537,15 @@ export default function EducationDetails() {
                 {dipBacklogs==="Yes"&&<p style={{fontSize:"0.7rem",color:"#d97706",fontWeight:600,marginBottom:"0.4rem"}}>⚠️ Upload when available after clearing backlogs</p>}
                 <FileUpload onUploadStateChange={handleUploadState} label="Upload Diploma Certificate" category="education" subKey="diploma" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={dipCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipCertKey(key);isDirtyRef.current=true;fixErr("dipCertKey");}}/>
               </div>
+              {dipCountry==="Outside India"&&(
+                <div className="att-split">
+                  <div className="att-box" style={{flex:"0 0 100%"}}>
+                    <span className="att-box-lbl">Equivalency Certificate (AIU / WES)</span>
+                    <p style={{fontSize:"0.7rem",color:"#d97706",fontWeight:600,marginBottom:"0.4rem"}}>⚠️ Recommended for foreign diplomas — needed for final BGV verification. Upload later if not yet obtained.</p>
+                    <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="diploma_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={dipEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipEquivalencyKey(key);isDirtyRef.current=true;}}/>
+                  </div>
+                </div>
+              )}
             </>)}
           </div>
           )}

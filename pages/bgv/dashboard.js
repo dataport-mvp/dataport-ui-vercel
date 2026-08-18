@@ -829,19 +829,43 @@ export default function BgvDashboard() {
                           {caseDetail.profile?.education?.classX?.school && (
                             <div className="profile-kv">
                               <span className="profile-key">Class X</span>
-                              <span className="profile-val">{caseDetail.profile.education.classX.school} — {caseDetail.profile.education.classX.yearOfPassing}</span>
+                              <span className="profile-val">
+                                {caseDetail.profile.education.classX.school} — {caseDetail.profile.education.classX.yearOfPassing}
+                                {caseDetail.profile.education.classX.country === "Outside India" && (
+                                  <span style={{marginLeft:8,padding:"1px 8px",borderRadius:999,background:"#fef3c7",color:"#92400e",fontSize:"0.7rem",fontWeight:700}}>
+                                    Foreign — {caseDetail.profile.education.classX.countryName || "Outside India"}
+                                    {caseDetail.profile.education.classX.equivalencyKey ? " · Equivalency uploaded" : " · Equivalency pending"}
+                                  </span>
+                                )}
+                              </span>
                             </div>
                           )}
                           {caseDetail.profile?.education?.intermediate?.school && (
                             <div className="profile-kv">
                               <span className="profile-key">Class XII / Intermediate</span>
-                              <span className="profile-val">{caseDetail.profile.education.intermediate.school} — {caseDetail.profile.education.intermediate.yearOfPassing}</span>
+                              <span className="profile-val">
+                                {caseDetail.profile.education.intermediate.school} — {caseDetail.profile.education.intermediate.yearOfPassing}
+                                {caseDetail.profile.education.intermediate.country === "Outside India" && (
+                                  <span style={{marginLeft:8,padding:"1px 8px",borderRadius:999,background:"#fef3c7",color:"#92400e",fontSize:"0.7rem",fontWeight:700}}>
+                                    Foreign — {caseDetail.profile.education.intermediate.countryName || "Outside India"}
+                                    {caseDetail.profile.education.intermediate.equivalencyKey ? " · Equivalency uploaded" : " · Equivalency pending"}
+                                  </span>
+                                )}
+                              </span>
                             </div>
                           )}
                           {caseDetail.profile?.education?.diploma?.college && (
                             <div className="profile-kv">
                               <span className="profile-key">Diploma</span>
-                              <span className="profile-val">{caseDetail.profile.education.diploma.course} — {caseDetail.profile.education.diploma.college}</span>
+                              <span className="profile-val">
+                                {caseDetail.profile.education.diploma.course} — {caseDetail.profile.education.diploma.college}
+                                {caseDetail.profile.education.diploma.country === "Outside India" && (
+                                  <span style={{marginLeft:8,padding:"1px 8px",borderRadius:999,background:"#fef3c7",color:"#92400e",fontSize:"0.7rem",fontWeight:700}}>
+                                    Foreign — {caseDetail.profile.education.diploma.countryName || "Outside India"}
+                                    {caseDetail.profile.education.diploma.equivalencyKey ? " · Equivalency uploaded" : " · Equivalency pending"}
+                                  </span>
+                                )}
+                              </span>
                             </div>
                           )}
                           {caseDetail.profile?.education?.undergraduate?.college && (

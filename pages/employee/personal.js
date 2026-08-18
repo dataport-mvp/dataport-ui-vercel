@@ -1823,6 +1823,7 @@ export default function PersonalDetails() {
     if (!branch)           e.branch = true;
     if (!accountType)      e.accountType = true;
     if (!accountLast4 && !accountNo) e.accountNo = true;
+    if (!bankProofKey)     e.bankProofKey = true;
     if (accountNo && accountNo !== accountNoConfirm) e.accountNoConfirm = true;
     if (Object.keys(e).length > 0) {
       setErrors(e);
@@ -2545,8 +2546,8 @@ export default function PersonalDetails() {
                 {/* ── Bank proof — verified document for salary processing ── */}
                 <div className="fr" style={{marginTop:"0.6rem"}}>
                   <div className="fi" style={{flex:"1 1 100%"}}>
-                    <span className="fl">Upload Proof for Salary Processing — Passbook or Bank Statement</span>
-                    <FileUpload onUploadStateChange={handleUploadState} label="Upload Passbook Front Page or Bank Statement" category="personal" subKey="bankProof" employeeId={employeeIdRef.current || employeeId} disabled={!draftReady} apiFetch={apiFetch} value={bankProofKey} onChange={(k) => { const key=typeof k==="string"?k:(k?.key||k?.s3_key||""); setBankProofKey(key); dirty(() => {})(""); }} />
+                    <span className="fl">Upload Proof for Salary Processing — Passbook / Statement</span>
+                    <FileUpload onUploadStateChange={handleUploadState} label="Upload Proof for Salary Processing *" category="personal" subKey="bankProof" employeeId={employeeIdRef.current || employeeId} disabled={!draftReady} apiFetch={apiFetch} value={bankProofKey} onChange={(k) => { const key=typeof k==="string"?k:(k?.key||k?.s3_key||""); setBankProofKey(key); dirty(() => {})(""); fixErr("bankProofKey"); }} />
                   </div>
                 </div>
               </div>
