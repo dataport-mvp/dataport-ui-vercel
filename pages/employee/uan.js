@@ -886,6 +886,29 @@ function SupportModal({ apiFetch, onClose }) {
   const [tickets, setTickets] = useState([]);
   const [expandedTicket, setExpandedTicket] = useState("");
   const [tLoading,setTLoading]= useState(false);
+  const [attachmentKey, setAttachmentKey] = useState("");
+  const [attachmentName, setAttachmentName] = useState("");
+  const [uploadingAtt, setUploadingAtt] = useState(false);
+  const [attErr, setAttErr] = useState("");
+
+  const handleAttachmentSelect = async (file) => {
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { setAttErr("File must be under 10MB"); return; }
+    setUploadingAtt(true); setAttErr("");
+    try {
+      const r = await apiFetch(`${API}/support/tickets/upload-url`, {
+        method: "POST",
+        body: JSON.stringify({ filename: file.name }),
+      });
+      const d = await r.json();
+      if (!r.ok) { setAttErr(d.detail || "Could not prepare upload"); setUploadingAtt(false); return; }
+      const putRes = await fetch(d.upload_url, { method: "PUT", body: file, headers: { "Content-Type": file.type || "application/octet-stream" } });
+      if (!putRes.ok) { setAttErr("Upload failed — please try again"); setUploadingAtt(false); return; }
+      setAttachmentKey(d.s3_key);
+      setAttachmentName(file.name);
+    } catch (_) { setAttErr("Network error — please try again"); }
+    setUploadingAtt(false);
+  };
 
   const loadTickets = async () => {
     setTLoading(true);
@@ -902,12 +925,12 @@ function SupportModal({ apiFetch, onClose }) {
     try {
       const r = await apiFetch(`${API}/support/tickets`, {
         method: "POST",
-        body: JSON.stringify({ category: cat, subject: subject.trim(), body: body.trim() }),
+        body: JSON.stringify({ category: cat, subject: subject.trim(), body: body.trim(), attachment_key: attachmentKey }),
       });
       const d = await r.json();
       if (!r.ok) { setErr(d.detail || "Failed to submit"); setBusy(false); return; }
       setOk("✅ Ticket submitted! We'll get back to you within 2 business days.");
-      setSubject(""); setBody(""); setCat("account");
+      setSubject(""); setBody(""); setCat("account"); setAttachmentKey(""); setAttachmentName("");
       setTimeout(() => { setOk(""); setTab("tickets"); loadTickets(); }, 1800);
     } catch(_) { setErr("Network error — please try again"); }
     setBusy(false);
@@ -966,11 +989,27 @@ function SupportModal({ apiFetch, onClose }) {
                 style={{width:"100%",padding:"0.6rem 0.875rem",background:"#f8f7ff",border:"1.5px solid #ddd8f5",borderRadius:9,fontFamily:"inherit",fontSize:"0.84rem",color:"#1a1730",outline:"none",resize:"vertical"}}/>
             </div>
 
+            <div>
+              <div style={{fontSize:"0.65rem",fontWeight:700,color:"#8b88b0",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.35rem"}}>Attachment (optional)</div>
+              {!attachmentKey ? (
+                <label style={{display:"flex",alignItems:"center",gap:"0.5rem",padding:"0.6rem 0.875rem",background:"#f8f7ff",border:"1.5px dashed #ddd8f5",borderRadius:9,cursor:uploadingAtt?"not-allowed":"pointer",fontSize:"0.78rem",color:"#6b6894",fontWeight:600}}>
+                  📎 {uploadingAtt ? "Uploading…" : "Attach a screenshot or document (max 10MB)"}
+                  <input type="file" accept=".pdf,.jpg,.jpeg,.png" disabled={uploadingAtt} style={{display:"none"}} onChange={e=>handleAttachmentSelect(e.target.files?.[0])}/>
+                </label>
+              ) : (
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0.55rem 0.875rem",background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:9,fontSize:"0.78rem",color:"#16a34a",fontWeight:600}}>
+                  <span>📎 {attachmentName || "Attached"}</span>
+                  <button type="button" onClick={()=>{setAttachmentKey("");setAttachmentName("");}} style={{background:"none",border:"none",color:"#ef4444",cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>Remove</button>
+                </div>
+              )}
+              {attErr && <div style={{fontSize:"0.7rem",color:"#ef4444",fontWeight:600,marginTop:"0.3rem"}}>{attErr}</div>}
+            </div>
+
             {err && <div style={{fontSize:"0.72rem",color:"#ef4444",fontWeight:600}}>{err}</div>}
             {ok  && <div style={{fontSize:"0.72rem",color:"#16a34a",fontWeight:600,background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:8,padding:"0.5rem 0.75rem"}}>{ok}</div>}
 
-            <button onClick={submit} disabled={busy}
-              style={{padding:"0.7rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:10,fontFamily:"inherit",fontSize:"0.875rem",fontWeight:700,cursor:busy?"not-allowed":"pointer",opacity:busy?0.6:1,transition:"all 0.15s"}}>
+            <button onClick={submit} disabled={busy || uploadingAtt}
+              style={{padding:"0.7rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:10,fontFamily:"inherit",fontSize:"0.875rem",fontWeight:700,cursor:(busy||uploadingAtt)?"not-allowed":"pointer",opacity:(busy||uploadingAtt)?0.6:1,transition:"all 0.15s"}}>
               {busy?"Submitting…":"Submit Ticket"}
             </button>
           </div>
@@ -1005,11 +1044,13 @@ function SupportModal({ apiFetch, onClose }) {
                     <div style={{background:"#f8f7ff",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.5rem"}}>
                       <div style={{fontSize:"0.65rem",fontWeight:700,color:"#6b6894",marginBottom:"0.25rem"}}>You wrote:</div>
                       <div style={{fontSize:"0.8rem",color:"#1a1730",whiteSpace:"pre-wrap"}}>{t.body}</div>
+                      {t.attachment_url && <a href={t.attachment_url} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:"0.4rem",fontSize:"0.72rem",color:"#0d6e6e",fontWeight:700,textDecoration:"none"}}>📎 View attachment</a>}
                     </div>
                     {(t.replies||[]).map((r,i)=>(
                       <div key={i} style={{background:"#f0fdf4",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.5rem"}}>
                         <div style={{fontSize:"0.65rem",fontWeight:700,color:"#16a34a",marginBottom:"0.25rem"}}>Datagate Support — {new Date(r.at).toLocaleString("en-IN",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}</div>
                         <div style={{fontSize:"0.8rem",color:"#1a1730",whiteSpace:"pre-wrap"}}>{r.body}</div>
+                        {r.attachment_url && <a href={r.attachment_url} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:"0.4rem",fontSize:"0.72rem",color:"#16a34a",fontWeight:700,textDecoration:"none"}}>📎 View attachment</a>}
                       </div>
                     ))}
                   </div>

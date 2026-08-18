@@ -416,6 +416,10 @@ export default function AdminDashboard() {
   const [selTicket, setSelTicket]   = useState(null);
   const [replyBody, setReplyBody]   = useState("");
   const [replyStatus, setReplyStatus] = useState("");
+  const [replyAttKey, setReplyAttKey] = useState("");
+  const [replyAttName, setReplyAttName] = useState("");
+  const [uploadingReplyAtt, setUploadingReplyAtt] = useState(false);
+  const [replyAttErr, setReplyAttErr] = useState("");
   const [loading, setLoading]       = useState(false);
   const [msg, setMsg]               = useState({ type: "", text: "" });
   const [noteModal, setNoteModal]   = useState(false);
@@ -625,17 +629,36 @@ export default function AdminDashboard() {
   };
 
   // FIX BUG-4 + BUG-5: ticket reply with fresh data + error display
+  const handleReplyAttachmentSelect = async (file) => {
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { setReplyAttErr("File must be under 10MB"); return; }
+    setUploadingReplyAtt(true); setReplyAttErr("");
+    try {
+      const r = await apiFetch(`${API}/support/tickets/upload-url`, {
+        method: "POST",
+        body: JSON.stringify({ filename: file.name }),
+      });
+      const d = await r.json();
+      if (!r.ok) { setReplyAttErr(d.detail || "Could not prepare upload"); setUploadingReplyAtt(false); return; }
+      const putRes = await fetch(d.upload_url, { method: "PUT", body: file, headers: { "Content-Type": file.type || "application/octet-stream" } });
+      if (!putRes.ok) { setReplyAttErr("Upload failed — please try again"); setUploadingReplyAtt(false); return; }
+      setReplyAttKey(d.s3_key);
+      setReplyAttName(file.name);
+    } catch (_) { setReplyAttErr("Network error — please try again"); }
+    setUploadingReplyAtt(false);
+  };
+
   const doTicketReply = async () => {
     if (!replyBody.trim() || !selTicket) return;
     setMsg({ type: "", text: "" });
     try {
       const r = await apiFetch(`${API}/admin/tickets/reply`, {
         method: "POST",
-        body: JSON.stringify({ ticket_id: selTicket.ticket_id, body: replyBody, status: replyStatus }),
+        body: JSON.stringify({ ticket_id: selTicket.ticket_id, body: replyBody, status: replyStatus, attachment_key: replyAttKey }),
       });
       const d = await r.json();
       if (r.ok) {
-        setReplyBody(""); setReplyStatus("");
+        setReplyBody(""); setReplyStatus(""); setReplyAttKey(""); setReplyAttName("");
         setMsg({ type: "ok", text: "Reply sent" });
         // FIX BUG-4: reload tickets then pick fresh selTicket from new data
         await loadTickets();
@@ -1233,6 +1256,7 @@ export default function AdminDashboard() {
                         <div className="tick-user-msg">
                           <div className="tick-user-by">{selTicket.user_name || selTicket.user_email}</div>
                           <div style={{fontSize:"0.82rem",color:"#4a6060",lineHeight:1.6,whiteSpace:"pre-wrap"}}>{selTicket.body}</div>
+                          {selTicket.attachment_url && <a href={selTicket.attachment_url} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:"0.4rem",fontSize:"0.7rem",color:"#0d6e6e",fontWeight:700,textDecoration:"none"}}>📎 View attachment</a>}
                         </div>
                         {(selTicket.replies || []).map((r, i) => (
                           <div key={i} className={r.by === "admin" ? "tick-reply" : "tick-user-msg"}>
@@ -1240,6 +1264,7 @@ export default function AdminDashboard() {
                               {r.by === "admin" ? "Datagate Support" : selTicket.user_name}
                             </div>
                             <div className="tick-reply-body">{r.body}</div>
+                            {r.attachment_url && <a href={r.attachment_url} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:"0.4rem",fontSize:"0.7rem",color:"#0d6e6e",fontWeight:700,textDecoration:"none"}}>📎 View attachment</a>}
                           </div>
                         ))}
                       </div>
@@ -1253,6 +1278,20 @@ export default function AdminDashboard() {
                             <div className="detail-label">Reply</div>
                             <textarea className="reply-box" placeholder="Type your reply to the user…"
                               value={replyBody} onChange={e => setReplyBody(e.target.value)} />
+                            <div style={{marginTop:"0.5rem"}}>
+                              {!replyAttKey ? (
+                                <label style={{display:"inline-flex",alignItems:"center",gap:"0.4rem",padding:"0.4rem 0.7rem",background:"#f1f5f9",border:"1.5px dashed #cbd5e1",borderRadius:8,cursor:uploadingReplyAtt?"not-allowed":"pointer",fontSize:"0.7rem",color:"#475569",fontWeight:600}}>
+                                  📎 {uploadingReplyAtt ? "Uploading…" : "Attach a file (optional, max 10MB)"}
+                                  <input type="file" accept=".pdf,.jpg,.jpeg,.png" disabled={uploadingReplyAtt} style={{display:"none"}} onChange={e=>handleReplyAttachmentSelect(e.target.files?.[0])}/>
+                                </label>
+                              ) : (
+                                <div style={{display:"inline-flex",alignItems:"center",gap:"0.5rem",padding:"0.4rem 0.7rem",background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:8,fontSize:"0.7rem",color:"#16a34a",fontWeight:600}}>
+                                  📎 {replyAttName || "Attached"}
+                                  <button type="button" onClick={()=>{setReplyAttKey("");setReplyAttName("");}} style={{background:"none",border:"none",color:"#ef4444",cursor:"pointer",fontSize:"0.7rem",fontWeight:700}}>Remove</button>
+                                </div>
+                              )}
+                              {replyAttErr && <div style={{fontSize:"0.65rem",color:"#ef4444",fontWeight:600,marginTop:"0.25rem"}}>{replyAttErr}</div>}
+                            </div>
                             <div style={{display:"flex",alignItems:"center",gap:"0.5rem",marginTop:"0.5rem",flexWrap:"wrap"}}>
                               <span style={{fontSize:"0.65rem",color:"#7a9494"}}>Update status:</span>
                               {["open","in_progress","resolved","closed"].map(s => (
@@ -1262,7 +1301,7 @@ export default function AdminDashboard() {
                                 </button>
                               ))}
                               <button className="reply-send-btn" style={{marginLeft:"auto"}}
-                                onClick={doTicketReply} disabled={!replyBody.trim()}>
+                                onClick={doTicketReply} disabled={!replyBody.trim() || uploadingReplyAtt}>
                                 Send Reply ↗
                               </button>
                             </div>
