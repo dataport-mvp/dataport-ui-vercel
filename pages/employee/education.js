@@ -1034,35 +1034,35 @@ export default function EducationDetails() {
 
   const [xSchool,setXSchool]=useState("");const [xBoard,setXBoard]=useState("");const [xHall,setXHall]=useState("");
   const [xFrom,setXFrom]=useState("");const [xTo,setXTo]=useState("");const [xAddress,setXAddress]=useState("");
-  const [xYear,setXYear]=useState("");const [xResultType,setXResultType]=useState("");const [xResultValue,setXResultValue]=useState("");const [xMedium,setXMedium]=useState("");const [xCertKey,setXCertKey]=useState("");
+  const [xYear,setXYear]=useState("");const [xResultType,setXResultType]=useState("");const [xResultTypeOther,setXResultTypeOther]=useState("");const [xResultValue,setXResultValue]=useState("");const [xMedium,setXMedium]=useState("");const [xCertKey,setXCertKey]=useState("");
   const [xCountry,setXCountry]=useState("India");const [xCountryName,setXCountryName]=useState("");const [xEquivalencyKey,setXEquivalencyKey]=useState("");
 
   const [iCollege,setICollege]=useState("");const [iBoard,setIBoard]=useState("");const [iHall,setIHall]=useState("");
   const [iFrom,setIFrom]=useState("");const [iTo,setITo]=useState("");const [iAddress,setIAddress]=useState("");const [iMode,setIMode]=useState("");
-  const [iYear,setIYear]=useState("");const [iResultType,setIResultType]=useState("");const [iResultValue,setIResultValue]=useState("");const [iMedium,setIMedium]=useState("");const [iCertKey,setICertKey]=useState("");const [iStream,setIStream]=useState("");const [iStreamOther,setIStreamOther]=useState("");
+  const [iYear,setIYear]=useState("");const [iResultType,setIResultType]=useState("");const [iResultTypeOther,setIResultTypeOther]=useState("");const [iResultValue,setIResultValue]=useState("");const [iMedium,setIMedium]=useState("");const [iCertKey,setICertKey]=useState("");const [iStream,setIStream]=useState("");const [iStreamOther,setIStreamOther]=useState("");
   const [iCountry,setICountry]=useState("India");const [iCountryName,setICountryName]=useState("");const [iEquivalencyKey,setIEquivalencyKey]=useState("");
 
   const [ugCollege,setUgCollege]=useState("");const [ugUniversity,setUgUniversity]=useState("");const [ugCourse,setUgCourse]=useState("");
   const [ugSpecialization,setUgSpecialization]=useState("");
   const [ugHall,setUgHall]=useState("");const [ugFrom,setUgFrom]=useState("");const [ugTo,setUgTo]=useState("");const [ugAddress,setUgAddress]=useState("");const [ugMode,setUgMode]=useState("");
-  const [ugYear,setUgYear]=useState("");const [ugResultType,setUgResultType]=useState("");const [ugResultValue,setUgResultValue]=useState("");const [ugBacklogs,setUgBacklogs]=useState("");const [ugMedium,setUgMedium]=useState("");
+  const [ugYear,setUgYear]=useState("");const [ugResultType,setUgResultType]=useState("");const [ugResultTypeOther,setUgResultTypeOther]=useState("");const [ugResultValue,setUgResultValue]=useState("");const [ugBacklogs,setUgBacklogs]=useState("");const [ugMedium,setUgMedium]=useState("");
   const [ugProvKey,setUgProvKey]=useState("");const [ugConvoKey,setUgConvoKey]=useState("");
   const [ugCountry,setUgCountry]=useState("India");const [ugCountryName,setUgCountryName]=useState("");const [ugEquivalencyKey,setUgEquivalencyKey]=useState("");
 
   const [pgCollege,setPgCollege]=useState("");const [pgUniversity,setPgUniversity]=useState("");const [pgCourse,setPgCourse]=useState("");
   const [pgSpecialization,setPgSpecialization]=useState("");
   const [pgHall,setPgHall]=useState("");const [pgFrom,setPgFrom]=useState("");const [pgTo,setPgTo]=useState("");const [pgAddress,setPgAddress]=useState("");const [pgMode,setPgMode]=useState("");
-  const [pgYear,setPgYear]=useState("");const [pgResultType,setPgResultType]=useState("");const [pgResultValue,setPgResultValue]=useState("");const [pgBacklogs,setPgBacklogs]=useState("");const [pgMedium,setPgMedium]=useState("");
+  const [pgYear,setPgYear]=useState("");const [pgResultType,setPgResultType]=useState("");const [pgResultTypeOther,setPgResultTypeOther]=useState("");const [pgResultValue,setPgResultValue]=useState("");const [pgBacklogs,setPgBacklogs]=useState("");const [pgMedium,setPgMedium]=useState("");
   const [pgProvKey,setPgProvKey]=useState("");const [pgConvoKey,setPgConvoKey]=useState("");
   const [pgCountry,setPgCountry]=useState("India");const [pgCountryName,setPgCountryName]=useState("");const [pgEquivalencyKey,setPgEquivalencyKey]=useState("");
 
   const [dipInstitute,setDipInstitute]=useState("");const [dipBoard,setDipBoard]=useState("");const [dipCourse,setDipCourse]=useState("");const [dipBacklogs,setDipBacklogs]=useState("");
   const [dipFrom,setDipFrom]=useState("");const [dipTo,setDipTo]=useState("");const [dipYear,setDipYear]=useState("");
-  const [dipResultType,setDipResultType]=useState("");const [dipResultValue,setDipResultValue]=useState("");const [dipMode,setDipMode]=useState("");const [dipCertKey,setDipCertKey]=useState("");
+  const [dipResultType,setDipResultType]=useState("");const [dipResultTypeOther,setDipResultTypeOther]=useState("");const [dipResultValue,setDipResultValue]=useState("");const [dipMode,setDipMode]=useState("");const [dipCertKey,setDipCertKey]=useState("");
   const [dipCountry,setDipCountry]=useState("India");const [dipCountryName,setDipCountryName]=useState("");const [dipEquivalencyKey,setDipEquivalencyKey]=useState("");
 
   const [certs,setCerts]=useState([{name:"",certKey:"",_k:"cert-init"}]);
-  const [profQuals,setProfQuals]=useState([{type:"",otherType:"",level:"",year:"",certKey:"",_k:"pq-init"}]);
+  const [profQuals,setProfQuals]=useState([{type:"",otherType:"",level:"",year:"",regNo:"",certKey:"",_k:"pq-init"}]);
   const [articleships,setArticleships]=useState([{firm:"",city:"",principalName:"",regNo:"",from:"",to:"",isOngoing:"",type:"",otherType:"",certKey:"",_k:"art-init"}]);
   const [hasEduGap,setHasEduGap]=useState("");
   const [eduGapReason,setEduGapReason]=useState("");
@@ -1090,19 +1090,19 @@ export default function EducationDetails() {
 
           if(x.school)setXSchool(x.school);if(x.board)setXBoard(x.board);if(x.hallTicket)setXHall(x.hallTicket);
           if(x.from)setXFrom(x.from);if(x.to)setXTo(x.to);if(x.address)setXAddress(x.address);
-          if(x.yearOfPassing)setXYear(x.yearOfPassing);if(x.resultType)setXResultType(x.resultType);if(x.resultValue)setXResultValue(x.resultValue);if(x.medium)setXMedium(x.medium);if(x.certKey)setXCertKey(x.certKey);
+          if(x.yearOfPassing)setXYear(x.yearOfPassing);if(x.resultType)setXResultType(x.resultType);if(x.resultTypeOther)setXResultTypeOther(x.resultTypeOther);if(x.resultValue)setXResultValue(x.resultValue);if(x.medium)setXMedium(x.medium);if(x.certKey)setXCertKey(x.certKey);
           setXCountry(x.country||"India");if(x.countryName)setXCountryName(x.countryName);if(x.equivalencyKey)setXEquivalencyKey(x.equivalencyKey);
 
           if(i.college)setICollege(i.college);if(i.board)setIBoard(i.board);if(i.hallTicket)setIHall(i.hallTicket);
           if(i.from)setIFrom(i.from);if(i.to)setITo(i.to);if(i.address)setIAddress(i.address);if(i.mode)setIMode(i.mode);
-          if(i.yearOfPassing)setIYear(i.yearOfPassing);if(i.resultType)setIResultType(i.resultType);if(i.resultValue)setIResultValue(i.resultValue);if(i.medium)setIMedium(i.medium);if(i.certKey)setICertKey(i.certKey);if(i.stream)setIStream(i.stream);if(i.streamOther)setIStreamOther(i.streamOther);
+          if(i.yearOfPassing)setIYear(i.yearOfPassing);if(i.resultType)setIResultType(i.resultType);if(i.resultTypeOther)setIResultTypeOther(i.resultTypeOther);if(i.resultValue)setIResultValue(i.resultValue);if(i.medium)setIMedium(i.medium);if(i.certKey)setICertKey(i.certKey);if(i.stream)setIStream(i.stream);if(i.streamOther)setIStreamOther(i.streamOther);
           setICountry(i.country||"India");if(i.countryName)setICountryName(i.countryName);if(i.equivalencyKey)setIEquivalencyKey(i.equivalencyKey);
 
           if(edu.hasUG){setHasUG(edu.hasUG);}else if(ug.college){setHasUG("Yes");}
           if(ug.college)setUgCollege(ug.college);if(ug.university)setUgUniversity(ug.university);if(ug.course)setUgCourse(ug.course);
           if(ug.specialization)setUgSpecialization(ug.specialization);
           if(ug.hallTicket)setUgHall(ug.hallTicket);if(ug.from)setUgFrom(ug.from);if(ug.to)setUgTo(ug.to);if(ug.address)setUgAddress(ug.address);if(ug.mode)setUgMode(ug.mode);
-          if(ug.yearOfPassing)setUgYear(ug.yearOfPassing);if(ug.resultType)setUgResultType(ug.resultType);if(ug.resultValue)setUgResultValue(ug.resultValue);if(ug.backlogs)setUgBacklogs(ug.backlogs);if(ug.medium)setUgMedium(ug.medium);
+          if(ug.yearOfPassing)setUgYear(ug.yearOfPassing);if(ug.resultType)setUgResultType(ug.resultType);if(ug.resultTypeOther)setUgResultTypeOther(ug.resultTypeOther);if(ug.resultValue)setUgResultValue(ug.resultValue);if(ug.backlogs)setUgBacklogs(ug.backlogs);if(ug.medium)setUgMedium(ug.medium);
           if(ug.provKey)setUgProvKey(ug.provKey);if(ug.convoKey)setUgConvoKey(ug.convoKey);if(!ug.provKey&&ug.certKey)setUgProvKey(ug.certKey);
           setUgCountry(ug.country||"India");if(ug.countryName)setUgCountryName(ug.countryName);if(ug.equivalencyKey)setUgEquivalencyKey(ug.equivalencyKey);
 
@@ -1110,7 +1110,7 @@ export default function EducationDetails() {
           if(pg.college)setPgCollege(pg.college);if(pg.university)setPgUniversity(pg.university);if(pg.course)setPgCourse(pg.course);
           if(pg.specialization)setPgSpecialization(pg.specialization);
           if(pg.hallTicket)setPgHall(pg.hallTicket);if(pg.from)setPgFrom(pg.from);if(pg.to)setPgTo(pg.to);if(pg.address)setPgAddress(pg.address);if(pg.mode)setPgMode(pg.mode);
-          if(pg.yearOfPassing)setPgYear(pg.yearOfPassing);if(pg.resultType)setPgResultType(pg.resultType);if(pg.resultValue)setPgResultValue(pg.resultValue);if(pg.backlogs)setPgBacklogs(pg.backlogs);if(pg.medium)setPgMedium(pg.medium);
+          if(pg.yearOfPassing)setPgYear(pg.yearOfPassing);if(pg.resultType)setPgResultType(pg.resultType);if(pg.resultTypeOther)setPgResultTypeOther(pg.resultTypeOther);if(pg.resultValue)setPgResultValue(pg.resultValue);if(pg.backlogs)setPgBacklogs(pg.backlogs);if(pg.medium)setPgMedium(pg.medium);
           if(pg.provKey)setPgProvKey(pg.provKey);if(pg.convoKey)setPgConvoKey(pg.convoKey);if(!pg.provKey&&pg.certKey)setPgProvKey(pg.certKey);
           setPgCountry(pg.country||"India");if(pg.countryName)setPgCountryName(pg.countryName);if(pg.equivalencyKey)setPgEquivalencyKey(pg.equivalencyKey);
 
@@ -1122,7 +1122,7 @@ export default function EducationDetails() {
           if(edu.hasArticleship)setHasArticleship(edu.hasArticleship);
           if(dip.institute)setDipInstitute(dip.institute);if(dip.board)setDipBoard(dip.board);if(dip.course)setDipCourse(dip.course);if(dip.backlogs)setDipBacklogs(dip.backlogs);
           if(dip.from)setDipFrom(dip.from);if(dip.to)setDipTo(dip.to);if(dip.yearOfPassing)setDipYear(dip.yearOfPassing);
-          if(dip.resultType)setDipResultType(dip.resultType);if(dip.resultValue)setDipResultValue(dip.resultValue);if(dip.mode)setDipMode(dip.mode);if(dip.certKey)setDipCertKey(dip.certKey);
+          if(dip.resultType)setDipResultType(dip.resultType);if(dip.resultTypeOther)setDipResultTypeOther(dip.resultTypeOther);if(dip.resultValue)setDipResultValue(dip.resultValue);if(dip.mode)setDipMode(dip.mode);if(dip.certKey)setDipCertKey(dip.certKey);
           setDipCountry(dip.country||"India");if(dip.countryName)setDipCountryName(dip.countryName);if(dip.equivalencyKey)setDipEquivalencyKey(dip.equivalencyKey);
 
           if(certsData.length>0)setCerts(certsData.map((c,i)=>({name:typeof c.name==="string"?c.name:"",certKey:typeof c.certKey==="string"?c.certKey:"",_k:c._k||`cert-restored-${i}-${Date.now()}`})));
@@ -1143,29 +1143,29 @@ export default function EducationDetails() {
     const e={};
     if(!xSchool)e.xSchool=true;if(!xBoard)e.xBoard=true;if(!xHall)e.xHall=true;
     if(!xFrom)e.xFrom=true;if(!xTo)e.xTo=true;if(!xYear)e.xYear=true;if(!xAddress)e.xAddress=true;
-    if(!xResultType)e.xResultType=true;if(!xResultValue)e.xResultValue=true;if(!xMedium)e.xMedium=true;if(!xCertKey)e.xCertKey=true;
+    if(!xResultType)e.xResultType=true;if(xResultType==="Other"&&!xResultTypeOther)e.xResultTypeOther=true;if(!xResultValue)e.xResultValue=true;if(!xMedium)e.xMedium=true;if(!xCertKey)e.xCertKey=true;
     if(!afterTenth) e.afterTenth=true;
     if(afterTenth==="Intermediate"||afterTenth==="Both"){
       if(!iCollege)e.iCollege=true;if(!iBoard)e.iBoard=true;if(!iHall)e.iHall=true;
       if(!iFrom)e.iFrom=true;if(!iTo)e.iTo=true;if(!iYear)e.iYear=true;if(!iAddress)e.iAddress=true;
-      if(!iMode)e.iMode=true;if(!iResultType)e.iResultType=true;if(!iResultValue)e.iResultValue=true;if(!iMedium)e.iMedium=true;if(!iCertKey)e.iCertKey=true;if(!iStream)e.iStream=true;if(iStream==="Other"&&!iStreamOther)e.iStreamOther=true;
+      if(!iMode)e.iMode=true;if(!iResultType)e.iResultType=true;if(iResultType==="Other"&&!iResultTypeOther)e.iResultTypeOther=true;if(!iResultValue)e.iResultValue=true;if(!iMedium)e.iMedium=true;if(!iCertKey)e.iCertKey=true;if(!iStream)e.iStream=true;if(iStream==="Other"&&!iStreamOther)e.iStreamOther=true;
     }
     if(afterTenth==="Diploma"||afterTenth==="Both"){
       if(!dipInstitute)e.dipInstitute=true;if(!dipBoard)e.dipBoard=true;if(!dipCourse)e.dipCourse=true;
       if(!dipFrom)e.dipFrom=true;if(!dipTo)e.dipTo=true;if(!dipYear)e.dipYear=true;
-      if(!dipResultType)e.dipResultType=true;if(!dipResultValue)e.dipResultValue=true;if(!dipMode)e.dipMode=true;if(!dipBacklogs)e.dipBacklogs=true;if(dipBacklogs!=="Yes"&&!dipCertKey)e.dipCertKey=true;
+      if(!dipResultType)e.dipResultType=true;if(dipResultType==="Other"&&!dipResultTypeOther)e.dipResultTypeOther=true;if(!dipResultValue)e.dipResultValue=true;if(!dipMode)e.dipMode=true;if(!dipBacklogs)e.dipBacklogs=true;if(dipBacklogs!=="Yes"&&!dipCertKey)e.dipCertKey=true;
     }
     if(hasUG==="Yes"){
       if(!ugCountry)e.ugCountry=true;if(ugCountry==="Outside India"&&!ugCountryName)e.ugCountryName=true;
       if(!ugCollege)e.ugCollege=true;if(!ugUniversity)e.ugUniversity=true;if(!ugCourse)e.ugCourse=true;if(ugCountry!=="Outside India"&&!ugHall)e.ugHall=true;
       if(!ugFrom)e.ugFrom=true;if(!ugTo)e.ugTo=true;if(!ugYear)e.ugYear=true;if(!ugAddress)e.ugAddress=true;
-      if(!ugMode)e.ugMode=true;if(!ugResultType)e.ugResultType=true;if(!ugResultValue)e.ugResultValue=true;if(!ugMedium)e.ugMedium=true;if(!ugBacklogs)e.ugBacklogs=true;if(ugBacklogs!=="Yes"&&!ugProvKey)e.ugProvKey=true;
+      if(!ugMode)e.ugMode=true;if(!ugResultType)e.ugResultType=true;if(ugResultType==="Other"&&!ugResultTypeOther)e.ugResultTypeOther=true;if(!ugResultValue)e.ugResultValue=true;if(!ugMedium)e.ugMedium=true;if(!ugBacklogs)e.ugBacklogs=true;if(ugBacklogs!=="Yes"&&!ugProvKey)e.ugProvKey=true;
     }
     if(hasPG==="Yes"){
       if(!pgCountry)e.pgCountry=true;if(pgCountry==="Outside India"&&!pgCountryName)e.pgCountryName=true;
-      if(!pgCollege)e.pgCollege=true;if(!pgUniversity)e.pgUniversity=true;if(!pgCourse)e.pgCourse=true;if(pgCountry!=="Outside India"&&!pgHall)e.pgHall=true;if(!pgFrom)e.pgFrom=true;if(!pgTo)e.pgTo=true;if(!pgYear)e.pgYear=true;if(!pgAddress)e.pgAddress=true;if(!pgMode)e.pgMode=true;if(!pgResultType)e.pgResultType=true;if(!pgResultValue)e.pgResultValue=true;if(!pgMedium)e.pgMedium=true;if(!pgBacklogs)e.pgBacklogs=true;if(pgBacklogs!=="Yes"&&!pgProvKey)e.pgProvKey=true;
+      if(!pgCollege)e.pgCollege=true;if(!pgUniversity)e.pgUniversity=true;if(!pgCourse)e.pgCourse=true;if(pgCountry!=="Outside India"&&!pgHall)e.pgHall=true;if(!pgFrom)e.pgFrom=true;if(!pgTo)e.pgTo=true;if(!pgYear)e.pgYear=true;if(!pgAddress)e.pgAddress=true;if(!pgMode)e.pgMode=true;if(!pgResultType)e.pgResultType=true;if(pgResultType==="Other"&&!pgResultTypeOther)e.pgResultTypeOther=true;if(!pgResultValue)e.pgResultValue=true;if(!pgMedium)e.pgMedium=true;if(!pgBacklogs)e.pgBacklogs=true;if(pgBacklogs!=="Yes"&&!pgProvKey)e.pgProvKey=true;
     }
-    if(hasDip==="Yes"&&afterTenth!=="Diploma"&&afterTenth!=="Both"){if(!dipInstitute)e.dipInstitute=true;if(!dipBoard)e.dipBoard=true;if(!dipCourse)e.dipCourse=true;if(!dipFrom)e.dipFrom=true;if(!dipTo)e.dipTo=true;if(!dipYear)e.dipYear=true;if(!dipResultType)e.dipResultType=true;if(!dipResultValue)e.dipResultValue=true;if(!dipMode)e.dipMode=true;if(!dipBacklogs)e.dipBacklogs=true;if(dipBacklogs!=="Yes"&&!dipCertKey)e.dipCertKey=true;}
+    if(hasDip==="Yes"&&afterTenth!=="Diploma"&&afterTenth!=="Both"){if(!dipInstitute)e.dipInstitute=true;if(!dipBoard)e.dipBoard=true;if(!dipCourse)e.dipCourse=true;if(!dipFrom)e.dipFrom=true;if(!dipTo)e.dipTo=true;if(!dipYear)e.dipYear=true;if(!dipResultType)e.dipResultType=true;if(dipResultType==="Other"&&!dipResultTypeOther)e.dipResultTypeOther=true;if(!dipResultValue)e.dipResultValue=true;if(!dipMode)e.dipMode=true;if(!dipBacklogs)e.dipBacklogs=true;if(dipBacklogs!=="Yes"&&!dipCertKey)e.dipCertKey=true;}
     if(hasCerts==="Yes"){certs.forEach((c,idx)=>{if(!c.name)e[`cert_name_${idx}`]=true;if(!c.certKey)e[`cert_key_${idx}`]=true;});}
     if(hasProfQual==="Yes"){profQuals.forEach((q,idx)=>{if(!q.type)e[`pq_type_${idx}`]=true;if(q.type==="Other"&&!q.otherType)e[`pq_other_${idx}`]=true;if(!q.level)e[`pq_level_${idx}`]=true;if(q.level!=="Pursuing"&&!q.year)e[`pq_year_${idx}`]=true;});}
     if(hasArticleship==="Yes"){articleships.forEach((a,idx)=>{if(!a.firm)e[`art_firm_${idx}`]=true;if(!a.from)e[`art_from_${idx}`]=true;if(!a.type)e[`art_type_${idx}`]=true;if(a.type==="Other Practical Training"&&!a.otherType)e[`art_other_${idx}`]=true;if(!a.isOngoing)e[`art_status_${idx}`]=true;if(a.isOngoing==="Completed"&&!a.to)e[`art_to_${idx}`]=true;});}
@@ -1180,12 +1180,12 @@ export default function EducationDetails() {
   };
 
   const buildEducation=()=>({
-    classX:{school:xSchool,board:xBoard,hallTicket:xHall,from:xFrom,to:xTo,address:xAddress,yearOfPassing:xYear,resultType:xResultType,resultValue:xResultValue,medium:xMedium,certKey:xCertKey,country:xCountry,countryName:xCountry==="Outside India"?xCountryName:"",equivalencyKey:xEquivalencyKey},
-    intermediate:{college:iCollege,board:iBoard,hallTicket:iHall,from:iFrom,to:iTo,address:iAddress,mode:iMode,stream:iStream,streamOther:iStream==="Other"?iStreamOther:"",yearOfPassing:iYear,resultType:iResultType,resultValue:iResultValue,medium:iMedium,certKey:iCertKey,country:iCountry,countryName:iCountry==="Outside India"?iCountryName:"",equivalencyKey:iEquivalencyKey},
-    undergraduate:hasUG==="Yes"?{college:ugCollege,university:ugUniversity,course:ugCourse,specialization:ugSpecialization,hallTicket:ugHall,from:ugFrom,to:ugTo,address:ugAddress,mode:ugMode,yearOfPassing:ugYear,resultType:ugResultType,resultValue:ugResultValue,backlogs:ugBacklogs,medium:ugMedium,provKey:ugProvKey,convoKey:ugConvoKey,country:ugCountry,countryName:ugCountry==="Outside India"?ugCountryName:"",equivalencyKey:ugEquivalencyKey}:{},
-    postgraduate:hasPG==="Yes"?{college:pgCollege,university:pgUniversity,course:pgCourse,specialization:pgSpecialization,hallTicket:pgHall,from:pgFrom,to:pgTo,address:pgAddress,mode:pgMode,yearOfPassing:pgYear,resultType:pgResultType,resultValue:pgResultValue,backlogs:pgBacklogs,medium:pgMedium,provKey:pgProvKey,convoKey:pgConvoKey,country:pgCountry,countryName:pgCountry==="Outside India"?pgCountryName:"",equivalencyKey:pgEquivalencyKey}:{},
+    classX:{school:xSchool,board:xBoard,hallTicket:xHall,from:xFrom,to:xTo,address:xAddress,yearOfPassing:xYear,resultType:xResultType,resultTypeOther:xResultType==="Other"?xResultTypeOther:"",resultValue:xResultValue,medium:xMedium,certKey:xCertKey,country:xCountry,countryName:xCountry==="Outside India"?xCountryName:"",equivalencyKey:xEquivalencyKey},
+    intermediate:{college:iCollege,board:iBoard,hallTicket:iHall,from:iFrom,to:iTo,address:iAddress,mode:iMode,stream:iStream,streamOther:iStream==="Other"?iStreamOther:"",yearOfPassing:iYear,resultType:iResultType,resultTypeOther:iResultType==="Other"?iResultTypeOther:"",resultValue:iResultValue,medium:iMedium,certKey:iCertKey,country:iCountry,countryName:iCountry==="Outside India"?iCountryName:"",equivalencyKey:iEquivalencyKey},
+    undergraduate:hasUG==="Yes"?{college:ugCollege,university:ugUniversity,course:ugCourse,specialization:ugSpecialization,hallTicket:ugHall,from:ugFrom,to:ugTo,address:ugAddress,mode:ugMode,yearOfPassing:ugYear,resultType:ugResultType,resultTypeOther:ugResultType==="Other"?ugResultTypeOther:"",resultValue:ugResultValue,backlogs:ugBacklogs,medium:ugMedium,provKey:ugProvKey,convoKey:ugConvoKey,country:ugCountry,countryName:ugCountry==="Outside India"?ugCountryName:"",equivalencyKey:ugEquivalencyKey}:{},
+    postgraduate:hasPG==="Yes"?{college:pgCollege,university:pgUniversity,course:pgCourse,specialization:pgSpecialization,hallTicket:pgHall,from:pgFrom,to:pgTo,address:pgAddress,mode:pgMode,yearOfPassing:pgYear,resultType:pgResultType,resultTypeOther:pgResultType==="Other"?pgResultTypeOther:"",resultValue:pgResultValue,backlogs:pgBacklogs,medium:pgMedium,provKey:pgProvKey,convoKey:pgConvoKey,country:pgCountry,countryName:pgCountry==="Outside India"?pgCountryName:"",equivalencyKey:pgEquivalencyKey}:{},
     afterTenth, hasDip, hasCerts, hasProfQual, hasArticleship, hasUG, hasPG,
-    diploma:hasDip==="Yes"?{institute:dipInstitute,board:dipBoard,course:dipCourse,from:dipFrom,to:dipTo,yearOfPassing:dipYear,resultType:dipResultType,resultValue:dipResultValue,mode:dipMode,backlogs:dipBacklogs,certKey:dipCertKey,country:dipCountry,countryName:dipCountry==="Outside India"?dipCountryName:"",equivalencyKey:dipEquivalencyKey}:{},
+    diploma:hasDip==="Yes"?{institute:dipInstitute,board:dipBoard,course:dipCourse,from:dipFrom,to:dipTo,yearOfPassing:dipYear,resultType:dipResultType,resultTypeOther:dipResultType==="Other"?dipResultTypeOther:"",resultValue:dipResultValue,mode:dipMode,backlogs:dipBacklogs,certKey:dipCertKey,country:dipCountry,countryName:dipCountry==="Outside India"?dipCountryName:"",equivalencyKey:dipEquivalencyKey}:{},
     certifications:hasCerts==="Yes"?certs:[],
     professionalQualifications:hasProfQual==="Yes"?profQuals:[],
     articleships:hasArticleship==="Yes"?articleships:[],
@@ -1334,7 +1334,8 @@ export default function EducationDetails() {
               <YearField l="Year of Passing" v={xYear} s={d(setXYear)} errKey="xYear" errors={errors} onFix={fixErr}/>
             </div>
             <div className="fr"><F l="School Address" v={xAddress} s={d(setXAddress)} errKey="xAddress" errors={errors} onFix={fixErr}/></div>
-            <div className="fr"><FS l="Result Type" v={xResultType} s={d(setXResultType)} o={["Percentage","CGPA","Grade"]} errKey="xResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={xResultValue} s={d(setXResultValue)} errKey="xResultValue" errors={errors} onFix={fixErr}/><F l="Medium of Study" v={xMedium} s={d(setXMedium)} errKey="xMedium" errors={errors} onFix={fixErr}/></div>
+            <div className="fr"><FS l="Result Type" v={xResultType} s={(v)=>{d(setXResultType)(v);if(v!=="Other")setXResultTypeOther("");}} o={["Percentage","CGPA (out of 10)","GPA (out of 4.0)","Class / Division","Grade","Pass / Fail","Other"]} errKey="xResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={xResultValue} s={d(setXResultValue)} errKey="xResultValue" errors={errors} onFix={fixErr}/><F l="Medium of Study" v={xMedium} s={d(setXMedium)} errKey="xMedium" errors={errors} onFix={fixErr}/></div>
+            {xResultType==="Other"&&<div className="fr"><F l="Please specify your grading system" v={xResultTypeOther} s={d(setXResultTypeOther)} errKey="xResultTypeOther" errors={errors} onFix={fixErr}/></div>}
             <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Class X Certificate" errKey="xCertKey"/><FileUpload onUploadStateChange={handleUploadState} label="Upload Class X Certificate" category="education" subKey="classX" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={xCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setXCertKey(key);isDirtyRef.current=true;fixErr("xCertKey");}}/></div>
             {xCountry==="Outside India"&&(
               <div className="att-split">
@@ -1390,7 +1391,8 @@ export default function EducationDetails() {
               <YearField l="Year of Passing" v={iYear} s={d(setIYear)} errKey="iYear" errors={errors} onFix={fixErr}/>
             </div>
             <div className="fr"><F l="College Address" v={iAddress} s={d(setIAddress)} errKey="iAddress" errors={errors} onFix={fixErr}/></div>
-            <div className="fr"><FS l="Mode" v={iMode} s={d(setIMode)} o={["Full-time","Part-time","Distance"]} errKey="iMode" errors={errors} onFix={fixErr}/><FS l="Result Type" v={iResultType} s={d(setIResultType)} o={["Percentage","CGPA","Grade"]} errKey="iResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={iResultValue} s={d(setIResultValue)} errKey="iResultValue" errors={errors} onFix={fixErr}/></div>
+            <div className="fr"><FS l="Mode" v={iMode} s={d(setIMode)} o={["Full-time","Part-time","Distance"]} errKey="iMode" errors={errors} onFix={fixErr}/><FS l="Result Type" v={iResultType} s={(v)=>{d(setIResultType)(v);if(v!=="Other")setIResultTypeOther("");}} o={["Percentage","CGPA (out of 10)","GPA (out of 4.0)","Class / Division","Grade","Pass / Fail","Other"]} errKey="iResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={iResultValue} s={d(setIResultValue)} errKey="iResultValue" errors={errors} onFix={fixErr}/></div>
+            {iResultType==="Other"&&<div className="fr"><F l="Please specify your grading system" v={iResultTypeOther} s={d(setIResultTypeOther)} errKey="iResultTypeOther" errors={errors} onFix={fixErr}/></div>}
             <div className="fr"><FS l="Stream" v={iStream} s={(v)=>{d(setIStream)(v);if(v!=="Other")setIStreamOther("");}} o={["Science","Commerce","Arts","Vocational","Other"]} errKey="iStream" errors={errors} onFix={fixErr}/><F l="Medium of Study" v={iMedium} s={d(setIMedium)} errKey="iMedium" errors={errors} onFix={fixErr}/></div>
             {iStream==="Other"&&<div className="fr"><F l="Please specify your stream" v={iStreamOther} s={d(setIStreamOther)} errKey="iStreamOther" errors={errors} onFix={fixErr}/></div>}
             <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Intermediate Certificate" errKey="iCertKey"/><FileUpload onUploadStateChange={handleUploadState} label="Upload Intermediate Certificate" category="education" subKey="intermediate" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={iCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setICertKey(key);isDirtyRef.current=true;fixErr("iCertKey");}}/></div>
@@ -1427,7 +1429,8 @@ export default function EducationDetails() {
               <DateField l="To" v={dipTo} s={d(setDipTo)} errKey="dipTo" errors={errors} onFix={fixErr}/>
               <YearField l="Year of Passing" v={dipYear} s={d(setDipYear)} errKey="dipYear" errors={errors} onFix={fixErr}/>
             </div>
-            <div className="fr"><FS l="Mode" v={dipMode} s={d(setDipMode)} o={["Full-time","Part-time","Distance"]} errKey="dipMode" errors={errors} onFix={fixErr}/><FS l="Result Type" v={dipResultType} s={d(setDipResultType)} o={["Percentage","CGPA","Grade"]} errKey="dipResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={dipResultValue} s={d(setDipResultValue)} errKey="dipResultValue" errors={errors} onFix={fixErr}/></div>
+            <div className="fr"><FS l="Mode" v={dipMode} s={d(setDipMode)} o={["Full-time","Part-time","Distance"]} errKey="dipMode" errors={errors} onFix={fixErr}/><FS l="Result Type" v={dipResultType} s={(v)=>{d(setDipResultType)(v);if(v!=="Other")setDipResultTypeOther("");}} o={["Percentage","CGPA (out of 10)","GPA (out of 4.0)","Class / Division","Grade","Pass / Fail","Other"]} errKey="dipResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={dipResultValue} s={d(setDipResultValue)} errKey="dipResultValue" errors={errors} onFix={fixErr}/></div>
+            {dipResultType==="Other"&&<div className="fr"><F l="Please specify your grading system" v={dipResultTypeOther} s={d(setDipResultTypeOther)} errKey="dipResultTypeOther" errors={errors} onFix={fixErr}/></div>}
             <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Diploma Certificate" errKey="dipCertKey"/><FileUpload onUploadStateChange={handleUploadState} label="Upload Diploma Certificate" category="education" subKey="diploma" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={dipCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipCertKey(key);isDirtyRef.current=true;fixErr("dipCertKey");}}/></div>
             {dipCountry==="Outside India"&&(
               <div className="att-split">
@@ -1469,7 +1472,8 @@ export default function EducationDetails() {
                 <YearField l="Year of Passing" v={ugYear} s={d(setUgYear)} errKey="ugYear" errors={errors} onFix={fixErr}/>
               </div>
               <div className="fr"><F l="College Address" v={ugAddress} s={d(setUgAddress)} errKey="ugAddress" errors={errors} onFix={fixErr}/></div>
-              <div className="fr"><FS l="Result Type" v={ugResultType} s={d(setUgResultType)} o={["Percentage","CGPA (out of 10)","GPA (out of 4.0)","Class / Division","Grade","Pass / Fail"]} errKey="ugResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={ugResultValue} s={d(setUgResultValue)} errKey="ugResultValue" errors={errors} onFix={fixErr}/><F l="Medium of Study" v={ugMedium} s={d(setUgMedium)} errKey="ugMedium" errors={errors} onFix={fixErr}/></div>
+              <div className="fr"><FS l="Result Type" v={ugResultType} s={(v)=>{d(setUgResultType)(v);if(v!=="Other")setUgResultTypeOther("");}} o={["Percentage","CGPA (out of 10)","GPA (out of 4.0)","Class / Division","Grade","Pass / Fail","Other"]} errKey="ugResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={ugResultValue} s={d(setUgResultValue)} errKey="ugResultValue" errors={errors} onFix={fixErr}/><F l="Medium of Study" v={ugMedium} s={d(setUgMedium)} errKey="ugMedium" errors={errors} onFix={fixErr}/></div>
+              {ugResultType==="Other"&&<div className="fr"><F l="Please specify your grading system" v={ugResultTypeOther} s={d(setUgResultTypeOther)} errKey="ugResultTypeOther" errors={errors} onFix={fixErr}/></div>}
               <div className="fr"><FS l="Any Active Backlogs?" v={ugBacklogs} s={d(setUgBacklogs)} o={["No","Yes"]} errKey="ugBacklogs" errors={errors} onFix={fixErr}/></div>
               <div className="att-split">
                 <div className="att-box">
@@ -1519,7 +1523,8 @@ export default function EducationDetails() {
                 <YearField l="Year of Passing" v={pgYear} s={d(setPgYear)} errKey="pgYear" errors={errors} onFix={fixErr}/>
               </div>
               <div className="fr"><F l="College Address" v={pgAddress} s={d(setPgAddress)} errKey="pgAddress" errors={errors} onFix={fixErr}/></div>
-              <div className="fr"><FS l="Result Type" v={pgResultType} s={d(setPgResultType)} o={["Percentage","CGPA (out of 10)","GPA (out of 4.0)","Class / Division","Grade","Pass / Fail"]} errKey="pgResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={pgResultValue} s={d(setPgResultValue)} errKey="pgResultValue" errors={errors} onFix={fixErr}/><F l="Medium of Study" v={pgMedium} s={d(setPgMedium)} errKey="pgMedium" errors={errors} onFix={fixErr}/></div>
+              <div className="fr"><FS l="Result Type" v={pgResultType} s={(v)=>{d(setPgResultType)(v);if(v!=="Other")setPgResultTypeOther("");}} o={["Percentage","CGPA (out of 10)","GPA (out of 4.0)","Class / Division","Grade","Pass / Fail","Other"]} errKey="pgResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={pgResultValue} s={d(setPgResultValue)} errKey="pgResultValue" errors={errors} onFix={fixErr}/><F l="Medium of Study" v={pgMedium} s={d(setPgMedium)} errKey="pgMedium" errors={errors} onFix={fixErr}/></div>
+              {pgResultType==="Other"&&<div className="fr"><F l="Please specify your grading system" v={pgResultTypeOther} s={d(setPgResultTypeOther)} errKey="pgResultTypeOther" errors={errors} onFix={fixErr}/></div>}
               <div className="fr"><FS l="Any Active Backlogs?" v={pgBacklogs} s={d(setPgBacklogs)} o={["No","Yes"]} errKey="pgBacklogs" errors={errors} onFix={fixErr}/></div>
               <div className="att-split">
                 <div className="att-box">
@@ -1572,7 +1577,8 @@ export default function EducationDetails() {
                 <DateField l="To" v={dipTo} s={d(setDipTo)} errKey="dipTo" errors={errors} onFix={fixErr}/>
                 <YearField l="Year of Passing" v={dipYear} s={d(setDipYear)} errKey="dipYear" errors={errors} onFix={fixErr}/>
               </div>
-              <div className="fr"><FS l="Mode" v={dipMode} s={d(setDipMode)} o={["Full-time","Part-time","Distance"]} errKey="dipMode" errors={errors} onFix={fixErr}/><FS l="Result Type" v={dipResultType} s={d(setDipResultType)} o={["Percentage","CGPA","Grade"]} errKey="dipResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={dipResultValue} s={d(setDipResultValue)} errKey="dipResultValue" errors={errors} onFix={fixErr}/></div>
+              <div className="fr"><FS l="Mode" v={dipMode} s={d(setDipMode)} o={["Full-time","Part-time","Distance"]} errKey="dipMode" errors={errors} onFix={fixErr}/><FS l="Result Type" v={dipResultType} s={(v)=>{d(setDipResultType)(v);if(v!=="Other")setDipResultTypeOther("");}} o={["Percentage","CGPA (out of 10)","GPA (out of 4.0)","Class / Division","Grade","Pass / Fail","Other"]} errKey="dipResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={dipResultValue} s={d(setDipResultValue)} errKey="dipResultValue" errors={errors} onFix={fixErr}/></div>
+            {dipResultType==="Other"&&<div className="fr"><F l="Please specify your grading system" v={dipResultTypeOther} s={d(setDipResultTypeOther)} errKey="dipResultTypeOther" errors={errors} onFix={fixErr}/></div>}
               <div className="fr"><FS l="Any Active Backlogs?" v={dipBacklogs} s={d(setDipBacklogs)} o={["No","Yes"]} errKey="dipBacklogs" errors={errors} onFix={fixErr}/></div>
               <div style={{marginTop:"0.7rem"}}>
                 <UL lbl="Upload Diploma / Technical Certificate" required={dipBacklogs!=="Yes"} errKey="dipCertKey"/>
@@ -1641,6 +1647,9 @@ export default function EducationDetails() {
                       </div>
                     )}
                   </div>
+                  <div className="fr" style={{marginTop:"0.6rem"}}>
+                    <F l="Registration / Membership No. (if applicable)" v={q.regNo||""} s={(v)=>{const p=[...profQuals];p[idx]={...p[idx],regNo:v};setProfQuals(p);isDirtyRef.current=true;}} r={false}/>
+                  </div>
                   {q.type==="Other"&&(
                     <div className="fr">
                       <div className="fi">
@@ -1656,7 +1665,7 @@ export default function EducationDetails() {
                   </div>
                 </div>
               ))}
-              <button className="add-btn" onClick={()=>{setProfQuals([...profQuals,{type:"",otherType:"",level:"",year:"",certKey:"",_k:`pq-${Date.now()}-${Math.random().toString(36).slice(2,7)}`}]);isDirtyRef.current=true;}}>+ Add Another Qualification</button>
+              <button className="add-btn" onClick={()=>{setProfQuals([...profQuals,{type:"",otherType:"",level:"",year:"",regNo:"",certKey:"",_k:`pq-${Date.now()}-${Math.random().toString(36).slice(2,7)}`}]);isDirtyRef.current=true;}}>+ Add Another Qualification</button>
             </>)}
           </div>
 

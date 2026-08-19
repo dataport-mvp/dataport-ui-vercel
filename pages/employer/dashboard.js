@@ -341,6 +341,7 @@ async function printProfile(profile, empHistory, documents, employerName) {
     row(`Qualification ${i+1} — Type`,  q.type==="Other"?(q.otherType||"Other"):q.type),
     row(`Qualification ${i+1} — Level`, q.level),
     row(`Qualification ${i+1} — Year`,  q.year || (q.level === "Pursuing" ? "Pursuing" : "")),
+    row(`Qualification ${i+1} — Registration / Membership No.`, q.regNo || ""),
   ].join("")).join(""), "#334155") : ""}
 
   ${Array.isArray(edu.articleships) && edu.articleships.length > 0 ? section("Articleship / Practical Training", edu.articleships.map((a,i) => [
@@ -1221,6 +1222,7 @@ function EducationTab({ data }) {
                 <KV k="Type"   v={q.type==="Other"?(q.otherType||"Other"):q.type} />
                 <KV k="Level"  v={q.level} />
                 <KV k="Year"   v={q.year || (q.level==="Pursuing"?"Pursuing":"")} />
+                {q.regNo && <KV k="Registration / Membership No." v={q.regNo} />}
               </div>
             </div>
           ))}
