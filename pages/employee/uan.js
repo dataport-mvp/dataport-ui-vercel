@@ -1170,7 +1170,7 @@ export default function UanDetails() {
   const [page3Companies, setPage3Companies] = useState([]);
 
   // ── Nominees ──
-  const makeNominee = () => ({ name:"", dob:"", relation:"", address:"", share:"", guardianName:"", guardianAddress:"", _k:`nom-${Date.now()}-${Math.random().toString(36).slice(2,7)}` });
+  const makeNominee = () => ({ name:"", dob:"", relation:"", otherRelation:"", address:"", share:"", guardianName:"", guardianAddress:"", _k:`nom-${Date.now()}-${Math.random().toString(36).slice(2,7)}` });
   const [nominees, setNominees] = useState([makeNominee()]);
 
   // ── Family Details (for company health insurance — Medibuddy/Acko-style enrollment) ──
@@ -1836,6 +1836,12 @@ export default function UanDetails() {
                         {["Spouse","Son","Daughter","Father","Mother","Brother","Sister","Other"].map(r=><option key={r} value={r}>{r}</option>)}
                       </select>
                     </div>
+                    {nom.relation==="Other" && (
+                      <div className="fi">
+                        <span className="fl">Please specify <span style={{color:"#ef4444"}}>*</span></span>
+                        <input className="in" value={nom.otherRelation||""} placeholder="e.g. Guardian, Grandparent" onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],otherRelation:e.target.value};return n;});flagPostSignEdit();}}/>
+                      </div>
+                    )}
                   </div>
                   <div className="fr">
                     <div className="fi" style={{minWidth:220}}>
