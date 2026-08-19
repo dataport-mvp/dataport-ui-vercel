@@ -205,7 +205,7 @@ async function printProfile(profile, empHistory, documents, employerName) {
       row("Institution",          s.school || s.college || s.institute),
       row("Board / University",   s.board || s.university),
       row("Country",              s.country === "Outside India" ? (s.countryName || "Outside India") : ""),
-      row("Stream",               s.stream),
+      row("Stream",               s.stream === "Other" ? (s.streamOther || "Other") : s.stream),
       row("Course / Degree",      s.course),
       row("Branch / Specialization", s.branch || s.specialization),
       row("Year of Passing",      s.yearOfPassing),
@@ -1188,7 +1188,7 @@ function EducationTab({ data }) {
           <KV k="Institution"           v={s.school||s.college||s.institute} />
           <KV k="Board / University"    v={s.board||s.university} />
           {s.country==="Outside India"&&<KV k="Country" v={s.countryName||"Outside India"} />}
-          {s.stream&&<KV k="Stream"     v={s.stream} />}
+          {s.stream&&<KV k="Stream"     v={s.stream==="Other"?(s.streamOther||"Other"):s.stream} />}
           {s.course&&<KV k="Course / Degree"       v={s.course} />}
           {(s.branch||s.specialization)&&<KV k="Branch / Specialization" v={s.branch||s.specialization} />}
           <KV k="Year of Passing"       v={s.yearOfPassing} />

@@ -1039,7 +1039,7 @@ export default function EducationDetails() {
 
   const [iCollege,setICollege]=useState("");const [iBoard,setIBoard]=useState("");const [iHall,setIHall]=useState("");
   const [iFrom,setIFrom]=useState("");const [iTo,setITo]=useState("");const [iAddress,setIAddress]=useState("");const [iMode,setIMode]=useState("");
-  const [iYear,setIYear]=useState("");const [iResultType,setIResultType]=useState("");const [iResultValue,setIResultValue]=useState("");const [iMedium,setIMedium]=useState("");const [iCertKey,setICertKey]=useState("");const [iStream,setIStream]=useState("");
+  const [iYear,setIYear]=useState("");const [iResultType,setIResultType]=useState("");const [iResultValue,setIResultValue]=useState("");const [iMedium,setIMedium]=useState("");const [iCertKey,setICertKey]=useState("");const [iStream,setIStream]=useState("");const [iStreamOther,setIStreamOther]=useState("");
   const [iCountry,setICountry]=useState("India");const [iCountryName,setICountryName]=useState("");const [iEquivalencyKey,setIEquivalencyKey]=useState("");
 
   const [ugCollege,setUgCollege]=useState("");const [ugUniversity,setUgUniversity]=useState("");const [ugCourse,setUgCourse]=useState("");
@@ -1095,7 +1095,7 @@ export default function EducationDetails() {
 
           if(i.college)setICollege(i.college);if(i.board)setIBoard(i.board);if(i.hallTicket)setIHall(i.hallTicket);
           if(i.from)setIFrom(i.from);if(i.to)setITo(i.to);if(i.address)setIAddress(i.address);if(i.mode)setIMode(i.mode);
-          if(i.yearOfPassing)setIYear(i.yearOfPassing);if(i.resultType)setIResultType(i.resultType);if(i.resultValue)setIResultValue(i.resultValue);if(i.medium)setIMedium(i.medium);if(i.certKey)setICertKey(i.certKey);if(i.stream)setIStream(i.stream);
+          if(i.yearOfPassing)setIYear(i.yearOfPassing);if(i.resultType)setIResultType(i.resultType);if(i.resultValue)setIResultValue(i.resultValue);if(i.medium)setIMedium(i.medium);if(i.certKey)setICertKey(i.certKey);if(i.stream)setIStream(i.stream);if(i.streamOther)setIStreamOther(i.streamOther);
           setICountry(i.country||"India");if(i.countryName)setICountryName(i.countryName);if(i.equivalencyKey)setIEquivalencyKey(i.equivalencyKey);
 
           if(edu.hasUG){setHasUG(edu.hasUG);}else if(ug.college){setHasUG("Yes");}
@@ -1148,7 +1148,7 @@ export default function EducationDetails() {
     if(afterTenth==="Intermediate"||afterTenth==="Both"){
       if(!iCollege)e.iCollege=true;if(!iBoard)e.iBoard=true;if(!iHall)e.iHall=true;
       if(!iFrom)e.iFrom=true;if(!iTo)e.iTo=true;if(!iYear)e.iYear=true;if(!iAddress)e.iAddress=true;
-      if(!iMode)e.iMode=true;if(!iResultType)e.iResultType=true;if(!iResultValue)e.iResultValue=true;if(!iMedium)e.iMedium=true;if(!iCertKey)e.iCertKey=true;if(!iStream)e.iStream=true;
+      if(!iMode)e.iMode=true;if(!iResultType)e.iResultType=true;if(!iResultValue)e.iResultValue=true;if(!iMedium)e.iMedium=true;if(!iCertKey)e.iCertKey=true;if(!iStream)e.iStream=true;if(iStream==="Other"&&!iStreamOther)e.iStreamOther=true;
     }
     if(afterTenth==="Diploma"||afterTenth==="Both"){
       if(!dipInstitute)e.dipInstitute=true;if(!dipBoard)e.dipBoard=true;if(!dipCourse)e.dipCourse=true;
@@ -1181,7 +1181,7 @@ export default function EducationDetails() {
 
   const buildEducation=()=>({
     classX:{school:xSchool,board:xBoard,hallTicket:xHall,from:xFrom,to:xTo,address:xAddress,yearOfPassing:xYear,resultType:xResultType,resultValue:xResultValue,medium:xMedium,certKey:xCertKey,country:xCountry,countryName:xCountry==="Outside India"?xCountryName:"",equivalencyKey:xEquivalencyKey},
-    intermediate:{college:iCollege,board:iBoard,hallTicket:iHall,from:iFrom,to:iTo,address:iAddress,mode:iMode,stream:iStream,yearOfPassing:iYear,resultType:iResultType,resultValue:iResultValue,medium:iMedium,certKey:iCertKey,country:iCountry,countryName:iCountry==="Outside India"?iCountryName:"",equivalencyKey:iEquivalencyKey},
+    intermediate:{college:iCollege,board:iBoard,hallTicket:iHall,from:iFrom,to:iTo,address:iAddress,mode:iMode,stream:iStream,streamOther:iStream==="Other"?iStreamOther:"",yearOfPassing:iYear,resultType:iResultType,resultValue:iResultValue,medium:iMedium,certKey:iCertKey,country:iCountry,countryName:iCountry==="Outside India"?iCountryName:"",equivalencyKey:iEquivalencyKey},
     undergraduate:hasUG==="Yes"?{college:ugCollege,university:ugUniversity,course:ugCourse,specialization:ugSpecialization,hallTicket:ugHall,from:ugFrom,to:ugTo,address:ugAddress,mode:ugMode,yearOfPassing:ugYear,resultType:ugResultType,resultValue:ugResultValue,backlogs:ugBacklogs,medium:ugMedium,provKey:ugProvKey,convoKey:ugConvoKey,country:ugCountry,countryName:ugCountry==="Outside India"?ugCountryName:"",equivalencyKey:ugEquivalencyKey}:{},
     postgraduate:hasPG==="Yes"?{college:pgCollege,university:pgUniversity,course:pgCourse,specialization:pgSpecialization,hallTicket:pgHall,from:pgFrom,to:pgTo,address:pgAddress,mode:pgMode,yearOfPassing:pgYear,resultType:pgResultType,resultValue:pgResultValue,backlogs:pgBacklogs,medium:pgMedium,provKey:pgProvKey,convoKey:pgConvoKey,country:pgCountry,countryName:pgCountry==="Outside India"?pgCountryName:"",equivalencyKey:pgEquivalencyKey}:{},
     afterTenth, hasDip, hasCerts, hasProfQual, hasArticleship, hasUG, hasPG,
@@ -1391,7 +1391,8 @@ export default function EducationDetails() {
             </div>
             <div className="fr"><F l="College Address" v={iAddress} s={d(setIAddress)} errKey="iAddress" errors={errors} onFix={fixErr}/></div>
             <div className="fr"><FS l="Mode" v={iMode} s={d(setIMode)} o={["Full-time","Part-time","Distance"]} errKey="iMode" errors={errors} onFix={fixErr}/><FS l="Result Type" v={iResultType} s={d(setIResultType)} o={["Percentage","CGPA","Grade"]} errKey="iResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={iResultValue} s={d(setIResultValue)} errKey="iResultValue" errors={errors} onFix={fixErr}/></div>
-            <div className="fr"><FS l="Stream" v={iStream} s={d(setIStream)} o={["Science","Commerce","Arts","Vocational"]} errKey="iStream" errors={errors} onFix={fixErr}/><F l="Medium of Study" v={iMedium} s={d(setIMedium)} errKey="iMedium" errors={errors} onFix={fixErr}/></div>
+            <div className="fr"><FS l="Stream" v={iStream} s={(v)=>{d(setIStream)(v);if(v!=="Other")setIStreamOther("");}} o={["Science","Commerce","Arts","Vocational","Other"]} errKey="iStream" errors={errors} onFix={fixErr}/><F l="Medium of Study" v={iMedium} s={d(setIMedium)} errKey="iMedium" errors={errors} onFix={fixErr}/></div>
+            {iStream==="Other"&&<div className="fr"><F l="Please specify your stream" v={iStreamOther} s={d(setIStreamOther)} errKey="iStreamOther" errors={errors} onFix={fixErr}/></div>}
             <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Intermediate Certificate" errKey="iCertKey"/><FileUpload onUploadStateChange={handleUploadState} label="Upload Intermediate Certificate" category="education" subKey="intermediate" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={iCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setICertKey(key);isDirtyRef.current=true;fixErr("iCertKey");}}/></div>
             {iCountry==="Outside India"&&(
               <div className="att-split">
