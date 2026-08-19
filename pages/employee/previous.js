@@ -1206,18 +1206,6 @@ export default function PreviousCompany() {
         if(!stillWorking&&!emp.reference.mobile) e[`${i}_refMobile`]=true;
         if(!stillWorking&&!emp.documents.payslipsKey) e[`${i}_payslips`]=true;
         if(!emp.documents.offerLetterKey) e[`${i}_offerLetter`]=true;
-        // Resignation Acceptance proves you properly left the employer immediately
-        // before your current/latest one — it belongs on the second-to-last entry,
-        // never the latest (you can't resign from a job you're still doing), and
-        // never further back (only the immediate hand-off matters for verification).
-        // This is fully dynamic: if you later add a new current employer and mark
-        // an old "current" entry as ended, whichever entry is now second-to-last
-        // automatically becomes the one requiring this — no manual re-tagging needed.
-        // Resignation Acceptance is required from whoever is the LAST employer in the
-        // list — but only once THEY have an end date (no longer currently working).
-        // Nothing is required while the last entry is still marked as current — there's
-        // no completed transition to document yet.
-        if(i===lastIdx && emp.currentlyWorking==="No" && !emp.documents.resignationKey) e[`${i}_resignation`]=true;
         // Experience letter not required for current employer (no end date yet)
         // Experience/Relieving Letter is NOT a submission blocker — former employers can take
         // weeks to issue these. We just remind the employee to attach it once they have it
@@ -1361,7 +1349,7 @@ export default function PreviousCompany() {
             <div style={{fontSize:"1.2rem",flexShrink:0}}>💡</div>
             <div style={{flex:1}}>
               <div style={{fontSize:"0.82rem",fontWeight:700,color:"#3730a3",marginBottom:"0.25rem"}}>Employment History — Chronological Order</div>
-              <div style={{fontSize:"0.72rem",color:"#6b6894",lineHeight:1.5}}>Please add your employment history in chronological order, beginning with your first role and concluding with your current or most recent position.</div>
+              <div style={{fontSize:"0.72rem",color:"#6b6894",lineHeight:1.5}}>Please add your employment history in chronological order, beginning with your first employer and concluding with your current or most recent employer.</div>
             </div>
           </div>
 
@@ -1519,11 +1507,8 @@ export default function PreviousCompany() {
                     <FileUpload onUploadStateChange={handleUploadState} label="Payslips" category="employment" subKey="payslips" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.payslipsKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.payslipsKey",k);fixErr(`${index}_payslips`);}}/>
                   </div>
                   <div className="att-wrap">
-                    <span className="att-lbl">Resignation Acceptance{(isLast && emp.currentlyWorking==="No")&&<span style={{color:"#ef4444"}}> *</span>}</span>
-                    {(isLast && emp.currentlyWorking==="No") && (
-                      <p style={{fontSize:"0.68rem",color:"#6b6894",margin:"0.15rem 0 0.35rem",lineHeight:1.4}}>Proves you properly resigned from this role.</p>
-                    )}
-                    {errors[`${index}_resignation`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
+                    <span className="att-lbl">Resignation Acceptance</span>
+                    <p style={{fontSize:"0.68rem",color:"#6b6894",margin:"0.15rem 0 0.35rem",lineHeight:1.4}}>If you have it, upload it — helps make verification smoother.</p>
                     <FileUpload onUploadStateChange={handleUploadState} label="Resignation" category="employment" subKey="resignation" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.resignationKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.resignationKey",k);fixErr(`${index}_resignation`);}}/>
                   </div>
                   <div className="att-wrap">
