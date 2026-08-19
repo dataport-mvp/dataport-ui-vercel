@@ -1925,7 +1925,7 @@ export default function PersonalDetails() {
     ? aadhar
     : (aadhar.length >= 4 ? `XXXX XXXX ${aadhar.slice(-4)}` : aadhar);
 
-  if (!ready || !user) return null;
+  if (!ready || !user) return (<div style={{minHeight:"100vh",background:"#f5f4f0",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#8b88b0",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>Loading…</p></div>);
   if (loading) return (<div style={{minHeight:"100vh",background:"#f5f4f0",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#8b88b0",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>Loading your profile…</p></div>);
 
   return (

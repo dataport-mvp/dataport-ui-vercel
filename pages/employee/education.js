@@ -1243,7 +1243,7 @@ export default function EducationDetails() {
     catch(err){setSaveStatus(`Error: ${err.message||"Could not save"}`);}
   };
 
-  if(!ready||!user)return null;
+  if(!ready||!user)return(<div style={{minHeight:"100vh",background:"#f5f4f0",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#8b88b0",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>Loading…</p></div>);
   if(loading)return(<div style={{minHeight:"100vh",background:"#f5f4f0",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:"#8b88b0",fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>Loading education details…</p></div>);
 
   const UL=({lbl,required=true,errKey:ek})=>(<>

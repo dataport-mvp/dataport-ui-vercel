@@ -2190,7 +2190,11 @@ export default function EmployerDashboard() {
     setPrinting(false);
   };
 
-  if (!ready || !user) return null;
+  if (!ready || !user) return (
+    <div style={{minHeight:"100vh",background:"#f1f5f9",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <p style={{color:"#94a3b8",fontFamily:"'Inter',sans-serif",fontWeight:500,fontSize:"0.875rem"}}>Loading…</p>
+    </div>
+  );
   if (termsLoading) return (
     <div style={{minHeight:"100vh",background:"#f1f5f9",display:"flex",alignItems:"center",justifyContent:"center"}}>
       <p style={{color:"#94a3b8",fontFamily:"'Inter',sans-serif",fontWeight:500,fontSize:"0.875rem"}}>Loading dashboard…</p>
