@@ -855,6 +855,12 @@ export default function BgvDashboard() {
                               </span>
                             </div>
                           )}
+                          {caseDetail.profile?.currentAddressProofType && (
+                            <div className="profile-kv">
+                              <span className="profile-key">Address Proof</span>
+                              <span className="profile-val">{caseDetail.profile.currentAddressProofType} — see Uploaded Documents</span>
+                            </div>
+                          )}
 
                           <div className="panel-title" style={{marginTop:"1rem"}}>Permanent Address</div>
                           {caseDetail.profile?.permanentAddress && (
@@ -863,6 +869,12 @@ export default function BgvDashboard() {
                               <span className="profile-val" style={{fontSize:"0.8rem",lineHeight:1.5}}>
                                 {[caseDetail.profile.permanentAddress.door, caseDetail.profile.permanentAddress.street, caseDetail.profile.permanentAddress.city, caseDetail.profile.permanentAddress.state, caseDetail.profile.permanentAddress.pincode].filter(Boolean).join(", ")}
                               </span>
+                            </div>
+                          )}
+                          {caseDetail.profile?.permanentAddressProofType && (
+                            <div className="profile-kv">
+                              <span className="profile-key">Address Proof</span>
+                              <span className="profile-val">{caseDetail.profile.permanentAddressProofType} — see Uploaded Documents</span>
                             </div>
                           )}
 

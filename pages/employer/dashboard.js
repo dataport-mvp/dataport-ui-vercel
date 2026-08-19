@@ -118,6 +118,8 @@ async function printProfile(profile, empHistory, documents, employerName) {
     { key: "pan",            label: "PAN Card",                       group: "personal" },
     { key: "passport",       label: "Passport",                       group: "personal" },
     { key: "bankProof",      label: "Bank Proof (Passbook / Statement)", group: "personal" },
+    { key: "currentAddressProof",   label: "Current Address Proof",   group: "personal" },
+    { key: "permanentAddressProof", label: "Permanent Address Proof", group: "personal" },
     // ── Education (Page 2) — same order as form ───────────────────
     { key: "classX",         label: "Class X Certificate",            group: "education" },
     { key: "intermediate",   label: "Intermediate Certificate",       group: "education" },
@@ -304,6 +306,7 @@ async function printProfile(profile, empHistory, documents, employerName) {
     row("State",           cur.state),
     row("Pincode",         cur.pin),
     row("Residing From",   isoToDisplay(cur.from)),
+    row("Address Proof",   d.currentAddressProofType || ""),
   ].join(""))}
 
   ${(perm.door || perm.state) ? section("Permanent / Native Address", [
@@ -313,6 +316,7 @@ async function printProfile(profile, empHistory, documents, employerName) {
     row("District",        perm.district),
     row("State",           perm.state),
     row("Pincode",         perm.pin),
+    row("Address Proof",   d.permanentAddressProofType || ""),
   ].join("")) : ""}
 
   ${section("Bank Account Details", [
@@ -1132,6 +1136,10 @@ function OverviewTab({ data, docUrls }) {
           <KV k="Pincode"        v={cur.pin} mono />
           <KV k="Residing From"  v={isoToDisplay(cur.from)} />
         </div>
+        {data.currentAddressProofType && <div className="kv-grid" style={{marginTop:"0.5rem"}}><KV k="Address Proof Type" v={data.currentAddressProofType} /></div>}
+        {data.currentAddressProofKey && docUrls?.["currentAddressProof"] && (
+          <a href={docUrls["currentAddressProof"]} target="_blank" rel="noopener noreferrer" className="doc-view" style={{display:"inline-flex",alignItems:"center",gap:"0.35rem",marginTop:"0.6rem"}}>📄 View Current Address Proof ↗</a>
+        )}
       </Sec>
       {(perm.door||perm.state)&&(
         <Sec title="Permanent / Native Address">
@@ -1143,6 +1151,10 @@ function OverviewTab({ data, docUrls }) {
             <KV k="State"          v={perm.state} />
             <KV k="Pincode"        v={perm.pin} mono />
           </div>
+          {data.permanentAddressProofType && <div className="kv-grid" style={{marginTop:"0.5rem"}}><KV k="Address Proof Type" v={data.permanentAddressProofType} /></div>}
+          {data.permanentAddressProofKey && docUrls?.["permanentAddressProof"] && (
+            <a href={docUrls["permanentAddressProof"]} target="_blank" rel="noopener noreferrer" className="doc-view" style={{display:"inline-flex",alignItems:"center",gap:"0.35rem",marginTop:"0.6rem"}}>📄 View Permanent Address Proof ↗</a>
+          )}
         </Sec>
       )}
       {data.bankName&&(

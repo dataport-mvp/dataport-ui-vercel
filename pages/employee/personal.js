@@ -1511,6 +1511,12 @@ export default function PersonalDetails() {
   const [aadhaarKey,setAadhaarKey]       = useState("");
   const [panKey,setPanKey]               = useState("");
   const [bankProofKey,setBankProofKey]   = useState("");
+  const [hasCurrAddressProof,setHasCurrAddressProof] = useState("");
+  const [currAddressProofType,setCurrAddressProofType] = useState("");
+  const [currAddressProofKey,setCurrAddressProofKey]   = useState("");
+  const [hasPermAddressProof,setHasPermAddressProof] = useState("");
+  const [permAddressProofType,setPermAddressProofType] = useState("");
+  const [permAddressProofKey,setPermAddressProofKey]   = useState("");
   const [photoKey,setPhotoKey]           = useState("");
   const [activeUploads, setActiveUploads] = useState(0);
   const handleUploadState = useCallback((active) => setActiveUploads(c => Math.max(0, c + (active ? 1 : -1))), []);
@@ -1603,6 +1609,12 @@ export default function PersonalDetails() {
           if (d.aadhaarKey)   setAadhaarKey(d.aadhaarKey);
           if (d.panKey)       setPanKey(d.panKey);
           if (d.bankProofKey) setBankProofKey(d.bankProofKey);
+          if (d.currentAddressProofType || d.currentAddressProofKey) setHasCurrAddressProof("Yes");
+          if (d.currentAddressProofType) setCurrAddressProofType(d.currentAddressProofType);
+          if (d.currentAddressProofKey) setCurrAddressProofKey(d.currentAddressProofKey);
+          if (d.permanentAddressProofType || d.permanentAddressProofKey) setHasPermAddressProof("Yes");
+          if (d.permanentAddressProofType) setPermAddressProofType(d.permanentAddressProofType);
+          if (d.permanentAddressProofKey) setPermAddressProofKey(d.permanentAddressProofKey);
           if (d.photoKey)     setPhotoKey(d.photoKey);
           if (d.bankName)        setBankName(d.bankName);
           if (d.bankOther)       setBankOther(d.bankOther);
@@ -1679,6 +1691,9 @@ export default function PersonalDetails() {
     hasPassport, passport, passportIssue, passportExpiry, passportKey, bloodGroup, maritalStatus,
     emergName, emergRel, emergPhone,
     aadhaarKey, panKey, photoKey, bankProofKey,
+    currentAddressProofType: currAddressProofType, currentAddressProofKey: currAddressProofKey,
+    permanentAddressProofType: sameAsCurrent ? "" : permAddressProofType,
+    permanentAddressProofKey: sameAsCurrent ? "" : permAddressProofKey,
     sameAsCurrent,
     bankName: bankName === "Other" ? (bankOther || bankName) : bankName,
     bankOther,
@@ -2611,6 +2626,20 @@ export default function PersonalDetails() {
                   <F l="State"    v={curState}    s={dirty(setCurState)} />
                   <F l="Pincode"  v={curPin}      s={(v) => dirty(setCurPin)(v.replace(/\D/g,"").slice(0,6))} />
                 </div>
+                <div style={{marginTop:"0.7rem",paddingTop:"0.7rem",borderTop:"1px solid #f0eef8"}}>
+                  <FS l="Do you have an address proof document for this address? (Voter ID, Driving License, etc.)" v={hasCurrAddressProof} s={dirty(setHasCurrAddressProof)} o={["No","Yes"]} r={false}/>
+                  {hasCurrAddressProof==="Yes" && (
+                    <div style={{marginTop:"0.6rem"}}>
+                      <div className="fr">
+                        <FS l="Document Type" v={currAddressProofType} s={dirty(setCurrAddressProofType)} o={["Driving License","Voter ID","Utility Bill","Rental Agreement"]} r={false}/>
+                      </div>
+                      <div style={{marginTop:"0.5rem"}}>
+                        <span className="fl">Upload Current Address Proof</span>
+                        <FileUpload onUploadStateChange={handleUploadState} label="Upload Current Address Proof" category="personal" subKey="currentAddressProof" employeeId={employeeIdRef.current || employeeId} disabled={!draftReady} apiFetch={apiFetch} value={currAddressProofKey} onChange={(k) => { const key=typeof k==="string"?k:(k?.key||k?.s3_key||""); setCurrAddressProofKey(key); dirty(() => {})(""); }} />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Permanent Address */}
@@ -2637,6 +2666,20 @@ export default function PersonalDetails() {
                     <F l="District" v={permDistrict} s={dirty(setPermDistrict)} />
                     <F l="State"    v={permState}    s={dirty(setPermState)} />
                     <F l="Pincode"  v={permPin}      s={(v) => dirty(setPermPin)(v.replace(/\D/g,"").slice(0,6))} />
+                  </div>
+                  <div style={{marginTop:"0.7rem",paddingTop:"0.7rem",borderTop:"1px solid #dbeafe"}}>
+                    <FS l="Do you have an address proof document for this address? (Voter ID, Driving License, etc.)" v={hasPermAddressProof} s={dirty(setHasPermAddressProof)} o={["No","Yes"]} r={false}/>
+                    {hasPermAddressProof==="Yes" && (
+                      <div style={{marginTop:"0.6rem"}}>
+                        <div className="fr">
+                          <FS l="Document Type" v={permAddressProofType} s={dirty(setPermAddressProofType)} o={["Driving License","Voter ID","Utility Bill","Rental Agreement"]} r={false}/>
+                        </div>
+                        <div style={{marginTop:"0.5rem"}}>
+                          <span className="fl">Upload Permanent Address Proof</span>
+                          <FileUpload onUploadStateChange={handleUploadState} label="Upload Permanent Address Proof" category="personal" subKey="permanentAddressProof" employeeId={employeeIdRef.current || employeeId} disabled={!draftReady} apiFetch={apiFetch} value={permAddressProofKey} onChange={(k) => { const key=typeof k==="string"?k:(k?.key||k?.s3_key||""); setPermAddressProofKey(key); dirty(() => {})(""); }} />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </>)}
                 {sameAsCurrent && (
