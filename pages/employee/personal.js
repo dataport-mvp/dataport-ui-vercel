@@ -1131,6 +1131,49 @@ function SupportModal({ apiFetch, onClose }) {
   const [uploadingAtt, setUploadingAtt] = React.useState(false);
   const [attErr, setAttErr] = React.useState("");
 
+  const [replyText, setReplyText] = React.useState("");
+  const [replyAttKey, setReplyAttKey] = React.useState("");
+  const [replyAttName, setReplyAttName] = React.useState("");
+  const [replyUploadingAtt, setReplyUploadingAtt] = React.useState(false);
+  const [replySending, setReplySending] = React.useState(false);
+  const [replyErr, setReplyErr] = React.useState("");
+
+  const handleReplyAttachmentSelect = async (file) => {
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { setReplyErr("File must be under 10MB"); return; }
+    setReplyUploadingAtt(true); setReplyErr("");
+    try {
+      const r = await apiFetch(`${API}/support/tickets/upload-url`, {
+        method: "POST",
+        body: JSON.stringify({ filename: file.name }),
+      });
+      const d = await r.json();
+      if (!r.ok) { setReplyErr(d.detail || "Could not prepare upload"); setReplyUploadingAtt(false); return; }
+      const putRes = await fetch(d.upload_url, { method: "PUT", body: file, headers: { "Content-Type": file.type || "application/octet-stream" } });
+      if (!putRes.ok) { setReplyErr("Upload failed — please try again"); setReplyUploadingAtt(false); return; }
+      setReplyAttKey(d.s3_key);
+      setReplyAttName(file.name);
+    } catch (_) { setReplyErr("Network error — please try again"); }
+    setReplyUploadingAtt(false);
+  };
+
+  const submitReply = async (ticketId) => {
+    if (!replyText.trim()) return;
+    setReplySending(true); setReplyErr("");
+    try {
+      const r = await apiFetch(`${API}/support/tickets/reply`, {
+        method: "POST",
+        body: JSON.stringify({ ticket_id: ticketId, body: replyText.trim(), attachment_key: replyAttKey }),
+      });
+      const d = await r.json();
+      if (!r.ok) { setReplyErr(d.detail || "Failed to send reply"); setReplySending(false); return; }
+      setReplyText(""); setReplyAttKey(""); setReplyAttName("");
+      await loadTickets();
+    } catch (_) { setReplyErr("Network error — please try again"); }
+    setReplySending(false);
+  };
+
+
   const handleAttachmentSelect = async (file) => {
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) { setAttErr("File must be under 10MB"); return; }
@@ -1287,12 +1330,38 @@ function SupportModal({ apiFetch, onClose }) {
                       {t.attachment_url && <a href={t.attachment_url} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:"0.4rem",fontSize:"0.72rem",color:"#0d6e6e",fontWeight:700,textDecoration:"none"}}>📎 View attachment</a>}
                     </div>
                     {(t.replies||[]).map((r,i)=>(
-                      <div key={i} style={{background:"#f0fdf4",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.5rem"}}>
-                        <div style={{fontSize:"0.65rem",fontWeight:700,color:"#16a34a",marginBottom:"0.25rem"}}>Datagate Support — {new Date(r.at).toLocaleString("en-IN",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}</div>
+                      <div key={i} style={r.by==="admin"?{background:"#f0fdf4",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.5rem"}:{background:"#f8f7ff",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.5rem"}}>
+                        <div style={{fontSize:"0.65rem",fontWeight:700,color:r.by==="admin"?"#16a34a":"#6b6894",marginBottom:"0.25rem"}}>{r.by==="admin"?"Datagate Support":"You"} — {new Date(r.at).toLocaleString("en-IN",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}</div>
                         <div style={{fontSize:"0.8rem",color:"#1a1730",whiteSpace:"pre-wrap"}}>{r.body}</div>
-                        {r.attachment_url && <a href={r.attachment_url} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:"0.4rem",fontSize:"0.72rem",color:"#16a34a",fontWeight:700,textDecoration:"none"}}>📎 View attachment</a>}
+                        {r.attachment_url && <a href={r.attachment_url} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:"0.4rem",fontSize:"0.72rem",color:r.by==="admin"?"#16a34a":"#0d6e6e",fontWeight:700,textDecoration:"none"}}>📎 View attachment</a>}
                       </div>
                     ))}
+                    {t.status!=="closed" ? (
+                      <div style={{marginTop:"0.6rem",paddingTop:"0.6rem",borderTop:"1px solid #f0eef8"}} onClick={e=>e.stopPropagation()}>
+                        <textarea value={replyText} onChange={e=>setReplyText(e.target.value)} placeholder="Type a reply…" rows={3}
+                          style={{width:"100%",padding:"0.5rem 0.7rem",background:"#faf9ff",border:"1.5px solid #ddd8f5",borderRadius:8,fontFamily:"inherit",fontSize:"0.78rem",color:"#1a1730",outline:"none",resize:"vertical"}}/>
+                        <div style={{marginTop:"0.4rem",display:"flex",alignItems:"center",gap:"0.5rem",flexWrap:"wrap"}}>
+                          {!replyAttKey ? (
+                            <label style={{display:"inline-flex",alignItems:"center",gap:"0.35rem",padding:"0.35rem 0.6rem",background:"#f8f7ff",border:"1.5px dashed #ddd8f5",borderRadius:7,cursor:replyUploadingAtt?"not-allowed":"pointer",fontSize:"0.68rem",color:"#6b6894",fontWeight:600}}>
+                              📎 {replyUploadingAtt ? "Uploading…" : "Attach"}
+                              <input type="file" accept=".pdf,.jpg,.jpeg,.png" disabled={replyUploadingAtt} style={{display:"none"}} onChange={e=>handleReplyAttachmentSelect(e.target.files?.[0])}/>
+                            </label>
+                          ) : (
+                            <div style={{display:"inline-flex",alignItems:"center",gap:"0.4rem",padding:"0.3rem 0.6rem",background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:7,fontSize:"0.68rem",color:"#16a34a",fontWeight:600}}>
+                              📎 {replyAttName}
+                              <button type="button" onClick={()=>{setReplyAttKey("");setReplyAttName("");}} style={{background:"none",border:"none",color:"#ef4444",cursor:"pointer",fontSize:"0.68rem",fontWeight:700}}>✕</button>
+                            </div>
+                          )}
+                          <button onClick={()=>submitReply(t.ticket_id)} disabled={replySending || replyUploadingAtt || !replyText.trim()}
+                            style={{marginLeft:"auto",padding:"0.4rem 0.9rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:7,fontFamily:"inherit",fontSize:"0.72rem",fontWeight:700,cursor:(replySending||replyUploadingAtt||!replyText.trim())?"not-allowed":"pointer",opacity:(replySending||replyUploadingAtt||!replyText.trim())?0.5:1}}>
+                            {replySending?"Sending…":"Send Reply"}
+                          </button>
+                        </div>
+                        {replyErr && <div style={{fontSize:"0.68rem",color:"#ef4444",fontWeight:600,marginTop:"0.3rem"}}>{replyErr}</div>}
+                      </div>
+                    ) : (
+                      <div style={{marginTop:"0.5rem",fontSize:"0.7rem",color:"#94a3b8",fontStyle:"italic"}}>This ticket is closed. Raise a new ticket if you need further help.</div>
+                    )}
                   </div>
                 )}
               </div>
@@ -2042,8 +2111,8 @@ export default function PersonalDetails() {
                     (t.other_party_email||"").toLowerCase().includes(inboxSearch.toLowerCase()) ||
                     (t.latest_message||"").toLowerCase().includes(inboxSearch.toLowerCase())
                   ) : inboxThreads).map(t=>(
-                    <div key={t.thread_id} onClick={()=>loadThread(t.thread_id)}
-                      style={{padding:"0.65rem 0.9rem",cursor:"pointer",borderBottom:"1px solid #f5f3ff",background:activeThread===t.thread_id?"#eef2ff":"#fff",borderLeft:activeThread===t.thread_id?"3px solid #0d6e6e":"3px solid transparent",transition:"all 0.1s"}}>
+                    <div key={t.thread_id} onClick={()=>loadThread(t.consent_id)}
+                      style={{padding:"0.65rem 0.9rem",cursor:"pointer",borderBottom:"1px solid #f5f3ff",background:activeThread===t.consent_id?"#eef2ff":"#fff",borderLeft:activeThread===t.consent_id?"3px solid #0d6e6e":"3px solid transparent",transition:"all 0.1s"}}>
                       <div style={{fontSize:"0.71rem",fontWeight:700,color:"#1a1730",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.other_party_name||t.other_party_email}</div>
                       <div style={{fontSize:"0.62rem",color:t.has_messages?"#94a3b8":"#8b88b0",fontStyle:t.has_messages?"normal":"italic",marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.latest_message||"No messages yet — tap to start"}</div>
                       <div style={{display:"flex",justifyContent:"space-between",marginTop:2}}>
@@ -2064,7 +2133,7 @@ export default function PersonalDetails() {
                   ) : (
                     <>
                       <div style={{padding:"0.75rem 1.1rem",borderBottom:"1px solid #ebe9f5",background:"#faf9ff",fontSize:"0.75rem",fontWeight:700,color:"#1a1730"}}>
-                        {inboxThreads.find(t=>t.thread_id===activeThread)?.other_party_name||inboxThreads.find(t=>t.thread_id===activeThread)?.other_party_email}
+                        {inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_name||inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email}
                         <span style={{fontSize:"0.62rem",color:"#94a3b8",fontWeight:400,marginLeft:8}}>{threadMsgs.length} message{threadMsgs.length!==1?"s":""}</span>
                       </div>
                       {/* Messages */}
@@ -2121,7 +2190,7 @@ export default function PersonalDetails() {
                       <div style={{padding:"0.75rem 1rem",borderTop:"1px solid #ebe9f5",background:"#fff"}}>
                         <div style={{display:"flex",gap:"0.4rem",marginBottom:"0.4rem",flexWrap:"wrap"}}>
                           {(() => {
-                            const t = inboxThreads.find(x=>x.thread_id===activeThread);
+                            const t = inboxThreads.find(x=>x.consent_id===activeThread);
                             const employerName = t?.employer_name || "Employer";
                             const hasBgv = !!(t?.bgv_email);
                             const bgvName = t?.bgv_name || "BGV";

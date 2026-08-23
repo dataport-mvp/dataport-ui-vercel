@@ -864,6 +864,49 @@ function SupportModal({ apiFetch, onClose }) {
   const [uploadingAtt, setUploadingAtt] = useState(false);
   const [attErr, setAttErr] = useState("");
 
+  const [replyText, setReplyText] = useState("");
+  const [replyAttKey, setReplyAttKey] = useState("");
+  const [replyAttName, setReplyAttName] = useState("");
+  const [replyUploadingAtt, setReplyUploadingAtt] = useState(false);
+  const [replySending, setReplySending] = useState(false);
+  const [replyErr, setReplyErr] = useState("");
+
+  const handleReplyAttachmentSelect = async (file) => {
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { setReplyErr("File must be under 10MB"); return; }
+    setReplyUploadingAtt(true); setReplyErr("");
+    try {
+      const r = await apiFetch(`${API}/support/tickets/upload-url`, {
+        method: "POST",
+        body: JSON.stringify({ filename: file.name }),
+      });
+      const d = await r.json();
+      if (!r.ok) { setReplyErr(d.detail || "Could not prepare upload"); setReplyUploadingAtt(false); return; }
+      const putRes = await fetch(d.upload_url, { method: "PUT", body: file, headers: { "Content-Type": file.type || "application/octet-stream" } });
+      if (!putRes.ok) { setReplyErr("Upload failed — please try again"); setReplyUploadingAtt(false); return; }
+      setReplyAttKey(d.s3_key);
+      setReplyAttName(file.name);
+    } catch (_) { setReplyErr("Network error — please try again"); }
+    setReplyUploadingAtt(false);
+  };
+
+  const submitReply = async (ticketId) => {
+    if (!replyText.trim()) return;
+    setReplySending(true); setReplyErr("");
+    try {
+      const r = await apiFetch(`${API}/support/tickets/reply`, {
+        method: "POST",
+        body: JSON.stringify({ ticket_id: ticketId, body: replyText.trim(), attachment_key: replyAttKey }),
+      });
+      const d = await r.json();
+      if (!r.ok) { setReplyErr(d.detail || "Failed to send reply"); setReplySending(false); return; }
+      setReplyText(""); setReplyAttKey(""); setReplyAttName("");
+      await loadTickets();
+    } catch (_) { setReplyErr("Network error — please try again"); }
+    setReplySending(false);
+  };
+
+
   const handleAttachmentSelect = async (file) => {
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) { setAttErr("File must be under 10MB"); return; }
@@ -1020,12 +1063,38 @@ function SupportModal({ apiFetch, onClose }) {
                       {t.attachment_url && <a href={t.attachment_url} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:"0.4rem",fontSize:"0.72rem",color:"#0d6e6e",fontWeight:700,textDecoration:"none"}}>📎 View attachment</a>}
                     </div>
                     {(t.replies||[]).map((r,i)=>(
-                      <div key={i} style={{background:"#f0fdf4",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.5rem"}}>
-                        <div style={{fontSize:"0.65rem",fontWeight:700,color:"#16a34a",marginBottom:"0.25rem"}}>Datagate Support — {new Date(r.at).toLocaleString("en-IN",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}</div>
+                      <div key={i} style={r.by==="admin"?{background:"#f0fdf4",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.5rem"}:{background:"#f8f7ff",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.5rem"}}>
+                        <div style={{fontSize:"0.65rem",fontWeight:700,color:r.by==="admin"?"#16a34a":"#6b6894",marginBottom:"0.25rem"}}>{r.by==="admin"?"Datagate Support":"You"} — {new Date(r.at).toLocaleString("en-IN",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}</div>
                         <div style={{fontSize:"0.8rem",color:"#1a1730",whiteSpace:"pre-wrap"}}>{r.body}</div>
-                        {r.attachment_url && <a href={r.attachment_url} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:"0.4rem",fontSize:"0.72rem",color:"#16a34a",fontWeight:700,textDecoration:"none"}}>📎 View attachment</a>}
+                        {r.attachment_url && <a href={r.attachment_url} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:"0.4rem",fontSize:"0.72rem",color:r.by==="admin"?"#16a34a":"#0d6e6e",fontWeight:700,textDecoration:"none"}}>📎 View attachment</a>}
                       </div>
                     ))}
+                    {t.status!=="closed" ? (
+                      <div style={{marginTop:"0.6rem",paddingTop:"0.6rem",borderTop:"1px solid #f0eef8"}} onClick={e=>e.stopPropagation()}>
+                        <textarea value={replyText} onChange={e=>setReplyText(e.target.value)} placeholder="Type a reply…" rows={3}
+                          style={{width:"100%",padding:"0.5rem 0.7rem",background:"#faf9ff",border:"1.5px solid #ddd8f5",borderRadius:8,fontFamily:"inherit",fontSize:"0.78rem",color:"#1a1730",outline:"none",resize:"vertical"}}/>
+                        <div style={{marginTop:"0.4rem",display:"flex",alignItems:"center",gap:"0.5rem",flexWrap:"wrap"}}>
+                          {!replyAttKey ? (
+                            <label style={{display:"inline-flex",alignItems:"center",gap:"0.35rem",padding:"0.35rem 0.6rem",background:"#f8f7ff",border:"1.5px dashed #ddd8f5",borderRadius:7,cursor:replyUploadingAtt?"not-allowed":"pointer",fontSize:"0.68rem",color:"#6b6894",fontWeight:600}}>
+                              📎 {replyUploadingAtt ? "Uploading…" : "Attach"}
+                              <input type="file" accept=".pdf,.jpg,.jpeg,.png" disabled={replyUploadingAtt} style={{display:"none"}} onChange={e=>handleReplyAttachmentSelect(e.target.files?.[0])}/>
+                            </label>
+                          ) : (
+                            <div style={{display:"inline-flex",alignItems:"center",gap:"0.4rem",padding:"0.3rem 0.6rem",background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:7,fontSize:"0.68rem",color:"#16a34a",fontWeight:600}}>
+                              📎 {replyAttName}
+                              <button type="button" onClick={()=>{setReplyAttKey("");setReplyAttName("");}} style={{background:"none",border:"none",color:"#ef4444",cursor:"pointer",fontSize:"0.68rem",fontWeight:700}}>✕</button>
+                            </div>
+                          )}
+                          <button onClick={()=>submitReply(t.ticket_id)} disabled={replySending || replyUploadingAtt || !replyText.trim()}
+                            style={{marginLeft:"auto",padding:"0.4rem 0.9rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:7,fontFamily:"inherit",fontSize:"0.72rem",fontWeight:700,cursor:(replySending||replyUploadingAtt||!replyText.trim())?"not-allowed":"pointer",opacity:(replySending||replyUploadingAtt||!replyText.trim())?0.5:1}}>
+                            {replySending?"Sending…":"Send Reply"}
+                          </button>
+                        </div>
+                        {replyErr && <div style={{fontSize:"0.68rem",color:"#ef4444",fontWeight:600,marginTop:"0.3rem"}}>{replyErr}</div>}
+                      </div>
+                    ) : (
+                      <div style={{marginTop:"0.5rem",fontSize:"0.7rem",color:"#94a3b8",fontStyle:"italic"}}>This ticket is closed. Raise a new ticket if you need further help.</div>
+                    )}
                   </div>
                 )}
               </div>
@@ -2278,7 +2347,7 @@ return (
                       ) : approved;
                       if (filtered.length===0) return <div style={{padding:"2rem 1rem",textAlign:"center"}}><div style={{fontSize:"1.5rem",opacity:.2,marginBottom:"0.5rem"}}>👤</div><div style={{fontSize:"0.72rem",color:"#a09890"}}>No approved candidates{inboxSearch?" match your search":" yet"}</div></div>;
                       return filtered.map(c=>{
-                        const hasThread = inboxThreads.some(t=>t.thread_id===c.consent_id);
+                        const hasThread = inboxThreads.some(t=>t.consent_id===c.consent_id);
                         return (
                           <div key={c.consent_id} className="thread-item" onClick={()=>{loadThread(c.consent_id);setShowNewMsg(false);}}>
                             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}>
@@ -2315,7 +2384,7 @@ return (
                               return (
                                 <div key={t.thread_id}>
                                   {showHeader && <AlphaHeader letter={letter} accentColor="#0d6e6e" />}
-                                  <div className={`thread-item${activeThread===t.thread_id?" active":""}`} onClick={()=>loadThread(t.thread_id)}>
+                                  <div className={`thread-item${activeThread===t.consent_id?" active":""}`} onClick={()=>loadThread(t.consent_id)}>
                                     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}>
                                       <div className="thread-email" style={{flex:1}}>{t.other_party_name || t.other_party_email}</div>
                                       {t.recipient_type&&t.recipient_type!=="Employee"&&(
@@ -2349,8 +2418,8 @@ return (
                 ):(
                   <>
                     <div style={{padding:"0.75rem 1.25rem",borderBottom:"1px solid #c8c2b8",background:"#f5f2ee",flexShrink:0}}>
-                      <div style={{fontSize:"0.78rem",fontWeight:700,color:"#111"}}>{inboxThreads.find(t=>t.thread_id===activeThread)?.other_party_name || inboxThreads.find(t=>t.thread_id===activeThread)?.other_party_email || activeThread}</div>
-                      <div style={{fontSize:"0.62rem",color:"#a09890",marginTop:1}}>{inboxThreads.find(t=>t.thread_id===activeThread)?.other_party_email}{inboxThreads.find(t=>t.thread_id===activeThread)?.other_party_email ? " · " : ""}{threadMsgs.length} message{threadMsgs.length!==1?"s":""}</div>
+                      <div style={{fontSize:"0.78rem",fontWeight:700,color:"#111"}}>{inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_name || inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email || activeThread}</div>
+                      <div style={{fontSize:"0.62rem",color:"#a09890",marginTop:1}}>{inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email}{inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email ? " · " : ""}{threadMsgs.length} message{threadMsgs.length!==1?"s":""}</div>
                     </div>
                     <div className="msg-list" ref={msgListRef}>
                       {threadLoading&&<div style={{textAlign:"center",fontSize:"0.72rem",color:"#a09890",padding:"1rem"}}>Loading…</div>}
@@ -2407,7 +2476,7 @@ return (
                       {/* @mention recipient selector — same isolation rules as before, now explicit by name */}
                       <div style={{display:"flex",gap:"0.4rem",marginBottom:"0.45rem",flexWrap:"wrap"}}>
                         {(() => {
-                          const t = inboxThreads.find(x=>x.thread_id===activeThread);
+                          const t = inboxThreads.find(x=>x.consent_id===activeThread);
                           const employeeName = t?.employee_name || "Candidate";
                           const hasBgv = !!(t?.bgv_email);
                           const bgvName = t?.bgv_name || "BGV";
