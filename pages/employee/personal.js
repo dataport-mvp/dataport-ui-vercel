@@ -1411,7 +1411,6 @@ export default function PersonalDetails() {
   const [inboxLoading,  setInboxLoading]   = useState(false);
   const [inboxSearch,   setInboxSearch]    = useState("");
   const [inboxUnread,   setInboxUnread]    = useState(0);
-  const [completeness,  setCompleteness]    = useState(null); // 0-100 or null=loading
   const [saveStatus,setSaveStatus]       = useState("");
   const [midSaveStatus,setMidSaveStatus] = useState("");
   const [loading,setLoading]             = useState(true);
@@ -1626,13 +1625,6 @@ export default function PersonalDetails() {
         if (res.ok) {
           const d = await res.json();
           if (d.employee_id) { setEmployeeId(d.employee_id); employeeIdRef.current = d.employee_id; setProfileStatus(d.status || "draft"); setDraftReady(true); }
-          // Fetch own completeness score
-          if (user?.email) {
-            apiFetch(`${API}/employee/profile-status?email=${encodeURIComponent(user.email)}`)
-              .then(r => r.ok ? r.json() : null)
-              .then(sc => { if (sc) setCompleteness(sc.completeness ?? 0); })
-              .catch(() => {});
-          }
           // Item 10 — Freshness: warn if profile not updated in 6 months
           const lastUpdate = d.updated_at || d.last_saved_at || d.created_at;
           if (lastUpdate) {
@@ -1678,10 +1670,12 @@ export default function PersonalDetails() {
           if (d.aadhaarKey)   setAadhaarKey(d.aadhaarKey);
           if (d.panKey)       setPanKey(d.panKey);
           if (d.bankProofKey) setBankProofKey(d.bankProofKey);
-          if (d.currentAddressProofType || d.currentAddressProofKey) setHasCurrAddressProof("Yes");
+          if (d.hasCurrentAddressProof) setHasCurrAddressProof(d.hasCurrentAddressProof);
+          else if (d.currentAddressProofType || d.currentAddressProofKey) setHasCurrAddressProof("Yes");
           if (d.currentAddressProofType) setCurrAddressProofType(d.currentAddressProofType);
           if (d.currentAddressProofKey) setCurrAddressProofKey(d.currentAddressProofKey);
-          if (d.permanentAddressProofType || d.permanentAddressProofKey) setHasPermAddressProof("Yes");
+          if (d.hasPermanentAddressProof) setHasPermAddressProof(d.hasPermanentAddressProof);
+          else if (d.permanentAddressProofType || d.permanentAddressProofKey) setHasPermAddressProof("Yes");
           if (d.permanentAddressProofType) setPermAddressProofType(d.permanentAddressProofType);
           if (d.permanentAddressProofKey) setPermAddressProofKey(d.permanentAddressProofKey);
           if (d.photoKey)     setPhotoKey(d.photoKey);
@@ -1763,6 +1757,8 @@ export default function PersonalDetails() {
     currentAddressProofType: currAddressProofType, currentAddressProofKey: currAddressProofKey,
     permanentAddressProofType: sameAsCurrent ? "" : permAddressProofType,
     permanentAddressProofKey: sameAsCurrent ? "" : permAddressProofKey,
+    hasCurrentAddressProof: hasCurrAddressProof,
+    hasPermanentAddressProof: sameAsCurrent ? "" : hasPermAddressProof,
     sameAsCurrent,
     bankName: bankName === "Other" ? (bankOther || bankName) : bankName,
     bankOther,
@@ -1932,11 +1928,15 @@ export default function PersonalDetails() {
     if (!curDistrict)   e.curDistrict = true;
     if (!curState)      e.curState = true;
     if (!curPin)        e.curPin = true;
+    if (!hasCurrAddressProof) e.hasCurrAddressProof = true;
+    if (hasCurrAddressProof==="Yes" && !currAddressProofType) e.currAddressProofType = true;
     if (!sameAsCurrent) {
       if (!permDoor)     e.permDoor = true;
       if (!permDistrict) e.permDistrict = true;
       if (!permState)    e.permState = true;
       if (!permPin)      e.permPin = true;
+      if (!hasPermAddressProof) e.hasPermAddressProof = true;
+      if (hasPermAddressProof==="Yes" && !permAddressProofType) e.permAddressProofType = true;
     }
     if (!aadhaarKey)    e.aadhaarKey = true;
     if (!panKey)        e.panKey = true;
@@ -2236,39 +2236,6 @@ export default function PersonalDetails() {
           ) : activeTab === "consents" ? <ConsentTab apiFetch={apiFetch} profileStatus={profileStatus} /> : (
             <>
               <StepNav current={1} onNavigate={handleNavigate} />
-
-              {/* ── Profile Completeness Bar ── */}
-              {completeness !== null && (
-                <div style={{background:"#fff",borderRadius:12,padding:"0.85rem 1.25rem",marginBottom:"1.1rem",boxShadow:"0 4px 16px rgba(30,26,62,0.1)",border:"1px solid rgba(255,255,255,0.85)"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.5rem"}}>
-                    <div style={{fontSize:"0.75rem",fontWeight:700,color:"#1e293b"}}>
-                      Profile Completeness
-                      {profileStatus === "submitted" && <span style={{marginLeft:"0.5rem",background:"#dcfce7",color:"#15803d",fontSize:"0.6rem",fontWeight:700,padding:"2px 8px",borderRadius:4,textTransform:"uppercase",letterSpacing:0.5}}>Submitted ✓</span>}
-                    </div>
-                    <div style={{fontSize:"0.88rem",fontWeight:800,color:completeness>=80?"#16a34a":completeness>=50?"#d97706":"#ef4444"}}>
-                      {completeness}%
-                    </div>
-                  </div>
-                  <div style={{height:8,background:"#f1f5f9",borderRadius:999,overflow:"hidden"}}>
-                    <div style={{height:"100%",width:`${completeness}%`,borderRadius:999,transition:"width 0.6s ease",
-                      background:completeness>=80?"linear-gradient(90deg,#16a34a,#4ade80)":completeness>=50?"linear-gradient(90deg,#d97706,#fbbf24)":"linear-gradient(90deg,#ef4444,#f87171)"}}>
-                    </div>
-                  </div>
-                  {completeness < 100 && (
-                    <div style={{fontSize:"0.65rem",color:"#94a3b8",marginTop:"0.4rem",lineHeight:1.5}}>
-                      {completeness < 30 && "📝 Get started — fill in your name, date of birth and identity documents"}
-                      {completeness >= 30 && completeness < 60 && "📎 Upload your Aadhaar, PAN and add your address to increase your score"}
-                      {completeness >= 60 && completeness < 80 && "🏦 Almost there — add bank details and education to reach 80%"}
-                      {completeness >= 80 && completeness < 100 && "✨ Looking great — submit your profile so employers can access your data"}
-                    </div>
-                  )}
-                  {completeness === 100 && (
-                    <div style={{fontSize:"0.65rem",color:"#16a34a",marginTop:"0.4rem",fontWeight:600}}>
-                      ✅ Profile complete and submitted — employers with approved consent can view your data
-                    </div>
-                  )}
-                </div>
-              )}
 
               {/* Profile Photo */}
               <div className="sc ind">
@@ -2696,11 +2663,11 @@ export default function PersonalDetails() {
                   <F l="Pincode"  v={curPin}      s={(v) => dirty(setCurPin)(v.replace(/\D/g,"").slice(0,6))} />
                 </div>
                 <div style={{marginTop:"0.7rem",paddingTop:"0.7rem",borderTop:"1px solid #f0eef8"}}>
-                  <FS l="Do you have an address proof document for this address? (Voter ID, Driving License, etc.)" v={hasCurrAddressProof} s={dirty(setHasCurrAddressProof)} o={["No","Yes"]} r={false}/>
+                  <FS l="Do you have an address proof document for this address? (Voter ID, Driving License, etc.)" v={hasCurrAddressProof} s={dirty(setHasCurrAddressProof)} o={["No","Yes"]} r={true} errKey="hasCurrAddressProof" errors={errors} onFix={fixErr}/>
                   {hasCurrAddressProof==="Yes" && (
                     <div style={{marginTop:"0.6rem"}}>
                       <div className="fr">
-                        <FS l="Document Type" v={currAddressProofType} s={dirty(setCurrAddressProofType)} o={["Driving License","Voter ID","Utility Bill","Rental Agreement"]} r={false}/>
+                        <FS l="Document Type" v={currAddressProofType} s={dirty(setCurrAddressProofType)} o={["Driving License","Voter ID","Utility Bill","Rental Agreement"]} r={true} errKey="currAddressProofType" errors={errors} onFix={fixErr}/>
                       </div>
                       <div style={{marginTop:"0.5rem"}}>
                         <span className="fl">Upload Current Address Proof</span>
@@ -2737,11 +2704,11 @@ export default function PersonalDetails() {
                     <F l="Pincode"  v={permPin}      s={(v) => dirty(setPermPin)(v.replace(/\D/g,"").slice(0,6))} />
                   </div>
                   <div style={{marginTop:"0.7rem",paddingTop:"0.7rem",borderTop:"1px solid #dbeafe"}}>
-                    <FS l="Do you have an address proof document for this address? (Voter ID, Driving License, etc.)" v={hasPermAddressProof} s={dirty(setHasPermAddressProof)} o={["No","Yes"]} r={false}/>
+                    <FS l="Do you have an address proof document for this address? (Voter ID, Driving License, etc.)" v={hasPermAddressProof} s={dirty(setHasPermAddressProof)} o={["No","Yes"]} r={true} errKey="hasPermAddressProof" errors={errors} onFix={fixErr}/>
                     {hasPermAddressProof==="Yes" && (
                       <div style={{marginTop:"0.6rem"}}>
                         <div className="fr">
-                          <FS l="Document Type" v={permAddressProofType} s={dirty(setPermAddressProofType)} o={["Driving License","Voter ID","Utility Bill","Rental Agreement"]} r={false}/>
+                          <FS l="Document Type" v={permAddressProofType} s={dirty(setPermAddressProofType)} o={["Driving License","Voter ID","Utility Bill","Rental Agreement"]} r={true} errKey="permAddressProofType" errors={errors} onFix={fixErr}/>
                         </div>
                         <div style={{marginTop:"0.5rem"}}>
                           <span className="fl">Upload Permanent Address Proof</span>
