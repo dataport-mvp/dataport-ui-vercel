@@ -667,6 +667,13 @@ export default function AdminDashboard() {
           if (fresh) setSelTicket(fresh);
           return prev;
         });
+        // The nav badge reads from stats.tickets.open, which loadTickets() never
+        // touches — without this, closing or resolving a ticket updates the list
+        // correctly but leaves the badge count stuck at whatever it was on page load.
+        try {
+          const sr = await apiFetch(`${API}/admin/stats`);
+          if (sr.ok) setStats(await sr.json());
+        } catch (_) {}
       } else {
         setMsg({ type: "err", text: d.detail || "Failed to send reply" });
       }
@@ -1012,10 +1019,11 @@ export default function AdminDashboard() {
                       <button key={f} className={`filter-btn${userFilter === f ? " on" : ""}`}
                         onClick={() => setUserFilter(f)}>{f || "All"}</button>
                     ))}
-                    <button className="filter-btn" onClick={loadUsers} style={{marginLeft:"auto"}}>↻</button>
+                    <button className="filter-btn" onClick={loadUsers} disabled={loading} style={{marginLeft:"auto",opacity:loading?0.5:1,cursor:loading?"not-allowed":"pointer"}}>{loading?"↻ Refreshing…":"↻"}</button>
                   </div>
                   <div style={{maxHeight:"calc(100vh - 260px)",overflowY:"auto"}}>
                     {loading && users.length === 0 && <div className="loading-txt">Loading…</div>}
+                    {loading && users.length > 0 && <div className="loading-txt" style={{fontSize:"0.65rem",padding:"0.3rem 0"}}>Refreshing…</div>}
                     {users.length === 0 && !loading && <div className="empty-state">No users found</div>}
                     {users.map(u => (
                       <div key={u.email}
@@ -1172,8 +1180,11 @@ export default function AdminDashboard() {
                 <div key={v.email} style={{background:"#18151f",border:"1px solid rgba(255,255,255,0.08)",borderRadius:10,padding:"0.85rem 1rem",marginBottom:"0.6rem"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:"0.5rem"}}>
                     <div>
-                      <div style={{fontWeight:700,fontSize:"0.85rem",color:"#f1f5f9"}}>{v.company_name || v.name}</div>
-                      <div style={{fontSize:"0.72rem",color:"#94a3b8",marginTop:"0.2rem"}}>{v.email}</div>
+                      <div style={{fontWeight:700,fontSize:"0.85rem",color:"#f1f5f9"}}>{v.name || "—"}</div>
+                      {v.company_name && <div style={{fontSize:"0.78rem",color:"#c4b5fd",marginTop:"0.1rem",fontWeight:600}}>{v.company_name}</div>}
+                      <div style={{fontSize:"0.72rem",color:"#94a3b8",marginTop:"0.25rem"}}>{v.email}</div>
+                      {v.phone && <div style={{fontSize:"0.72rem",color:"#94a3b8",marginTop:"0.1rem"}}>{v.phone}</div>}
+                      {v.created_at && <div style={{fontSize:"0.68rem",color:"#64748b",marginTop:"0.15rem"}}>Registered {new Date(v.created_at).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</div>}
                       <div style={{marginTop:"0.35rem"}}>
                         <span style={{padding:"0.15rem 0.55rem",borderRadius:999,fontSize:"0.68rem",fontWeight:700,
                           background:v.bgv_approved?"#f0fdf4":"#fef9c3",

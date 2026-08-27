@@ -985,6 +985,16 @@ function SupportModal({ apiFetch, onClose }) {
     setTLoading(false);
   };
 
+  // Auto-refresh while actually viewing the tickets list — without this, a status
+  // change or reply from admin would sit invisible on an already-open tab until
+  // the person manually navigated away and back, which looked exactly like the
+  // close button silently not working even though the backend was correct.
+  useEffect(() => {
+    if (tab !== "tickets") return;
+    const id = setInterval(loadTickets, 15000);
+    return () => clearInterval(id);
+  }, [tab]);
+
   const submit = async () => {
     if (!subject.trim() || !body.trim()) { setErr("Subject and message are required"); return; }
     setBusy(true); setErr("");

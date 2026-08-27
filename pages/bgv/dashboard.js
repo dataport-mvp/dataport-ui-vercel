@@ -216,6 +216,16 @@ function SupportModal({ apiFetch, onClose }) {
     setTLoading(false);
   };
 
+  // Auto-refresh while actually viewing the tickets list — without this, a status
+  // change or reply from admin would sit invisible on an already-open tab until
+  // the person manually navigated away and back, which looked exactly like the
+  // close button silently not working even though the backend was correct.
+  useEffect(() => {
+    if (tab !== "tickets") return;
+    const id = setInterval(loadTickets, 15000);
+    return () => clearInterval(id);
+  }, [tab]);
+
   const submit = async () => {
     if (!subject.trim() || !body.trim()) { setErr("Subject and message are required"); return; }
     setBusy(true); setErr("");
@@ -948,76 +958,77 @@ export default function BgvDashboard() {
                           )}
 
                           <div className="panel-title" style={{marginTop:"1rem"}}>Education Summary</div>
-                          {caseDetail.profile?.education?.classX?.school && (
-                            <div className="profile-kv">
-                              <span className="profile-key">Class X</span>
-                              <span className="profile-val">
-                                {caseDetail.profile.education.classX.school} — {caseDetail.profile.education.classX.yearOfPassing}
-                                {caseDetail.profile.education.classX.country === "Outside India" && (
+                          {caseDetail.profile?.education?.classX?.school && (() => { const ed = caseDetail.profile.education.classX; return (
+                            <div style={{border:"1px solid #e5e7eb",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.6rem",background:"#fafafa"}}>
+                              <div className="profile-kv"><span className="profile-key">Class X</span><span className="profile-val">{ed.school}{ed.board?` — ${ed.board}`:""}
+                                {ed.country === "Outside India" && (
                                   <span style={{marginLeft:8,padding:"1px 8px",borderRadius:999,background:"#fef3c7",color:"#92400e",fontSize:"0.7rem",fontWeight:700}}>
-                                    Foreign — {caseDetail.profile.education.classX.countryName || "Outside India"}
-                                    {caseDetail.profile.education.classX.equivalencyKey ? " · Equivalency uploaded" : " · Equivalency pending"}
+                                    Foreign — {ed.countryName || "Outside India"}{ed.equivalencyKey ? " · Equivalency uploaded" : " · Equivalency pending"}
                                   </span>
                                 )}
-                              </span>
+                              </span></div>
+                              {ed.yearOfPassing && <div className="profile-kv"><span className="profile-key">Year of Passing</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.yearOfPassing}</span></div>}
+                              {ed.resultType && <div className="profile-kv"><span className="profile-key">Result</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.resultType==="Other"?(ed.resultTypeOther||"Other"):ed.resultType}{ed.resultValue?`: ${ed.resultValue}`:""}</span></div>}
+                              {ed.medium && <div className="profile-kv"><span className="profile-key">Medium of Study</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.medium}</span></div>}
                             </div>
-                          )}
-                          {caseDetail.profile?.education?.intermediate?.school && (
-                            <div className="profile-kv">
-                              <span className="profile-key">Class XII / Intermediate</span>
-                              <span className="profile-val">
-                                {caseDetail.profile.education.intermediate.school} — {caseDetail.profile.education.intermediate.yearOfPassing}
-                                {caseDetail.profile.education.intermediate.country === "Outside India" && (
+                          );})()}
+                          {caseDetail.profile?.education?.intermediate?.school && (() => { const ed = caseDetail.profile.education.intermediate; return (
+                            <div style={{border:"1px solid #e5e7eb",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.6rem",background:"#fafafa"}}>
+                              <div className="profile-kv"><span className="profile-key">Class XII / Intermediate</span><span className="profile-val">{ed.school}{ed.board?` — ${ed.board}`:""}
+                                {ed.country === "Outside India" && (
                                   <span style={{marginLeft:8,padding:"1px 8px",borderRadius:999,background:"#fef3c7",color:"#92400e",fontSize:"0.7rem",fontWeight:700}}>
-                                    Foreign — {caseDetail.profile.education.intermediate.countryName || "Outside India"}
-                                    {caseDetail.profile.education.intermediate.equivalencyKey ? " · Equivalency uploaded" : " · Equivalency pending"}
+                                    Foreign — {ed.countryName || "Outside India"}{ed.equivalencyKey ? " · Equivalency uploaded" : " · Equivalency pending"}
                                   </span>
                                 )}
-                              </span>
+                              </span></div>
+                              {ed.yearOfPassing && <div className="profile-kv"><span className="profile-key">Year of Passing</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.yearOfPassing}</span></div>}
+                              {ed.stream && <div className="profile-kv"><span className="profile-key">Stream</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.stream==="Other"?(ed.streamOther||"Other"):ed.stream}</span></div>}
+                              {ed.resultType && <div className="profile-kv"><span className="profile-key">Result</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.resultType==="Other"?(ed.resultTypeOther||"Other"):ed.resultType}{ed.resultValue?`: ${ed.resultValue}`:""}</span></div>}
+                              {ed.medium && <div className="profile-kv"><span className="profile-key">Medium of Study</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.medium}</span></div>}
                             </div>
-                          )}
-                          {caseDetail.profile?.education?.diploma?.college && (
-                            <div className="profile-kv">
-                              <span className="profile-key">Diploma</span>
-                              <span className="profile-val">
-                                {caseDetail.profile.education.diploma.course} — {caseDetail.profile.education.diploma.college}
-                                {caseDetail.profile.education.diploma.country === "Outside India" && (
+                          );})()}
+                          {caseDetail.profile?.education?.diploma?.college && (() => { const ed = caseDetail.profile.education.diploma; return (
+                            <div style={{border:"1px solid #e5e7eb",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.6rem",background:"#fafafa"}}>
+                              <div className="profile-kv"><span className="profile-key">Diploma</span><span className="profile-val">{ed.course} — {ed.college}
+                                {ed.country === "Outside India" && (
                                   <span style={{marginLeft:8,padding:"1px 8px",borderRadius:999,background:"#fef3c7",color:"#92400e",fontSize:"0.7rem",fontWeight:700}}>
-                                    Foreign — {caseDetail.profile.education.diploma.countryName || "Outside India"}
-                                    {caseDetail.profile.education.diploma.equivalencyKey ? " · Equivalency uploaded" : " · Equivalency pending"}
+                                    Foreign — {ed.countryName || "Outside India"}{ed.equivalencyKey ? " · Equivalency uploaded" : " · Equivalency pending"}
                                   </span>
                                 )}
-                              </span>
+                              </span></div>
+                              {ed.yearOfPassing && <div className="profile-kv"><span className="profile-key">Year of Passing</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.yearOfPassing}</span></div>}
+                              {ed.resultType && <div className="profile-kv"><span className="profile-key">Result</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.resultType==="Other"?(ed.resultTypeOther||"Other"):ed.resultType}{ed.resultValue?`: ${ed.resultValue}`:""}</span></div>}
+                              {ed.medium && <div className="profile-kv"><span className="profile-key">Medium of Study</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.medium}</span></div>}
                             </div>
-                          )}
-                          {caseDetail.profile?.education?.undergraduate?.college && (
-                            <div className="profile-kv">
-                              <span className="profile-key">UG</span>
-                              <span className="profile-val">
-                                {caseDetail.profile.education.undergraduate.course} — {caseDetail.profile.education.undergraduate.college}
-                                {caseDetail.profile.education.undergraduate.country === "Outside India" && (
+                          );})()}
+                          {caseDetail.profile?.education?.undergraduate?.college && (() => { const ed = caseDetail.profile.education.undergraduate; return (
+                            <div style={{border:"1px solid #e5e7eb",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.6rem",background:"#fafafa"}}>
+                              <div className="profile-kv"><span className="profile-key">UG</span><span className="profile-val">{ed.course} — {ed.college}
+                                {ed.country === "Outside India" && (
                                   <span style={{marginLeft:8,padding:"1px 8px",borderRadius:999,background:"#fef3c7",color:"#92400e",fontSize:"0.7rem",fontWeight:700}}>
-                                    Foreign — {caseDetail.profile.education.undergraduate.countryName || "Outside India"}
-                                    {caseDetail.profile.education.undergraduate.equivalencyKey ? " · Equivalency uploaded" : " · Equivalency pending"}
+                                    Foreign — {ed.countryName || "Outside India"}{ed.equivalencyKey ? " · Equivalency uploaded" : " · Equivalency pending"}
                                   </span>
                                 )}
-                              </span>
+                              </span></div>
+                              {ed.yearOfPassing && <div className="profile-kv"><span className="profile-key">Year of Passing</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.yearOfPassing}</span></div>}
+                              {ed.resultType && <div className="profile-kv"><span className="profile-key">Result</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.resultType==="Other"?(ed.resultTypeOther||"Other"):ed.resultType}{ed.resultValue?`: ${ed.resultValue}`:""}</span></div>}
+                              {ed.medium && <div className="profile-kv"><span className="profile-key">Medium of Study</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.medium}</span></div>}
                             </div>
-                          )}
-                          {caseDetail.profile?.education?.postgraduate?.college && (
-                            <div className="profile-kv">
-                              <span className="profile-key">PG</span>
-                              <span className="profile-val">
-                                {caseDetail.profile.education.postgraduate.course} — {caseDetail.profile.education.postgraduate.college}
-                                {caseDetail.profile.education.postgraduate.country === "Outside India" && (
+                          );})()}
+                          {caseDetail.profile?.education?.postgraduate?.college && (() => { const ed = caseDetail.profile.education.postgraduate; return (
+                            <div style={{border:"1px solid #e5e7eb",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.6rem",background:"#fafafa"}}>
+                              <div className="profile-kv"><span className="profile-key">PG</span><span className="profile-val">{ed.course} — {ed.college}
+                                {ed.country === "Outside India" && (
                                   <span style={{marginLeft:8,padding:"1px 8px",borderRadius:999,background:"#fef3c7",color:"#92400e",fontSize:"0.7rem",fontWeight:700}}>
-                                    Foreign — {caseDetail.profile.education.postgraduate.countryName || "Outside India"}
-                                    {caseDetail.profile.education.postgraduate.equivalencyKey ? " · Equivalency uploaded" : " · Equivalency pending"}
+                                    Foreign — {ed.countryName || "Outside India"}{ed.equivalencyKey ? " · Equivalency uploaded" : " · Equivalency pending"}
                                   </span>
                                 )}
-                              </span>
+                              </span></div>
+                              {ed.yearOfPassing && <div className="profile-kv"><span className="profile-key">Year of Passing</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.yearOfPassing}</span></div>}
+                              {ed.resultType && <div className="profile-kv"><span className="profile-key">Result</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.resultType==="Other"?(ed.resultTypeOther||"Other"):ed.resultType}{ed.resultValue?`: ${ed.resultValue}`:""}</span></div>}
+                              {ed.medium && <div className="profile-kv"><span className="profile-key">Medium of Study</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.medium}</span></div>}
                             </div>
-                          )}
+                          );})()}
                           {(caseDetail.profile?.education?.articleships||[]).filter(a=>a?.firmName).map((a,i)=>(
                             <div key={`art-${i}`} className="profile-kv">
                               <span className="profile-key">Articleship</span>
