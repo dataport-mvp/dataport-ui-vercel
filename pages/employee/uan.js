@@ -333,6 +333,7 @@ function AgeTag({ dob }) {
 function NomineeDobField({ value, onChange }) {
   const [focused, setFocused] = useState(false);
   const [raw, setRaw] = useState(value || "");
+  const [invalid, setInvalid] = useState(false);
 
   useEffect(() => {
     if (!focused) setRaw(value || "");
@@ -344,24 +345,46 @@ function NomineeDobField({ value, onChange }) {
     if (v.length > 5) v = v.slice(0, 5) + "-" + v.slice(5);
     v = v.slice(0, 10);
     setRaw(v);
+    setInvalid(false);
     onChange(v);
+  };
+
+  // Validated on blur, not mid-typing — checking each keystroke would reject
+  // digits the moment a two-digit group briefly exceeds a bound (e.g. typing
+  // "3" then "5" for day 15 would momentarily read as invalid "35"), which
+  // feels broken. Checking once the field is complete avoids that entirely.
+  const validateOnBlur = () => {
+    setFocused(false);
+    if (raw.length === 10) {
+      const [dd, mm, yyyy] = raw.split("-").map(Number);
+      const validMonth = mm >= 1 && mm <= 12;
+      const daysInMonth = validMonth ? new Date(yyyy, mm, 0).getDate() : 0;
+      const validDay = dd >= 1 && dd <= daysInMonth;
+      const validYear = yyyy >= 1900 && yyyy <= new Date().getFullYear();
+      setInvalid(!(validMonth && validDay && validYear));
+    } else {
+      setInvalid(false);
+    }
   };
 
   const displayVal = focused ? raw : (raw.length === 10 ? ddmmyyyyToDisplay(raw) : raw);
 
   return (
-    <input
-      className="in"
-      type="text"
-      value={displayVal}
-      placeholder="dd-mm-yyyy"
-      maxLength={focused ? 10 : 20}
-      onFocus={() => { setFocused(true); setRaw(value || ""); }}
-      onBlur={() => setFocused(false)}
-      onChange={handleChange}
-      inputMode="numeric"
-      autoComplete="off"
-    />
+    <div>
+      <input
+        className={`in${invalid ? " err" : ""}`}
+        type="text"
+        value={displayVal}
+        placeholder="dd-mm-yyyy"
+        maxLength={focused ? 10 : 20}
+        onFocus={() => { setFocused(true); setRaw(value || ""); }}
+        onBlur={validateOnBlur}
+        onChange={handleChange}
+        inputMode="numeric"
+        autoComplete="off"
+      />
+      {invalid && <span className="err-msg">Not a valid date</span>}
+    </div>
   );
 }
 
@@ -1553,7 +1576,7 @@ export default function UanDetails() {
       epfoKey:      hasUan === "yes" ? epfoKey      : "",
       pfRecords:    hasUan === "yes" ? pfRecords    : [],
       serviceHistoryKey,
-      epfoNominees: nominees,
+      epfoNominees: nominees.filter(n => (n.name||"").trim() || (n.share||"").trim() || (n.dob||"").trim() || (n.relation||"").trim() || (n.address||"").trim()),
       familyDetails: {
         spouseName:  draft?.maritalStatus === "Married" ? (draft?.spouseName || "") : "",
         spouseDob:   draft?.maritalStatus === "Married" ? (draft?.spouseDob  || "") : "",
