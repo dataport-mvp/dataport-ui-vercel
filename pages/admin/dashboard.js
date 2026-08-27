@@ -649,7 +649,8 @@ export default function AdminDashboard() {
   };
 
   const doTicketReply = async () => {
-    if (!replyBody.trim() || !selTicket) return;
+    const hasStatusChange = replyStatus && replyStatus !== selTicket?.status;
+    if ((!replyBody.trim() && !hasStatusChange) || !selTicket) return;
     setMsg({ type: "", text: "" });
     try {
       const r = await apiFetch(`${API}/admin/tickets/reply`, {
@@ -1312,8 +1313,8 @@ export default function AdminDashboard() {
                                 </button>
                               ))}
                               <button className="reply-send-btn" style={{marginLeft:"auto"}}
-                                onClick={doTicketReply} disabled={!replyBody.trim() || uploadingReplyAtt}>
-                                Send Reply ↗
+                                onClick={doTicketReply} disabled={(!replyBody.trim() && !(replyStatus && replyStatus !== selTicket?.status)) || uploadingReplyAtt}>
+                                {replyBody.trim() ? "Send Reply ↗" : "Update Status ↗"}
                               </button>
                             </div>
                             {replyStatus === "closed" && (
