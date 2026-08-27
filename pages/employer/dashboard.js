@@ -405,6 +405,16 @@ async function printProfile(profile, empHistory, documents, employerName) {
     row("UAN Active",        d.isActive),
   ].join(""), "#334155")}
 
+  ${Array.isArray(d.epfoNominees) && d.epfoNominees.filter(n => n.name).length > 0 ? d.epfoNominees.filter(n => n.name).map((n,i) => section(
+    `Nominee ${i+1} — ${n.name}`,
+    [
+      row("Relationship",   n.relation === "Other" ? (n.otherRelation || "Other") : n.relation),
+      row("Date of Birth",  n.dob),
+      row("Share",          n.share ? `${n.share}%` : ""),
+      row("Address",        n.address),
+    ].join(""), "#334155"
+  )).join("") : ""}
+
   ${Array.isArray(d.pfRecords) && d.pfRecords.filter(pf => pf.companyName && (pf.hasPf === "No" || pf.pfMemberId || pf.dojEpfo || pf.doeEpfo)).length > 0 ? d.pfRecords.filter(pf => pf.companyName && (pf.hasPf === "No" || pf.pfMemberId || pf.dojEpfo || pf.doeEpfo)).map((pf,i) => section(
     `PF Record — ${pf.companyName}`,
     pf.hasPf === "No"
@@ -1413,6 +1423,21 @@ function UanTab({ data }) {
           </>}
         </div>
       </Sec>
+      {Array.isArray(data.epfoNominees) && data.epfoNominees.filter(n=>n.name).length>0 && (
+        <Sec title="Nominees">
+          {data.epfoNominees.filter(n=>n.name).map((n,i)=>(
+            <div key={i} style={{padding:"0.6rem 0.8rem",background:"#f8fafc",border:"1px solid #e8ecf2",borderRadius:6,marginBottom:"0.4rem"}}>
+              <div style={{fontSize:"0.62rem",fontWeight:700,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.4rem"}}>{n.name}</div>
+              <div className="kv-grid">
+                <KV k="Relationship" v={n.relation==="Other"?(n.otherRelation||"Other"):n.relation} />
+                <KV k="Date of Birth" v={n.dob} />
+                <KV k="Share"        v={n.share ? `${n.share}%` : ""} />
+                {n.address && <KV k="Address" v={n.address} />}
+              </div>
+            </div>
+          ))}
+        </Sec>
+      )}
       {Array.isArray(data.pfRecords)&&data.pfRecords.filter(pf=>pf.hasPf==="No"||pf.pfMemberId||pf.dojEpfo||pf.doeEpfo).length>0&&(
         <Sec title="PF Records per Employer">
           {data.pfRecords.filter(pf=>pf.hasPf==="No"||pf.pfMemberId||pf.dojEpfo||pf.doeEpfo).map((pf,i)=>(
@@ -1565,6 +1590,7 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
   const [loading, setLoading] = useState(true);
   const [vendors, setVendors] = useState([]);
   const [assigning, setAssigning] = useState(false);
+  const [showReassign, setShowReassign] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState("");
   const [vendorSearch,   setVendorSearch]   = useState("");
   const [assignMsg, setAssignMsg] = useState("");
@@ -1597,6 +1623,7 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
       const d = await res.json();
       if (res.ok) {
         setAssignMsg(`✓ Assigned to ${selectedVendor} — ${d.checks_created} checks created`);
+        setShowReassign(false);
         const cRes = await apiFetch(`${apiUrl}/bgv/case/${consentData.consent_id}`);
         if (cRes.ok) setBgvCase(await cRes.json());
       } else {
@@ -1625,9 +1652,17 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
   return (
     <div>
       {/* Assign vendor section */}
-      {(!bgvCase?.bgv_vendor_email) && (
+      {(!bgvCase?.bgv_vendor_email || showReassign) && (
         <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:"1rem",marginBottom:"1rem"}}>
-          <div style={{fontWeight:700,fontSize:"0.84rem",color:"#0f172a",marginBottom:"0.6rem"}}>Assign BGV Vendor</div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.6rem"}}>
+            <div style={{fontWeight:700,fontSize:"0.84rem",color:"#0f172a"}}>{showReassign?"Reassign BGV Vendor":"Assign BGV Vendor"}</div>
+            {showReassign && <button onClick={()=>setShowReassign(false)} style={{padding:"0.2rem 0.6rem",background:"none",border:"1px solid #cbd5e1",borderRadius:6,fontSize:"0.7rem",fontWeight:600,color:"#64748b",cursor:"pointer",fontFamily:"inherit"}}>Cancel</button>}
+          </div>
+          {showReassign && (
+            <div style={{background:"#fef2f2",border:"1px solid #fecaca",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.75rem",fontSize:"0.76rem",color:"#991b1b"}}>
+              ⚠ Reassigning resets all verification checks to pending — any progress the current vendor has made will be lost. The new vendor starts from scratch.
+            </div>
+          )}
           {/* Searchable BGV vendor selector */}
               <div>
                 <input type="text" placeholder="Search BGV vendor by name or email…"
@@ -1656,13 +1691,18 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
         </div>
       )}
 
-      {bgvCase?.bgv_vendor_email && (
-        <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:"0.75rem 1rem",marginBottom:"1rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      {bgvCase?.bgv_vendor_email && !showReassign && (
+        <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:"0.75rem 1rem",marginBottom:"1rem",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"0.5rem"}}>
           <div>
             <span style={{fontSize:"0.72rem",fontWeight:700,color:"#15803d",textTransform:"uppercase",letterSpacing:"0.5px"}}>Assigned to BGV Vendor</span>
             <div style={{fontWeight:700,fontSize:"0.875rem",color:"#0f172a",marginTop:"0.1rem"}}>{bgvCase.bgv_vendor_email}</div>
           </div>
-          {bgvCase.bgv_status && <span style={{padding:"0.25rem 0.75rem",borderRadius:999,background:"#dcfce7",color:"#15803d",fontSize:"0.72rem",fontWeight:700}}>{bgvCase.bgv_status.replace("_"," ").toUpperCase()}</span>}
+          <div style={{display:"flex",alignItems:"center",gap:"0.6rem"}}>
+            {bgvCase.bgv_status && <span style={{padding:"0.25rem 0.75rem",borderRadius:999,background:"#dcfce7",color:"#15803d",fontSize:"0.72rem",fontWeight:700}}>{bgvCase.bgv_status.replace("_"," ").toUpperCase()}</span>}
+            <button onClick={()=>setShowReassign(true)} style={{padding:"0.3rem 0.7rem",background:"#fff",border:"1.5px solid #cbd5e1",borderRadius:7,fontFamily:"inherit",fontSize:"0.72rem",fontWeight:700,color:"#475569",cursor:"pointer"}}>
+              Reassign
+            </button>
+          </div>
         </div>
       )}
 
