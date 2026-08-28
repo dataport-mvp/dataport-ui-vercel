@@ -666,15 +666,16 @@ export default function AdminDashboard() {
         setTickets(prev => {
           const fresh = prev.find(t => t.ticket_id === selTicket.ticket_id);
           if (fresh) setSelTicket(fresh);
+          // The nav badge reads from stats.tickets.open. Previously this was kept
+          // accurate by re-calling the full /admin/stats endpoint — which runs 5
+          // separate full table scans (employees, users, consents, messages,
+          // tickets) — after every single reply, adding real, significant latency
+          // to a click that should be fast. loadTickets() already just fetched
+          // every ticket, so the open count is computed directly from that same
+          // data instead: same accuracy, zero extra backend calls.
+          setStats(s => s ? { ...s, tickets: { ...s.tickets, open: prev.filter(t => t.status === "open" && !(t.user_email||"").endsWith("@ci.datagate.co.in")).length } } : s);
           return prev;
         });
-        // The nav badge reads from stats.tickets.open, which loadTickets() never
-        // touches — without this, closing or resolving a ticket updates the list
-        // correctly but leaves the badge count stuck at whatever it was on page load.
-        try {
-          const sr = await apiFetch(`${API}/admin/stats`);
-          if (sr.ok) setStats(await sr.json());
-        } catch (_) {}
       } else {
         setMsg({ type: "err", text: d.detail || "Failed to send reply" });
       }
