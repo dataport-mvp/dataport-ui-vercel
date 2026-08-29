@@ -1940,6 +1940,7 @@ export default function PersonalDetails() {
     if (!curPin)        e.curPin = true;
     if (!hasCurrAddressProof) e.hasCurrAddressProof = true;
     if (hasCurrAddressProof==="Yes" && !currAddressProofType) e.currAddressProofType = true;
+    if (hasCurrAddressProof==="Yes" && !currAddressProofKey) e.currAddressProofKey = true;
     if (!sameAsCurrent) {
       if (!permDoor)     e.permDoor = true;
       if (!permDistrict) e.permDistrict = true;
@@ -1947,6 +1948,7 @@ export default function PersonalDetails() {
       if (!permPin)      e.permPin = true;
       if (!hasPermAddressProof) e.hasPermAddressProof = true;
       if (hasPermAddressProof==="Yes" && !permAddressProofType) e.permAddressProofType = true;
+      if (hasPermAddressProof==="Yes" && !permAddressProofKey) e.permAddressProofKey = true;
     }
     if (!aadhaarKey)    e.aadhaarKey = true;
     if (!panKey)        e.panKey = true;
@@ -2680,7 +2682,7 @@ export default function PersonalDetails() {
                         <FS l="Document Type" v={currAddressProofType} s={dirty(setCurrAddressProofType)} o={["Driving License","Voter ID","Utility Bill","Rental Agreement"]} r={true} errKey="currAddressProofType" errors={errors} onFix={fixErr}/>
                       </div>
                       <div style={{marginTop:"0.5rem"}}>
-                        <span className="fl">Upload Current Address Proof</span>
+                        <span className="fl">Upload Current Address Proof <span style={{color:"#ef4444"}}>*</span></span>
                         <FileUpload onUploadStateChange={handleUploadState} label="Upload Current Address Proof" category="personal" subKey="currentAddressProof" employeeId={employeeIdRef.current || employeeId} disabled={!draftReady} apiFetch={apiFetch} value={currAddressProofKey} onChange={(k) => { const key=typeof k==="string"?k:(k?.key||k?.s3_key||""); setCurrAddressProofKey(key); dirty(() => {})(""); }} />
                       </div>
                     </div>
@@ -2721,7 +2723,7 @@ export default function PersonalDetails() {
                           <FS l="Document Type" v={permAddressProofType} s={dirty(setPermAddressProofType)} o={["Driving License","Voter ID","Utility Bill","Rental Agreement"]} r={true} errKey="permAddressProofType" errors={errors} onFix={fixErr}/>
                         </div>
                         <div style={{marginTop:"0.5rem"}}>
-                          <span className="fl">Upload Permanent Address Proof</span>
+                          <span className="fl">Upload Permanent Address Proof <span style={{color:"#ef4444"}}>*</span></span>
                           <FileUpload onUploadStateChange={handleUploadState} label="Upload Permanent Address Proof" category="personal" subKey="permanentAddressProof" employeeId={employeeIdRef.current || employeeId} disabled={!draftReady} apiFetch={apiFetch} value={permAddressProofKey} onChange={(k) => { const key=typeof k==="string"?k:(k?.key||k?.s3_key||""); setPermAddressProofKey(key); dirty(() => {})(""); }} />
                         </div>
                       </div>
