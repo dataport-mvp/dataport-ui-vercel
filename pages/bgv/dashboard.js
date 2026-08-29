@@ -956,6 +956,18 @@ export default function BgvDashboard() {
                               <span className="profile-val">{caseDetail.profile.permanentAddressProofType} — see Uploaded Documents</span>
                             </div>
                           )}
+                          <button className="view-btn" style={{marginTop:"0.4rem",marginBottom:"0.5rem"}} onClick={async()=>{
+                            try {
+                              const r = await apiFetch(`${API}/documents/${caseDetail.employee_id}`);
+                              if (r.ok) {
+                                const docs = await r.json();
+                                const personalDocs = docs.documents?.["personal"] || {};
+                                const available = Object.entries(personalDocs);
+                                if (available.length === 0) { setSaveStatus("No personal documents uploaded"); return; }
+                                available.forEach(([_, d]) => d?.url && window.open(d.url, "_blank"));
+                              }
+                            } catch(_) {}
+                          }}>View Uploaded Documents</button>
 
                           <div className="panel-title" style={{marginTop:"1rem"}}>Education Summary</div>
                           {caseDetail.profile?.education?.classX?.school && (() => { const ed = caseDetail.profile.education.classX; return (
@@ -1030,17 +1042,30 @@ export default function BgvDashboard() {
                             </div>
                           );})()}
                           {(caseDetail.profile?.education?.articleships||[]).filter(a=>a?.firmName).map((a,i)=>(
-                            <div key={`art-${i}`} className="profile-kv">
-                              <span className="profile-key">Articleship</span>
-                              <span className="profile-val">{a.firmName} — {a.startDate} to {a.endDate||"Present"}</span>
+                            <div key={`art-${i}`} style={{border:"1px solid #e5e7eb",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.6rem",background:"#fafafa"}}>
+                              <div className="profile-kv"><span className="profile-key">{a.type==="Other Practical Training"?(a.otherType||a.type):a.type||"Articleship"}</span><span className="profile-val">{a.firmName} — {a.startDate} to {a.endDate||"Present"}</span></div>
+                              {a.regNo && <div className="profile-kv"><span className="profile-key">Registration / Membership No.</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{a.regNo}</span></div>}
                             </div>
                           ))}
                           {(caseDetail.profile?.education?.professionalQualifications||[]).filter(p=>p?.type).map((p,i)=>(
-                            <div key={`pq-${i}`} className="profile-kv">
-                              <span className="profile-key">Professional Qualification</span>
-                              <span className="profile-val">{p.type} — {p.level}</span>
+                            <div key={`pq-${i}`} style={{border:"1px solid #e5e7eb",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.6rem",background:"#fafafa"}}>
+                              <div className="profile-kv"><span className="profile-key">Professional Qualification</span><span className="profile-val">{p.type==="Other"?(p.otherType||"Other"):p.type}{p.level?` — ${p.level}`:""}</span></div>
+                              {p.year && <div className="profile-kv"><span className="profile-key">Year</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{p.year}</span></div>}
+                              {p.regNo && <div className="profile-kv"><span className="profile-key">Registration / Membership No.</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{p.regNo}</span></div>}
                             </div>
                           ))}
+                          <button className="view-btn" style={{marginTop:"0.4rem",marginBottom:"0.5rem"}} onClick={async()=>{
+                            try {
+                              const r = await apiFetch(`${API}/documents/${caseDetail.employee_id}`);
+                              if (r.ok) {
+                                const docs = await r.json();
+                                const eduDocs = docs.documents?.["education"] || {};
+                                const available = Object.entries(eduDocs);
+                                if (available.length === 0) { setSaveStatus("No education documents uploaded"); return; }
+                                available.forEach(([_, d]) => d?.url && window.open(d.url, "_blank"));
+                              }
+                            } catch(_) {}
+                          }}>View Uploaded Documents</button>
 
                           <div className="panel-title" style={{marginTop:"1rem"}}>Employment History</div>
                           {(caseDetail.employment_history||[]).filter(e=>e?.company_id!=="__meta__").map((e,i)=>(
@@ -1116,6 +1141,18 @@ export default function BgvDashboard() {
                                   </span>
                                 </div>
                               ))}
+                              <button className="view-btn" style={{marginTop:"0.4rem"}} onClick={async()=>{
+                                try {
+                                  const r = await apiFetch(`${API}/documents/${caseDetail.employee_id}`);
+                                  if (r.ok) {
+                                    const docs = await r.json();
+                                    const uanDocs = docs.documents?.["uan"] || {};
+                                    const available = Object.entries(uanDocs);
+                                    if (available.length === 0) { setSaveStatus("No UAN documents uploaded"); return; }
+                                    available.forEach(([_, d]) => d?.url && window.open(d.url, "_blank"));
+                                  }
+                                } catch(_) {}
+                              }}>View Uploaded Documents</button>
                             </>
                           )}
                         </div>
