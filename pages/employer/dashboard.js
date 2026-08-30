@@ -1988,13 +1988,28 @@ export default function EmployerDashboard() {
   const declined = useMemo(() => consents.filter(c => c.status === "declined"), [consents]);
   const revoked  = useMemo(() => consents.filter(c => c.status === "revoked"),  [consents]);
 
+  // A re-request after approval takes its own fresh snapshot rather than overwriting the
+  // old one — but once a newer approval exists, the employer only ever needs that current
+  // data, not the superseded one. Group by employee and keep only the latest per person,
+  // so the list shows exactly one, up-to-date card — never a stale duplicate alongside it.
+  const approvedGrouped = useMemo(() => {
+    const byEmployee = {};
+    for (const c of approved) {
+      const key = c.employee_email;
+      if (!byEmployee[key] || (c.responded_at||c.approved_at||0) > (byEmployee[key].responded_at||byEmployee[key].approved_at||0)) {
+        byEmployee[key] = c;
+      }
+    }
+    return Object.values(byEmployee);
+  }, [approved]);
+
   const filt = (list, q) => {
     if (!q.trim()) return list;
     const lq = q.toLowerCase();
     return list.filter(c => (c.employee_email||"").toLowerCase().includes(lq)||(c.employee_name||"").toLowerCase().includes(lq));
   };
   const fp = useMemo(() => filt(pending,  spPending),  [pending,  spPending]);
-  const fa = useMemo(() => filt(approved, spApproved), [approved, spApproved]);
+  const fa = useMemo(() => filt(approvedGrouped, spApproved), [approvedGrouped, spApproved]);
   const fd = useMemo(() => filt(declined, spDeclined), [declined, spDeclined]);
   const [spRevoked, setSpRevoked] = useState("");
   const fr = useMemo(() => filt(revoked,  spRevoked),  [revoked,  spRevoked]);
@@ -2327,7 +2342,7 @@ export default function EmployerDashboard() {
     setTermsAccepted(true);
   }} />;
 
-  const counts = { pending:pending.length, approved:approved.length, declined:declined.length, revoked:revoked.length };
+  const counts = { pending:pending.length, approved:approvedGrouped.length, declined:declined.length, revoked:revoked.length };
   const list   = cTab==="pending" ? fp : cTab==="approved" ? fa : cTab==="revoked" ? fr : fd;
   const search = cTab==="pending" ? spPending : cTab==="approved" ? spApproved : cTab==="revoked" ? spRevoked : spDeclined;
   const setSearch = cTab==="pending" ? setSpPending : cTab==="approved" ? setSpApproved : cTab==="revoked" ? setSpRevoked : setSpDeclined;
@@ -2923,7 +2938,7 @@ return (
                           <span className={`hb hb-${selected.status}`}>{selected.status.charAt(0).toUpperCase()+selected.status.slice(1)}</span>
                           {selected.requested_at&&<span className="hb hb-info">Requested: {toIST(selected.requested_at)}</span>}
                           {(selected.responded_at||selected.approved_at)&&<span className="hb hb-info">Responded: {toIST(selected.responded_at||selected.approved_at)}</span>}
-                          {profileData?.snapshot_at&&<span className="hb hb-info">📅 Data as of: {toIST(profileData.snapshot_at)}</span>}
+                          {profileData?._snapshot_at&&<span className="hb hb-info">📅 Data as of: {toIST(profileData._snapshot_at)}</span>}
                         </div>
                         {candStatus[selected.employee_email]&&(()=>{
                           const cs=candStatus[selected.employee_email];const pct=cs.completeness||0;const col=pct>=80?"#16a34a":pct>=50?"#f59e0b":"#ef4444";
