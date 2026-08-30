@@ -1144,6 +1144,28 @@ function SignoutModal({ onConfirm, onCancel, onSignOutAll }) {
   );
 }
 
+function DeleteAccountModal({ onConfirm, onCancel, loading }) {
+  const [typed, setTyped] = useState("");
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000,backdropFilter:"blur(4px)"}}>
+      <div style={{background:"#fff",borderRadius:18,padding:"2rem",maxWidth:400,width:"90%",boxShadow:"0 24px 60px rgba(15,12,40,0.3)"}}>
+        <div style={{fontSize:34,marginBottom:"0.75rem",textAlign:"center"}}>⚠️</div>
+        <h3 style={{margin:"0 0 0.5rem",color:"#0f172a",fontWeight:800,fontSize:"1.05rem",textAlign:"center"}}>Delete your account?</h3>
+        <p style={{color:"#64748b",fontSize:"0.84rem",marginBottom:"1rem",lineHeight:1.6,textAlign:"center"}}>This permanently deletes your account and all consent requests you've made. <strong>This cannot be undone.</strong></p>
+        <p style={{fontSize:"0.78rem",color:"#64748b",marginBottom:"0.4rem",fontWeight:600}}>Type <strong>DELETE</strong> to confirm:</p>
+        <input
+          style={{width:"100%",padding:"0.65rem 0.875rem",background:"#fff8f8",border:"1.5px solid #fecaca",borderRadius:9,fontFamily:"inherit",fontSize:"0.875rem",color:"#0f172a",outline:"none",marginBottom:"1rem",letterSpacing:"0.05em"}}
+          value={typed} onChange={e=>setTyped(e.target.value.toUpperCase())} placeholder="Type DELETE here"
+        />
+        <div style={{display:"flex",gap:"0.75rem"}}>
+          <button onClick={onCancel} style={{flex:1,padding:"0.7rem",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:600,color:"#475569",fontFamily:"inherit",fontSize:"0.875rem"}}>Cancel</button>
+          <button onClick={onConfirm} disabled={typed!=="DELETE"||loading} style={{flex:1,padding:"0.7rem",borderRadius:9,border:"none",background:typed==="DELETE"?"#ef4444":"#fecaca",color:"#fff",cursor:typed==="DELETE"&&!loading?"pointer":"not-allowed",fontWeight:700,fontFamily:"inherit",fontSize:"0.875rem",transition:"background 0.15s"}}>{loading?"Deleting…":"Delete forever"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Field helpers ─────────────────────────────────────────────────────
 function KV({ k, v, mono }) {
   return (
@@ -1835,7 +1857,28 @@ export default function EmployerDashboard() {
     logout();
   };
 
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true);
+    try {
+      const res = await apiFetch(`${API}/employer/account`, { method: "DELETE" });
+      if (res.ok) {
+        logout();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.detail || "Could not delete account. Please try again.");
+        setDeleteLoading(false);
+        setShowDeleteModal(false);
+      }
+    } catch (_) {
+      alert("Network error. Please try again.");
+      setDeleteLoading(false);
+      setShowDeleteModal(false);
+    }
+  };
+
   const [showSignout,    setShowSignout]    = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteLoading,   setDeleteLoading]   = useState(false);
   const [termsAccepted,  setTermsAccepted]  = useState(false);
   const [termsLoading,   setTermsLoading]   = useState(true);
   const [consents,       setConsents]       = useState([]);
@@ -2352,6 +2395,7 @@ return (
       <style>{G}</style>
 
       {showSignout && <SignoutModal onConfirm={logout} onCancel={() => setShowSignout(false)} onSignOutAll={handleSignoutAll} />}
+      {showDeleteModal && <DeleteAccountModal onConfirm={handleDeleteAccount} onCancel={()=>setShowDeleteModal(false)} loading={deleteLoading} />}
       {showSupport && <SupportModal apiFetch={apiFetch} onClose={()=>setShowSupport(false)} />}
       {printHtml && <PrintPreviewModal html={printHtml} onClose={() => setPrintHtml(null)} />}
 
@@ -2720,6 +2764,7 @@ return (
                   <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,background:"#fff",border:"1px solid #c8c2b8",borderRadius:8,boxShadow:"0 8px 24px rgba(17,13,10,0.14)",minWidth:190,zIndex:200,overflow:"hidden"}}>
                     <button onClick={()=>{setShowGear(false);setShowPwModal(true);}} style={{display:"block",width:"100%",textAlign:"left",padding:"0.6rem 0.9rem",background:"none",border:"none",fontSize:"0.78rem",fontWeight:600,color:"#1a1a1a",cursor:"pointer",fontFamily:"inherit"}}>🔑 Change password</button>
                     <button onClick={()=>{setShowGear(false);setShowSupport(true);}} style={{display:"block",width:"100%",textAlign:"left",padding:"0.6rem 0.9rem",background:"none",border:"none",fontSize:"0.78rem",fontWeight:600,color:"#1a1a1a",cursor:"pointer",fontFamily:"inherit",borderTop:"1px solid #f0eee9"}}>🎧 Help & Support</button>
+                    <button onClick={()=>{setShowGear(false);setShowDeleteModal(true);}} style={{display:"block",width:"100%",textAlign:"left",padding:"0.6rem 0.9rem",background:"none",border:"none",fontSize:"0.78rem",fontWeight:600,color:"#dc2626",cursor:"pointer",fontFamily:"inherit",borderTop:"1px solid #f0eee9"}}>🗑️ Delete account</button>
                   </div>
                 </>
               )}
