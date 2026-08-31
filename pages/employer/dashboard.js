@@ -2301,6 +2301,25 @@ export default function EmployerDashboard() {
     apiFetch(`${API}/messages/unread-count`).then(r=>r.ok?r.json():null).then(d=>{ if(d) setUnreadCount(d.unread||0); }).catch(()=>{});
   };
 
+  // Auto-refresh the open thread — without this, a message from the other party
+  // never appears until something re-triggers loadThread, forcing people to rely
+  // on a full browser refresh just to see new replies.
+  const silentRefreshThread = async (consentId) => {
+    try {
+      const r = await apiFetch(`${API}/messages/thread/${consentId}`);
+      if (r.ok) {
+        const d = await r.json();
+        setThreadMsgs(d.messages || []);
+        setThreadSegments(d.consent_segments || {});
+      }
+    } catch(_) {}
+  };
+  useEffect(() => {
+    if (!activeThread || !showInbox) return;
+    const id = setInterval(() => silentRefreshThread(activeThread), 15000);
+    return () => clearInterval(id);
+  }, [activeThread, showInbox]);
+
   const uploadMsgAttachment = async (file) => {
     if (!file || !activeThread) return;
     setMsgAttaching(true);
@@ -2526,15 +2545,18 @@ return (
                   </div>
                 ):(
                   <>
-                    <div style={{padding:"0.75rem 1.25rem",borderBottom:"1px solid #c8c2b8",background:"#f5f2ee",flexShrink:0}}>
-                      <div style={{fontSize:"0.78rem",fontWeight:700,color:"#111"}}>{inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_name || inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email || activeThread}</div>
-                      <div style={{fontSize:"0.62rem",color:"#a09890",marginTop:1}}>{inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email}{inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email ? " · " : ""}{threadMsgs.length} message{threadMsgs.length!==1?"s":""}</div>
+                    <div style={{padding:"0.75rem 1.25rem",borderBottom:"1px solid #c8c2b8",background:"#f5f2ee",flexShrink:0,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <div>
+                        <div style={{fontSize:"0.78rem",fontWeight:700,color:"#111"}}>{inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_name || inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email || activeThread}</div>
+                        <div style={{fontSize:"0.62rem",color:"#a09890",marginTop:1}}>{inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email}{inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email ? " · " : ""}{threadMsgs.length} message{threadMsgs.length!==1?"s":""}</div>
+                      </div>
+                      <button onClick={()=>silentRefreshThread(activeThread)} title="Refresh" style={{background:"none",border:"none",cursor:"pointer",fontSize:"0.85rem",color:"#7a6e64",padding:"0.2rem 0.4rem"}}>↻</button>
                     </div>
                     <div className="msg-list" ref={msgListRef}>
                       {threadLoading&&<div style={{textAlign:"center",fontSize:"0.72rem",color:"#a09890",padding:"1rem"}}>Loading…</div>}
                       {!threadLoading&&threadMsgs.length===0&&<div style={{textAlign:"center",fontSize:"0.72rem",color:"#a09890",padding:"2rem"}}>No messages yet.</div>}
                       {threadMsgs.map((m,i)=>{
-                        const mine=m.sender_email===user?.email;
+                        const mine=m.sender_role==="employer";
                         // For incoming messages, show sender name and — if the message came via/about
                         // the BGV side — the BGV company/org name beneath the bubble.
                         const rtLower = (m.recipient_type||"").toLowerCase();
@@ -2601,7 +2623,8 @@ return (
                         {recipientLabelEmployer(detectRecipientEmployer(msgBody))}
                       </div>
                       <input placeholder="Subject (optional)" value={msgSubject} onChange={e=>setMsgSubject(e.target.value)} style={{width:"100%",padding:"0.45rem 0.75rem",background:"#f5f2ee",border:"1.5px solid #c8c2b8",borderRadius:7,fontFamily:"inherit",fontSize:"0.75rem",color:"#111",outline:"none",marginBottom:"0.4rem"}}/>
-                      <div style={{marginBottom:"0.4rem"}}>
+                      <textarea className="msg-input" placeholder="Type a message…" value={msgBody} onChange={e=>setMsgBody(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&e.ctrlKey){e.preventDefault();sendMessage();}}}/>
+                      <div style={{margin:"0.4rem 0"}}>
                         {msgAttach ? (
                           <div style={{display:"flex",alignItems:"center",gap:"0.4rem",padding:"0.3rem 0.6rem",background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:6,fontSize:"0.68rem"}}>
                             <span style={{color:"#16a34a",fontWeight:600}}>📎 {msgAttach.name}</span>
@@ -2614,7 +2637,6 @@ return (
                           </label>
                         )}
                       </div>
-                      <textarea className="msg-input" placeholder="Type a message…" value={msgBody} onChange={e=>setMsgBody(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&e.ctrlKey){e.preventDefault();sendMessage();}}}/>
                       {msgErr&&<div style={{fontSize:"0.68rem",color:"#ef4444",marginBottom:"0.3rem",fontWeight:600}}>{msgErr}</div>}
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:"0.4rem"}}>
                         <span style={{fontSize:"0.62rem",color:"#a09890"}}>Ctrl+Enter to send</span>

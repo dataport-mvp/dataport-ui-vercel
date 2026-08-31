@@ -1415,6 +1415,7 @@ export default function PersonalDetails() {
   const [msgBody,       setMsgBody]        = useState("");
   const [msgSending,    setMsgSending]     = useState(false);
   const [msgErr,        setMsgErr]         = useState("");
+  const [msgSubject,    setMsgSubject]     = useState("");
   const [msgAttach,     setMsgAttach]      = useState(null);
   const [msgAttaching,  setMsgAttaching]   = useState(false);
   const [msgAttachUrls, setMsgAttachUrls]  = useState({});
@@ -1472,6 +1473,26 @@ export default function PersonalDetails() {
     apiFetch(`${API}/messages/unread-count`).then(r=>r.ok?r.json():null).then(d=>{ if(d) setInboxUnread(d.unread||0); }).catch(()=>{});
   };
 
+  // Auto-refresh the open thread — without this, a message from the other party
+  // never appears until something else happens to re-trigger loadThread (closing
+  // and reopening the tab, or a full browser refresh). Silent background refresh
+  // only, no loading-spinner flash on every poll.
+  const silentRefreshThread = async (consentId) => {
+    try {
+      const r = await apiFetch(`${API}/messages/thread/${consentId}`);
+      if (r.ok) {
+        const d = await r.json();
+        setThreadMsgs(d.messages || []);
+        setThreadSegments(d.consent_segments || {});
+      }
+    } catch(_) {}
+  };
+  useEffect(() => {
+    if (!activeThread || activeTab !== "inbox") return;
+    const id = setInterval(() => silentRefreshThread(activeThread), 15000);
+    return () => clearInterval(id);
+  }, [activeThread, activeTab]);
+
   const uploadMsgAttachment = async (file) => {
     if (!file || !activeThread) return;
     setMsgAttaching(true);
@@ -1512,9 +1533,9 @@ export default function PersonalDetails() {
     try {
       const r = await apiFetch(`${API}/messages/send`, {
         method: "POST",
-        body: JSON.stringify({ consent_id: activeThread, body: msgBody.trim(), recipient_type: detectRecipient(msgBody), attachment_s3_key: msgAttach?.s3_key || "" }),
+        body: JSON.stringify({ consent_id: activeThread, body: msgBody.trim(), subject: msgSubject.trim(), recipient_type: detectRecipient(msgBody), attachment_s3_key: msgAttach?.s3_key || "" }),
       });
-      if (r.ok) { setMsgBody(""); setMsgAttach(null); await loadThread(activeThread); loadInbox(); }
+      if (r.ok) { setMsgBody(""); setMsgSubject(""); setMsgAttach(null); await loadThread(activeThread); loadInbox(); }
       else { const d = await r.json(); setMsgErr(d.detail || "Failed to send"); }
     } catch(_) { setMsgErr("Network error"); }
     setMsgSending(false);
@@ -2144,9 +2165,12 @@ export default function PersonalDetails() {
                     </div>
                   ) : (
                     <>
-                      <div style={{padding:"0.75rem 1.1rem",borderBottom:"1px solid #ebe9f5",background:"#faf9ff",fontSize:"0.75rem",fontWeight:700,color:"#1a1730"}}>
-                        {inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_name||inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email}
-                        <span style={{fontSize:"0.62rem",color:"#94a3b8",fontWeight:400,marginLeft:8}}>{threadMsgs.length} message{threadMsgs.length!==1?"s":""}</span>
+                      <div style={{padding:"0.75rem 1.1rem",borderBottom:"1px solid #ebe9f5",background:"#faf9ff",fontSize:"0.75rem",fontWeight:700,color:"#1a1730",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                        <div>
+                          {inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_name||inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email}
+                          <span style={{fontSize:"0.62rem",color:"#94a3b8",fontWeight:400,marginLeft:8}}>{threadMsgs.length} message{threadMsgs.length!==1?"s":""}</span>
+                        </div>
+                        <button onClick={()=>silentRefreshThread(activeThread)} title="Refresh" style={{background:"none",border:"none",cursor:"pointer",fontSize:"0.85rem",color:"#8b88b0",padding:"0.2rem 0.4rem"}}>↻</button>
                       </div>
                       {/* Messages */}
                       <div ref={msgListRef} style={{flex:1,overflow:"auto",padding:"0.9rem",display:"flex",flexDirection:"column",gap:"0.6rem",minHeight:200,maxHeight:320}}>
@@ -2214,10 +2238,12 @@ export default function PersonalDetails() {
                           })()}
                           <span style={{marginLeft:"auto",fontSize:"0.66rem",fontWeight:700,color:"#8b88b0",alignSelf:"center"}}>{recipientLabel(detectRecipient(msgBody))}</span>
                         </div>
+                        <input placeholder="Subject (optional)" value={msgSubject} onChange={e=>setMsgSubject(e.target.value)}
+                          style={{width:"100%",padding:"0.45rem 0.75rem",background:"#f8f7ff",border:"1.5px solid #ddd8f5",borderRadius:9,fontFamily:"inherit",fontSize:"0.78rem",color:"#1a1730",outline:"none",marginBottom:"0.4rem"}}/>
                         <textarea
                           value={msgBody} onChange={e=>setMsgBody(e.target.value)}
                           onKeyDown={e=>{if(e.key==="Enter"&&e.ctrlKey){e.preventDefault();sendReply();}}}
-                          placeholder="Type your reply… @bgv to loop in the BGV vendor, @here for everyone. (Ctrl+Enter to send)"
+                          placeholder="Type your reply… @bgv to loop in the BGV vendor (employer sees it too). (Ctrl+Enter to send)"
                           style={{width:"100%",padding:"0.55rem 0.75rem",background:"#f8f7ff",border:"1.5px solid #ddd8f5",borderRadius:9,fontFamily:"inherit",fontSize:"0.82rem",color:"#1a1730",outline:"none",resize:"none",minHeight:60,marginBottom:"0.4rem",transition:"border-color 0.15s"}}
                         />
                         {msgAttach ? (

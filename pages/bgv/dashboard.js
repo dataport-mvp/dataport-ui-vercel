@@ -447,6 +447,7 @@ export default function BgvDashboard() {
     return "employee";
   };
   const recipientLabelBgv = (rt) => rt==="employer" ? "→ Employer only (private)" : "→ Candidate (Employer will also see this)";
+  const [msgSubject, setMsgSubject] = useState("");
   const [msgAttach, setMsgAttach] = useState(null);
   const [msgAttaching, setMsgAttaching] = useState(false);
   const [msgAttachUrls, setMsgAttachUrls] = useState({});
@@ -700,6 +701,25 @@ export default function BgvDashboard() {
     } catch(_) {}
   };
 
+  // Auto-refresh the open thread — without this, a message from the other party
+  // never appears until something re-triggers loadThread, forcing people to rely
+  // on a full browser refresh just to see new replies.
+  const silentRefreshThread = async (consentId) => {
+    try {
+      const r = await apiFetch(`${API}/messages/thread/${consentId}`);
+      if (r.ok) {
+        const d = await r.json();
+        setThreadMsgs(d.messages || []);
+        setThreadSegments(d.consent_segments || {});
+      }
+    } catch(_) {}
+  };
+  useEffect(() => {
+    if (!activeThread || tab !== "inbox") return;
+    const id = setInterval(() => silentRefreshThread(activeThread), 15000);
+    return () => clearInterval(id);
+  }, [activeThread, tab]);
+
   const uploadMsgAttachment = async (file) => {
     if (!file || !activeThread) return;
     setMsgAttaching(true);
@@ -722,10 +742,10 @@ export default function BgvDashboard() {
     try {
       const res = await apiFetch(`${API}/messages/send`, {
         method: "POST",
-        body: JSON.stringify({ consent_id: activeThread, body: msgBody, recipient_type: detectRecipientBgv(msgBody), attachment_s3_key: msgAttach?.s3_key || "" }),
+        body: JSON.stringify({ consent_id: activeThread, body: msgBody, subject: msgSubject.trim(), recipient_type: detectRecipientBgv(msgBody), attachment_s3_key: msgAttach?.s3_key || "" }),
       });
       if (res.ok) {
-        setMsgBody(""); setMsgAttach(null);
+        setMsgBody(""); setMsgSubject(""); setMsgAttach(null);
         await loadThread(activeThread);
         const iRes = await apiFetch(`${API}/messages/inbox`); if (iRes.ok) setInbox(await iRes.json());
       }
@@ -1312,9 +1332,12 @@ export default function BgvDashboard() {
                   <div className="empty-state">Select a thread to view messages.</div>
                 ) : (
                   <>
-                    <div style={{padding:"0.75rem 1.25rem",borderBottom:"1px solid #f1f5f9",fontSize:"0.84rem",fontWeight:700,color:"#0f172a",background:"#fafafa"}}>
-                      Conversation
-                      <span style={{fontSize:"0.7rem",fontWeight:500,color:"#64748b",marginLeft:"0.5rem"}}>Messages visible to you based on your role</span>
+                    <div style={{padding:"0.75rem 1.25rem",borderBottom:"1px solid #f1f5f9",fontSize:"0.84rem",fontWeight:700,color:"#0f172a",background:"#fafafa",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <div>
+                        Conversation
+                        <span style={{fontSize:"0.7rem",fontWeight:500,color:"#64748b",marginLeft:"0.5rem"}}>Messages visible to you based on your role</span>
+                      </div>
+                      <button onClick={()=>silentRefreshThread(activeThread)} title="Refresh" style={{background:"none",border:"none",cursor:"pointer",fontSize:"0.85rem",color:"#64748b",padding:"0.2rem 0.4rem"}}>↻</button>
                     </div>
                     <div className="msg-thread" ref={msgListRef}>
                       {threadMsgs.length===0 && <div style={{color:"#94a3b8",fontSize:"0.84rem",textAlign:"center",padding:"2rem"}}>No messages yet.</div>}
@@ -1364,19 +1387,6 @@ export default function BgvDashboard() {
                         );
                       })}
                     </div>
-                    <div style={{padding:"0.5rem 1.25rem 0"}}>
-                      {msgAttach ? (
-                        <div style={{display:"flex",alignItems:"center",gap:"0.4rem",padding:"0.3rem 0.6rem",background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:6,fontSize:"0.72rem",marginBottom:"0.4rem"}}>
-                          <span style={{color:"#16a34a",fontWeight:600}}>📎 {msgAttach.name}</span>
-                          <button onClick={()=>setMsgAttach(null)} style={{marginLeft:"auto",background:"none",border:"none",cursor:"pointer",color:"#dc2626",fontSize:"0.72rem",fontWeight:700}}>✕</button>
-                        </div>
-                      ) : (
-                        <label style={{display:"inline-flex",alignItems:"center",gap:"0.3rem",cursor:"pointer",fontSize:"0.72rem",color:"#475569",padding:"0.3rem 0.65rem",background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:6,marginBottom:"0.4rem"}}>
-                          {msgAttaching ? "Uploading…" : "📎 Attach file"}
-                          <input type="file" style={{display:"none"}} onChange={e=>e.target.files[0]&&uploadMsgAttachment(e.target.files[0])} disabled={msgAttaching}/>
-                        </label>
-                      )}
-                    </div>
                     <div style={{padding:"0.5rem 1.25rem 0",display:"flex",gap:"0.4rem",flexWrap:"wrap"}}>
                       {(() => {
                         const t = inbox.find(x=>x.consent_id===activeThread);
@@ -1391,10 +1401,29 @@ export default function BgvDashboard() {
                         </>);
                       })()}
                     </div>
-                    <div className="msg-input-row">
-                      <textarea className="msg-textarea" value={msgBody} onChange={e=>setMsgBody(e.target.value)} placeholder="Type a message… @employee name or @employer name" onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg();}}}/>
+                    <div style={{padding:"0.4rem 1.25rem 0"}}>
+                      <input placeholder="Subject (optional)" value={msgSubject} onChange={e=>setMsgSubject(e.target.value)}
+                        style={{width:"100%",padding:"0.45rem 0.75rem",background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:7,fontFamily:"inherit",fontSize:"0.75rem",color:"#0f172a",outline:"none"}}/>
+                    </div>
+                    <div style={{padding:"0.4rem 1.25rem 0"}}>
+                      <textarea className="msg-textarea" value={msgBody} onChange={e=>setMsgBody(e.target.value)} placeholder="Type a message… @employee name or @employer name" onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg();}}} style={{width:"100%"}}/>
+                    </div>
+                    <div style={{padding:"0.4rem 1.25rem 0"}}>
+                      {msgAttach ? (
+                        <div style={{display:"flex",alignItems:"center",gap:"0.4rem",padding:"0.3rem 0.6rem",background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:6,fontSize:"0.72rem"}}>
+                          <span style={{color:"#16a34a",fontWeight:600}}>📎 {msgAttach.name}</span>
+                          <button onClick={()=>setMsgAttach(null)} style={{marginLeft:"auto",background:"none",border:"none",cursor:"pointer",color:"#dc2626",fontSize:"0.72rem",fontWeight:700}}>✕</button>
+                        </div>
+                      ) : (
+                        <label style={{display:"inline-flex",alignItems:"center",gap:"0.3rem",cursor:"pointer",fontSize:"0.72rem",color:"#475569",padding:"0.3rem 0.65rem",background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:6}}>
+                          {msgAttaching ? "Uploading…" : "📎 Attach file"}
+                          <input type="file" style={{display:"none"}} onChange={e=>e.target.files[0]&&uploadMsgAttachment(e.target.files[0])} disabled={msgAttaching}/>
+                        </label>
+                      )}
+                    </div>
+                    <div style={{padding:"0.5rem 1.25rem 0.75rem",display:"flex",justifyContent:"flex-end"}}>
                       <button className="msg-send-btn" onClick={sendMsg} disabled={sendingMsg||!msgBody.trim()}>
-                        {sendingMsg?"…":"Send"}
+                        {sendingMsg?"Sending…":"Send"}
                       </button>
                     </div>
                   </>
