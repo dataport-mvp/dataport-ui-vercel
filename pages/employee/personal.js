@@ -1477,6 +1477,7 @@ export default function PersonalDetails() {
   // never appears until something else happens to re-trigger loadThread (closing
   // and reopening the tab, or a full browser refresh). Silent background refresh
   // only, no loading-spinner flash on every poll.
+  const [refreshingThread, setRefreshingThread] = useState(false);
   const silentRefreshThread = async (consentId) => {
     try {
       const r = await apiFetch(`${API}/messages/thread/${consentId}`);
@@ -1486,6 +1487,11 @@ export default function PersonalDetails() {
         setThreadSegments(d.consent_segments || {});
       }
     } catch(_) {}
+  };
+  const manualRefreshThread = async (consentId) => {
+    setRefreshingThread(true);
+    await silentRefreshThread(consentId);
+    setRefreshingThread(false);
   };
   useEffect(() => {
     if (!activeThread || activeTab !== "inbox") return;
@@ -2170,7 +2176,7 @@ export default function PersonalDetails() {
                           {inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_name||inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email}
                           <span style={{fontSize:"0.62rem",color:"#94a3b8",fontWeight:400,marginLeft:8}}>{threadMsgs.length} message{threadMsgs.length!==1?"s":""}</span>
                         </div>
-                        <button onClick={()=>silentRefreshThread(activeThread)} title="Refresh" style={{background:"none",border:"none",cursor:"pointer",fontSize:"0.85rem",color:"#8b88b0",padding:"0.2rem 0.4rem"}}>↻</button>
+                        <button onClick={()=>manualRefreshThread(activeThread)} disabled={refreshingThread} title="Refresh" style={{background:"none",border:"none",cursor:refreshingThread?"not-allowed":"pointer",fontSize:refreshingThread?"0.7rem":"0.85rem",color:"#8b88b0",opacity:refreshingThread?0.6:1,padding:"0.2rem 0.4rem",fontWeight:600}}>{refreshingThread?"Refreshing…":"↻"}</button>
                       </div>
                       {/* Messages */}
                       <div ref={msgListRef} style={{flex:1,overflow:"auto",padding:"0.9rem",display:"flex",flexDirection:"column",gap:"0.6rem",minHeight:200,maxHeight:320}}>

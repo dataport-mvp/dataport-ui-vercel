@@ -704,6 +704,7 @@ export default function BgvDashboard() {
   // Auto-refresh the open thread — without this, a message from the other party
   // never appears until something re-triggers loadThread, forcing people to rely
   // on a full browser refresh just to see new replies.
+  const [refreshingThread, setRefreshingThread] = useState(false);
   const silentRefreshThread = async (consentId) => {
     try {
       const r = await apiFetch(`${API}/messages/thread/${consentId}`);
@@ -713,6 +714,11 @@ export default function BgvDashboard() {
         setThreadSegments(d.consent_segments || {});
       }
     } catch(_) {}
+  };
+  const manualRefreshThread = async (consentId) => {
+    setRefreshingThread(true);
+    await silentRefreshThread(consentId);
+    setRefreshingThread(false);
   };
   useEffect(() => {
     if (!activeThread || tab !== "inbox") return;
@@ -1337,7 +1343,7 @@ export default function BgvDashboard() {
                         Conversation
                         <span style={{fontSize:"0.7rem",fontWeight:500,color:"#64748b",marginLeft:"0.5rem"}}>Messages visible to you based on your role</span>
                       </div>
-                      <button onClick={()=>silentRefreshThread(activeThread)} title="Refresh" style={{background:"none",border:"none",cursor:"pointer",fontSize:"0.85rem",color:"#64748b",padding:"0.2rem 0.4rem"}}>↻</button>
+                      <button onClick={()=>manualRefreshThread(activeThread)} disabled={refreshingThread} title="Refresh" style={{background:"none",border:"none",cursor:refreshingThread?"not-allowed":"pointer",fontSize:refreshingThread?"0.7rem":"0.85rem",color:"#64748b",opacity:refreshingThread?0.6:1,padding:"0.2rem 0.4rem",fontWeight:600}}>{refreshingThread?"Refreshing…":"↻"}</button>
                     </div>
                     <div className="msg-thread" ref={msgListRef}>
                       {threadMsgs.length===0 && <div style={{color:"#94a3b8",fontSize:"0.84rem",textAlign:"center",padding:"2rem"}}>No messages yet.</div>}

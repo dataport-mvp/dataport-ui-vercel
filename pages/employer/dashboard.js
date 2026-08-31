@@ -2304,6 +2304,7 @@ export default function EmployerDashboard() {
   // Auto-refresh the open thread — without this, a message from the other party
   // never appears until something re-triggers loadThread, forcing people to rely
   // on a full browser refresh just to see new replies.
+  const [refreshingThread, setRefreshingThread] = useState(false);
   const silentRefreshThread = async (consentId) => {
     try {
       const r = await apiFetch(`${API}/messages/thread/${consentId}`);
@@ -2313,6 +2314,11 @@ export default function EmployerDashboard() {
         setThreadSegments(d.consent_segments || {});
       }
     } catch(_) {}
+  };
+  const manualRefreshThread = async (consentId) => {
+    setRefreshingThread(true);
+    await silentRefreshThread(consentId);
+    setRefreshingThread(false);
   };
   useEffect(() => {
     if (!activeThread || !showInbox) return;
@@ -2550,7 +2556,7 @@ return (
                         <div style={{fontSize:"0.78rem",fontWeight:700,color:"#111"}}>{inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_name || inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email || activeThread}</div>
                         <div style={{fontSize:"0.62rem",color:"#a09890",marginTop:1}}>{inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email}{inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email ? " · " : ""}{threadMsgs.length} message{threadMsgs.length!==1?"s":""}</div>
                       </div>
-                      <button onClick={()=>silentRefreshThread(activeThread)} title="Refresh" style={{background:"none",border:"none",cursor:"pointer",fontSize:"0.85rem",color:"#7a6e64",padding:"0.2rem 0.4rem"}}>↻</button>
+                      <button onClick={()=>manualRefreshThread(activeThread)} disabled={refreshingThread} title="Refresh" style={{background:"none",border:"none",cursor:refreshingThread?"not-allowed":"pointer",fontSize:refreshingThread?"0.7rem":"0.85rem",color:"#7a6e64",opacity:refreshingThread?0.6:1,padding:"0.2rem 0.4rem",fontWeight:600}}>{refreshingThread?"Refreshing…":"↻"}</button>
                     </div>
                     <div className="msg-list" ref={msgListRef}>
                       {threadLoading&&<div style={{textAlign:"center",fontSize:"0.72rem",color:"#a09890",padding:"1rem"}}>Loading…</div>}
@@ -2803,7 +2809,7 @@ return (
             {/* 5 stat cards */}
             <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"0.5px",background:"#c8c2b8",border:"1px solid #c8c2b8",borderRadius:10,overflow:"hidden",marginBottom:"1.25rem"}}>
               {[
-                {label:"Total Requests",   val:consents.length,         sub:"Lifetime BGV sent",      col:"#111"},
+                {label:"Total Requests",   val:consents.length,         sub:"",                        col:"#111"},
                 {label:"Approved",         val:approved.length,         sub:"Profiles shared",        col:"#0d6e6e"},
                 {label:"Pending",          val:pending.length,          sub:"Awaiting employee",      col:"#d97706"},
                 {label:"Declined",         val:declined.length,         sub:"By candidates",          col:"#dc2626"},
