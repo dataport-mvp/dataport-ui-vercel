@@ -1926,6 +1926,7 @@ export default function EmployerDashboard() {
   const [termsAccepted,  setTermsAccepted]  = useState(false);
   const [termsLoading,   setTermsLoading]   = useState(true);
   const [consents,       setConsents]       = useState([]);
+  const [bgvVendorNames, setBgvVendorNames] = useState({}); // email -> display name, for the BGV tab
   const [selected,       setSelected]       = useState(null);
   const [profileData,    setProfileData]    = useState(null);
   const [documents,      setDocuments]      = useState(null);
@@ -2058,7 +2059,19 @@ export default function EmployerDashboard() {
     setLoading(false);
   }, [apiFetch]);
 
-  useEffect(() => { if (ready && user) { loadConsents(); loadUnreadCount(); } }, [ready, user, loadConsents]);
+  const loadBgvVendorNames = useCallback(async () => {
+    try {
+      const r = await apiFetch(`${API}/bgv/vendors`);
+      if (r.ok) {
+        const list = await r.json();
+        const map = {};
+        list.forEach(v => { map[v.email] = v.company_name || v.name || v.email; });
+        setBgvVendorNames(map);
+      }
+    } catch (_) {}
+  }, [apiFetch]);
+
+  useEffect(() => { if (ready && user) { loadConsents(); loadUnreadCount(); loadBgvVendorNames(); } }, [ready, user, loadConsents, loadBgvVendorNames]);
   useEffect(() => {
     if (!ready || !user) return;
     const id = setInterval(() => { loadUnreadCount(); }, 30000);
@@ -2455,7 +2468,8 @@ export default function EmployerDashboard() {
   }} />;
 
   const counts = { pending:pending.length, approved:approvedGrouped.length, declined:declined.length, revoked:revoked.length, bgv:approvedGrouped.length };
-  const list   = cTab==="pending" ? fp : cTab==="approved" ? fa : cTab==="revoked" ? fr : cTab==="bgv" ? fa : fd;
+  const faBgvSorted = [...fa].sort((a,b) => (a.employee_name||a.employee_email||"").localeCompare(b.employee_name||b.employee_email||""));
+  const list   = cTab==="pending" ? fp : cTab==="approved" ? fa : cTab==="revoked" ? fr : cTab==="bgv" ? faBgvSorted : fd;
   const search = cTab==="pending" ? spPending : cTab==="approved" ? spApproved : cTab==="revoked" ? spRevoked : cTab==="bgv" ? spApproved : spDeclined;
   const setSearch = cTab==="pending" ? setSpPending : cTab==="approved" ? setSpApproved : cTab==="revoked" ? setSpRevoked : cTab==="bgv" ? setSpApproved : setSpDeclined;
 
@@ -3051,7 +3065,7 @@ return (
                         </div>
                         {c.employee_name&&c.employee_name!==c.employee_email&&<div className="c-nm">{c.employee_name}</div>}
                         {cTab==="bgv" ? (
-                          <div className="c-dt">{c.bgv_vendor_email || "No vendor assigned yet"}</div>
+                          <div className="c-dt">{c.bgv_vendor_email ? (bgvVendorNames[c.bgv_vendor_email] || c.bgv_vendor_email) : "No vendor assigned yet"}</div>
                         ) : (
                           <div className="c-dt">{toISTDate(ts)}</div>
                         )}
