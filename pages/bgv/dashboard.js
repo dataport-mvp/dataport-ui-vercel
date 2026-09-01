@@ -993,7 +993,7 @@ export default function BgvDashboard() {
                           {caseDetail.profile?.currentAddressProofType && (
                             <div className="profile-kv">
                               <span className="profile-key">Address Proof</span>
-                              <span className="profile-val">{caseDetail.profile.currentAddressProofType} — see Uploaded Documents</span>
+                              <span className="profile-val">{caseDetail.profile.currentAddressProofType}{docLink("personal","currentAddressProof")}</span>
                             </div>
                           )}
 
@@ -1009,7 +1009,7 @@ export default function BgvDashboard() {
                           {caseDetail.profile?.permanentAddressProofType && (
                             <div className="profile-kv">
                               <span className="profile-key">Address Proof</span>
-                              <span className="profile-val">{caseDetail.profile.permanentAddressProofType} — see Uploaded Documents</span>
+                              <span className="profile-val">{caseDetail.profile.permanentAddressProofType}{docLink("personal","permanentAddressProof")}</span>
                             </div>
                           )}
                           <button className="view-btn" style={{marginTop:"0.4rem",marginBottom:"0.5rem"}} onClick={async()=>{
