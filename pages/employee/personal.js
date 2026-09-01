@@ -2171,12 +2171,9 @@ export default function PersonalDetails() {
                     </div>
                   ) : (
                     <>
-                      <div style={{padding:"0.75rem 1.1rem",borderBottom:"1px solid #ebe9f5",background:"#faf9ff",fontSize:"0.75rem",fontWeight:700,color:"#1a1730",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                        <div>
-                          {inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_name||inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email}
-                          <span style={{fontSize:"0.62rem",color:"#94a3b8",fontWeight:400,marginLeft:8}}>{threadMsgs.length} message{threadMsgs.length!==1?"s":""}</span>
-                        </div>
-                        <button onClick={()=>manualRefreshThread(activeThread)} disabled={refreshingThread} title="Refresh" style={{background:"none",border:"none",cursor:refreshingThread?"not-allowed":"pointer",fontSize:refreshingThread?"0.7rem":"0.85rem",color:"#8b88b0",opacity:refreshingThread?0.6:1,padding:"0.2rem 0.4rem",fontWeight:600}}>{refreshingThread?"Refreshing…":"↻"}</button>
+                      <div style={{padding:"0.75rem 1.1rem",borderBottom:"1px solid #ebe9f5",background:"#faf9ff",fontSize:"0.75rem",fontWeight:700,color:"#1a1730"}}>
+                        {inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_name||inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email}
+                        <span style={{fontSize:"0.62rem",color:"#94a3b8",fontWeight:400,marginLeft:8}}>{threadMsgs.length} message{threadMsgs.length!==1?"s":""}</span>
                       </div>
                       {/* Messages */}
                       <div ref={msgListRef} style={{flex:1,overflow:"auto",padding:"0.9rem",display:"flex",flexDirection:"column",gap:"0.6rem",minHeight:200,maxHeight:320}}>
@@ -2240,6 +2237,7 @@ export default function PersonalDetails() {
                             return (<>
                               <button type="button" onClick={()=>setMention(employerName,["bgv"])} style={btnStyle}>@{employerName}</button>
                               {hasBgv && <button type="button" onClick={()=>setMention("bgv",[employerName])} style={btnStyle}>@{bgvName}</button>}
+                              <button onClick={()=>manualRefreshThread(activeThread)} disabled={refreshingThread} title="Refresh" style={{background:"none",border:"none",cursor:refreshingThread?"not-allowed":"pointer",fontSize:refreshingThread?"0.66rem":"0.85rem",color:"#8b88b0",opacity:refreshingThread?0.6:1,padding:"0.2rem 0.4rem",fontWeight:600}}>{refreshingThread?"Refreshing…":"↻"}</button>
                             </>);
                           })()}
                           <span style={{marginLeft:"auto",fontSize:"0.66rem",fontWeight:700,color:"#8b88b0",alignSelf:"center"}}>{recipientLabel(detectRecipient(msgBody))}</span>

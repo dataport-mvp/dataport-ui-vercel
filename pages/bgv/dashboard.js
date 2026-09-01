@@ -108,7 +108,6 @@ const G = `
   .msg-bubble{max-width:80%;padding:0.7rem 0.9rem;border-radius:12px;font-size:0.82rem;line-height:1.6;}
   .msg-bubble.mine{align-self:flex-end;background:#4f46e5;color:#fff;border-bottom-right-radius:3px;}
   .msg-bubble.theirs{align-self:flex-start;background:#f1f5f9;color:#0f172a;border-bottom-left-radius:3px;}
-  .msg-bubble.employer-cc{align-self:flex-start;background:#fefce8;color:#0f172a;border:1px solid #fde68a;border-bottom-left-radius:3px;}
   .msg-meta{font-size:0.65rem;margin-top:0.3rem;opacity:0.7;}
   .msg-input-row{display:flex;gap:0.5rem;padding:0.75rem 1rem;border-top:1px solid #f1f5f9;background:#fafafa;}
   .msg-textarea{flex:1;padding:0.6rem 0.85rem;border:1.5px solid #e2e8f0;border-radius:9px;font-family:inherit;font-size:0.84rem;resize:none;outline:none;min-height:42px;}
@@ -1382,18 +1381,14 @@ export default function BgvDashboard() {
                   <div className="empty-state">Select a thread to view messages.</div>
                 ) : (
                   <>
-                    <div style={{padding:"0.75rem 1.25rem",borderBottom:"1px solid #f1f5f9",fontSize:"0.84rem",fontWeight:700,color:"#0f172a",background:"#fafafa",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                      <div>
-                        Conversation
-                        <span style={{fontSize:"0.7rem",fontWeight:500,color:"#64748b",marginLeft:"0.5rem"}}>Messages visible to you based on your role</span>
-                      </div>
-                      <button onClick={()=>manualRefreshThread(activeThread)} disabled={refreshingThread} title="Refresh" style={{background:"none",border:"none",cursor:refreshingThread?"not-allowed":"pointer",fontSize:refreshingThread?"0.7rem":"0.85rem",color:"#64748b",opacity:refreshingThread?0.6:1,padding:"0.2rem 0.4rem",fontWeight:600}}>{refreshingThread?"Refreshing…":"↻"}</button>
+                    <div style={{padding:"0.75rem 1.25rem",borderBottom:"1px solid #f1f5f9",fontSize:"0.84rem",fontWeight:700,color:"#0f172a",background:"#fafafa"}}>
+                      Conversation
+                      <span style={{fontSize:"0.7rem",fontWeight:500,color:"#64748b",marginLeft:"0.5rem"}}>Messages visible to you based on your role</span>
                     </div>
                     <div className="msg-thread" ref={msgListRef}>
                       {threadMsgs.length===0 && <div style={{color:"#94a3b8",fontSize:"0.84rem",textAlign:"center",padding:"2rem"}}>No messages yet.</div>}
                       {threadMsgs.map((m,i)=>{
                         const isMine = m.sender_role === "bgv";
-                        const isEmployerCC = m.visible_to?.includes("employer") && m.sender_role !== "employer";
                         const isNewSegment = m.consent_id && m.consent_id!==threadMsgs[i-1]?.consent_id;
                         const seg = isNewSegment ? (threadSegments[m.consent_id]||{}) : null;
                         return (
@@ -1409,9 +1404,9 @@ export default function BgvDashboard() {
                             </div>
                           )}
                           <div style={{display:"flex",flexDirection:"column",alignItems:isMine?"flex-end":"flex-start"}}>
-                            <div className={`msg-bubble${isMine?" mine":isEmployerCC?" employer-cc":" theirs"}`}>
+                            <div className={`msg-bubble${isMine?" mine":" theirs"}`}>
                               <div style={{fontSize:"0.68rem",fontWeight:700,marginBottom:"0.25rem",opacity:0.7}}>
-                                {m.sender_name} ({m.sender_role}) {isEmployerCC&&!isMine?"— 👁 employer CC'd":""}
+                                {m.sender_name} ({m.sender_role})
                               </div>
                               {m.subject && <div style={{fontSize:"0.68rem",fontWeight:800,marginBottom:"0.3rem",opacity:0.85,textTransform:"uppercase",letterSpacing:"0.3px"}}>Sub: {m.subject}</div>}
                               {m.body}
@@ -1447,6 +1442,7 @@ export default function BgvDashboard() {
                         return (<>
                           <button type="button" onClick={()=>setMention(employeeName,[employerName])} style={btnStyle}>@{employeeName}</button>
                           <button type="button" onClick={()=>setMention(employerName,[employeeName])} style={btnStyle2}>@{employerName}</button>
+                          <button onClick={()=>manualRefreshThread(activeThread)} disabled={refreshingThread} title="Refresh" style={{background:"none",border:"none",cursor:refreshingThread?"not-allowed":"pointer",fontSize:refreshingThread?"0.66rem":"0.85rem",color:"#64748b",opacity:refreshingThread?0.6:1,padding:"0.2rem 0.4rem",fontWeight:600}}>{refreshingThread?"Refreshing…":"↻"}</button>
                           <span style={{marginLeft:"auto",fontSize:"0.66rem",fontWeight:700,color:"#94a3b8",alignSelf:"center"}}>{recipientLabelBgv(detectRecipientBgv(msgBody))}</span>
                         </>);
                       })()}

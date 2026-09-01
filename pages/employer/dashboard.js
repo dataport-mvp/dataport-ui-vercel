@@ -1944,7 +1944,7 @@ export default function EmployerDashboard() {
   const [msgAttach,      setMsgAttach]      = useState(null);
   const [msgAttaching,   setMsgAttaching]   = useState(false);
   const [msgSubject,     setMsgSubject]     = useState("");
-  // @employeeName → candidate only (private). @bgv → BGV vendor only (private). @here → both.
+  // @employeeName → candidate only (private). @bgv → BGV vendor only (private). @everyone → both.
   const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const setMention = (token, otherTokens) => {
     setMsgBody(b => {
@@ -1955,7 +1955,7 @@ export default function EmployerDashboard() {
   };
   const detectRecipientEmployer = (text) => {
     const t = (text||"").toLowerCase();
-    if (/@here\b/.test(t)) return "both";
+    if (/@everyone\b/.test(t)) return "both";
     if (/@bgv\b/.test(t))  return "bgv";
     return "employee";
   };
@@ -2551,12 +2551,9 @@ return (
                   </div>
                 ):(
                   <>
-                    <div style={{padding:"0.75rem 1.25rem",borderBottom:"1px solid #c8c2b8",background:"#f5f2ee",flexShrink:0,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                      <div>
-                        <div style={{fontSize:"0.78rem",fontWeight:700,color:"#111"}}>{inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_name || inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email || activeThread}</div>
-                        <div style={{fontSize:"0.62rem",color:"#a09890",marginTop:1}}>{inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email}{inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email ? " · " : ""}{threadMsgs.length} message{threadMsgs.length!==1?"s":""}</div>
-                      </div>
-                      <button onClick={()=>manualRefreshThread(activeThread)} disabled={refreshingThread} title="Refresh" style={{background:"none",border:"none",cursor:refreshingThread?"not-allowed":"pointer",fontSize:refreshingThread?"0.7rem":"0.85rem",color:"#7a6e64",opacity:refreshingThread?0.6:1,padding:"0.2rem 0.4rem",fontWeight:600}}>{refreshingThread?"Refreshing…":"↻"}</button>
+                    <div style={{padding:"0.75rem 1.25rem",borderBottom:"1px solid #c8c2b8",background:"#f5f2ee",flexShrink:0}}>
+                      <div style={{fontSize:"0.78rem",fontWeight:700,color:"#111"}}>{inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_name || inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email || activeThread}</div>
+                      <div style={{fontSize:"0.62rem",color:"#a09890",marginTop:1}}>{inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email}{inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email ? " · " : ""}{threadMsgs.length} message{threadMsgs.length!==1?"s":""}</div>
                     </div>
                     <div className="msg-list" ref={msgListRef}>
                       {threadLoading&&<div style={{textAlign:"center",fontSize:"0.72rem",color:"#a09890",padding:"1rem"}}>Loading…</div>}
@@ -2619,9 +2616,10 @@ return (
                           const bgvName = t?.bgv_name || "BGV";
                           const btnStyle = {padding:"0.3rem 0.6rem",borderRadius:999,border:"1.5px solid #c8c2b8",background:"#f5f2ee",color:"#7a6e64",fontSize:"0.66rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"};
                           return (<>
-                            <button type="button" onClick={()=>setMention(employeeName,["bgv","here"])} style={btnStyle}>@{employeeName}</button>
-                            {hasBgv && <button type="button" onClick={()=>setMention("bgv",[employeeName,"here"])} style={btnStyle}>@{bgvName}</button>}
-                            {hasBgv && <button type="button" onClick={()=>setMention("here",[employeeName,"bgv"])} style={btnStyle}>@here</button>}
+                            <button type="button" onClick={()=>setMention(employeeName,["bgv","everyone"])} style={btnStyle}>@{employeeName}</button>
+                            {hasBgv && <button type="button" onClick={()=>setMention("bgv",[employeeName,"everyone"])} style={btnStyle}>@{bgvName}</button>}
+                            {hasBgv && <button type="button" onClick={()=>setMention("everyone",[employeeName,"bgv"])} style={btnStyle}>@everyone</button>}
+                            <button onClick={()=>manualRefreshThread(activeThread)} disabled={refreshingThread} title="Refresh" style={{marginLeft:"auto",background:"none",border:"none",cursor:refreshingThread?"not-allowed":"pointer",fontSize:refreshingThread?"0.68rem":"0.85rem",color:"#7a6e64",opacity:refreshingThread?0.6:1,padding:"0.2rem 0.4rem",fontWeight:600}}>{refreshingThread?"Refreshing…":"↻"}</button>
                           </>);
                         })()}
                       </div>
