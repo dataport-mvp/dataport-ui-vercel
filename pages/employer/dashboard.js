@@ -2579,8 +2579,8 @@ return (
                             </div>
                           )}
                           <div className={`msg-bubble-wrap ${mine?"mine":"theirs"}`}>
-                            {!mine&&<div className="msg-sender">{m.sender_name||m.sender_email}</div>}
                             <div className={`msg-bubble ${mine?"mine":"theirs"}`}>
+                              <div style={{fontSize:"0.68rem",fontWeight:700,marginBottom:"0.25rem",opacity:0.7}}>{m.sender_name||m.sender_email} ({m.sender_role})</div>
                               {m.subject && <div style={{fontSize:"0.68rem",fontWeight:800,marginBottom:"0.3rem",opacity:0.85,textTransform:"uppercase",letterSpacing:"0.3px"}}>Sub: {m.subject}</div>}
                               {m.body}
                               {m.attachment_s3_key && (

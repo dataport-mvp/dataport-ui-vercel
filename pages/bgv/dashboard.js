@@ -1025,6 +1025,7 @@ export default function BgvDashboard() {
                                 )}
                               </span></div>
                               {docLink("education","classX") && <div className="profile-kv"><span className="profile-key">Class X Certificate</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{docLink("education","classX")}</span></div>}
+                              {ed.address && <div className="profile-kv"><span className="profile-key">School Address</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.address}</span></div>}
                               {ed.yearOfPassing && <div className="profile-kv"><span className="profile-key">Year of Passing</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.yearOfPassing}</span></div>}
                               {ed.resultType && <div className="profile-kv"><span className="profile-key">Result</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.resultType==="Other"?(ed.resultTypeOther||"Other"):ed.resultType}{ed.resultValue?`: ${ed.resultValue}`:""}</span></div>}
                               {ed.medium && <div className="profile-kv"><span className="profile-key">Medium of Study</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.medium}</span></div>}
@@ -1040,6 +1041,7 @@ export default function BgvDashboard() {
                                 )}
                               </span></div>
                               {docLink("education","intermediate") && <div className="profile-kv"><span className="profile-key">Class XII Certificate</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{docLink("education","intermediate")}</span></div>}
+                              {ed.address && <div className="profile-kv"><span className="profile-key">College Address</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.address}</span></div>}
                               {ed.yearOfPassing && <div className="profile-kv"><span className="profile-key">Year of Passing</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.yearOfPassing}</span></div>}
                               {ed.stream && <div className="profile-kv"><span className="profile-key">Stream</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.stream==="Other"?(ed.streamOther||"Other"):ed.stream}</span></div>}
                               {ed.resultType && <div className="profile-kv"><span className="profile-key">Result</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.resultType==="Other"?(ed.resultTypeOther||"Other"):ed.resultType}{ed.resultValue?`: ${ed.resultValue}`:""}</span></div>}
@@ -1056,6 +1058,7 @@ export default function BgvDashboard() {
                                 )}
                               </span></div>
                               {docLink("education","diploma") && <div className="profile-kv"><span className="profile-key">Diploma Certificate</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{docLink("education","diploma")}</span></div>}
+                              {ed.address && <div className="profile-kv"><span className="profile-key">Institute Address</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.address}</span></div>}
                               {ed.yearOfPassing && <div className="profile-kv"><span className="profile-key">Year of Passing</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.yearOfPassing}</span></div>}
                               {ed.resultType && <div className="profile-kv"><span className="profile-key">Result</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.resultType==="Other"?(ed.resultTypeOther||"Other"):ed.resultType}{ed.resultValue?`: ${ed.resultValue}`:""}</span></div>}
                               {ed.medium && <div className="profile-kv"><span className="profile-key">Medium of Study</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.medium}</span></div>}
@@ -1073,6 +1076,7 @@ export default function BgvDashboard() {
                               {ed.yearOfPassing && <div className="profile-kv"><span className="profile-key">Year of Passing</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.yearOfPassing}</span></div>}
                               {ed.resultType && <div className="profile-kv"><span className="profile-key">Result</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.resultType==="Other"?(ed.resultTypeOther||"Other"):ed.resultType}{ed.resultValue?`: ${ed.resultValue}`:""}</span></div>}
                               {ed.medium && <div className="profile-kv"><span className="profile-key">Medium of Study</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.medium}</span></div>}
+                              {ed.address && <div className="profile-kv"><span className="profile-key">College Address</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.address}</span></div>}
                               {docLink("education","ug_provisional") && <div className="profile-kv"><span className="profile-key">Provisional Marksheet</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{docLink("education","ug_provisional")}</span></div>}
                               {docLink("education","ug_convocation") && <div className="profile-kv"><span className="profile-key">Convocation Certificate</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{docLink("education","ug_convocation")}</span></div>}
                             </div>
@@ -1089,6 +1093,7 @@ export default function BgvDashboard() {
                               {ed.yearOfPassing && <div className="profile-kv"><span className="profile-key">Year of Passing</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.yearOfPassing}</span></div>}
                               {ed.resultType && <div className="profile-kv"><span className="profile-key">Result</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.resultType==="Other"?(ed.resultTypeOther||"Other"):ed.resultType}{ed.resultValue?`: ${ed.resultValue}`:""}</span></div>}
                               {ed.medium && <div className="profile-kv"><span className="profile-key">Medium of Study</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.medium}</span></div>}
+                              {ed.address && <div className="profile-kv"><span className="profile-key">College Address</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.address}</span></div>}
                               {docLink("education","pg_provisional") && <div className="profile-kv"><span className="profile-key">Provisional Marksheet</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{docLink("education","pg_provisional")}</span></div>}
                               {docLink("education","pg_convocation") && <div className="profile-kv"><span className="profile-key">Convocation Certificate</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{docLink("education","pg_convocation")}</span></div>}
                             </div>
@@ -1283,6 +1288,20 @@ export default function BgvDashboard() {
                               </div>
                             );
                           })}
+
+                          {/* Request info from employee / put case on hold */}
+                          <div style={{marginTop:"1rem",marginLeft:"auto",maxWidth:420,background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:10,padding:"0.85rem"}}>
+                            <div style={{fontWeight:700,fontSize:"0.8rem",color:"#dc2626",marginBottom:"0.35rem"}}>Request info from employee (puts case on hold)</div>
+                            <textarea value={holdMsg} onChange={e=>setHoldMsg(e.target.value)} placeholder="What documents or info are needed?" rows={2}
+                              style={{width:"100%",padding:"0.4rem 0.6rem",border:"1.5px solid #fecaca",borderRadius:7,fontFamily:"inherit",fontSize:"0.77rem",resize:"vertical",boxSizing:"border-box",outline:"none"}}/>
+                            <div style={{display:"flex",gap:"0.5rem",alignItems:"center",marginTop:"0.35rem"}}>
+                              <button onClick={()=>sendHoldRequest(caseDetail&&caseDetail.consent_id)} disabled={holdSending||!holdMsg.trim()}
+                                style={{padding:"0.38rem 0.8rem",background:"#dc2626",color:"#fff",border:"none",borderRadius:7,fontSize:"0.75rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit",opacity:(holdSending||!holdMsg.trim())?0.6:1}}>
+                                {holdSending?"Sending...":"Put on hold & notify"}
+                              </button>
+                              {holdResult&&<span style={{fontSize:"0.72rem",color:holdResult.includes("hold")?"#16a34a":"#dc2626",fontWeight:600}}>{holdResult}</span>}
+                            </div>
+                          </div>
 
                           {/* Final Report Section */}
                           <div className="report-section">

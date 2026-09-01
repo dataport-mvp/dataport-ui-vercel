@@ -1136,7 +1136,7 @@ export default function EducationDetails() {
   const [pgCountry,setPgCountry]=useState("India");const [pgCountryName,setPgCountryName]=useState("");const [pgEquivalencyKey,setPgEquivalencyKey]=useState("");
 
   const [dipInstitute,setDipInstitute]=useState("");const [dipBoard,setDipBoard]=useState("");const [dipCourse,setDipCourse]=useState("");const [dipBacklogs,setDipBacklogs]=useState("");
-  const [dipFrom,setDipFrom]=useState("");const [dipTo,setDipTo]=useState("");const [dipYear,setDipYear]=useState("");
+  const [dipFrom,setDipFrom]=useState("");const [dipTo,setDipTo]=useState("");const [dipYear,setDipYear]=useState("");const [dipAddress,setDipAddress]=useState("");
   const [dipResultType,setDipResultType]=useState("");const [dipResultTypeOther,setDipResultTypeOther]=useState("");const [dipResultValue,setDipResultValue]=useState("");const [dipMode,setDipMode]=useState("");const [dipCertKey,setDipCertKey]=useState("");
   const [dipCountry,setDipCountry]=useState("India");const [dipCountryName,setDipCountryName]=useState("");const [dipEquivalencyKey,setDipEquivalencyKey]=useState("");
 
@@ -1264,7 +1264,7 @@ export default function EducationDetails() {
     undergraduate:hasUG==="Yes"?{college:ugCollege,university:ugUniversity,course:ugCourse,specialization:ugSpecialization,hallTicket:ugHall,from:ugFrom,to:ugTo,address:ugAddress,mode:ugMode,yearOfPassing:ugYear,resultType:ugResultType,resultTypeOther:ugResultType==="Other"?ugResultTypeOther:"",resultValue:ugResultValue,backlogs:ugBacklogs,medium:ugMedium,provKey:ugProvKey,convoKey:ugConvoKey,country:ugCountry,countryName:ugCountry==="Outside India"?ugCountryName:"",equivalencyKey:ugEquivalencyKey}:{},
     postgraduate:hasPG==="Yes"?{college:pgCollege,university:pgUniversity,course:pgCourse,specialization:pgSpecialization,hallTicket:pgHall,from:pgFrom,to:pgTo,address:pgAddress,mode:pgMode,yearOfPassing:pgYear,resultType:pgResultType,resultTypeOther:pgResultType==="Other"?pgResultTypeOther:"",resultValue:pgResultValue,backlogs:pgBacklogs,medium:pgMedium,provKey:pgProvKey,convoKey:pgConvoKey,country:pgCountry,countryName:pgCountry==="Outside India"?pgCountryName:"",equivalencyKey:pgEquivalencyKey}:{},
     afterTenth, hasDip, hasCerts, hasProfQual, hasArticleship, hasUG, hasPG,
-    diploma:hasDip==="Yes"?{institute:dipInstitute,board:dipBoard,course:dipCourse,from:dipFrom,to:dipTo,yearOfPassing:dipYear,resultType:dipResultType,resultTypeOther:dipResultType==="Other"?dipResultTypeOther:"",resultValue:dipResultValue,mode:dipMode,backlogs:dipBacklogs,certKey:dipCertKey,country:dipCountry,countryName:dipCountry==="Outside India"?dipCountryName:"",equivalencyKey:dipEquivalencyKey}:{},
+    diploma:hasDip==="Yes"?{institute:dipInstitute,board:dipBoard,course:dipCourse,from:dipFrom,to:dipTo,address:dipAddress,yearOfPassing:dipYear,resultType:dipResultType,resultTypeOther:dipResultType==="Other"?dipResultTypeOther:"",resultValue:dipResultValue,mode:dipMode,backlogs:dipBacklogs,certKey:dipCertKey,country:dipCountry,countryName:dipCountry==="Outside India"?dipCountryName:"",equivalencyKey:dipEquivalencyKey}:{},
     certifications:hasCerts==="Yes"?certs:[],
     professionalQualifications:hasProfQual==="Yes"?profQuals:[],
     articleships:hasArticleship==="Yes"?articleships:[],
@@ -1503,6 +1503,7 @@ export default function EducationDetails() {
               {dipCountry==="Outside India"&&<F l="Country" v={dipCountryName} s={d(setDipCountryName)} errKey="dipCountryName" errors={errors} onFix={fixErr}/>}
             </div>
             <div className="fr"><F l="Institute Name" v={dipInstitute} s={d(setDipInstitute)} errKey="dipInstitute" errors={errors} onFix={fixErr}/><F l="Board / University" v={dipBoard} s={d(setDipBoard)} errKey="dipBoard" errors={errors} onFix={fixErr}/><F l="Course / Programme" v={dipCourse} s={d(setDipCourse)} errKey="dipCourse" errors={errors} onFix={fixErr}/></div>
+            <div className="fr"><F l="Institute Address" v={dipAddress} s={d(setDipAddress)} errKey="dipAddress" errors={errors} onFix={fixErr}/></div>
             <div className="fr">
               <DateField l="From" v={dipFrom} s={d(setDipFrom)} errKey="dipFrom" errors={errors} onFix={fixErr}/>
               <DateField l="To" v={dipTo} s={d(setDipTo)} errKey="dipTo" errors={errors} onFix={fixErr}/>
@@ -1651,6 +1652,7 @@ export default function EducationDetails() {
                 {dipCountry==="Outside India"&&<F l="Country" v={dipCountryName} s={d(setDipCountryName)} errKey="dipCountryName" errors={errors} onFix={fixErr}/>}
               </div>
               <div className="fr"><F l="Institute Name" v={dipInstitute} s={d(setDipInstitute)} errKey="dipInstitute" errors={errors} onFix={fixErr}/><F l="Board / University" v={dipBoard} s={d(setDipBoard)} errKey="dipBoard" errors={errors} onFix={fixErr}/><F l="Course / Programme" v={dipCourse} s={d(setDipCourse)} errKey="dipCourse" errors={errors} onFix={fixErr}/></div>
+              <div className="fr"><F l="Institute Address" v={dipAddress} s={d(setDipAddress)} errKey="dipAddress" errors={errors} onFix={fixErr}/></div>
               <div className="fr">
                 <DateField l="From" v={dipFrom} s={d(setDipFrom)} errKey="dipFrom" errors={errors} onFix={fixErr}/>
                 <DateField l="To" v={dipTo} s={d(setDipTo)} errKey="dipTo" errors={errors} onFix={fixErr}/>

@@ -2196,8 +2196,8 @@ export default function PersonalDetails() {
                               </div>
                             )}
                             <div style={{display:"flex",flexDirection:"column",alignItems:mine?"flex-end":"flex-start"}}>
-                              {!mine&&<div style={{fontSize:"0.6rem",color:"#94a3b8",marginBottom:2,fontWeight:600}}>{m.sender_name||m.sender_email}</div>}
                               <div style={{maxWidth:"78%",padding:"0.6rem 0.85rem",borderRadius:mine?"12px 12px 3px 12px":"12px 12px 12px 3px",background:mine?"#0d6e6e":"#f5f3ff",color:mine?"#fff":"#1a1730",fontSize:"0.82rem",lineHeight:1.55,border:mine?"none":"1px solid #ede9f8"}}>
+                                <div style={{fontSize:"0.68rem",fontWeight:700,marginBottom:"0.25rem",opacity:0.7}}>{m.sender_name||m.sender_email} ({m.sender_role})</div>
                                 {m.subject&&<div style={{fontSize:"0.68rem",fontWeight:800,marginBottom:"0.3rem",opacity:0.85,textTransform:"uppercase",letterSpacing:"0.3px"}}>Sub: {m.subject}</div>}
                                 {m.body}
                                 {m.attachment_s3_key && (
