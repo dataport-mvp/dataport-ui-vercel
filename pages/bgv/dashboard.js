@@ -1641,18 +1641,6 @@ export default function BgvDashboard() {
               })}
             </div>
           )}
-        <div style={{marginTop:"1rem",background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:10,padding:"0.85rem"}}>
-          <div style={{fontWeight:700,fontSize:"0.8rem",color:"#dc2626",marginBottom:"0.35rem"}}>Request info from employee (puts case on hold)</div>
-          <textarea value={holdMsg} onChange={e=>setHoldMsg(e.target.value)} placeholder="What documents or info are needed?" rows={2}
-            style={{width:"100%",padding:"0.4rem 0.6rem",border:"1.5px solid #fecaca",borderRadius:7,fontFamily:"inherit",fontSize:"0.77rem",resize:"vertical",boxSizing:"border-box",outline:"none"}}/>
-          <div style={{display:"flex",gap:"0.5rem",alignItems:"center",marginTop:"0.35rem"}}>
-            <button onClick={()=>sendHoldRequest(caseDetail&&caseDetail.consent_id)} disabled={holdSending||!holdMsg.trim()}
-              style={{padding:"0.38rem 0.8rem",background:"#dc2626",color:"#fff",border:"none",borderRadius:7,fontSize:"0.75rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit",opacity:(holdSending||!holdMsg.trim())?0.6:1}}>
-              {holdSending?"Sending...":"Put on hold & notify"}
-            </button>
-            {holdResult&&<span style={{fontSize:"0.72rem",color:holdResult.includes("hold")?"#16a34a":"#dc2626",fontWeight:600}}>{holdResult}</span>}
-          </div>
-        </div>
         </div>
       </div>
     </>
