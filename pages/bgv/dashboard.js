@@ -414,6 +414,12 @@ export default function BgvDashboard() {
   const [cases, setCases]         = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [caseDetail, setCaseDetail] = useState(null);
+  const [caseDocs, setCaseDocs] = useState({});
+  const docLink = (group, subKey) => {
+    const doc = caseDocs?.[group]?.[subKey];
+    if (!doc?.url) return null;
+    return <a href={doc.url} target="_blank" rel="noopener noreferrer" style={{marginLeft:6,fontSize:"0.68rem",color:"#0d6e6e",fontWeight:700,textDecoration:"none",whiteSpace:"nowrap"}}>📎 View</a>;
+  };
   const [loadingCases, setLoadingCases] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
@@ -534,6 +540,16 @@ export default function BgvDashboard() {
         if (d.bgv_overall_status) setReportVerdict(d.bgv_overall_status);
         if (d.bgv_summary) setReportSummary(d.bgv_summary);
         if (d.bgv_report_key) setReportDone(true);
+        // Fetch every document once, up front — this is what lets every field
+        // show its own attachment link inline, right where it's relevant,
+        // instead of one generic "view all" button someone has to remember
+        // to click separately for every section.
+        if (d.employee_id) {
+          try {
+            const docRes = await apiFetch(`${API}/documents/${d.employee_id}`);
+            if (docRes.ok) setCaseDocs((await docRes.json()).documents || {});
+          } catch(_) {}
+        }
       }
     } catch(_) {}
     setLoadingDetail(false);
@@ -940,14 +956,18 @@ export default function BgvDashboard() {
                             ["Gender", caseDetail.profile?.gender],
                             ["Mobile", caseDetail.profile?.mobile],
                             ["Email", caseDetail.employee_email],
-                            ["PAN", caseDetail.profile?.pan],
-                            ["Aadhaar (last 4)", caseDetail.profile?.aadhaar || caseDetail.profile?.aadhar],
-                            ["Passport", caseDetail.profile?.passport],
+                            ["PAN", caseDetail.profile?.pan, "personal", "pan"],
+                            ["Aadhaar (last 4)", caseDetail.profile?.aadhaar || caseDetail.profile?.aadhar, "personal", "aadhaar"],
+                            ["Passport", caseDetail.profile?.passport, "personal", "passport"],
                             ["Nationality", caseDetail.profile?.nationality],
-                          ].map(([k,v])=>v?(
+                            ["Father's Name", caseDetail.profile?.fatherName],
+                            ["Father's Date of Birth", caseDetail.profile?.fatherDob],
+                            ["Mother's Name", caseDetail.profile?.motherName],
+                            ["Mother's Date of Birth", caseDetail.profile?.motherDob],
+                          ].map(([k,v,docGroup,docKey])=>v?(
                             <div key={k} className="profile-kv">
                               <span className="profile-key">{k}</span>
-                              <span className="profile-val">{v}</span>
+                              <span className="profile-val">{v}{docGroup && docLink(docGroup,docKey)}</span>
                             </div>
                           ):null)}
 
@@ -956,7 +976,7 @@ export default function BgvDashboard() {
                             <div className="profile-kv">
                               <span className="profile-key">Address</span>
                               <span className="profile-val" style={{fontSize:"0.8rem",lineHeight:1.5}}>
-                                {[caseDetail.profile.currentAddress.door, caseDetail.profile.currentAddress.street, caseDetail.profile.currentAddress.city, caseDetail.profile.currentAddress.state, caseDetail.profile.currentAddress.pincode].filter(Boolean).join(", ")}
+                                {[caseDetail.profile.currentAddress.door, caseDetail.profile.currentAddress.village, caseDetail.profile.currentAddress.locality, caseDetail.profile.currentAddress.district, caseDetail.profile.currentAddress.state, caseDetail.profile.currentAddress.pin].filter(Boolean).join(", ")}
                               </span>
                             </div>
                           )}
@@ -972,7 +992,7 @@ export default function BgvDashboard() {
                             <div className="profile-kv">
                               <span className="profile-key">Address</span>
                               <span className="profile-val" style={{fontSize:"0.8rem",lineHeight:1.5}}>
-                                {[caseDetail.profile.permanentAddress.door, caseDetail.profile.permanentAddress.street, caseDetail.profile.permanentAddress.city, caseDetail.profile.permanentAddress.state, caseDetail.profile.permanentAddress.pincode].filter(Boolean).join(", ")}
+                                {[caseDetail.profile.permanentAddress.door, caseDetail.profile.permanentAddress.village, caseDetail.profile.permanentAddress.locality, caseDetail.profile.permanentAddress.district, caseDetail.profile.permanentAddress.state, caseDetail.profile.permanentAddress.pin].filter(Boolean).join(", ")}
                               </span>
                             </div>
                           )}
@@ -998,7 +1018,7 @@ export default function BgvDashboard() {
                           <div className="panel-title" style={{marginTop:"1rem"}}>Education Summary</div>
                           {caseDetail.profile?.education?.classX?.school && (() => { const ed = caseDetail.profile.education.classX; return (
                             <div style={{border:"1px solid #e5e7eb",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.6rem",background:"#fafafa"}}>
-                              <div className="profile-kv"><span className="profile-key">Class X</span><span className="profile-val">{ed.school}{ed.board?` — ${ed.board}`:""}
+                              <div className="profile-kv"><span className="profile-key">Class X</span><span className="profile-val">{ed.school}{ed.board?` — ${ed.board}`:""}{docLink("education","classX")}
                                 {ed.country === "Outside India" && (
                                   <span style={{marginLeft:8,padding:"1px 8px",borderRadius:999,background:"#fef3c7",color:"#92400e",fontSize:"0.7rem",fontWeight:700}}>
                                     Foreign — {ed.countryName || "Outside India"}{ed.equivalencyKey ? " · Equivalency uploaded" : " · Equivalency pending"}
@@ -1010,9 +1030,9 @@ export default function BgvDashboard() {
                               {ed.medium && <div className="profile-kv"><span className="profile-key">Medium of Study</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.medium}</span></div>}
                             </div>
                           );})()}
-                          {caseDetail.profile?.education?.intermediate?.school && (() => { const ed = caseDetail.profile.education.intermediate; return (
+                          {caseDetail.profile?.education?.intermediate?.college && (() => { const ed = caseDetail.profile.education.intermediate; return (
                             <div style={{border:"1px solid #e5e7eb",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.6rem",background:"#fafafa"}}>
-                              <div className="profile-kv"><span className="profile-key">Class XII / Intermediate</span><span className="profile-val">{ed.school}{ed.board?` — ${ed.board}`:""}
+                              <div className="profile-kv"><span className="profile-key">Class XII / Intermediate</span><span className="profile-val">{ed.college}{ed.board?` — ${ed.board}`:""}{docLink("education","intermediate")}
                                 {ed.country === "Outside India" && (
                                   <span style={{marginLeft:8,padding:"1px 8px",borderRadius:999,background:"#fef3c7",color:"#92400e",fontSize:"0.7rem",fontWeight:700}}>
                                     Foreign — {ed.countryName || "Outside India"}{ed.equivalencyKey ? " · Equivalency uploaded" : " · Equivalency pending"}
@@ -1025,9 +1045,9 @@ export default function BgvDashboard() {
                               {ed.medium && <div className="profile-kv"><span className="profile-key">Medium of Study</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.medium}</span></div>}
                             </div>
                           );})()}
-                          {caseDetail.profile?.education?.diploma?.college && (() => { const ed = caseDetail.profile.education.diploma; return (
+                          {caseDetail.profile?.education?.diploma?.institute && (() => { const ed = caseDetail.profile.education.diploma; return (
                             <div style={{border:"1px solid #e5e7eb",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.6rem",background:"#fafafa"}}>
-                              <div className="profile-kv"><span className="profile-key">Diploma</span><span className="profile-val">{ed.course} — {ed.college}
+                              <div className="profile-kv"><span className="profile-key">Diploma</span><span className="profile-val">{ed.course} — {ed.institute}{docLink("education","diploma")}
                                 {ed.country === "Outside India" && (
                                   <span style={{marginLeft:8,padding:"1px 8px",borderRadius:999,background:"#fef3c7",color:"#92400e",fontSize:"0.7rem",fontWeight:700}}>
                                     Foreign — {ed.countryName || "Outside India"}{ed.equivalencyKey ? " · Equivalency uploaded" : " · Equivalency pending"}
@@ -1051,6 +1071,7 @@ export default function BgvDashboard() {
                               {ed.yearOfPassing && <div className="profile-kv"><span className="profile-key">Year of Passing</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.yearOfPassing}</span></div>}
                               {ed.resultType && <div className="profile-kv"><span className="profile-key">Result</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.resultType==="Other"?(ed.resultTypeOther||"Other"):ed.resultType}{ed.resultValue?`: ${ed.resultValue}`:""}</span></div>}
                               {ed.medium && <div className="profile-kv"><span className="profile-key">Medium of Study</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.medium}</span></div>}
+                              <div className="profile-kv"><span className="profile-key">Documents</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{docLink("education","ug_provisional")}{docLink("education","ug_convocation")}</span></div>
                             </div>
                           );})()}
                           {caseDetail.profile?.education?.postgraduate?.college && (() => { const ed = caseDetail.profile.education.postgraduate; return (
@@ -1065,21 +1086,22 @@ export default function BgvDashboard() {
                               {ed.yearOfPassing && <div className="profile-kv"><span className="profile-key">Year of Passing</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.yearOfPassing}</span></div>}
                               {ed.resultType && <div className="profile-kv"><span className="profile-key">Result</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.resultType==="Other"?(ed.resultTypeOther||"Other"):ed.resultType}{ed.resultValue?`: ${ed.resultValue}`:""}</span></div>}
                               {ed.medium && <div className="profile-kv"><span className="profile-key">Medium of Study</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.medium}</span></div>}
+                              <div className="profile-kv"><span className="profile-key">Documents</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{docLink("education","pg_provisional")}{docLink("education","pg_convocation")}</span></div>
                             </div>
                           );})()}
-                          {(caseDetail.profile?.education?.articleships||[]).filter(a=>a?.firmName).map((a,i)=>(
+                          {(caseDetail.profile?.education?.articleships||[]).map((a,i)=>a?.firmName ? (
                             <div key={`art-${i}`} style={{border:"1px solid #e5e7eb",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.6rem",background:"#fafafa"}}>
-                              <div className="profile-kv"><span className="profile-key">{a.type==="Other Practical Training"?(a.otherType||a.type):a.type||"Articleship"}</span><span className="profile-val">{a.firmName} — {a.startDate} to {a.endDate||"Present"}</span></div>
+                              <div className="profile-kv"><span className="profile-key">{a.type==="Other Practical Training"?(a.otherType||a.type):a.type||"Articleship"}</span><span className="profile-val">{a.firmName} — {a.startDate} to {a.endDate||"Present"}{docLink("education",`articleship_${i}`)}</span></div>
                               {a.regNo && <div className="profile-kv"><span className="profile-key">Registration / Membership No.</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{a.regNo}</span></div>}
                             </div>
-                          ))}
-                          {(caseDetail.profile?.education?.professionalQualifications||[]).filter(p=>p?.type).map((p,i)=>(
+                          ) : null)}
+                          {(caseDetail.profile?.education?.professionalQualifications||[]).map((p,i)=>p?.type ? (
                             <div key={`pq-${i}`} style={{border:"1px solid #e5e7eb",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.6rem",background:"#fafafa"}}>
-                              <div className="profile-kv"><span className="profile-key">Professional Qualification</span><span className="profile-val">{p.type==="Other"?(p.otherType||"Other"):p.type}{p.level?` — ${p.level}`:""}</span></div>
+                              <div className="profile-kv"><span className="profile-key">Professional Qualification</span><span className="profile-val">{p.type==="Other"?(p.otherType||"Other"):p.type}{p.level?` — ${p.level}`:""}{docLink("education",`profqual_${i}`)}</span></div>
                               {p.year && <div className="profile-kv"><span className="profile-key">Year</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{p.year}</span></div>}
                               {p.regNo && <div className="profile-kv"><span className="profile-key">Registration / Membership No.</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{p.regNo}</span></div>}
                             </div>
-                          ))}
+                          ) : null)}
                           <button className="view-btn" style={{marginTop:"0.4rem",marginBottom:"0.5rem"}} onClick={async()=>{
                             try {
                               const r = await apiFetch(`${API}/documents/${caseDetail.employee_id}`);
@@ -1125,6 +1147,16 @@ export default function BgvDashboard() {
                                   <span className="profile-val" style={{fontSize:"0.8rem"}}>{e.reasonForRelieving}</span>
                                 </div>
                               )}
+                              <div className="profile-kv">
+                                <span className="profile-key">Documents</span>
+                                <span className="profile-val" style={{fontSize:"0.8rem",display:"flex",flexWrap:"wrap",gap:"2px 10px"}}>
+                                  {docLink(`employment/${e.company_id}`,"offerLetter") && <span>Offer Letter{docLink(`employment/${e.company_id}`,"offerLetter")}</span>}
+                                  {docLink(`employment/${e.company_id}`,"payslips") && <span>Payslips{docLink(`employment/${e.company_id}`,"payslips")}</span>}
+                                  {docLink(`employment/${e.company_id}`,"resignation") && <span>Resignation{docLink(`employment/${e.company_id}`,"resignation")}</span>}
+                                  {docLink(`employment/${e.company_id}`,"experience") && <span>Experience Letter{docLink(`employment/${e.company_id}`,"experience")}</span>}
+                                  {docLink(`employment/${e.company_id}`,"idCard") && <span>ID Card{docLink(`employment/${e.company_id}`,"idCard")}</span>}
+                                </span>
+                              </div>
                               {e.reference && (e.reference.name || e.reference.email || e.reference.mobile) && (
                                 <div style={{marginTop:"0.4rem",padding:"0.5rem 0.6rem",background:"#eff6ff",borderRadius:6,border:"1px solid #bfdbfe"}}>
                                   <div style={{fontSize:"0.68rem",fontWeight:700,color:"#1e40af",marginBottom:"0.2rem"}}>VERIFICATION CONTACT</div>
@@ -1156,8 +1188,14 @@ export default function BgvDashboard() {
                               <div className="panel-title" style={{marginTop:"1rem"}}>UAN / PF History</div>
                               <div className="profile-kv">
                                 <span className="profile-key">UAN Number</span>
-                                <span className="profile-val">{caseDetail.profile.uanNumber}</span>
+                                <span className="profile-val">{caseDetail.profile.uanNumber}{docLink("uan","uanCard")}</span>
                               </div>
+                              {docLink("uan","serviceHistory") && (
+                                <div className="profile-kv">
+                                  <span className="profile-key">Service History Snapshot</span>
+                                  <span className="profile-val">{docLink("uan","serviceHistory")}</span>
+                                </div>
+                              )}
                               {(caseDetail.profile?.pfRecords||[]).filter(p=>p?.companyName && (p.hasPf==="No"||p.pfMemberId||p.dojEpfo||p.doeEpfo)).map((p,i)=>(
                                 <div key={`pf-${i}`} className="profile-kv">
                                   <span className="profile-key">PF Record</span>
