@@ -412,6 +412,8 @@ export default function BgvDashboard() {
   const [holdResult,  setHoldResult] = useState("");
   const [cases, setCases]         = useState([]);
   const [selectedId, setSelectedId] = useState(null);
+  const [caseFilter, setCaseFilter] = useState(null); // null = all, else a bgv_status value
+  const [selectedEmployer, setSelectedEmployer] = useState(null); // requestor_email, for the employer-wise report drill-down
   const [caseDetail, setCaseDetail] = useState(null);
   const [caseDocs, setCaseDocs] = useState({});
   const docLink = (group, subKey) => {
@@ -790,18 +792,19 @@ export default function BgvDashboard() {
       <style>{G}</style>
       <div className="pg">
         <div className="topbar">
-          <div style={{display:"flex",alignItems:"baseline",gap:"0.3rem"}}>
+          <div style={{display:"flex",alignItems:"baseline",gap:"0.4rem"}}>
+            <span style={{fontSize:"1.15rem"}}>🛡️</span>
             <span className="logo-text">Datagate</span>
             <span className="logo-badge">BGV Portal</span>
           </div>
           <div className="topbar-right">
-            <button onClick={()=>setTab("inbox")} style={{position:"relative",width:32,height:32,borderRadius:7,border:"1px solid #e2e8f0",background:tab==="inbox"?"#4f46e5":"#f8fafc",color:tab==="inbox"?"#fff":"#475569",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.9rem"}} title="Messages">
+            <button onClick={()=>setTab("inbox")} style={{position:"relative",width:32,height:32,borderRadius:7,border:tab==="inbox"?"1px solid #4f46e5":"1px solid rgba(255,255,255,0.14)",background:tab==="inbox"?"#4f46e5":"rgba(255,255,255,0.06)",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.9rem",transition:"background 0.15s, border-color 0.15s"}} title="Messages">
               ✉️
               {unreadCount>0 && <span style={{position:"absolute",top:-4,right:-4,background:"#ef4444",color:"#fff",fontSize:"0.6rem",fontWeight:700,borderRadius:999,minWidth:15,height:15,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 3px"}}>{unreadCount>9?"9+":unreadCount}</span>}
             </button>
             <span className="user-name">🏢 {user.name || user.email}</span>
             <div style={{position:"relative"}}>
-              <button onClick={()=>setShowGear(g=>!g)} style={{padding:"5px 10px",border:`1.5px solid ${showGear?"#4f46e5":"#e2e8f0"}`,borderRadius:6,background:showGear?"#eef2ff":"#f8fafc",fontSize:12,fontWeight:600,color:"#475569",cursor:"pointer",fontFamily:"inherit"}}>⚙️ Settings</button>
+              <button onClick={()=>setShowGear(g=>!g)} style={{padding:"5px 10px",border:showGear?"1.5px solid #4f46e5":"1.5px solid rgba(255,255,255,0.14)",borderRadius:6,background:showGear?"#4f46e5":"rgba(255,255,255,0.06)",fontSize:12,fontWeight:600,color:"#fff",cursor:"pointer",fontFamily:"inherit",transition:"background 0.15s, border-color 0.15s"}}>⚙️ Settings</button>
               {showGear && (
                 <>
                   <div style={{position:"fixed",inset:0,zIndex:199}} onClick={()=>setShowGear(false)}/>
@@ -854,17 +857,24 @@ export default function BgvDashboard() {
               {/* Stats */}
               <div className="stat-row">
                 {[
-                  {num:stats.total,     label:"Total Cases"},
-                  {num:stats.in_prog,   label:"In Progress"},
-                  {num:stats.completed, label:"Completed"},
-                  {num:stats.pending,   label:"Pending Start"},
+                  {num:stats.total,     label:"Total Cases",   filterVal:null},
+                  {num:stats.in_prog,   label:"In Progress",   filterVal:"in_progress"},
+                  {num:stats.completed, label:"Completed",     filterVal:"completed"},
+                  {num:stats.pending,   label:"Pending Start", filterVal:"assigned"},
                 ].map((s,i)=>(
-                  <div key={i} className="stat-card">
+                  <div key={i} className="stat-card" onClick={()=>setCaseFilter(s.filterVal)}
+                    style={{cursor:"pointer",border:caseFilter===s.filterVal?"2px solid #4f46e5":"2px solid transparent",transition:"border-color 0.15s"}}>
                     <div className="stat-num">{s.num}</div>
                     <div className="stat-lbl">{s.label}</div>
                   </div>
                 ))}
               </div>
+              {caseFilter && (
+                <div style={{fontSize:"0.75rem",color:"#4f46e5",fontWeight:600,margin:"0.5rem 0 -0.5rem",display:"flex",alignItems:"center",gap:"0.5rem"}}>
+                  Showing: {caseFilter==="in_progress"?"In Progress":caseFilter==="completed"?"Completed":"Pending Start"}
+                  <button onClick={()=>setCaseFilter(null)} style={{background:"none",border:"none",color:"#4f46e5",textDecoration:"underline",cursor:"pointer",fontSize:"0.72rem",fontWeight:600,padding:0,fontFamily:"inherit"}}>Clear</button>
+                </div>
+              )}
 
               {/* Cases Table */}
               <div className="cases-table">
@@ -878,7 +888,8 @@ export default function BgvDashboard() {
                 </div>
                 {loadingCases && <div className="empty-state">Loading cases…</div>}
                 {!loadingCases && cases.length === 0 && <div className="empty-state">No cases assigned yet.</div>}
-                {cases.map(c => {
+                {!loadingCases && cases.length > 0 && cases.filter(c=>!caseFilter || c.bgv_status===caseFilter).length === 0 && <div className="empty-state">No cases match this filter.</div>}
+                {cases.filter(c=>!caseFilter || c.bgv_status===caseFilter).map(c => {
                   const bs = BGV_STATUS_BADGE[c.bgv_status] || BGV_STATUS_BADGE.assigned;
                   const pct = c.checks_total > 0 ? Math.round((c.checks_done / c.checks_total) * 100) : 0;
                   return (
@@ -1551,6 +1562,64 @@ export default function BgvDashboard() {
           })()}
 
           {/* ── REPORTS TAB ── */}
+          {tab === "reports" && (() => {
+            const byEmployer = {};
+            cases.forEach(c => {
+              const key = c.requestor_email || "unknown";
+              if (!byEmployer[key]) byEmployer[key] = { name: c.requestor_name || c.requestor_email, email: c.requestor_email, cases: [] };
+              byEmployer[key].cases.push(c);
+            });
+            const employerStats = Object.values(byEmployer).map(e => ({
+              ...e,
+              total: e.cases.length,
+              completed: e.cases.filter(c => c.bgv_status === "completed").length,
+              pending: e.cases.filter(c => c.bgv_status !== "completed").length,
+              failed: e.cases.filter(c => c.bgv_result_flag === "red").length,
+            })).sort((a,b) => b.total - a.total);
+            const activeEmployer = selectedEmployer ? employerStats.find(e => e.email === selectedEmployer) : null;
+            return (
+            <div style={{background:"#fff",borderRadius:14,padding:"1.25rem",boxShadow:"0 2px 8px rgba(30,26,62,0.08)",marginBottom:"1rem"}}>
+              <div style={{fontWeight:700,fontSize:"0.9rem",color:"#0f172a",marginBottom:"1rem"}}>Employer-wise Case Statistics</div>
+              {employerStats.length===0 && <div className="empty-state">No cases assigned yet.</div>}
+              {!activeEmployer && employerStats.map(e => (
+                <div key={e.email} onClick={()=>setSelectedEmployer(e.email)}
+                  style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"0.85rem 1rem",border:"1px solid #f1f5f9",borderRadius:10,marginBottom:"0.65rem",cursor:"pointer",transition:"border-color 0.15s"}}
+                  onMouseEnter={ev=>ev.currentTarget.style.borderColor="#4f46e5"} onMouseLeave={ev=>ev.currentTarget.style.borderColor="#f1f5f9"}>
+                  <div>
+                    <div style={{fontWeight:700,fontSize:"0.875rem",color:"#0f172a"}}>{e.name}</div>
+                    <div style={{fontSize:"0.72rem",color:"#64748b",marginTop:"0.15rem"}}>{e.email}</div>
+                  </div>
+                  <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap",justifyContent:"flex-end"}}>
+                    <span style={{fontWeight:700,fontSize:"0.72rem",color:"#0f172a",background:"#f8fafc",padding:"0.2rem 0.6rem",borderRadius:999}}>{e.total} total</span>
+                    <span style={{fontWeight:700,fontSize:"0.72rem",color:"#16a34a",background:"#f0fdf4",padding:"0.2rem 0.6rem",borderRadius:999}}>{e.completed} completed</span>
+                    <span style={{fontWeight:700,fontSize:"0.72rem",color:"#d97706",background:"#fffbeb",padding:"0.2rem 0.6rem",borderRadius:999}}>{e.pending} pending</span>
+                    {e.failed>0 && <span style={{fontWeight:700,fontSize:"0.72rem",color:"#dc2626",background:"#fef2f2",padding:"0.2rem 0.6rem",borderRadius:999}}>{e.failed} failed</span>}
+                  </div>
+                </div>
+              ))}
+              {activeEmployer && (
+                <div>
+                  <button onClick={()=>setSelectedEmployer(null)} style={{background:"none",border:"none",color:"#4f46e5",fontWeight:600,fontSize:"0.78rem",cursor:"pointer",padding:0,marginBottom:"0.85rem",fontFamily:"inherit"}}>← Back to all employers</button>
+                  <div style={{fontWeight:700,fontSize:"0.85rem",color:"#0f172a",marginBottom:"0.25rem"}}>{activeEmployer.name}</div>
+                  <div style={{fontSize:"0.72rem",color:"#64748b",marginBottom:"0.85rem"}}>{activeEmployer.total} total · {activeEmployer.completed} completed · {activeEmployer.pending} pending{activeEmployer.failed>0?` · ${activeEmployer.failed} failed`:""}</div>
+                  {activeEmployer.cases.map(c => {
+                    const bs = BGV_STATUS_BADGE[c.bgv_status] || BGV_STATUS_BADGE.assigned;
+                    const ov = OVERALL_STATUS[c.bgv_overall_status];
+                    return (
+                      <div key={c.consent_id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"0.7rem 0.9rem",border:"1px solid #f1f5f9",borderRadius:9,marginBottom:"0.5rem"}}>
+                        <div style={{fontWeight:600,fontSize:"0.82rem",color:"#0f172a"}}>{c.candidate_name}</div>
+                        <div style={{display:"flex",gap:"0.4rem",flexWrap:"wrap",justifyContent:"flex-end"}}>
+                          <span style={{fontWeight:700,fontSize:"0.68rem",color:bs.color,background:bs.bg,padding:"0.15rem 0.55rem",borderRadius:999}}>{bs.label}</span>
+                          {ov && <span style={{fontWeight:700,fontSize:"0.68rem",color:ov.color,background:`${ov.color}15`,padding:"0.15rem 0.55rem",borderRadius:999}}>{ov.label}</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            );
+          })()}
           {tab === "reports" && (
             <div style={{background:"#fff",borderRadius:14,padding:"1.25rem",boxShadow:"0 2px 8px rgba(30,26,62,0.08)"}}>
               <div style={{fontWeight:700,fontSize:"0.9rem",color:"#0f172a",marginBottom:"1rem"}}>Submitted Reports</div>
