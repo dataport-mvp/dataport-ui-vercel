@@ -2454,10 +2454,10 @@ export default function EmployerDashboard() {
     setTermsAccepted(true);
   }} />;
 
-  const counts = { pending:pending.length, approved:approvedGrouped.length, declined:declined.length, revoked:revoked.length };
-  const list   = cTab==="pending" ? fp : cTab==="approved" ? fa : cTab==="revoked" ? fr : fd;
-  const search = cTab==="pending" ? spPending : cTab==="approved" ? spApproved : cTab==="revoked" ? spRevoked : spDeclined;
-  const setSearch = cTab==="pending" ? setSpPending : cTab==="approved" ? setSpApproved : cTab==="revoked" ? setSpRevoked : setSpDeclined;
+  const counts = { pending:pending.length, approved:approvedGrouped.length, declined:declined.length, revoked:revoked.length, bgv:approvedGrouped.length };
+  const list   = cTab==="pending" ? fp : cTab==="approved" ? fa : cTab==="revoked" ? fr : cTab==="bgv" ? fa : fd;
+  const search = cTab==="pending" ? spPending : cTab==="approved" ? spApproved : cTab==="revoked" ? spRevoked : cTab==="bgv" ? spApproved : spDeclined;
+  const setSearch = cTab==="pending" ? setSpPending : cTab==="approved" ? setSpApproved : cTab==="revoked" ? setSpRevoked : cTab==="bgv" ? setSpApproved : setSpDeclined;
 
 return (
     <>
@@ -2942,6 +2942,32 @@ return (
                     })}
                   </div>
                 </div>
+
+                {/* BGV Status Metrics — live, computed from the same polling consents state, no extra fetch */}
+                <div style={{background:"#fff",border:"1px solid #c8c2b8",borderRadius:10,padding:"12px 14px",marginTop:"1rem"}}>
+                  <div style={{fontSize:9,fontWeight:700,letterSpacing:"1px",textTransform:"uppercase",color:"#7a6e64",marginBottom:4}}>BGV Status Metrics</div>
+                  <div style={{fontSize:9,color:"#a09890",marginBottom:10,lineHeight:1.5}}>Across {approvedGrouped.length} approved candidate{approvedGrouped.length!==1?"s":""}</div>
+                  {[
+                    ["Not Assigned", approvedGrouped.filter(c=>!c.bgv_vendor_email).length, "#94a3b8", "Approved, no BGV vendor yet"],
+                    ["Assigned",     approvedGrouped.filter(c=>["assigned","groomed"].includes(c.bgv_status)).length, "#3b82f6", "Vendor assigned, not yet started"],
+                    ["In Progress",  approvedGrouped.filter(c=>c.bgv_status==="in_progress").length, "#f59e0b", "Verification underway"],
+                    ["Completed",    approvedGrouped.filter(c=>c.bgv_status==="completed").length, "#16a34a", "Final report submitted"],
+                    ["On Hold",      approvedGrouped.filter(c=>c.bgv_status==="on_hold").length, "#dc2626", "Awaiting info from candidate"],
+                  ].map(([label,val,col,sub])=>(
+                    <div key={label} style={{marginBottom:9}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                        <div>
+                          <span style={{fontSize:11,color:"#1c2b2b",fontWeight:600}}>{label}</span>
+                          <div style={{fontSize:9,color:"#a09890",marginTop:1}}>{sub}</div>
+                        </div>
+                        <span style={{fontWeight:800,color:col,fontSize:14,minWidth:20,textAlign:"right"}}>{val}{approvedGrouped.length>0&&<span style={{fontSize:9,color:"#a09890",fontWeight:600,marginLeft:4}}>({Math.round((val/approvedGrouped.length)*100)}%)</span>}</span>
+                      </div>
+                      <div style={{height:3,background:"#f0ece6",borderRadius:2,overflow:"hidden"}}>
+                        <div style={{height:"100%",width:approvedGrouped.length>0?`${Math.round((val/approvedGrouped.length)*100)}%`:"0%",background:col,borderRadius:2,transition:"width .4s"}}/>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Right col: Quick Actions */}
@@ -2983,7 +3009,7 @@ return (
             <div style={{width:280,minWidth:280,background:"#111",display:"flex",flexDirection:"column",height:"calc(100vh - 52px)",position:"sticky",top:52,overflow:"hidden"}}>
               <div style={{padding:"0.65rem 1.3rem 0.3rem"}}>
                 <div className="filter-tabs">
-                  {[["pending","Pending"],["approved","Approved"],["declined","Declined"],["revoked","Revoked"]].map(([key,label])=>(
+                  {[["pending","Pending"],["approved","Approved"],["declined","Declined"],["revoked","Revoked"],["bgv","BGV"]].map(([key,label])=>(
                     <button key={key} className={`ft-btn${cTab===key?" on":""}`} onClick={()=>setCTab(key)}>
                       {label}{counts[key]>0&&<span className="ft-cnt">{counts[key]}</span>}
                     </button>
@@ -3007,20 +3033,28 @@ return (
                 :list.map(c=>{
                   const dot=c.status==="approved"?"#16a34a":c.status==="pending"?"#f59e0b":"#ef4444";
                   const ts=c.status==="approved"?(c.responded_at||c.approved_at):(c.requested_at||c.created_at);
+                  const bgvStatusLabel = {assigned:"Assigned",groomed:"Assigned",in_progress:"In Progress",completed:"Completed",on_hold:"On Hold"}[c.bgv_status] || "Not Assigned";
+                  const bgvStatusColor = {assigned:"#3b82f6",groomed:"#3b82f6",in_progress:"#3b82f6",completed:"#16a34a",on_hold:"#f59e0b"}[c.bgv_status] || "#94a3b8";
                   return(
-                    <div key={gcid(c)} className={`c-item${gcid(selected)===gcid(c)?" sel":""}`} onClick={()=>selectConsent(c)}>
-                      <div className="c-dot" style={{background:dot}}/>
+                    <div key={gcid(c)} className={`c-item${gcid(selected)===gcid(c)?" sel":""}`} onClick={async()=>{await selectConsent(c);if(cTab==="bgv")setActiveTab("BGV Status");}}>
+                      <div className="c-dot" style={{background:cTab==="bgv"?bgvStatusColor:dot}}/>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"0.3rem"}}>
                           <div className="c-mail" style={{flex:1}}>{c.employee_email}</div>
-                          {candStatus[c.employee_email]&&(
+                          {cTab==="bgv" ? (
+                            <span style={{fontSize:9,fontWeight:700,color:bgvStatusColor,background:`${bgvStatusColor}18`,padding:"2px 7px",borderRadius:999,whiteSpace:"nowrap"}}>{bgvStatusLabel}</span>
+                          ) : candStatus[c.employee_email]&&(
                             <span className={`cand-status ${candStatus[c.employee_email].status==="submitted"?"submitted":candStatus[c.employee_email].status==="draft"?"draft":"no-profile"}`}>
                               {candStatus[c.employee_email].status==="submitted"?"✓ Done":candStatus[c.employee_email].status==="draft"?"In progress":"Not started"}
                             </span>
                           )}
                         </div>
                         {c.employee_name&&c.employee_name!==c.employee_email&&<div className="c-nm">{c.employee_name}</div>}
-                        <div className="c-dt">{toISTDate(ts)}</div>
+                        {cTab==="bgv" ? (
+                          <div className="c-dt">{c.bgv_vendor_email || "No vendor assigned yet"}</div>
+                        ) : (
+                          <div className="c-dt">{toISTDate(ts)}</div>
+                        )}
                       </div>
                     </div>
                   );
