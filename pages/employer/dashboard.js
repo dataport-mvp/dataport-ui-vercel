@@ -1683,6 +1683,23 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
 
   return (
     <div>
+      {bgvCase?.bgv_vendor_email && (
+        <div style={{background:showReassign?"#fffbeb":"#f0fdf4",border:showReassign?"1px solid #fde68a":"1px solid #bbf7d0",borderRadius:10,padding:"0.75rem 1rem",marginBottom:"1rem",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"0.5rem"}}>
+          <div>
+            <span style={{fontSize:"0.72rem",fontWeight:700,color:showReassign?"#92400e":"#15803d",textTransform:"uppercase",letterSpacing:"0.5px"}}>{showReassign?"Current Vendor (being replaced)":"Assigned to BGV Vendor"}</span>
+            <div style={{fontWeight:700,fontSize:"0.875rem",color:"#0f172a",marginTop:"0.1rem"}}>{bgvCase.bgv_vendor_email}</div>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:"0.6rem"}}>
+            {bgvCase.bgv_status && <span style={{padding:"0.25rem 0.75rem",borderRadius:999,background:showReassign?"#fef3c7":"#dcfce7",color:showReassign?"#92400e":"#15803d",fontSize:"0.72rem",fontWeight:700}}>{bgvCase.bgv_status.replace("_"," ").toUpperCase()}</span>}
+            {!showReassign && (
+              <button onClick={()=>setShowReassign(true)} style={{padding:"0.3rem 0.7rem",background:"#fff",border:"1.5px solid #cbd5e1",borderRadius:7,fontFamily:"inherit",fontSize:"0.72rem",fontWeight:700,color:"#475569",cursor:"pointer"}}>
+                Reassign
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Assign vendor section */}
       {(!bgvCase?.bgv_vendor_email || showReassign) && (
         <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:"1rem",marginBottom:"1rem"}}>
@@ -1720,21 +1737,6 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
                 {vendors.length===0&&<p style={{fontSize:"0.72rem",color:"#94a3b8",marginTop:"0.5rem"}}>No approved BGV vendors. Contact admin to onboard a vendor.</p>}
               </div>
           {assignMsg && <p style={{fontSize:"0.78rem",marginTop:"0.5rem",color:assignMsg.startsWith("✓")?"#16a34a":"#ef4444",fontWeight:600}}>{assignMsg}</p>}
-        </div>
-      )}
-
-      {bgvCase?.bgv_vendor_email && !showReassign && (
-        <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:"0.75rem 1rem",marginBottom:"1rem",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"0.5rem"}}>
-          <div>
-            <span style={{fontSize:"0.72rem",fontWeight:700,color:"#15803d",textTransform:"uppercase",letterSpacing:"0.5px"}}>Assigned to BGV Vendor</span>
-            <div style={{fontWeight:700,fontSize:"0.875rem",color:"#0f172a",marginTop:"0.1rem"}}>{bgvCase.bgv_vendor_email}</div>
-          </div>
-          <div style={{display:"flex",alignItems:"center",gap:"0.6rem"}}>
-            {bgvCase.bgv_status && <span style={{padding:"0.25rem 0.75rem",borderRadius:999,background:"#dcfce7",color:"#15803d",fontSize:"0.72rem",fontWeight:700}}>{bgvCase.bgv_status.replace("_"," ").toUpperCase()}</span>}
-            <button onClick={()=>setShowReassign(true)} style={{padding:"0.3rem 0.7rem",background:"#fff",border:"1.5px solid #cbd5e1",borderRadius:7,fontFamily:"inherit",fontSize:"0.72rem",fontWeight:700,color:"#475569",cursor:"pointer"}}>
-              Reassign
-            </button>
-          </div>
         </div>
       )}
 
