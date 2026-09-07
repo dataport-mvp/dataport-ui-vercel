@@ -64,9 +64,9 @@ const G = `
   .emp-card::before { content:''; position:absolute; top:0; left:0; bottom:0; width:4px; border-radius:16px 0 0 16px; background:#0d6e6e;box-shadow:0 4px 14px rgba(13,110,110,.35); }
   .emp-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.1rem; flex-wrap: wrap; gap: 0.5rem; }
   .emp-title { font-size: 0.93rem; font-weight: 700; color: #1a1730; }
-  .emp-hdr-right { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
-  .gap-pill { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.26rem 0.8rem;
-    border-radius: 999px; font-size: 0.72rem; font-weight: 700; cursor: pointer;
+  .emp-hdr-right { display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; }
+  .gap-pill { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; padding: 0.26rem 0.8rem;
+    min-width: 13rem; border-radius: 999px; font-size: 0.72rem; font-weight: 700; cursor: pointer;
     font-family: inherit; transition: all 0.18s;
     border: 1.5px solid #e2e8f0; background: #f8fafc; color: #64748b; }
   .gap-pill:hover { border-color: #f59e0b; background: #fffbeb; color: #92400e; }
@@ -1247,7 +1247,12 @@ export default function PreviousCompany() {
   };
 
   const addEmployer=()=>{setEmployments([...employments,emptyEmployment()]);markEdited();};
-  const removeEmployer=(i)=>{setEmployments(employments.filter((_,idx)=>idx!==i));markEdited();};
+  const removeEmployer=(i)=>{
+    const target = employments[i];
+    const label = target?.companyName ? `"${target.companyName}"` : "this employer entry";
+    if(!window.confirm(`Remove ${label}? This deletes everything entered for this employer, including any uploaded documents. This can't be undone.`)) return;
+    setEmployments(employments.filter((_,idx)=>idx!==i));markEdited();
+  };
   const fixErr=(key)=>setErrors(p=>({...p,[key]:false}));
 
   const validate=()=>{
@@ -1567,7 +1572,7 @@ export default function PreviousCompany() {
                 <div className="att-wrap">
                   <span className="att-lbl">Offer Letter <span style={{color:"#ef4444"}}>*</span></span>
                   {errors[`${index}_offerLetter`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
-                  <FileUpload onUploadStateChange={handleUploadState} label="Offer Letter" category="employment" subKey="offerLetter" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.offerLetterKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.offerLetterKey",k);fixErr(`${index}_offerLetter`);}}/>
+                  <FileUpload onUploadStateChange={handleUploadState} label="" category="employment" subKey="offerLetter" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.offerLetterKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.offerLetterKey",k);fixErr(`${index}_offerLetter`);}}/>
                 </div>
 
                 {/* Currently employed — no other docs needed yet */}
@@ -1583,12 +1588,12 @@ export default function PreviousCompany() {
                     <span className="att-lbl">Payslips — Last 3 Months <span style={{color:"#ef4444"}}>*</span></span>
                     <p style={{fontSize:"0.68rem",color:"#6b6894",margin:"0.15rem 0 0.35rem",lineHeight:1.4}}>Merge your last 3 months payslips into one PDF before uploading.</p>
                     {errors[`${index}_payslips`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload required</span>}
-                    <FileUpload onUploadStateChange={handleUploadState} label="Payslips" category="employment" subKey="payslips" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.payslipsKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.payslipsKey",k);fixErr(`${index}_payslips`);}}/>
+                    <FileUpload onUploadStateChange={handleUploadState} label="" category="employment" subKey="payslips" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.payslipsKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.payslipsKey",k);fixErr(`${index}_payslips`);}}/>
                   </div>
                   <div className="att-wrap">
                     <span className="att-lbl">Resignation Acceptance</span>
                     <p style={{fontSize:"0.68rem",color:"#6b6894",margin:"0.15rem 0 0.35rem",lineHeight:1.4}}>If you have it, upload it — helps make verification smoother.</p>
-                    <FileUpload onUploadStateChange={handleUploadState} label="Resignation" category="employment" subKey="resignation" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.resignationKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.resignationKey",k);fixErr(`${index}_resignation`);}}/>
+                    <FileUpload onUploadStateChange={handleUploadState} label="" category="employment" subKey="resignation" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.resignationKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.resignationKey",k);fixErr(`${index}_resignation`);}}/>
                   </div>
                   <div className="att-wrap">
                     <span className="att-lbl">Experience / Relieving Letter</span>
@@ -1597,11 +1602,11 @@ export default function PreviousCompany() {
                         💡 Haven't received it yet? No worries, just come back and add it whenever you receive it — it'll make future onboarding and BGV seamless.
                       </p>
                     )}
-                    <FileUpload onUploadStateChange={handleUploadState} label="Experience Letter" category="employment" subKey="experience" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.experienceKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.experienceKey",k);}}/>
+                    <FileUpload onUploadStateChange={handleUploadState} label="" category="employment" subKey="experience" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.experienceKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.experienceKey",k);}}/>
                   </div>
                   <div className="att-wrap">
                     <span className="att-lbl">Company ID Card</span>
-                    <FileUpload onUploadStateChange={handleUploadState} label="ID Card" category="employment" subKey="idCard" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.idCardKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.idCardKey",k);}}/>
+                    <FileUpload onUploadStateChange={handleUploadState} label="" category="employment" subKey="idCard" employeeId={employeeId} companyId={emp.company_id||undefined} apiFetch={apiFetch} value={emp.documents.idCardKey} onChange={v=>{const k=typeof v==="string"?v:(v?.key||v?.s3_key||"");update(index,"documents.idCardKey",k);}}/>
                   </div>
                 </>)}
               </div>
