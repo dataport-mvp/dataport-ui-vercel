@@ -1420,7 +1420,7 @@ export default function EducationDetails() {
               <div className="att-split">
                 <div className="att-box" style={{flex:"0 0 100%"}}>
                   <span className="att-box-lbl">Equivalency Certificate (AIU / WES)</span>
-                  <p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>Not yet obtained? You can provide this later during BGV verification.</p>
+                  <p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>If obtained, upload for smoother onboarding and BGV verification.</p>
                   <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="classx_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={xEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setXEquivalencyKey(key);isDirtyRef.current=true;fixErr("xEquivalencyKey");}}/>
                 </div>
               </div>
@@ -1479,7 +1479,7 @@ export default function EducationDetails() {
               <div className="att-split">
                 <div className="att-box" style={{flex:"0 0 100%"}}>
                   <span className="att-box-lbl">Equivalency Certificate (AIU / WES)</span>
-                  <p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>Not yet obtained? You can provide this later during BGV verification.</p>
+                  <p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>If obtained, upload for smoother onboarding and BGV verification.</p>
                   <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="intermediate_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={iEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setIEquivalencyKey(key);isDirtyRef.current=true;fixErr("iEquivalencyKey");}}/>
                 </div>
               </div>
@@ -1516,7 +1516,7 @@ export default function EducationDetails() {
               <div className="att-split">
                 <div className="att-box" style={{flex:"0 0 100%"}}>
                   <span className="att-box-lbl">Equivalency Certificate (AIU / WES)</span>
-                  <p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>Not yet obtained? You can provide this later during BGV verification.</p>
+                  <p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>If obtained, upload for smoother onboarding and BGV verification.</p>
                   <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="diploma_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={dipEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipEquivalencyKey(key);isDirtyRef.current=true;fixErr("dipEquivalencyKey");}}/>
                 </div>
               </div>
@@ -1571,7 +1571,7 @@ export default function EducationDetails() {
                 <div className="att-split">
                   <div className="att-box" style={{flex:"0 0 100%"}}>
                     <span className="att-box-lbl">Equivalency Certificate (AIU / WES)</span>
-                    <p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>Not yet obtained? You can provide this later during BGV verification.</p>
+                    <p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>If obtained, upload for smoother onboarding and BGV verification.</p>
                     <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="ug_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={ugEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setUgEquivalencyKey(key);isDirtyRef.current=true;fixErr("ugEquivalencyKey");}}/>
                   </div>
                 </div>
@@ -1626,7 +1626,7 @@ export default function EducationDetails() {
                 <div className="att-split">
                   <div className="att-box" style={{flex:"0 0 100%"}}>
                     <span className="att-box-lbl">Equivalency Certificate (AIU / WES)</span>
-                    <p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>Not yet obtained? You can provide this later during BGV verification.</p>
+                    <p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>If obtained, upload for smoother onboarding and BGV verification.</p>
                     <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="pg_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={pgEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setPgEquivalencyKey(key);isDirtyRef.current=true;fixErr("pgEquivalencyKey");}}/>
                   </div>
                 </div>
@@ -1678,7 +1678,7 @@ export default function EducationDetails() {
                 <div className="att-split">
                   <div className="att-box" style={{flex:"0 0 100%"}}>
                     <span className="att-box-lbl">Equivalency Certificate (AIU / WES)</span>
-                    <p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>Not yet obtained? You can provide this later during BGV verification.</p>
+                    <p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>If obtained, upload for smoother onboarding and BGV verification.</p>
                     <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="diploma_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={dipEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipEquivalencyKey(key);isDirtyRef.current=true;fixErr("dipEquivalencyKey");}}/>
                   </div>
                 </div>
