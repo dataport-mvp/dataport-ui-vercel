@@ -1222,29 +1222,29 @@ export default function EducationDetails() {
     const e={};
     if(!xSchool)e.xSchool=true;if(!xBoard)e.xBoard=true;if(!xHall)e.xHall=true;
     if(!xFrom)e.xFrom=true;if(!xTo)e.xTo=true;if(!xYear)e.xYear=true;if(!xAddress)e.xAddress=true;
-    if(!xResultType)e.xResultType=true;if(xResultType==="Other"&&!xResultTypeOther)e.xResultTypeOther=true;if(!xResultValue)e.xResultValue=true;if(!xMedium)e.xMedium=true;if(!xCertKey)e.xCertKey=true;
+    if(!xResultType)e.xResultType=true;if(xResultType==="Other"&&!xResultTypeOther)e.xResultTypeOther=true;if(!xResultValue)e.xResultValue=true;if(!xMedium)e.xMedium=true;if(!xCertKey)e.xCertKey=true;if(xCountry==="Outside India"&&!xEquivalencyKey)e.xEquivalencyKey=true;
     if(!afterTenth) e.afterTenth=true;
     if(afterTenth==="Intermediate"||afterTenth==="Both"){
       if(!iCollege)e.iCollege=true;if(!iBoard)e.iBoard=true;if(!iHall)e.iHall=true;
       if(!iFrom)e.iFrom=true;if(!iTo)e.iTo=true;if(!iYear)e.iYear=true;if(!iAddress)e.iAddress=true;
-      if(!iMode)e.iMode=true;if(!iResultType)e.iResultType=true;if(iResultType==="Other"&&!iResultTypeOther)e.iResultTypeOther=true;if(!iResultValue)e.iResultValue=true;if(!iMedium)e.iMedium=true;if(!iCertKey)e.iCertKey=true;if(!iStream)e.iStream=true;if(iStream==="Other"&&!iStreamOther)e.iStreamOther=true;
+      if(!iMode)e.iMode=true;if(!iResultType)e.iResultType=true;if(iResultType==="Other"&&!iResultTypeOther)e.iResultTypeOther=true;if(!iResultValue)e.iResultValue=true;if(!iMedium)e.iMedium=true;if(!iCertKey)e.iCertKey=true;if(iCountry==="Outside India"&&!iEquivalencyKey)e.iEquivalencyKey=true;if(!iStream)e.iStream=true;if(iStream==="Other"&&!iStreamOther)e.iStreamOther=true;
     }
     if(afterTenth==="Diploma"||afterTenth==="Both"){
       if(!dipInstitute)e.dipInstitute=true;if(!dipBoard)e.dipBoard=true;if(!dipCourse)e.dipCourse=true;
       if(!dipFrom)e.dipFrom=true;if(!dipTo)e.dipTo=true;if(!dipYear)e.dipYear=true;
-      if(!dipResultType)e.dipResultType=true;if(dipResultType==="Other"&&!dipResultTypeOther)e.dipResultTypeOther=true;if(!dipResultValue)e.dipResultValue=true;if(!dipMode)e.dipMode=true;if(!dipBacklogs)e.dipBacklogs=true;if(dipBacklogs!=="Yes"&&!dipCertKey)e.dipCertKey=true;
+      if(!dipResultType)e.dipResultType=true;if(dipResultType==="Other"&&!dipResultTypeOther)e.dipResultTypeOther=true;if(!dipResultValue)e.dipResultValue=true;if(!dipMode)e.dipMode=true;if(!dipBacklogs)e.dipBacklogs=true;if(dipBacklogs!=="Yes"&&!dipCertKey)e.dipCertKey=true;if(dipCountry==="Outside India"&&dipBacklogs!=="Yes"&&!dipEquivalencyKey)e.dipEquivalencyKey=true;
     }
     if(hasUG==="Yes"){
       if(!ugCountry)e.ugCountry=true;if(ugCountry==="Outside India"&&!ugCountryName)e.ugCountryName=true;
-      if(!ugCollege)e.ugCollege=true;if(!ugUniversity)e.ugUniversity=true;if(!ugCourse)e.ugCourse=true;if(ugCountry!=="Outside India"&&!ugHall)e.ugHall=true;
+      if(!ugCollege)e.ugCollege=true;if(!ugUniversity)e.ugUniversity=true;if(!ugCourse)e.ugCourse=true;if(!ugSpecialization)e.ugSpecialization=true;if(!ugHall)e.ugHall=true;
       if(!ugFrom)e.ugFrom=true;if(!ugTo)e.ugTo=true;if(!ugYear)e.ugYear=true;if(!ugAddress)e.ugAddress=true;
-      if(!ugMode)e.ugMode=true;if(!ugResultType)e.ugResultType=true;if(ugResultType==="Other"&&!ugResultTypeOther)e.ugResultTypeOther=true;if(!ugResultValue)e.ugResultValue=true;if(!ugMedium)e.ugMedium=true;if(!ugBacklogs)e.ugBacklogs=true;if(ugBacklogs!=="Yes"&&!ugProvKey)e.ugProvKey=true;
+      if(!ugMode)e.ugMode=true;if(!ugResultType)e.ugResultType=true;if(ugResultType==="Other"&&!ugResultTypeOther)e.ugResultTypeOther=true;if(!ugResultValue)e.ugResultValue=true;if(!ugMedium)e.ugMedium=true;if(!ugBacklogs)e.ugBacklogs=true;if(ugBacklogs!=="Yes"&&!ugProvKey)e.ugProvKey=true;if(ugCountry==="Outside India"&&ugBacklogs!=="Yes"&&!ugEquivalencyKey)e.ugEquivalencyKey=true;
     }
     if(hasPG==="Yes"){
       if(!pgCountry)e.pgCountry=true;if(pgCountry==="Outside India"&&!pgCountryName)e.pgCountryName=true;
-      if(!pgCollege)e.pgCollege=true;if(!pgUniversity)e.pgUniversity=true;if(!pgCourse)e.pgCourse=true;if(pgCountry!=="Outside India"&&!pgHall)e.pgHall=true;if(!pgFrom)e.pgFrom=true;if(!pgTo)e.pgTo=true;if(!pgYear)e.pgYear=true;if(!pgAddress)e.pgAddress=true;if(!pgMode)e.pgMode=true;if(!pgResultType)e.pgResultType=true;if(pgResultType==="Other"&&!pgResultTypeOther)e.pgResultTypeOther=true;if(!pgResultValue)e.pgResultValue=true;if(!pgMedium)e.pgMedium=true;if(!pgBacklogs)e.pgBacklogs=true;if(pgBacklogs!=="Yes"&&!pgProvKey)e.pgProvKey=true;
+      if(!pgCollege)e.pgCollege=true;if(!pgUniversity)e.pgUniversity=true;if(!pgCourse)e.pgCourse=true;if(!pgSpecialization)e.pgSpecialization=true;if(!pgHall)e.pgHall=true;if(!pgFrom)e.pgFrom=true;if(!pgTo)e.pgTo=true;if(!pgYear)e.pgYear=true;if(!pgAddress)e.pgAddress=true;if(!pgMode)e.pgMode=true;if(!pgResultType)e.pgResultType=true;if(pgResultType==="Other"&&!pgResultTypeOther)e.pgResultTypeOther=true;if(!pgResultValue)e.pgResultValue=true;if(!pgMedium)e.pgMedium=true;if(!pgBacklogs)e.pgBacklogs=true;if(pgBacklogs!=="Yes"&&!pgProvKey)e.pgProvKey=true;if(pgCountry==="Outside India"&&pgBacklogs!=="Yes"&&!pgEquivalencyKey)e.pgEquivalencyKey=true;
     }
-    if(hasDip==="Yes"&&afterTenth!=="Diploma"&&afterTenth!=="Both"){if(!dipInstitute)e.dipInstitute=true;if(!dipBoard)e.dipBoard=true;if(!dipCourse)e.dipCourse=true;if(!dipFrom)e.dipFrom=true;if(!dipTo)e.dipTo=true;if(!dipYear)e.dipYear=true;if(!dipResultType)e.dipResultType=true;if(dipResultType==="Other"&&!dipResultTypeOther)e.dipResultTypeOther=true;if(!dipResultValue)e.dipResultValue=true;if(!dipMode)e.dipMode=true;if(!dipBacklogs)e.dipBacklogs=true;if(dipBacklogs!=="Yes"&&!dipCertKey)e.dipCertKey=true;}
+    if(hasDip==="Yes"&&afterTenth!=="Diploma"&&afterTenth!=="Both"){if(!dipInstitute)e.dipInstitute=true;if(!dipBoard)e.dipBoard=true;if(!dipCourse)e.dipCourse=true;if(!dipFrom)e.dipFrom=true;if(!dipTo)e.dipTo=true;if(!dipYear)e.dipYear=true;if(!dipResultType)e.dipResultType=true;if(dipResultType==="Other"&&!dipResultTypeOther)e.dipResultTypeOther=true;if(!dipResultValue)e.dipResultValue=true;if(!dipMode)e.dipMode=true;if(!dipBacklogs)e.dipBacklogs=true;if(dipBacklogs!=="Yes"&&!dipCertKey)e.dipCertKey=true;if(dipCountry==="Outside India"&&dipBacklogs!=="Yes"&&!dipEquivalencyKey)e.dipEquivalencyKey=true;}
     if(hasCerts==="Yes"){certs.forEach((c,idx)=>{if(!c.name)e[`cert_name_${idx}`]=true;if(!c.certKey)e[`cert_key_${idx}`]=true;});}
     if(hasProfQual==="Yes"){profQuals.forEach((q,idx)=>{if(!q.type)e[`pq_type_${idx}`]=true;if(q.type==="Other"&&!q.otherType)e[`pq_other_${idx}`]=true;if(!q.level)e[`pq_level_${idx}`]=true;if(q.level!=="Pursuing"&&!q.year)e[`pq_year_${idx}`]=true;});}
     if(hasArticleship==="Yes"){articleships.forEach((a,idx)=>{if(!a.firm)e[`art_firm_${idx}`]=true;if(!a.from)e[`art_from_${idx}`]=true;if(!a.type)e[`art_type_${idx}`]=true;if(a.type==="Other Practical Training"&&!a.otherType)e[`art_other_${idx}`]=true;if(!a.isOngoing)e[`art_status_${idx}`]=true;if(a.isOngoing==="Completed"&&!a.to)e[`art_to_${idx}`]=true;});}
@@ -1419,9 +1419,8 @@ export default function EducationDetails() {
             {xCountry==="Outside India"&&(
               <div className="att-split">
                 <div className="att-box" style={{flex:"0 0 100%"}}>
-                  <span className="att-box-lbl">Equivalency Certificate (AIU / WES)</span>
-                  <p style={{fontSize:"0.7rem",color:"#d97706",fontWeight:600,marginBottom:"0.4rem"}}>⚠️ Recommended for foreign schooling — needed for final BGV verification. Upload later if not yet obtained.</p>
-                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="classx_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={xEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setXEquivalencyKey(key);isDirtyRef.current=true;}}/>
+                  <UL lbl="Equivalency Certificate (AIU / WES)" errKey="xEquivalencyKey"/>
+                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="classx_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={xEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setXEquivalencyKey(key);isDirtyRef.current=true;fixErr("xEquivalencyKey");}}/>
                 </div>
               </div>
             )}
@@ -1478,9 +1477,8 @@ export default function EducationDetails() {
             {iCountry==="Outside India"&&(
               <div className="att-split">
                 <div className="att-box" style={{flex:"0 0 100%"}}>
-                  <span className="att-box-lbl">Equivalency Certificate (AIU / WES)</span>
-                  <p style={{fontSize:"0.7rem",color:"#d97706",fontWeight:600,marginBottom:"0.4rem"}}>⚠️ Recommended for foreign schooling — needed for final BGV verification. Upload later if not yet obtained.</p>
-                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="intermediate_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={iEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setIEquivalencyKey(key);isDirtyRef.current=true;}}/>
+                  <UL lbl="Equivalency Certificate (AIU / WES)" errKey="iEquivalencyKey"/>
+                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="intermediate_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={iEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setIEquivalencyKey(key);isDirtyRef.current=true;fixErr("iEquivalencyKey");}}/>
                 </div>
               </div>
             )}
@@ -1515,9 +1513,9 @@ export default function EducationDetails() {
             {dipCountry==="Outside India"&&(
               <div className="att-split">
                 <div className="att-box" style={{flex:"0 0 100%"}}>
-                  <span className="att-box-lbl">Equivalency Certificate (AIU / WES)</span>
-                  <p style={{fontSize:"0.7rem",color:"#d97706",fontWeight:600,marginBottom:"0.4rem"}}>⚠️ Recommended for foreign diplomas — needed for final BGV verification. Upload later if not yet obtained.</p>
-                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="diploma_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={dipEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipEquivalencyKey(key);isDirtyRef.current=true;}}/>
+                  <UL lbl="Equivalency Certificate (AIU / WES)" required={dipBacklogs!=="Yes"} errKey="dipEquivalencyKey"/>
+                  {dipBacklogs==="Yes"&&<p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>Upload if obtained — helps with smoother verification.</p>}
+                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="diploma_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={dipEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipEquivalencyKey(key);isDirtyRef.current=true;fixErr("dipEquivalencyKey");}}/>
                 </div>
               </div>
             )}
@@ -1542,8 +1540,8 @@ export default function EducationDetails() {
               </div>
               <div className="fr"><F l="College Name" v={ugCollege} s={d(setUgCollege)} errKey="ugCollege" errors={errors} onFix={fixErr}/><F l="University Name" v={ugUniversity} s={d(setUgUniversity)} errKey="ugUniversity" errors={errors} onFix={fixErr}/><F l="Course / Degree" v={ugCourse} s={d(setUgCourse)} errKey="ugCourse" errors={errors} onFix={fixErr}/></div>
               <div className="fr">
-                <F l="Specialization / Branch" v={ugSpecialization} s={d(setUgSpecialization)} r={false}/>
-                <F l={ugCountry==="Outside India"?"Roll No. / Student ID":"Hall Ticket / Roll No."} v={ugHall} s={d(setUgHall)} r={ugCountry!=="Outside India"} errKey="ugHall" errors={errors} onFix={fixErr}/>
+                <F l="Specialization / Branch" v={ugSpecialization} s={d(setUgSpecialization)} errKey="ugSpecialization" errors={errors} onFix={fixErr}/>
+                <F l={ugCountry==="Outside India"?"Roll No. / Student ID":"Hall Ticket / Roll No."} v={ugHall} s={d(setUgHall)} errKey="ugHall" errors={errors} onFix={fixErr}/>
                 <FS l="Mode" v={ugMode} s={d(setUgMode)} o={["Full-time","Part-time","Distance","Integrated"]} errKey="ugMode" errors={errors} onFix={fixErr}/>
               </div>
               <div className="fr">
@@ -1561,14 +1559,18 @@ export default function EducationDetails() {
                   {ugBacklogs==="Yes"&&<p style={{fontSize:"0.7rem",color:"#d97706",fontWeight:600,marginBottom:"0.4rem"}}>⚠️ Upload when available after clearing backlogs</p>}
                   <FileUpload onUploadStateChange={handleUploadState} label="Upload Provisional Marksheet" category="education" subKey="ug_provisional" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={ugProvKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setUgProvKey(key);isDirtyRef.current=true;fixErr("ugProvKey");}}/>
                 </div>
-                <div className="att-box"><span className="att-box-lbl">Convocation Certificate</span><FileUpload onUploadStateChange={handleUploadState} label="Upload Convocation Certificate" category="education" subKey="ug_convocation" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={ugConvoKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setUgConvoKey(key);isDirtyRef.current=true;}}/></div>
+                <div className="att-box">
+                  <span className="att-box-lbl">Convocation Certificate</span>
+                  <p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>If received, upload for smoother onboarding and verification.</p>
+                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Convocation Certificate" category="education" subKey="ug_convocation" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={ugConvoKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setUgConvoKey(key);isDirtyRef.current=true;}}/>
+                </div>
               </div>
               {ugCountry==="Outside India"&&(
                 <div className="att-split">
                   <div className="att-box" style={{flex:"0 0 100%"}}>
-                    <span className="att-box-lbl">Equivalency Certificate (AIU / WES)</span>
-                    <p style={{fontSize:"0.7rem",color:"#d97706",fontWeight:600,marginBottom:"0.4rem"}}>⚠️ Recommended for foreign degrees — needed for final BGV verification. Upload later if not yet obtained.</p>
-                    <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="ug_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={ugEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setUgEquivalencyKey(key);isDirtyRef.current=true;}}/>
+                    <UL lbl="Equivalency Certificate (AIU / WES)" required={ugBacklogs!=="Yes"} errKey="ugEquivalencyKey"/>
+                    {ugBacklogs==="Yes"&&<p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>Upload if obtained — helps with smoother verification.</p>}
+                    <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="ug_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={ugEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setUgEquivalencyKey(key);isDirtyRef.current=true;fixErr("ugEquivalencyKey");}}/>
                   </div>
                 </div>
               )}
@@ -1593,8 +1595,8 @@ export default function EducationDetails() {
               </div>
               <div className="fr"><F l="College Name" v={pgCollege} s={d(setPgCollege)} errKey="pgCollege" errors={errors} onFix={fixErr}/><F l="University Name" v={pgUniversity} s={d(setPgUniversity)} errKey="pgUniversity" errors={errors} onFix={fixErr}/><F l="Course / Degree" v={pgCourse} s={d(setPgCourse)} errKey="pgCourse" errors={errors} onFix={fixErr}/></div>
               <div className="fr">
-                <F l="Specialization / Branch" v={pgSpecialization} s={d(setPgSpecialization)} r={false}/>
-                <F l={pgCountry==="Outside India"?"Roll No. / Student ID":"Hall Ticket / Roll No."} v={pgHall} s={d(setPgHall)} r={pgCountry!=="Outside India"} errKey="pgHall" errors={errors} onFix={fixErr}/>
+                <F l="Specialization / Branch" v={pgSpecialization} s={d(setPgSpecialization)} errKey="pgSpecialization" errors={errors} onFix={fixErr}/>
+                <F l={pgCountry==="Outside India"?"Roll No. / Student ID":"Hall Ticket / Roll No."} v={pgHall} s={d(setPgHall)} errKey="pgHall" errors={errors} onFix={fixErr}/>
                 <FS l="Mode" v={pgMode} s={d(setPgMode)} o={["Full-time","Part-time","Distance","Executive"]} errKey="pgMode" errors={errors} onFix={fixErr}/>
               </div>
               <div className="fr">
@@ -1612,14 +1614,18 @@ export default function EducationDetails() {
                   {pgBacklogs==="Yes"&&<p style={{fontSize:"0.7rem",color:"#d97706",fontWeight:600,marginBottom:"0.4rem"}}>⚠️ Upload when available after clearing backlogs</p>}
                   <FileUpload onUploadStateChange={handleUploadState} label="Upload Provisional Marksheet" category="education" subKey="pg_provisional" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={pgProvKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setPgProvKey(key);isDirtyRef.current=true;fixErr("pgProvKey");}}/>
                 </div>
-                <div className="att-box"><span className="att-box-lbl">Convocation Certificate</span><FileUpload onUploadStateChange={handleUploadState} label="Upload Convocation Certificate" category="education" subKey="pg_convocation" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={pgConvoKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setPgConvoKey(key);isDirtyRef.current=true;}}/></div>
+                <div className="att-box">
+                  <span className="att-box-lbl">Convocation Certificate</span>
+                  <p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>If received, upload for smoother onboarding and verification.</p>
+                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Convocation Certificate" category="education" subKey="pg_convocation" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={pgConvoKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setPgConvoKey(key);isDirtyRef.current=true;}}/>
+                </div>
               </div>
               {pgCountry==="Outside India"&&(
                 <div className="att-split">
                   <div className="att-box" style={{flex:"0 0 100%"}}>
-                    <span className="att-box-lbl">Equivalency Certificate (AIU / WES)</span>
-                    <p style={{fontSize:"0.7rem",color:"#d97706",fontWeight:600,marginBottom:"0.4rem"}}>⚠️ Recommended for foreign degrees — needed for final BGV verification. Upload later if not yet obtained.</p>
-                    <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="pg_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={pgEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setPgEquivalencyKey(key);isDirtyRef.current=true;}}/>
+                    <UL lbl="Equivalency Certificate (AIU / WES)" required={pgBacklogs!=="Yes"} errKey="pgEquivalencyKey"/>
+                    {pgBacklogs==="Yes"&&<p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>Upload if obtained — helps with smoother verification.</p>}
+                    <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="pg_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={pgEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setPgEquivalencyKey(key);isDirtyRef.current=true;fixErr("pgEquivalencyKey");}}/>
                   </div>
                 </div>
               )}
@@ -1669,9 +1675,9 @@ export default function EducationDetails() {
               {dipCountry==="Outside India"&&(
                 <div className="att-split">
                   <div className="att-box" style={{flex:"0 0 100%"}}>
-                    <span className="att-box-lbl">Equivalency Certificate (AIU / WES)</span>
-                    <p style={{fontSize:"0.7rem",color:"#d97706",fontWeight:600,marginBottom:"0.4rem"}}>⚠️ Recommended for foreign diplomas — needed for final BGV verification. Upload later if not yet obtained.</p>
-                    <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="diploma_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={dipEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipEquivalencyKey(key);isDirtyRef.current=true;}}/>
+                    <UL lbl="Equivalency Certificate (AIU / WES)" required={dipBacklogs!=="Yes"} errKey="dipEquivalencyKey"/>
+                    {dipBacklogs==="Yes"&&<p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>Upload if obtained — helps with smoother verification.</p>}
+                    <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="diploma_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={dipEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipEquivalencyKey(key);isDirtyRef.current=true;fixErr("dipEquivalencyKey");}}/>
                   </div>
                 </div>
               )}
@@ -1816,6 +1822,7 @@ export default function EducationDetails() {
                   </div>
                   <div style={{marginTop:"0.5rem"}}>
                     <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Upload Completion / Experience Letter</span>
+                    <p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>Upload if available — helps with faster verification.</p>
                     <FileUpload onUploadStateChange={handleUploadState} label="Upload Letter" category="education" subKey={`articleship_${idx}`} employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={typeof a.certKey==="string"?a.certKey:""} onChange={(k)=>{updateArticleship(idx,"certKey",typeof k==="string"?k:"");}}/>
                   </div>
                 </div>
