@@ -169,6 +169,19 @@ function FDate({ l, v, s, r=true, errKey, errors, onFix }) {
     if(val.length===2&&raw.length===1)val=val+"/";
     if(val.length===5&&raw.length===4)val=val+"/";
     if(val.length>10)return;
+    // Reject an out-of-range day/month as soon as the 2nd digit makes it unambiguous —
+    // same guard already used in personal.js's DateField. Without this, values like
+    // "19/15/2021" (month 15) or day 32+ pass straight through: the only checks below
+    // are format checks (digits, slash position, length), never actual calendar validity.
+    const parts = val.split("/");
+    if (parts[0] && parts[0].length === 2) {
+      const day = parseInt(parts[0], 10);
+      if (day < 1 || day > 31) return;
+    }
+    if (parts[1] && parts[1].length === 2) {
+      const month = parseInt(parts[1], 10);
+      if (month < 1 || month > 12) return;
+    }
     setRaw(val);
     if(val.length===10){
       const[d,mo,y]=val.split("/");
