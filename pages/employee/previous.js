@@ -1468,8 +1468,9 @@ export default function PreviousCompany() {
             const isLast = index === employments.length - 1;
             const isCurrentlyWorking = isLast && emp.currentlyWorking==="Yes";
             const gapPillLabel = emp.gap.hasGap==="Yes"
-              ? (index===0?"Gap before joining: Yes":"Gap before this job: Yes")
+              ? "✕ Clear gap details"
               : (index===0?"Gap before joining?":"Gap before this job?");
+            const gapPillIcon = emp.gap.hasGap==="Yes" ? "" : "⏱ ";
             const gapHint = index===0
               ? "Any gap between finishing your education and joining this company."
               : `Any gap between leaving ${employments[index-1]?.companyName||"the previous company"} and joining this one.`;
@@ -1482,7 +1483,20 @@ export default function PreviousCompany() {
                   {isLast&&isCurrentlyWorking&&<span className="cur-badge">✓ Currently working here</span>}
                 </div>
                 <div className="emp-hdr-right">
-                  {index > 0 && <button className={`gap-pill${emp.gap.hasGap==="Yes"?" on":""}`} onClick={()=>update(index,"gap.hasGap",emp.gap.hasGap==="Yes"?"":"Yes")}>⏱ {gapPillLabel}</button>}
+                  {index > 0 && <button className={`gap-pill${emp.gap.hasGap==="Yes"?" on":""}`} onClick={()=>{
+                    // Toggling off doesn't just hide the gap section — it clears the
+                    // entered from/to/reason too. Otherwise turning it off then on again
+                    // later (e.g. after an accidental click) silently resurfaces old,
+                    // possibly wrong data instead of a clean form.
+                    if(emp.gap.hasGap==="Yes"){
+                      update(index,"gap.hasGap","");
+                      update(index,"gap.from","");
+                      update(index,"gap.to","");
+                      update(index,"gap.reason","");
+                    }else{
+                      update(index,"gap.hasGap","Yes");
+                    }
+                  }}>{gapPillIcon}{gapPillLabel}</button>}
                   {employments.length>1&&<button className="rm-btn" onClick={()=>removeEmployer(index)}>− Remove</button>}
                 </div>
               </div>
