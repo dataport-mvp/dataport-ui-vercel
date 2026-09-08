@@ -823,7 +823,7 @@ async function buildMyProfilePdf(profile, empHistory, documents, employeeSelfNam
     (() => { const hasFam = (d.epfoNominees||[]).some(n=>["Spouse","Son","Daughter"].includes(n.relation)); const hasParent = (d.epfoNominees||[]).some(n=>["Father","Mother"].includes(n.relation)); return (hasFam || hasParent) ? "" : row("No-Family Certification (Form 2)", d.epfoDeclarations?.noFamilyAck ? "✓ Agreed" : "Not agreed"); })(),
     (() => { const hasParent = (d.epfoNominees||[]).some(n=>["Father","Mother"].includes(n.relation)); return hasParent ? row("Parents Dependency Certification (Form 2)", d.epfoDeclarations?.parentsDependentAck ? "✓ Agreed" : "Not agreed") : ""; })(),
     row("Gratuity Family Declaration (Form F)",               d.epfoDeclarations?.gratuityFamilyAck ? "✓ Agreed" : "Not agreed"),
-    row("Gratuity Parents Dependency Declaration (Form F)",   d.epfoDeclarations?.gratuityParentsAck ? "✓ Agreed" : "Not agreed"),
+    (() => { const hasGratParent = (d.gratuityNominees||[]).some(n=>["Father","Mother"].includes(n.relation)); return hasGratParent ? row("Gratuity Parents Dependency Declaration (Form F)", d.epfoDeclarations?.gratuityParentsAck ? "✓ Agreed" : "Not agreed") : ""; })(),
     row("Digital Signature", d.epfoSignature?.s3Key ? `✓ Signed${d.epfoSignature?.timestamp ? " on " + new Date(d.epfoSignature.timestamp).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}) : ""}` : "⚠ Not yet signed"),
   ].join(""), "#334155")}
 
@@ -1332,6 +1332,10 @@ export default function UanDetails() {
   // different people or different shares. Never merge these into one list.
   const makeGratuityNominee = () => ({ name:"", dob:"", relation:"", otherRelation:"", address:"", share:"", _k:`gnom-${Date.now()}-${Math.random().toString(36).slice(2,7)}` });
   const [gratuityNominees, setGratuityNominees] = useState([makeGratuityNominee()]);
+  // Same reasoning as hasParentNominee above, but for the separate gratuity nominee list —
+  // "I declare the dependency status of my parents as reflected in this nomination" doesn't
+  // make sense to require if no parent is actually nominated for gratuity.
+  const hasGratuityParentNominee = gratuityNominees.some(n => ["Father","Mother"].includes(n.relation));
 
   // ── Family Details (for company health insurance — Medibuddy/Acko-style enrollment) ──
   // All optional — this section is informational for insurance enrollment, never blocks Save/Sign.
@@ -1782,7 +1786,7 @@ export default function UanDetails() {
     gratuityNominees.forEach((n,i) => { if (!n.relation) errs.push(`Gratuity Nominee ${i+1} — Relationship not selected`); });
     gratuityNominees.forEach((n,i) => { if (n.relation === "Other" && !n.otherRelation?.trim()) errs.push(`Gratuity Nominee ${i+1} — Please specify the relationship`); });
     if (!gratuityFamilyAck)  errs.push("Gratuity Family Declaration (Form F)");
-    if (!gratuityParentsAck) errs.push("Gratuity Parents Dependency Declaration (Form F)");
+    if (hasGratuityParentNominee && !gratuityParentsAck) errs.push("Gratuity Parents Dependency Declaration (Form F) — required since you've nominated a parent for gratuity");
 
     if (errs.length > 0) {
       setSaveStatus(`⚠️ Required: ${errs.join(", ")}`);
@@ -2165,15 +2169,17 @@ export default function UanDetails() {
                 </div>
               </label>
             </div>
-            <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginTop:"0.75rem",borderLeft:gratuityParentsAck?"3px solid #16a34a":"3px solid #e4e2f0"}}>
-              <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
-                <input type="checkbox" checked={gratuityParentsAck} onChange={e=>{setGratuityParentsAck(e.target.checked);isDirtyRef.current=true;flagPostSignEdit();}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
-                <div>
-                  <div style={{fontSize:"0.68rem",fontWeight:800,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>Parents Dependency Declaration (Form F) <span style={{color:"#ef4444"}}>*</span></div>
-                  <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I declare the dependency status of my parents (or, where applicable, my spouse's parents) as accurately reflected in this nomination, as required under the Payment of Gratuity Act, 1972. This nomination invalidates any gratuity nomination I made previously.</span>
-                </div>
-              </label>
-            </div>
+            {hasGratuityParentNominee && (
+              <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginTop:"0.75rem",borderLeft:gratuityParentsAck?"3px solid #16a34a":"3px solid #e4e2f0"}}>
+                <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
+                  <input type="checkbox" checked={gratuityParentsAck} onChange={e=>{setGratuityParentsAck(e.target.checked);isDirtyRef.current=true;flagPostSignEdit();}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
+                  <div>
+                    <div style={{fontSize:"0.68rem",fontWeight:800,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>Parents Dependency Declaration (Form F) <span style={{color:"#ef4444"}}>*</span></div>
+                    <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I declare the dependency status of my parents (or, where applicable, my spouse's parents) as accurately reflected in this nomination, as required under the Payment of Gratuity Act, 1972. This nomination invalidates any gratuity nomination I made previously.</span>
+                  </div>
+                </label>
+              </div>
+            )}
           </div>
 
           {/* ── Family Details — for company health insurance enrollment (Medibuddy/Acko-style) ── */}
@@ -2384,6 +2390,16 @@ export default function UanDetails() {
                       <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I certify that my father/mother, as nominated above, is/are dependent upon me.</span>
                     </div>
                   </label>
+                </div>
+              )}
+
+              {/* Neither certification above applies — confirm that plainly instead of leaving a
+                  silent gap, which would look like something's missing rather than handled. This
+                  is the case whenever an immediate-family nominee (spouse/child) exists and no
+                  parent is separately nominated. */}
+              {hasImmediateFamilyNominee && !hasParentNominee && (
+                <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:"0.75rem 1rem",marginBottom:"1rem"}}>
+                  <span style={{fontSize:"0.78rem",color:"#166534",fontWeight:600,lineHeight:1.5}}>✓ Since you've nominated your spouse and/or children, no additional family-status certification is needed here.</span>
                 </div>
               )}
 
