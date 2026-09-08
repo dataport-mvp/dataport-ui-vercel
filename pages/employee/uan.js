@@ -820,7 +820,8 @@ async function buildMyProfilePdf(profile, empHistory, documents, employeeSelfNam
     row("General EPFO Declaration",                          d.epfoDeclarations?.epfoDecl ? "✓ Agreed" : "Not agreed"),
     row("Aadhaar / eKYC Authorization",                      d.epfoDeclarations?.aadhaarAuthAck ? "✓ Agreed" : "Not agreed"),
     row("PF Transfer Authorization",                         d.epfoDeclarations?.pfTransferAck ? "✓ Agreed" : "Not agreed"),
-    row("Family / Dependent Certification (Form 2)",         d.epfoDeclarations?.noFamilyDependentAck ? "✓ Agreed" : "Not agreed"),
+    (() => { const hasFam = (d.epfoNominees||[]).some(n=>["Spouse","Son","Daughter"].includes(n.relation)); return hasFam ? "" : row("No-Family Certification (Form 2)", d.epfoDeclarations?.noFamilyAck ? "✓ Agreed" : "Not agreed"); })(),
+    (() => { const hasParent = (d.epfoNominees||[]).some(n=>["Father","Mother"].includes(n.relation)); return hasParent ? row("Parents Dependency Certification (Form 2)", d.epfoDeclarations?.parentsDependentAck ? "✓ Agreed" : "Not agreed") : ""; })(),
     row("Gratuity Family Declaration (Form F)",               d.epfoDeclarations?.gratuityFamilyAck ? "✓ Agreed" : "Not agreed"),
     row("Gratuity Parents Dependency Declaration (Form F)",   d.epfoDeclarations?.gratuityParentsAck ? "✓ Agreed" : "Not agreed"),
     row("Digital Signature", d.epfoSignature?.s3Key ? `✓ Signed${d.epfoSignature?.timestamp ? " on " + new Date(d.epfoSignature.timestamp).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}) : ""}` : "⚠ Not yet signed"),
@@ -1317,6 +1318,13 @@ export default function UanDetails() {
   // ── Nominees ──
   const makeNominee = () => ({ name:"", dob:"", relation:"", otherRelation:"", address:"", share:"", guardianName:"", guardianAddress:"", _k:`nom-${Date.now()}-${Math.random().toString(36).slice(2,7)}` });
   const [nominees, setNominees] = useState([makeNominee()]);
+  // Which family-status certification actually applies depends on who's being nominated —
+  // these are NOT independent yes/no choices, they're conditional on the relations selected
+  // above. A married employee nominating spouse/children needs neither; someone nominating
+  // outside their immediate family needs the "no family" cert; nominating a parent needs the
+  // dependency cert. Recomputed on every render since nominees can change at any time.
+  const hasImmediateFamilyNominee = nominees.some(n => ["Spouse","Son","Daughter"].includes(n.relation));
+  const hasParentNominee = nominees.some(n => ["Father","Mother"].includes(n.relation));
 
   // ── Gratuity Nominees (Form F, Payment of Gratuity Act, 1972) ──
   // Deliberately a SEPARATE list from `nominees` above (Form 2, EPF/EPS) — these are two
@@ -1354,7 +1362,8 @@ export default function UanDetails() {
   // consent, not just a rewording of the ones above:
   const [aadhaarAuthAck, setAadhaarAuthAck] = useState(false);       // Aadhaar/eKYC authorization
   const [pfTransferAck, setPfTransferAck] = useState(false);         // authorize transfer from previous PF account
-  const [noFamilyDependentAck, setNoFamilyDependentAck] = useState(false); // "no family" / parents-dependent certification
+  const [noFamilyAck, setNoFamilyAck] = useState(false);           // "no family" certification — only relevant when NOT nominating spouse/children
+  const [parentsDependentAck, setParentsDependentAck] = useState(false); // "father/mother dependent" certification — only relevant when nominating a parent
   // Form F (Gratuity) declarations — separate Act, separate certifications.
   const [gratuityFamilyAck, setGratuityFamilyAck] = useState(false);
   const [gratuityParentsAck, setGratuityParentsAck] = useState(false);
@@ -1431,7 +1440,8 @@ export default function UanDetails() {
       setEpfoDecl(false);
       setAadhaarAuthAck(false);
       setPfTransferAck(false);
-      setNoFamilyDependentAck(false);
+      setNoFamilyAck(false);
+      setParentsDependentAck(false);
       setGratuityFamilyAck(false);
       setGratuityParentsAck(false);
     }
@@ -1487,7 +1497,8 @@ export default function UanDetails() {
             if (d.epfoDeclarations.epfoDecl)     setEpfoDecl(d.epfoDeclarations.epfoDecl);
             if (d.epfoDeclarations.aadhaarAuthAck)       setAadhaarAuthAck(d.epfoDeclarations.aadhaarAuthAck);
             if (d.epfoDeclarations.pfTransferAck)        setPfTransferAck(d.epfoDeclarations.pfTransferAck);
-            if (d.epfoDeclarations.noFamilyDependentAck) setNoFamilyDependentAck(d.epfoDeclarations.noFamilyDependentAck);
+            if (d.epfoDeclarations.noFamilyAck) setNoFamilyAck(d.epfoDeclarations.noFamilyAck);
+            if (d.epfoDeclarations.parentsDependentAck) setParentsDependentAck(d.epfoDeclarations.parentsDependentAck);
             if (d.epfoDeclarations.gratuityFamilyAck)  setGratuityFamilyAck(d.epfoDeclarations.gratuityFamilyAck);
             if (d.epfoDeclarations.gratuityParentsAck) setGratuityParentsAck(d.epfoDeclarations.gratuityParentsAck);
           }
@@ -1692,7 +1703,7 @@ export default function UanDetails() {
         timestamp: sigTimestamp,
       },
       signatureHistory,
-      epfoDeclarations: { pfNomAck, pensionNomAck, epfoDecl, aadhaarAuthAck, pfTransferAck, noFamilyDependentAck, gratuityFamilyAck, gratuityParentsAck },
+      epfoDeclarations: { pfNomAck, pensionNomAck, epfoDecl, aadhaarAuthAck, pfTransferAck, noFamilyAck, parentsDependentAck, gratuityFamilyAck, gratuityParentsAck },
       last_saved_at: Date.now(),
       // ── Cascade flag: page 4 was edited → page 5 must re-ask review acks
       page4_edited: wasEditedAfterLoad.current ? true : (freshDraft.page4_edited || false),
@@ -1741,12 +1752,21 @@ export default function UanDetails() {
     if (hasUan === "yes") {
       const totalShare = nominees.reduce((s,n)=>s+(parseInt(n.share)||0),0);
       if (nominees.length > 0 && totalShare !== 100) errs.push(`Nominee Share Total (currently ${totalShare}%, must equal 100%)`);
+      // Every nominee must have a relationship actually selected — otherwise an unfilled
+      // "Select" dropdown gets silently treated as "not spouse/child" by the family-status
+      // logic below, which would wrongly demand the "No-Family Certification" from someone
+      // who simply hasn't finished the form yet, not someone who genuinely has no family.
+      nominees.forEach((n,i) => { if (!n.relation) errs.push(`Nominee ${i+1} — Relationship not selected`); });
+      nominees.forEach((n,i) => { if (n.relation === "Other" && !n.otherRelation?.trim()) errs.push(`Nominee ${i+1} — Please specify the relationship`); });
       if (!pfNomAck)     errs.push("PF Nomination Declaration");
       if (!pensionNomAck) errs.push("Pension Nomination Declaration");
       if (!epfoDecl)     errs.push("General EPFO Declaration");
       if (!aadhaarAuthAck) errs.push("Aadhaar Authorization for eKYC");
       if (!pfTransferAck)  errs.push("PF Transfer Authorization");
-      if (!noFamilyDependentAck) errs.push("Family / Dependent Certification (Form 2)");
+      // Only require whichever certification actually applies to who's being nominated —
+      // never both, and never either one for someone nominating spouse/children only.
+      if (!hasImmediateFamilyNominee && !noFamilyAck) errs.push("No-Family Certification (Form 2) — required since none of your nominees are your spouse or children");
+      if (hasParentNominee && !parentsDependentAck) errs.push("Parents Dependency Certification (Form 2) — required since you've nominated a parent");
       if (editedAfterSign) errs.push("Digital Signature (information changed — please sign again)");
       else if (!sigS3Key && !sigDataUrl) errs.push("Digital Signature");
     }
@@ -1755,6 +1775,8 @@ export default function UanDetails() {
     // unconditionally, not nested inside the hasUan check above.
     const gratuityTotalShare = gratuityNominees.reduce((s,n)=>s+(parseInt(n.share)||0),0);
     if (gratuityNominees.length > 0 && gratuityTotalShare !== 100) errs.push(`Gratuity Nominee Share Total (currently ${gratuityTotalShare}%, must equal 100%)`);
+    gratuityNominees.forEach((n,i) => { if (!n.relation) errs.push(`Gratuity Nominee ${i+1} — Relationship not selected`); });
+    gratuityNominees.forEach((n,i) => { if (n.relation === "Other" && !n.otherRelation?.trim()) errs.push(`Gratuity Nominee ${i+1} — Please specify the relationship`); });
     if (!gratuityFamilyAck)  errs.push("Gratuity Family Declaration (Form F)");
     if (!gratuityParentsAck) errs.push("Gratuity Parents Dependency Declaration (Form F)");
 
@@ -2329,16 +2351,45 @@ export default function UanDetails() {
                 </label>
               </div>
 
-              {/* Declaration 6 — no-family / dependent certification (Form 2, Part A) */}
-              <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"1rem",borderLeft:noFamilyDependentAck?"3px solid #16a34a":"3px solid #e4e2f0"}}>
-                <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
-                  <input type="checkbox" checked={noFamilyDependentAck} onChange={e=>{setNoFamilyDependentAck(e.target.checked);isDirtyRef.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
-                  <div>
-                    <div style={{fontSize:"0.68rem",fontWeight:800,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>Family / Dependent Certification <span style={{color:"#ef4444"}}>*</span></div>
-                    <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I certify that I have no family as defined under the Employees' Provident Fund Scheme, 1952 — or, where applicable, that my father/mother is dependent upon me. Should I acquire a family hereafter, the nomination above will be deemed cancelled.</span>
-                  </div>
-                </label>
-              </div>
+              {/* Not sure which of the two certifications below applies to you (or whether
+                  neither does)? Point straight at the support flow this page already has,
+                  rather than leaving people to guess on a legal declaration. */}
+              {(!hasImmediateFamilyNominee || hasParentNominee) && (
+                <div style={{fontSize:"0.75rem",color:"#6b6894",marginBottom:"0.75rem",lineHeight:1.5}}>
+                  Not sure which of the declarations below applies to your situation?{" "}
+                  <button type="button" onClick={()=>setShowSupport(true)} style={{background:"none",border:"none",padding:0,color:"#0d6e6e",fontWeight:700,fontSize:"0.75rem",cursor:"pointer",textDecoration:"underline",fontFamily:"inherit"}}>Contact support</button>{" "}
+                  before checking either box — this is a legal declaration, so it's worth getting right.
+                </div>
+              )}
+
+              {/* Declaration 6a — "no family" certification. Only shown when it's actually true/relevant:
+                  none of the nominees above are a spouse or child. Showing this to someone nominating
+                  their spouse and kids would force them to check a factually false statement. */}
+              {!hasImmediateFamilyNominee && (
+                <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"0.75rem",borderLeft:noFamilyAck?"3px solid #16a34a":"3px solid #e4e2f0"}}>
+                  <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
+                    <input type="checkbox" checked={noFamilyAck} onChange={e=>{setNoFamilyAck(e.target.checked);isDirtyRef.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
+                    <div>
+                      <div style={{fontSize:"0.68rem",fontWeight:800,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>No-Family Certification <span style={{color:"#ef4444"}}>*</span></div>
+                      <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I certify that I have no family as defined under the Employees' Provident Fund Scheme, 1952. Should I acquire a family hereafter, the nomination above will be deemed cancelled.</span>
+                    </div>
+                  </label>
+                </div>
+              )}
+
+              {/* Declaration 6b — parents-dependent certification. Only shown when a parent is actually
+                  nominated above — irrelevant otherwise. */}
+              {hasParentNominee && (
+                <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"1rem",borderLeft:parentsDependentAck?"3px solid #16a34a":"3px solid #e4e2f0"}}>
+                  <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
+                    <input type="checkbox" checked={parentsDependentAck} onChange={e=>{setParentsDependentAck(e.target.checked);isDirtyRef.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
+                    <div>
+                      <div style={{fontSize:"0.68rem",fontWeight:800,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>Parents Dependency Certification <span style={{color:"#ef4444"}}>*</span></div>
+                      <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I certify that my father/mother, as nominated above, is/are dependent upon me.</span>
+                    </div>
+                  </label>
+                </div>
+              )}
 
               {/* Digital Signature — persists across normal revisits; editing the page after
                   signing forces this back into draw mode, and every replaced signature is
