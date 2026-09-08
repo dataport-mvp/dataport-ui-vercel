@@ -31,6 +31,7 @@ export default function ResetPassword() {
     setError("");
     if (!token) { setError("Invalid or expired reset link"); return; }
     if (password.length < 8) { setError("Password must be at least 8 characters"); return; }
+    if (password.length > 12) { setError("Password must be at most 12 characters"); return; }
     if (password !== confirm) { setError("Passwords do not match"); return; }
 
     setStatus("loading");
@@ -85,14 +86,18 @@ export default function ResetPassword() {
 
               <PasswordInput
                 inputStyle={styles.input}
-                placeholder="New password (min 8 characters)"
+                placeholder="New password (8-12 chars, incl. a letter, number & symbol)"
                 value={password}
+                maxLength={12}
+                showCounter
                 onChange={e => setPassword(e.target.value)}
               />
               <PasswordInput
                 inputStyle={styles.input}
                 placeholder="Confirm new password"
                 value={confirm}
+                maxLength={12}
+                showCounter
                 onChange={e => setConfirm(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handle()}
               />

@@ -218,9 +218,10 @@ export default function BgvLogin() {
                 <div className="fld"><label className="flb">Work Email <span>*</span></label><input className="fin" type="email" placeholder="ops@youragency.com" value={email} onChange={e=>{setEmail(e.target.value);setError("")}} autoComplete="email"/></div>
                 <div className="fld"><label className="flb">Password <span>*</span></label>
                   <div className="pw-wrap">
-                    <input className="fin" type={showPwd?"text":"password"} placeholder={mode==="register"?"Min. 8 chars, incl. a letter, number & symbol":"Password"} value={password} onChange={e=>{setPassword(e.target.value);setError("")}} onKeyDown={e=>e.key==="Enter"&&handle()} autoComplete={mode==="login"?"current-password":"new-password"}/>
+                    <input className="fin" type={showPwd?"text":"password"} maxLength={mode==="register"?12:undefined} placeholder={mode==="register"?"8-12 chars, incl. a letter, number & symbol":"Password"} value={password} onChange={e=>{setPassword(e.target.value);setError("")}} onKeyDown={e=>e.key==="Enter"&&handle()} autoComplete={mode==="login"?"current-password":"new-password"}/>
                     <button className="ey" type="button" onClick={()=>setShowPwd(v=>!v)} tabIndex={-1}><Eye open={showPwd}/></button>
                   </div>
+                  {mode==="register" && <span style={{display:"block",textAlign:"right",fontSize:"0.72rem",fontWeight:600,marginTop:4,color:password.length>=8&&password.length<=12?"#16a34a":"#94a3b8"}}>{password.length}/12</span>}
                 </div>
                 {mode === "register" && (
                   <div className="terms-row" onClick={()=>setTermsAgreed(v=>!v)}>

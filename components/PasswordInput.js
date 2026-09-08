@@ -19,36 +19,48 @@ const Eye = ({ open }) => open ? (
  * surrounding page has specific styling needs.
  */
 export default function PasswordInput({
-  value, onChange, placeholder, onKeyDown, className, style, inputStyle, wrapperStyle, autoFocus, id, name,
+  value, onChange, placeholder, onKeyDown, className, style, inputStyle, wrapperStyle, autoFocus, id, name, maxLength, autoComplete, showCounter,
 }) {
   const [show, setShow] = useState(false);
   return (
-    <div style={{ position: "relative", width: "100%", ...wrapperStyle }}>
-      <input
-        id={id}
-        name={name}
-        className={className}
-        type={show ? "text" : "password"}
-        value={value}
-        onChange={onChange}
-        onKeyDown={onKeyDown}
-        placeholder={placeholder}
-        autoFocus={autoFocus}
-        style={{ width: "100%", boxSizing: "border-box", paddingRight: 40, ...style, ...inputStyle }}
-      />
-      <button
-        type="button"
-        tabIndex={-1}
-        onClick={() => setShow(v => !v)}
-        aria-label={show ? "Hide password" : "Show password"}
-        style={{
-          position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
-          background: "none", border: "none", padding: 4, cursor: "pointer",
-          color: "#94a3b8", display: "flex", alignItems: "center",
-        }}
-      >
-        <Eye open={show} />
-      </button>
+    <div>
+      <div style={{ position: "relative", width: "100%", ...wrapperStyle }}>
+        <input
+          id={id}
+          name={name}
+          className={className}
+          type={show ? "text" : "password"}
+          value={value}
+          onChange={onChange}
+          onKeyDown={onKeyDown}
+          placeholder={placeholder}
+          autoFocus={autoFocus}
+          maxLength={maxLength}
+          autoComplete={autoComplete}
+          style={{ width: "100%", boxSizing: "border-box", paddingRight: 40, ...style, ...inputStyle }}
+        />
+        <button
+          type="button"
+          tabIndex={-1}
+          onClick={() => setShow(v => !v)}
+          aria-label={show ? "Hide password" : "Show password"}
+          style={{
+            position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
+            background: "none", border: "none", padding: 4, cursor: "pointer",
+            color: "#94a3b8", display: "flex", alignItems: "center",
+          }}
+        >
+          <Eye open={show} />
+        </button>
+      </div>
+      {showCounter && (
+        <span style={{
+          display: "block", textAlign: "right", fontSize: "0.72rem", fontWeight: 600, marginTop: 4,
+          color: (value||"").length >= 8 && (value||"").length <= (maxLength||12) ? "#16a34a" : "#94a3b8",
+        }}>
+          {(value||"").length}/{maxLength||12}
+        </span>
+      )}
     </div>
   );
 }

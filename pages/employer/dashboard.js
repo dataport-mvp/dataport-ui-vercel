@@ -2533,7 +2533,7 @@ return (
             {[["Current password","password",pwCurrent,setPwCurrent],["New password","password",pwNew,setPwNew],["Confirm new password","password",pwConfirm,setPwConfirm]].map(([label,type,val,setter])=>(
               <div key={label} style={{marginBottom:"0.65rem"}}>
                 <div style={{fontSize:"0.65rem",fontWeight:600,color:"#7a6e64",marginBottom:"0.3rem",textTransform:"uppercase",letterSpacing:"0.4px"}}>{label}</div>
-                <PasswordInput value={val} onChange={e=>setter(e.target.value)} inputStyle={{border:"1.5px solid #c8c2b8",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",background:"#f5f2ee"}}/>
+                <PasswordInput value={val} onChange={e=>setter(e.target.value)} maxLength={label==="Current password"?undefined:12} showCounter={label!=="Current password"} placeholder={label==="Current password"?undefined:"8-12 chars, incl. a letter, number & symbol"} inputStyle={{border:"1.5px solid #c8c2b8",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",background:"#f5f2ee"}}/>
               </div>
             ))}
             {pwErr && <div style={{fontSize:"0.72rem",color:"#ef4444",marginBottom:"0.6rem",fontWeight:600}}>{pwErr}</div>}

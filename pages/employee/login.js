@@ -266,9 +266,10 @@ export default function EmployeeLogin() {
             {mode!=="forgot" && (
               <div className="fld"><label className="flb">Password <span>*</span></label>
                 <div className="pw-wrap">
-                  <input className="fin" type={showPwd?"text":"password"} placeholder={mode==="signup"?"Min. 8 chars, incl. a letter, number & symbol":"Password"} value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handle()}/>
+                  <input className="fin" type={showPwd?"text":"password"} maxLength={mode==="signup"?12:undefined} placeholder={mode==="signup"?"8-12 chars, incl. a letter, number & symbol":"Password"} value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handle()}/>
                   <button className="ey" type="button" onClick={()=>setShowPwd(v=>!v)} tabIndex={-1}><Eye open={showPwd}/></button>
                 </div>
+                {mode==="signup" && <span style={{display:"block",textAlign:"right",fontSize:"0.72rem",fontWeight:600,marginTop:4,color:password.length>=8&&password.length<=12?"#16a34a":"#94a3b8"}}>{password.length}/12</span>}
               </div>
             )}
 

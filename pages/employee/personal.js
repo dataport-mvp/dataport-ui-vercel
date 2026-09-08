@@ -813,6 +813,7 @@ function ConsentTab({ apiFetch, profileStatus }) {
   const [fieldChanges,setFieldChanges]=useState([]);
   const [expandedActivity,setExpandedActivity]=useState(()=>new Set());
   const [loading,setLoading]=useState(true);
+  const [loadError,setLoadError]=useState(false);
   const [acting,setActing]=useState(null);
   const [actionError,setActionError]=useState({});
   const [replyMsg,setReplyMsg]=useState({});
@@ -820,8 +821,16 @@ function ConsentTab({ apiFetch, profileStatus }) {
   const load=useCallback(async()=>{
     // Skip background poll while user is typing — prevents textarea remount mid-input
     if(textareaFocused.current)return;
-    try{const res=await apiFetch(`${API}/consent/my`);if(res.ok)setConsents(await res.json());}catch(_){}
+    // Previously: any failure here (a transient 401, a network blip, anything) left
+    // `consents` at its initial empty array with zero indication anything went wrong —
+    // which then rendered the exact same "No consent requests yet" screen as someone who
+    // genuinely has no consent history. Those are very different situations and need
+    // different UI: a real failure needs a visible retry, not a message implying there's
+    // nothing to see. loadError distinguishes the two explicitly.
+    let ok = true;
+    try{const res=await apiFetch(`${API}/consent/my`);if(res.ok){setConsents(await res.json());}else{ok=false;}}catch(_){ok=false;}
     try{const res2=await apiFetch(`${API}/employee/activity-log`);if(res2.ok)setFieldChanges(await res2.json());}catch(_){}
+    setLoadError(!ok);
     setLoading(false);
   },[apiFetch]);
   useEffect(()=>{load();},[load]);
@@ -859,6 +868,12 @@ function ConsentTab({ apiFetch, profileStatus }) {
   };
 
   if(loading)return <p style={{color:"#8b88b0",padding:"1rem 0",fontSize:"0.875rem"}}>Loading consents…</p>;
+  if(loadError && !consents.length)return(<div style={{textAlign:"center",padding:"3rem",background:"#fff",borderRadius:14,boxShadow:"0 6px 28px rgba(30,26,62,0.22)"}}>
+    <div style={{fontSize:38,marginBottom:10}}>⚠️</div>
+    <p style={{color:"#1a1730",margin:0,fontWeight:700}}>Couldn't load your consent requests</p>
+    <p style={{fontSize:"0.82rem",color:"#8b88b0",marginTop:6}}>This is likely temporary — check your connection and try again.</p>
+    <button onClick={()=>{setLoading(true);load();}} style={{marginTop:16,padding:"0.6rem 1.4rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:8,fontSize:"0.85rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Retry</button>
+  </div>);
   if(!consents.length)return(<div style={{textAlign:"center",padding:"3rem",background:"#fff",borderRadius:14,boxShadow:"0 6px 28px rgba(30,26,62,0.22)"}}>
     <div style={{fontSize:38,marginBottom:10}}>📋</div>
     <p style={{color:"#1a1730",margin:0,fontWeight:700}}>No consent requests yet</p>

@@ -774,6 +774,9 @@ export default function AdminDashboard() {
               <div key={label} style={{marginBottom:"0.65rem"}}>
                 <div style={{fontSize:"0.6rem",fontWeight:700,color:"#7a9494",textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:"0.35rem"}}>{label}</div>
                 <PasswordInput value={val} onChange={e => setter(e.target.value)}
+                  maxLength={label==="Current password"?undefined:12}
+                  showCounter={label!=="Current password"}
+                  placeholder={label==="Current password"?undefined:"8-12 chars, incl. a letter, number & symbol"}
                   inputStyle={{background:"#f2efe9",border:"1px solid #1e1b2e",borderRadius:"7px",fontFamily:"inherit",fontSize:"0.82rem",color:"#1c2b2b"}}/>
               </div>
             ))}

@@ -1591,6 +1591,9 @@ export default function ReviewPage() {
                 <div key={label} style={{marginBottom:"0.65rem"}}>
                   <div style={{fontSize:"0.65rem",fontWeight:600,color:"#6b7280",marginBottom:"0.3rem",textTransform:"uppercase",letterSpacing:"0.4px"}}>{label}</div>
                   <PasswordInput value={val} onChange={e=>setter(e.target.value)}
+                    maxLength={label==="Current password"?undefined:12}
+                    showCounter={label!=="Current password"}
+                    placeholder={label==="Current password"?undefined:"8-12 chars, incl. a letter, number & symbol"}
                     inputStyle={{width:"100%",padding:"0.6rem 0.8rem",border:"1.5px solid #dddaf0",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",outline:"none",background:"#f8f7ff"}} />
                 </div>
               ))}
