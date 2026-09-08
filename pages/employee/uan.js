@@ -790,10 +790,39 @@ async function buildMyProfilePdf(profile, empHistory, documents, employeeSelfNam
     row(d.familyDetails.parentsCoverage === "My Parents" ? "Mother's DOB"  : "Mother-in-law's DOB",  d.familyDetails.excludeMother ? "" : anyDobToDisplaySelf(d.familyDetails.motherDob)),
   ].join(""), "#334155") : ""}
 
+  ${Array.isArray(d.epfoNominees) && d.epfoNominees.filter(n=>n.name).length > 0 ? d.epfoNominees.filter(n=>n.name).map((n,i) => section(
+    `PF & Pension Nominee ${i+1} (Form 2)`,
+    [
+      row("Name", n.name),
+      row("Date of Birth", anyDobToDisplaySelf(n.dob)),
+      row("Relationship", n.relation === "Other" ? n.otherRelation : n.relation),
+      row("Address", n.address),
+      row("Share", n.share ? `${n.share}%` : ""),
+    ].join(""),
+    "#334155"
+  )).join("") : ""}
+
+  ${Array.isArray(d.gratuityNominees) && d.gratuityNominees.filter(n=>n.name).length > 0 ? d.gratuityNominees.filter(n=>n.name).map((n,i) => section(
+    `Gratuity Nominee ${i+1} (Form F)`,
+    [
+      row("Name", n.name),
+      row("Date of Birth", anyDobToDisplaySelf(n.dob)),
+      row("Relationship", n.relation === "Other" ? n.otherRelation : n.relation),
+      row("Address", n.address),
+      row("Share", n.share ? `${n.share}%` : ""),
+    ].join(""),
+    "#334155"
+  )).join("") : ""}
+
   ${section("EPFO Declarations & Digital Signature", [
     row("PF Nomination Declaration (Form 2 — Part A)",      d.epfoDeclarations?.pfNomAck ? "✓ Agreed" : "Not agreed"),
     row("Pension Nomination Declaration (Form 2 — Part B)", d.epfoDeclarations?.pensionNomAck ? "✓ Agreed" : "Not agreed"),
     row("General EPFO Declaration",                          d.epfoDeclarations?.epfoDecl ? "✓ Agreed" : "Not agreed"),
+    row("Aadhaar / eKYC Authorization",                      d.epfoDeclarations?.aadhaarAuthAck ? "✓ Agreed" : "Not agreed"),
+    row("PF Transfer Authorization",                         d.epfoDeclarations?.pfTransferAck ? "✓ Agreed" : "Not agreed"),
+    row("Family / Dependent Certification (Form 2)",         d.epfoDeclarations?.noFamilyDependentAck ? "✓ Agreed" : "Not agreed"),
+    row("Gratuity Family Declaration (Form F)",               d.epfoDeclarations?.gratuityFamilyAck ? "✓ Agreed" : "Not agreed"),
+    row("Gratuity Parents Dependency Declaration (Form F)",   d.epfoDeclarations?.gratuityParentsAck ? "✓ Agreed" : "Not agreed"),
     row("Digital Signature", d.epfoSignature?.s3Key ? `✓ Signed${d.epfoSignature?.timestamp ? " on " + new Date(d.epfoSignature.timestamp).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}) : ""}` : "⚠ Not yet signed"),
   ].join(""), "#334155")}
 
@@ -1289,6 +1318,13 @@ export default function UanDetails() {
   const makeNominee = () => ({ name:"", dob:"", relation:"", otherRelation:"", address:"", share:"", guardianName:"", guardianAddress:"", _k:`nom-${Date.now()}-${Math.random().toString(36).slice(2,7)}` });
   const [nominees, setNominees] = useState([makeNominee()]);
 
+  // ── Gratuity Nominees (Form F, Payment of Gratuity Act, 1972) ──
+  // Deliberately a SEPARATE list from `nominees` above (Form 2, EPF/EPS) — these are two
+  // legally distinct nominations under two different Acts, and can legitimately name
+  // different people or different shares. Never merge these into one list.
+  const makeGratuityNominee = () => ({ name:"", dob:"", relation:"", otherRelation:"", address:"", share:"", _k:`gnom-${Date.now()}-${Math.random().toString(36).slice(2,7)}` });
+  const [gratuityNominees, setGratuityNominees] = useState([makeGratuityNominee()]);
+
   // ── Family Details (for company health insurance — Medibuddy/Acko-style enrollment) ──
   // All optional — this section is informational for insurance enrollment, never blocks Save/Sign.
   // Marital Status is NOT re-asked here — it's already collected (and required) on Personal Details;
@@ -1314,6 +1350,14 @@ export default function UanDetails() {
   const [pfNomAck, setPfNomAck] = useState(false);
   const [pensionNomAck, setPensionNomAck] = useState(false);
   const [epfoDecl, setEpfoDecl] = useState(false);
+  // Three more from Form 2 that were previously missing entirely — each is a distinct legal
+  // consent, not just a rewording of the ones above:
+  const [aadhaarAuthAck, setAadhaarAuthAck] = useState(false);       // Aadhaar/eKYC authorization
+  const [pfTransferAck, setPfTransferAck] = useState(false);         // authorize transfer from previous PF account
+  const [noFamilyDependentAck, setNoFamilyDependentAck] = useState(false); // "no family" / parents-dependent certification
+  // Form F (Gratuity) declarations — separate Act, separate certifications.
+  const [gratuityFamilyAck, setGratuityFamilyAck] = useState(false);
+  const [gratuityParentsAck, setGratuityParentsAck] = useState(false);
 
   // ── Signature ──
   // sigDataUrl: either a local data: URI (just drawn this session) or a fetched S3 preview URL
@@ -1385,6 +1429,11 @@ export default function UanDetails() {
       setPfNomAck(false);
       setPensionNomAck(false);
       setEpfoDecl(false);
+      setAadhaarAuthAck(false);
+      setPfTransferAck(false);
+      setNoFamilyDependentAck(false);
+      setGratuityFamilyAck(false);
+      setGratuityParentsAck(false);
     }
   };
 
@@ -1418,6 +1467,7 @@ export default function UanDetails() {
           if (d.serviceHistoryKey) setServiceHistoryKey(d.serviceHistoryKey);
           if (Array.isArray(d.epfoFetched) && d.epfoFetched.length > 0) setEpfoFetched(d.epfoFetched);
           if (Array.isArray(d.epfoNominees) && d.epfoNominees.length > 0) setNominees(d.epfoNominees.map((n,i)=>({...n,_k:n._k||`nom-restored-${i}-${Date.now()}`})));
+          if (Array.isArray(d.gratuityNominees) && d.gratuityNominees.length > 0) setGratuityNominees(d.gratuityNominees.map((n,i)=>({...n,_k:n._k||`gnom-restored-${i}-${Date.now()}`})));
           if (d.familyDetails) {
             const fam = d.familyDetails;
             // spouseName/spouseDob no longer restored here — read live from draft.spouseName/spouseDob
@@ -1435,6 +1485,11 @@ export default function UanDetails() {
             if (d.epfoDeclarations.pfNomAck)     setPfNomAck(d.epfoDeclarations.pfNomAck);
             if (d.epfoDeclarations.pensionNomAck) setPensionNomAck(d.epfoDeclarations.pensionNomAck);
             if (d.epfoDeclarations.epfoDecl)     setEpfoDecl(d.epfoDeclarations.epfoDecl);
+            if (d.epfoDeclarations.aadhaarAuthAck)       setAadhaarAuthAck(d.epfoDeclarations.aadhaarAuthAck);
+            if (d.epfoDeclarations.pfTransferAck)        setPfTransferAck(d.epfoDeclarations.pfTransferAck);
+            if (d.epfoDeclarations.noFamilyDependentAck) setNoFamilyDependentAck(d.epfoDeclarations.noFamilyDependentAck);
+            if (d.epfoDeclarations.gratuityFamilyAck)  setGratuityFamilyAck(d.epfoDeclarations.gratuityFamilyAck);
+            if (d.epfoDeclarations.gratuityParentsAck) setGratuityParentsAck(d.epfoDeclarations.gratuityParentsAck);
           }
 
           // ── Restore signature ──
@@ -1571,6 +1626,23 @@ export default function UanDetails() {
     sigDrawingRef.current = false;
     if (!sigCanvasRef.current) return;
     if (!sigHasStrokeRef.current) { setSigEmptyWarn(true); return; }
+    // Actually verify the canvas has non-white pixels before accepting it — sigHasStrokeRef
+    // only tells us a draw event fired, not that any visible mark landed inside the canvas.
+    // A canvas/screen coordinate mismatch (now fixed, but keeping this as a permanent
+    // safeguard) or any other timing issue could otherwise export and save a blank
+    // signature that LOOKS accepted here, only to be discovered missing later on the
+    // review page — which is exactly the failure this is meant to catch immediately instead.
+    {
+      const ctx = sigCanvasRef.current.getContext("2d");
+      const { width, height } = sigCanvasRef.current;
+      const pixels = ctx.getImageData(0, 0, width, height).data;
+      let hasMark = false;
+      for (let i = 0; i < pixels.length; i += 4) {
+        // Any pixel meaningfully darker than white counts as a mark.
+        if (pixels[i] < 250 || pixels[i+1] < 250 || pixels[i+2] < 250) { hasMark = true; break; }
+      }
+      if (!hasMark) { sigHasStrokeRef.current = false; setSigEmptyWarn(true); return; }
+    }
     const dataUrl = sigCanvasRef.current.toDataURL("image/jpeg", 0.3);
     // Archive the signature being replaced — never silently discarded, only versioned.
     if (sigS3Key && sigTimestamp) {
@@ -1601,6 +1673,7 @@ export default function UanDetails() {
       pfRecords:    hasUan === "yes" ? pfRecords    : [],
       serviceHistoryKey,
       epfoNominees: nominees.filter(n => (n.name||"").trim() || (n.share||"").trim() || (n.dob||"").trim() || (n.relation||"").trim() || (n.address||"").trim()),
+      gratuityNominees: gratuityNominees.filter(n => (n.name||"").trim() || (n.share||"").trim() || (n.dob||"").trim() || (n.relation||"").trim() || (n.address||"").trim()),
       familyDetails: {
         spouseName:  draft?.maritalStatus === "Married" ? (draft?.spouseName || "") : "",
         spouseDob:   draft?.maritalStatus === "Married" ? (draft?.spouseDob  || "") : "",
@@ -1619,7 +1692,7 @@ export default function UanDetails() {
         timestamp: sigTimestamp,
       },
       signatureHistory,
-      epfoDeclarations: { pfNomAck, pensionNomAck, epfoDecl },
+      epfoDeclarations: { pfNomAck, pensionNomAck, epfoDecl, aadhaarAuthAck, pfTransferAck, noFamilyDependentAck, gratuityFamilyAck, gratuityParentsAck },
       last_saved_at: Date.now(),
       // ── Cascade flag: page 4 was edited → page 5 must re-ask review acks
       page4_edited: wasEditedAfterLoad.current ? true : (freshDraft.page4_edited || false),
@@ -1662,22 +1735,33 @@ export default function UanDetails() {
   };
 
   const handleNext = async () => {
-    // Only validate acks + signature when user has UAN
+    const errs = [];
+    // Only validate UAN/EPF/pension-specific acks + signature when user actually has a UAN —
+    // these are meaningless without one.
     if (hasUan === "yes") {
-      const errs = [];
       const totalShare = nominees.reduce((s,n)=>s+(parseInt(n.share)||0),0);
       if (nominees.length > 0 && totalShare !== 100) errs.push(`Nominee Share Total (currently ${totalShare}%, must equal 100%)`);
       if (!pfNomAck)     errs.push("PF Nomination Declaration");
       if (!pensionNomAck) errs.push("Pension Nomination Declaration");
       if (!epfoDecl)     errs.push("General EPFO Declaration");
+      if (!aadhaarAuthAck) errs.push("Aadhaar Authorization for eKYC");
+      if (!pfTransferAck)  errs.push("PF Transfer Authorization");
+      if (!noFamilyDependentAck) errs.push("Family / Dependent Certification (Form 2)");
       if (editedAfterSign) errs.push("Digital Signature (information changed — please sign again)");
       else if (!sigS3Key && !sigDataUrl) errs.push("Digital Signature");
+    }
+    // Gratuity nomination (Form F, Payment of Gratuity Act 1972) is a separate statutory
+    // benefit — eligibility isn't tied to having a UAN/PF account, so this is validated
+    // unconditionally, not nested inside the hasUan check above.
+    const gratuityTotalShare = gratuityNominees.reduce((s,n)=>s+(parseInt(n.share)||0),0);
+    if (gratuityNominees.length > 0 && gratuityTotalShare !== 100) errs.push(`Gratuity Nominee Share Total (currently ${gratuityTotalShare}%, must equal 100%)`);
+    if (!gratuityFamilyAck)  errs.push("Gratuity Family Declaration (Form F)");
+    if (!gratuityParentsAck) errs.push("Gratuity Parents Dependency Declaration (Form F)");
 
-      if (errs.length > 0) {
-        setSaveStatus(`⚠️ Required: ${errs.join(", ")}`);
-        document.getElementById("epfo-decl-section")?.scrollIntoView({ behavior:"smooth", block:"center" });
-        return;
-      }
+    if (errs.length > 0) {
+      setSaveStatus(`⚠️ Required: ${errs.join(", ")}`);
+      document.getElementById("epfo-decl-section")?.scrollIntoView({ behavior:"smooth", block:"center" });
+      return;
     }
 
     setSaveStatus("Saving...");
@@ -1938,8 +2022,8 @@ export default function UanDetails() {
                   </div>
                   <div className="fr">
                     <div className="fi">
-                      <span className="fl">Full Name <span style={{color:"#ef4444"}}>*</span></span>
-                      <input className="in" value={nom.name||""} placeholder="As per Aadhaar / PAN" onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],name:e.target.value};return n;});flagPostSignEdit();}}/>
+                      <span className="fl">Full Name (Block Letters) <span style={{color:"#ef4444"}}>*</span></span>
+                      <input className="in" style={{textTransform:"uppercase"}} value={nom.name||""} placeholder="AS PER AADHAAR / PAN" onChange={e=>{setNominees(p=>{const n=[...p];n[idx]={...n[idx],name:e.target.value.toUpperCase()};return n;});flagPostSignEdit();}}/>
                     </div>
                     <div className="fi">
                       <span className="fl">Date of Birth <span style={{color:"#ef4444"}}>*</span></span>
@@ -1980,6 +2064,81 @@ export default function UanDetails() {
               )}
             </div>
           )}
+
+          {/* ── Gratuity Nominees (Form F, Payment of Gratuity Act 1972) — always shown,
+              independent of UAN/EPF status: gratuity eligibility isn't tied to having a
+              PF account. This is a legally separate nomination from the PF/Pension one
+              above and can name different people or shares — never merge the two lists. ── */}
+          <div className="sc grn" style={{marginBottom:"1.1rem"}}>
+            <div className="sh"><div className="si grn">📜</div><span className="st">Nominee Details — Gratuity (Form F)</span></div>
+            <p style={{fontSize:"0.75rem",color:"#6b6894",marginBottom:"0.9rem",fontWeight:500,lineHeight:1.5}}>Nominate beneficiaries for gratuity payable under the Payment of Gratuity Act, 1972. This can name the same people as your PF nominees above, or different ones — shares must add up to 100%.</p>
+            {gratuityNominees.map((nom, idx) => (
+              <div key={nom._k||idx} className="nom-block">
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.75rem"}}>
+                  <span style={{fontSize:"0.72rem",fontWeight:800,color:"#16a34a",textTransform:"uppercase",letterSpacing:"0.5px"}}>Nominee {idx+1}</span>
+                  {idx>0&&<button className="rm-btn" onClick={()=>{setGratuityNominees(prev=>prev.filter((_,i)=>i!==idx));flagPostSignEdit();}}>− Remove</button>}
+                </div>
+                <div className="fr">
+                  <div className="fi">
+                    <span className="fl">Full Name (Block Letters) <span style={{color:"#ef4444"}}>*</span></span>
+                    <input className="in" style={{textTransform:"uppercase"}} value={nom.name||""} placeholder="AS PER AADHAAR / PAN" onChange={e=>{setGratuityNominees(p=>{const n=[...p];n[idx]={...n[idx],name:e.target.value.toUpperCase()};return n;});flagPostSignEdit();}}/>
+                  </div>
+                  <div className="fi">
+                    <span className="fl">Date of Birth <span style={{color:"#ef4444"}}>*</span></span>
+                    <NomineeDobField value={nom.dob||""} onChange={v=>{setGratuityNominees(p=>{const n=[...p];n[idx]={...n[idx],dob:v};return n;});flagPostSignEdit();}}/>
+                  </div>
+                  <div className="fi">
+                    <span className="fl">Relationship <span style={{color:"#ef4444"}}>*</span></span>
+                    <select className="in" value={nom.relation||""} onChange={e=>{setGratuityNominees(p=>{const n=[...p];n[idx]={...n[idx],relation:e.target.value,otherRelation:""};return n;});flagPostSignEdit();}} style={{background:nom.relation?"#fff":"#f2f1f9",color:nom.relation?"#1a1730":"#8b88b0"}}>
+                      <option value="">Select</option>
+                      {["Spouse","Son","Daughter","Father","Mother","Brother","Sister","Other"].map(r=><option key={r} value={r}>{r}</option>)}
+                    </select>
+                  </div>
+                  {nom.relation==="Other" && (
+                    <div className="fi">
+                      <span className="fl">Please specify <span style={{color:"#ef4444"}}>*</span></span>
+                      <input className="in" value={nom.otherRelation||""} placeholder="e.g. Guardian, Grandparent" onChange={e=>{setGratuityNominees(p=>{const n=[...p];n[idx]={...n[idx],otherRelation:e.target.value};return n;});flagPostSignEdit();}}/>
+                    </div>
+                  )}
+                </div>
+                <div className="fr">
+                  <div className="fi" style={{minWidth:220}}>
+                    <span className="fl">Address <span style={{color:"#ef4444"}}>*</span></span>
+                    <input className="in" value={nom.address||""} onChange={e=>{setGratuityNominees(p=>{const n=[...p];n[idx]={...n[idx],address:e.target.value};return n;});flagPostSignEdit();}}/>
+                  </div>
+                  <div className="fi" style={{maxWidth:140}}>
+                    <span className="fl">Share (%) <span style={{color:"#ef4444"}}>*</span></span>
+                    <input className="in" value={nom.share||""} placeholder="e.g. 50" inputMode="numeric" maxLength={3} onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,3);setGratuityNominees(p=>{const n=[...p];n[idx]={...n[idx],share:v};return n;});flagPostSignEdit();}}/>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {gratuityNominees.length < 4 && gratuityNominees.reduce((s,n)=>s+(parseInt(n.share)||0),0) < 100 && <button className="add-btn" onClick={()=>{setGratuityNominees(p=>[...p,makeGratuityNominee()]);flagPostSignEdit();}}>+ Add Another Nominee</button>}
+            {gratuityNominees.length < 4 && gratuityNominees.reduce((s,n)=>s+(parseInt(n.share)||0),0) >= 100 && gratuityNominees.length > 0 && (
+              <p style={{fontSize:"0.72rem",color:"#8b88b0",marginTop:"0.4rem"}}>Share is fully allocated — reduce an existing nominee's share to add another.</p>
+            )}
+            {gratuityNominees.reduce((s,n)=>s+(parseInt(n.share)||0),0) !== 100 && (
+              <p style={{fontSize:"0.75rem",color:"#ef4444",fontWeight:600,marginTop:"0.5rem"}}>⚠️ Total share must equal 100%. Current total: {gratuityNominees.reduce((s,n)=>s+(parseInt(n.share)||0),0)}%</p>
+            )}
+            <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginTop:"0.9rem",borderLeft:gratuityFamilyAck?"3px solid #16a34a":"3px solid #e4e2f0"}}>
+              <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
+                <input type="checkbox" checked={gratuityFamilyAck} onChange={e=>{setGratuityFamilyAck(e.target.checked);isDirtyRef.current=true;flagPostSignEdit();}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
+                <div>
+                  <div style={{fontSize:"0.68rem",fontWeight:800,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>Gratuity Family Declaration (Form F) <span style={{color:"#ef4444"}}>*</span></div>
+                  <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I certify that the person(s) nominated above are members of my family within the meaning of the Payment of Gratuity Act, 1972 — or, if I have no such family, I declare so, and this nomination will stand cancelled should I acquire a family hereafter.</span>
+                </div>
+              </label>
+            </div>
+            <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginTop:"0.75rem",borderLeft:gratuityParentsAck?"3px solid #16a34a":"3px solid #e4e2f0"}}>
+              <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
+                <input type="checkbox" checked={gratuityParentsAck} onChange={e=>{setGratuityParentsAck(e.target.checked);isDirtyRef.current=true;flagPostSignEdit();}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
+                <div>
+                  <div style={{fontSize:"0.68rem",fontWeight:800,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>Parents Dependency Declaration (Form F) <span style={{color:"#ef4444"}}>*</span></div>
+                  <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I declare the dependency status of my parents (or, where applicable, my spouse's parents) as accurately reflected in this nomination, as required under the Payment of Gratuity Act, 1972. This nomination invalidates any gratuity nomination I made previously.</span>
+                </div>
+              </label>
+            </div>
+          </div>
 
           {/* ── Family Details — for company health insurance enrollment (Medibuddy/Acko-style) ── */}
           {/* Fully optional — informational only, never blocks Save or Signature. */}
@@ -2128,12 +2287,45 @@ export default function UanDetails() {
               </div>
 
               {/* Declaration 3 */}
-              <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"1rem",borderLeft:epfoDecl?"3px solid #16a34a":"3px solid #e4e2f0"}}>
+              <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"0.75rem",borderLeft:epfoDecl?"3px solid #16a34a":"3px solid #e4e2f0"}}>
                 <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
                   <input type="checkbox" checked={epfoDecl} onChange={e=>{setEpfoDecl(e.target.checked);isDirtyRef.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
                   <div>
                     <div style={{fontSize:"0.68rem",fontWeight:800,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>General EPFO Declaration <span style={{color:"#ef4444"}}>*</span></div>
                     <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I declare that all UAN, PF member ID(s), service history, and nominee details provided are true and correct. I understand false declarations may result in legal action under the EPF Act, 1952.</span>
+                  </div>
+                </label>
+              </div>
+
+              {/* Declaration 4 — Aadhaar/eKYC authorization (Form 2 Undertaking, item 2) */}
+              <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"0.75rem",borderLeft:aadhaarAuthAck?"3px solid #16a34a":"3px solid #e4e2f0"}}>
+                <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
+                  <input type="checkbox" checked={aadhaarAuthAck} onChange={e=>{setAadhaarAuthAck(e.target.checked);isDirtyRef.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
+                  <div>
+                    <div style={{fontSize:"0.68rem",fontWeight:800,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>Aadhaar / eKYC Authorization <span style={{color:"#ef4444"}}>*</span></div>
+                    <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I authorize EPFO to use my Aadhaar for verification, authentication, and eKYC purposes for service delivery.</span>
+                  </div>
+                </label>
+              </div>
+
+              {/* Declaration 5 — PF transfer authorization (Form 2 Undertaking, item 3) */}
+              <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"0.75rem",borderLeft:pfTransferAck?"3px solid #16a34a":"3px solid #e4e2f0"}}>
+                <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
+                  <input type="checkbox" checked={pfTransferAck} onChange={e=>{setPfTransferAck(e.target.checked);isDirtyRef.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
+                  <div>
+                    <div style={{fontSize:"0.68rem",fontWeight:800,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>PF Transfer Authorization <span style={{color:"#ef4444"}}>*</span></div>
+                    <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>If applicable, please transfer my funds and service details from my previous PF account, as declared above, to my present PF account.</span>
+                  </div>
+                </label>
+              </div>
+
+              {/* Declaration 6 — no-family / dependent certification (Form 2, Part A) */}
+              <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"1rem",borderLeft:noFamilyDependentAck?"3px solid #16a34a":"3px solid #e4e2f0"}}>
+                <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
+                  <input type="checkbox" checked={noFamilyDependentAck} onChange={e=>{setNoFamilyDependentAck(e.target.checked);isDirtyRef.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
+                  <div>
+                    <div style={{fontSize:"0.68rem",fontWeight:800,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>Family / Dependent Certification <span style={{color:"#ef4444"}}>*</span></div>
+                    <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I certify that I have no family as defined under the Employees' Provident Fund Scheme, 1952 — or, where applicable, that my father/mother is dependent upon me. Should I acquire a family hereafter, the nomination above will be deemed cancelled.</span>
                   </div>
                 </label>
               </div>
@@ -2193,8 +2385,16 @@ export default function UanDetails() {
                         sigHasStrokeRef.current=true;
                         setSigEmptyWarn(false);
                         const r=sigCanvasRef.current.getBoundingClientRect();
+                        // Separate X/Y scale factors — the canvas renders at a responsive
+                        // width (style width:"100%", capped at 400) but a FIXED height (90),
+                        // so its on-screen aspect ratio doesn't always match the internal
+                        // 400x90 buffer. A single scale factor applied to both axes distorts
+                        // Y on any screen narrower than 400px, which can push strokes outside
+                        // the visible canvas entirely — looking blank even though something
+                        // was technically drawn.
                         const scaleX=sigCanvasRef.current.width/r.width;
-                        const x=(e.clientX-r.left)*scaleX, y=(e.clientY-r.top)*scaleX;
+                        const scaleY=sigCanvasRef.current.height/r.height;
+                        const x=(e.clientX-r.left)*scaleX, y=(e.clientY-r.top)*scaleY;
                         sigLastRef.current={x,y};
                         // Draw a dot immediately on press so single clicks (like dot on j/i) are captured
                         const ctx=sigCanvasRef.current.getContext("2d");
@@ -2205,11 +2405,12 @@ export default function UanDetails() {
                         if(!sigDrawingRef.current)return;
                         const r=sigCanvasRef.current.getBoundingClientRect();
                         const scaleX=sigCanvasRef.current.width/r.width;
+                        const scaleY=sigCanvasRef.current.height/r.height;
                         const ctx=sigCanvasRef.current.getContext("2d");
                         // Clamp to canvas bounds — keeps the stroke going right up to the edge
                         // instead of the pen "lifting" the instant the cursor drifts outside.
                         const x=Math.min(Math.max((e.clientX-r.left)*scaleX,0),sigCanvasRef.current.width);
-                        const y=Math.min(Math.max((e.clientY-r.top)*scaleX,0),sigCanvasRef.current.height);
+                        const y=Math.min(Math.max((e.clientY-r.top)*scaleY,0),sigCanvasRef.current.height);
                         ctx.beginPath();ctx.strokeStyle="#1a1730";ctx.lineWidth=2.2;ctx.lineCap="round";ctx.lineJoin="round";
                         ctx.moveTo(sigLastRef.current.x,sigLastRef.current.y);ctx.lineTo(x,y);ctx.stroke();
                         sigLastRef.current={x,y};
@@ -2221,8 +2422,9 @@ export default function UanDetails() {
                         setSigEmptyWarn(false);
                         const r=sigCanvasRef.current.getBoundingClientRect();
                         const scaleX=sigCanvasRef.current.width/r.width;
+                        const scaleY=sigCanvasRef.current.height/r.height;
                         const t=e.touches[0];
-                        const x=(t.clientX-r.left)*scaleX, y=(t.clientY-r.top)*scaleX;
+                        const x=(t.clientX-r.left)*scaleX, y=(t.clientY-r.top)*scaleY;
                         sigLastRef.current={x,y};
                         // Draw dot on press
                         const ctx=sigCanvasRef.current.getContext("2d");
@@ -2233,10 +2435,11 @@ export default function UanDetails() {
                         e.preventDefault();if(!sigDrawingRef.current)return;
                         const r=sigCanvasRef.current.getBoundingClientRect();
                         const scaleX=sigCanvasRef.current.width/r.width;
+                        const scaleY=sigCanvasRef.current.height/r.height;
                         const ctx=sigCanvasRef.current.getContext("2d");
                         const t=e.touches[0];
                         const x=Math.min(Math.max((t.clientX-r.left)*scaleX,0),sigCanvasRef.current.width);
-                        const y=Math.min(Math.max((t.clientY-r.top)*scaleX,0),sigCanvasRef.current.height);
+                        const y=Math.min(Math.max((t.clientY-r.top)*scaleY,0),sigCanvasRef.current.height);
                         ctx.beginPath();ctx.strokeStyle="#1a1730";ctx.lineWidth=2.2;ctx.lineCap="round";ctx.lineJoin="round";
                         ctx.moveTo(sigLastRef.current.x,sigLastRef.current.y);ctx.lineTo(x,y);ctx.stroke();
                         sigLastRef.current={x,y};
