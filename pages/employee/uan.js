@@ -1394,12 +1394,20 @@ export default function UanDetails() {
   const sigLastRef = useRef({x:0, y:0});
   const sigHasStrokeRef = useRef(false);
   const [sigEmptyWarn, setSigEmptyWarn] = useState(false);
+  const [sigUploadError, setSigUploadError] = useState(false);
+  const [sigUploading, setSigUploading] = useState(false);
   const wasSignedRef = useRef(false);
 
   const hasSavedSignature = !!(sigS3Key || sigDataUrl);
   // editedAfterSign forces the canvas back open — re-signing is mandatory after an edit,
   // not an optional "re-sign if you want to" action.
   const showSigCanvas = signingMode || !hasSavedSignature || editedAfterSign;
+  // Diagnostic only — if the signature ever shows blank on return when it shouldn't,
+  // this tells us exactly which of the three conditions caused it, instead of guessing.
+  // Safe to leave in permanently; it's one console line per render, not per-request.
+  if (typeof window !== "undefined" && !loading) {
+    console.log("[SIG_DEBUG]", { signingMode, hasSavedSignature, editedAfterSign, sigS3Key, sigDataUrlSet: !!sigDataUrl, showSigCanvas });
+  }
 
   // Canvas pixels default to transparent, and JPEG has no alpha channel — toDataURL("image/jpeg")
   // flattens any transparent pixel to black. Fill the canvas white the instant draw mode opens
@@ -1659,18 +1667,32 @@ export default function UanDetails() {
       if (!hasMark) { sigHasStrokeRef.current = false; setSigEmptyWarn(true); return; }
     }
     const dataUrl = sigCanvasRef.current.toDataURL("image/jpeg", 0.3);
+    setSigEmptyWarn(false);
+    setSigUploadError(false);
+    setSigUploading(true);
+    const ts = new Date().toISOString();
+    const key = await uploadSignature(dataUrl, ts);
+    setSigUploading(false);
+    // The single most important line in this function: do NOT treat the signature as
+    // accepted until the upload is actually confirmed. Previously every piece of "you've
+    // signed" state — the dirty flag, wasSignedRef, flipping to the success view — ran
+    // BEFORE this upload even started, so a failed upload (network blip, S3 error, anything
+    // uploadSignature swallows into a null return) still looked fully successful with zero
+    // indication anything was wrong. The signature would then save with an empty S3 key,
+    // discovered missing only later on the review page. Now nothing is marked signed, saved,
+    // or archived unless this upload genuinely succeeds — a failure just shows a visible
+    // error and lets the user retry immediately, with their drawing still intact.
+    if (!key) { setSigUploadError(true); return; }
     // Archive the signature being replaced — never silently discarded, only versioned.
     if (sigS3Key && sigTimestamp) {
       setSignatureHistory(prev => [...prev, { s3Key: sigS3Key, timestamp: sigTimestamp }]);
     }
     setSigDataUrl(dataUrl);
     setSigPreviewFailed(false);
-    const ts = new Date().toISOString();
     setSigTimestamp(ts);
+    setSigS3Key(key);
     isDirtyRef.current = true; wasSignedRef.current = true; setEditedAfterSign(false);
-    setSigningMode(false); // flip back to "view" mode showing the freshly drawn (local, CORS-free) image
-    const key = await uploadSignature(dataUrl, ts);
-    if (key) setSigS3Key(key);
+    setSigningMode(false); // flip back to "view" mode — only now that upload is CONFIRMED successful
   };
 
   const saveDraft = async () => {
@@ -2538,12 +2560,14 @@ export default function UanDetails() {
                         )}
                         <button
                           onClick={finishSignature}
-                          style={{padding:"0.3rem 0.9rem",background:"#16a34a",color:"#fff",border:"1.5px solid #16a34a",borderRadius:7,fontSize:"0.72rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                          ✓ Done
+                          disabled={sigUploading}
+                          style={{padding:"0.3rem 0.9rem",background:sigUploading?"#94a3b8":"#16a34a",color:"#fff",border:`1.5px solid ${sigUploading?"#94a3b8":"#16a34a"}`,borderRadius:7,fontSize:"0.72rem",fontWeight:700,cursor:sigUploading?"default":"pointer",fontFamily:"inherit"}}>
+                          {sigUploading ? "Saving…" : "✓ Done"}
                         </button>
                       </div>
                     </div>
                     {sigEmptyWarn && <p style={{fontSize:"0.75rem",color:"#ef4444",fontWeight:600,marginTop:"0.4rem"}}>⚠️ Please draw your signature before tapping Done.</p>}
+                    {sigUploadError && <p style={{fontSize:"0.75rem",color:"#ef4444",fontWeight:600,marginTop:"0.4rem"}}>⚠️ Your signature couldn't be saved — check your connection and tap Done again. Your drawing is still here, nothing was lost.</p>}
                   </>
                 )}
               </div>
