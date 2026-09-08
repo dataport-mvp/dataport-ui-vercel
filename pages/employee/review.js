@@ -435,6 +435,21 @@ function getMissingFields(d, empHistory, empAcksData) {
     if (!d.epfoDeclarations?.pfNomAck)      p4.push("PF Nomination Declaration");
     if (!d.epfoDeclarations?.pensionNomAck) p4.push("Pension Nomination Declaration");
     if (!d.epfoDeclarations?.epfoDecl)      p4.push("General EPFO Declaration");
+    if (!d.epfoDeclarations?.aadhaarAuthAck) p4.push("Aadhaar / eKYC Authorization");
+    if (!d.epfoDeclarations?.pfTransferAck)  p4.push("PF Transfer Authorization");
+    // Same conditional logic as the UAN page itself: only require whichever family-status
+    // certification actually applies to who's nominated, never both, never neither wrongly.
+    const hasFam = (d.epfoNominees||[]).some(n=>["Spouse","Son","Daughter"].includes(n.relation));
+    const hasParent = (d.epfoNominees||[]).some(n=>["Father","Mother"].includes(n.relation));
+    if (!hasFam && !hasParent && !d.epfoDeclarations?.noFamilyAck) p4.push("No-Family Certification");
+    if (hasParent && !d.epfoDeclarations?.parentsDependentAck) p4.push("Parents Dependency Certification");
+    if (!d.epfoDeclarations?.gratuityFamilyAck) p4.push("Gratuity Family Declaration (Form F)");
+    const hasGratParent = (d.gratuityNominees||[]).some(n=>["Father","Mother"].includes(n.relation));
+    if (hasGratParent && !d.epfoDeclarations?.gratuityParentsAck) p4.push("Gratuity Parents Dependency Declaration (Form F)");
+    if (Array.isArray(d.gratuityNominees) && d.gratuityNominees.length > 0) {
+      const gratTotalShare = d.gratuityNominees.reduce((s,n)=>s+(parseInt(n.share)||0),0);
+      if (gratTotalShare !== 100) p4.push(`Gratuity Nominee Share Total (currently ${gratTotalShare}%, must equal 100%)`);
+    }
     if (!d.epfoSignature?.s3Key) p4.push("Digital Signature");
   }
   if (p4.length) issues.push({ step:4, label:"UAN Details", path:"/employee/uan", fields:p4 });
@@ -841,10 +856,40 @@ async function buildMyProfilePdf(profile, empHistory, documents, employeeSelfNam
     row(d.familyDetails.parentsCoverage === "My Parents" ? "Mother's DOB"  : "Mother-in-law's DOB",  d.familyDetails.excludeMother ? "" : anyDobToDisplaySelf(d.familyDetails.motherDob)),
   ].join(""), "#334155") : ""}
 
+  ${Array.isArray(d.epfoNominees) && d.epfoNominees.filter(n=>n.name).length > 0 ? d.epfoNominees.filter(n=>n.name).map((n,i) => section(
+    `PF & Pension Nominee ${i+1} (Form 2)`,
+    [
+      row("Name", n.name),
+      row("Date of Birth", anyDobToDisplaySelf(n.dob)),
+      row("Relationship", n.relation === "Other" ? n.otherRelation : n.relation),
+      row("Address", n.address),
+      row("Share", n.share ? `${n.share}%` : ""),
+    ].join(""),
+    "#334155"
+  )).join("") : ""}
+
+  ${Array.isArray(d.gratuityNominees) && d.gratuityNominees.filter(n=>n.name).length > 0 ? d.gratuityNominees.filter(n=>n.name).map((n,i) => section(
+    `Gratuity Nominee ${i+1} (Form F)`,
+    [
+      row("Name", n.name),
+      row("Date of Birth", anyDobToDisplaySelf(n.dob)),
+      row("Relationship", n.relation === "Other" ? n.otherRelation : n.relation),
+      row("Address", n.address),
+      row("Share", n.share ? `${n.share}%` : ""),
+    ].join(""),
+    "#334155"
+  )).join("") : ""}
+
   ${section("EPFO Declarations & Digital Signature", [
     row("PF Nomination Declaration (Form 2 — Part A)",      d.epfoDeclarations?.pfNomAck ? "✓ Agreed" : "Not agreed"),
     row("Pension Nomination Declaration (Form 2 — Part B)", d.epfoDeclarations?.pensionNomAck ? "✓ Agreed" : "Not agreed"),
     row("General EPFO Declaration",                          d.epfoDeclarations?.epfoDecl ? "✓ Agreed" : "Not agreed"),
+    row("Aadhaar / eKYC Authorization",                      d.epfoDeclarations?.aadhaarAuthAck ? "✓ Agreed" : "Not agreed"),
+    row("PF Transfer Authorization",                         d.epfoDeclarations?.pfTransferAck ? "✓ Agreed" : "Not agreed"),
+    (() => { const hasFam = (d.epfoNominees||[]).some(n=>["Spouse","Son","Daughter"].includes(n.relation)); const hasParent = (d.epfoNominees||[]).some(n=>["Father","Mother"].includes(n.relation)); return (hasFam || hasParent) ? "" : row("No-Family Certification (Form 2)", d.epfoDeclarations?.noFamilyAck ? "✓ Agreed" : "Not agreed"); })(),
+    (() => { const hasParent = (d.epfoNominees||[]).some(n=>["Father","Mother"].includes(n.relation)); return hasParent ? row("Parents Dependency Certification (Form 2)", d.epfoDeclarations?.parentsDependentAck ? "✓ Agreed" : "Not agreed") : ""; })(),
+    row("Gratuity Family Declaration (Form F)",               d.epfoDeclarations?.gratuityFamilyAck ? "✓ Agreed" : "Not agreed"),
+    (() => { const hasGratParent = (d.gratuityNominees||[]).some(n=>["Father","Mother"].includes(n.relation)); return hasGratParent ? row("Gratuity Parents Dependency Declaration (Form F)", d.epfoDeclarations?.gratuityParentsAck ? "✓ Agreed" : "Not agreed") : ""; })(),
     row("Digital Signature", d.epfoSignature?.s3Key ? `✓ Signed${d.epfoSignature?.timestamp ? " on " + new Date(d.epfoSignature.timestamp).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}) : ""}` : "⚠ Not yet signed"),
   ].join(""), "#334155")}
 
@@ -1960,6 +2005,23 @@ export default function ReviewPage() {
                 ))}
               </div>
             )}
+            {Array.isArray(d.gratuityNominees) && d.gratuityNominees.length > 0 && (
+              <div style={{marginTop:"0.85rem"}}>
+                <div className="sec-divider">Gratuity Nominee Details (Form F)</div>
+                {d.gratuityNominees.map((nom, i) => (
+                  <div key={i} style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:"0.75rem 0.9rem",marginBottom:"0.6rem"}}>
+                    <div style={{fontSize:"0.68rem",fontWeight:800,color:"#16a34a",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.4rem"}}>Nominee {i+1}</div>
+                    <div className="grid">
+                      <KV label="Full Name"     value={nom.name}/>
+                      <KV label="Date of Birth" value={nom.dob}/>
+                      <KV label="Relationship"  value={nom.relation==="Other"&&nom.otherRelation?nom.otherRelation:nom.relation}/>
+                      <KV label="Address"       value={nom.address}/>
+                      <KV label="Share (%)"     value={nom.share?`${nom.share}%`:undefined}/>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
             {d.epfoDeclarations && (
               <div style={{marginTop:"0.85rem"}}>
                 <div className="sec-divider">EPFO Declarations</div>
@@ -1967,6 +2029,18 @@ export default function ReviewPage() {
                   <KV label="PF Nomination (Form 2 — Part A)"      value={d.epfoDeclarations.pfNomAck?"✓ Confirmed":"Not confirmed"}/>
                   <KV label="Pension Nomination (Form 2 — Part B)" value={d.epfoDeclarations.pensionNomAck?"✓ Confirmed":"Not confirmed"}/>
                   <KV label="General EPFO Declaration"             value={d.epfoDeclarations.epfoDecl?"✓ Confirmed":"Not confirmed"}/>
+                  <KV label="Aadhaar / eKYC Authorization"         value={d.epfoDeclarations.aadhaarAuthAck?"✓ Confirmed":"Not confirmed"}/>
+                  <KV label="PF Transfer Authorization"            value={d.epfoDeclarations.pfTransferAck?"✓ Confirmed":"Not confirmed"}/>
+                  {!(d.epfoNominees||[]).some(n=>["Spouse","Son","Daughter"].includes(n.relation)) && !(d.epfoNominees||[]).some(n=>["Father","Mother"].includes(n.relation)) && (
+                    <KV label="No-Family Certification (Form 2)" value={d.epfoDeclarations.noFamilyAck?"✓ Confirmed":"Not confirmed"}/>
+                  )}
+                  {(d.epfoNominees||[]).some(n=>["Father","Mother"].includes(n.relation)) && (
+                    <KV label="Parents Dependency Certification (Form 2)" value={d.epfoDeclarations.parentsDependentAck?"✓ Confirmed":"Not confirmed"}/>
+                  )}
+                  <KV label="Gratuity Family Declaration (Form F)"  value={d.epfoDeclarations.gratuityFamilyAck?"✓ Confirmed":"Not confirmed"}/>
+                  {(d.gratuityNominees||[]).some(n=>["Father","Mother"].includes(n.relation)) && (
+                    <KV label="Gratuity Parents Dependency Declaration (Form F)" value={d.epfoDeclarations.gratuityParentsAck?"✓ Confirmed":"Not confirmed"}/>
+                  )}
                 </div>
               </div>
             )}
