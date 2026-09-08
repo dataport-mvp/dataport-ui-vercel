@@ -1890,7 +1890,7 @@ export default function UanDetails() {
                 </div>
                 <div style={{marginTop:"0.75rem"}}>
                   <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Service History Record Snapshot <span style={{color:"#ef4444"}}>*</span></span>
-                  <p style={{fontSize:"0.7rem",color:"#6b6894",marginBottom:"0.4rem",fontWeight:500,lineHeight:1.5}}>Download from EPFO Member Portal (passbook.epfindia.gov.in) and upload screenshot or PDF.</p>
+                  <p style={{fontSize:"0.7rem",color:"#6b6894",marginBottom:"0.4rem",fontWeight:500,lineHeight:1.5}}>Download from EPFO Member Portal (passbook.epfindia.gov.in) and upload a snapshot of your entire service history.</p>
                   <FileUpload onUploadStateChange={handleUploadState} label="Upload Service History Snapshot *" category="uan" subKey="serviceHistory" employeeId={draft?.employee_id || ""} apiFetch={apiFetch} value={serviceHistoryKey} onChange={k => { const key = typeof k==="string"?k:(k?.key||k?.s3_key||""); setServiceHistoryKey(key); flagPostSignEdit(); }}/>
                 </div>
               </>
@@ -2013,6 +2013,11 @@ export default function UanDetails() {
           {hasUan === "yes" && (
             <div className="sc grn" style={{marginBottom:"1.1rem"}}>
               <div className="sh"><div className="si grn">👨‍👩‍👧</div><span className="st">Nominee Details — PF & Pension (Form 2)</span></div>
+              {draft?.nameAsPerAadhaar ? (
+                <p style={{fontSize:"0.78rem",color:"#1a1730",fontWeight:600,marginBottom:"0.6rem",lineHeight:1.5}}>I, <span style={{textTransform:"uppercase",color:"#0d6e6e"}}>{draft.nameAsPerAadhaar}</span>, hereby nominate the following person(s):</p>
+              ) : (
+                <p style={{fontSize:"0.72rem",color:"#ef4444",fontWeight:600,marginBottom:"0.6rem"}}>⚠️ Complete "Name as per Aadhaar" on Page 1 — Personal Details first; it's used here as your declaration name.</p>
+              )}
               <p style={{fontSize:"0.75rem",color:"#6b6894",marginBottom:"0.9rem",fontWeight:500,lineHeight:1.5}}>Nominate beneficiaries for your PF and Pension. Shares must add up to 100%.</p>
               {nominees.map((nom, idx) => (
                 <div key={nom._k||idx} className="nom-block">
@@ -2071,6 +2076,11 @@ export default function UanDetails() {
               above and can name different people or shares — never merge the two lists. ── */}
           <div className="sc grn" style={{marginBottom:"1.1rem"}}>
             <div className="sh"><div className="si grn">📜</div><span className="st">Nominee Details — Gratuity (Form F)</span></div>
+            {draft?.nameAsPerAadhaar ? (
+              <p style={{fontSize:"0.78rem",color:"#1a1730",fontWeight:600,marginBottom:"0.6rem",lineHeight:1.5}}>I, <span style={{textTransform:"uppercase",color:"#0d6e6e"}}>{draft.nameAsPerAadhaar}</span>, hereby nominate the following person(s):</p>
+            ) : (
+              <p style={{fontSize:"0.72rem",color:"#ef4444",fontWeight:600,marginBottom:"0.6rem"}}>⚠️ Complete "Name as per Aadhaar" on Page 1 — Personal Details first; it's used here as your declaration name.</p>
+            )}
             <p style={{fontSize:"0.75rem",color:"#6b6894",marginBottom:"0.9rem",fontWeight:500,lineHeight:1.5}}>Nominate beneficiaries for gratuity payable under the Payment of Gratuity Act, 1972. This can name the same people as your PF nominees above, or different ones — shares must add up to 100%.</p>
             {gratuityNominees.map((nom, idx) => (
               <div key={nom._k||idx} className="nom-block">
