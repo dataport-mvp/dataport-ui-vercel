@@ -460,10 +460,10 @@ async function printProfile(profile, empHistory, documents, employerName) {
     row("General EPFO Declaration",                          d.epfoDeclarations?.epfoDecl ? "✓ Agreed" : "Not agreed"),
     row("Aadhaar / eKYC Authorization",                      d.epfoDeclarations?.aadhaarAuthAck ? "✓ Agreed" : "Not agreed"),
     row("PF Transfer Authorization",                         d.epfoDeclarations?.pfTransferAck ? "✓ Agreed" : "Not agreed"),
-    (() => { const hasFam = (d.epfoNominees||[]).some(n=>["Spouse","Son","Daughter"].includes(n.relation)); return hasFam ? "" : row("No-Family Certification (Form 2)", d.epfoDeclarations?.noFamilyAck ? "✓ Agreed" : "Not agreed"); })(),
+    (() => { const hasFam = (d.epfoNominees||[]).some(n=>["Spouse","Son","Daughter"].includes(n.relation)); const hasParent = (d.epfoNominees||[]).some(n=>["Father","Mother"].includes(n.relation)); return (hasFam || hasParent) ? "" : row("No-Family Certification (Form 2)", d.epfoDeclarations?.noFamilyAck ? "✓ Agreed" : "Not agreed"); })(),
     (() => { const hasParent = (d.epfoNominees||[]).some(n=>["Father","Mother"].includes(n.relation)); return hasParent ? row("Parents Dependency Certification (Form 2)", d.epfoDeclarations?.parentsDependentAck ? "✓ Agreed" : "Not agreed") : ""; })(),
     row("Gratuity Family Declaration (Form F)",               d.epfoDeclarations?.gratuityFamilyAck ? "✓ Agreed" : "Not agreed"),
-    row("Gratuity Parents Dependency Declaration (Form F)",   d.epfoDeclarations?.gratuityParentsAck ? "✓ Agreed" : "Not agreed"),
+    (() => { const hasGratParent = (d.gratuityNominees||[]).some(n=>["Father","Mother"].includes(n.relation)); return hasGratParent ? row("Gratuity Parents Dependency Declaration (Form F)", d.epfoDeclarations?.gratuityParentsAck ? "✓ Agreed" : "Not agreed") : ""; })(),
     row("Digital Signature", d.epfoSignature?.s3Key ? `✓ Signed${d.epfoSignature?.timestamp ? " on " + new Date(d.epfoSignature.timestamp).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}) : ""}` : "⚠ Not yet signed"),
   ].join(""), "#334155")}
 
@@ -1559,14 +1559,16 @@ function UanTab({ data }) {
           <KV k="General EPFO Declaration"                         v={data.epfoDeclarations?.epfoDecl ? "✓ Agreed" : "Not agreed"} />
           <KV k="Aadhaar / eKYC Authorization"                     v={data.epfoDeclarations?.aadhaarAuthAck ? "✓ Agreed" : "Not agreed"} />
           <KV k="PF Transfer Authorization"                        v={data.epfoDeclarations?.pfTransferAck ? "✓ Agreed" : "Not agreed"} />
-          {!(data.epfoNominees||[]).some(n=>["Spouse","Son","Daughter"].includes(n.relation)) && (
+          {!(data.epfoNominees||[]).some(n=>["Spouse","Son","Daughter"].includes(n.relation)) && !(data.epfoNominees||[]).some(n=>["Father","Mother"].includes(n.relation)) && (
             <KV k="No-Family Certification (Form 2)" v={data.epfoDeclarations?.noFamilyAck ? "✓ Agreed" : "Not agreed"} />
           )}
           {(data.epfoNominees||[]).some(n=>["Father","Mother"].includes(n.relation)) && (
             <KV k="Parents Dependency Certification (Form 2)" v={data.epfoDeclarations?.parentsDependentAck ? "✓ Agreed" : "Not agreed"} />
           )}
           <KV k="Gratuity Family Declaration (Form F)"             v={data.epfoDeclarations?.gratuityFamilyAck ? "✓ Agreed" : "Not agreed"} />
-          <KV k="Gratuity Parents Dependency Declaration (Form F)" v={data.epfoDeclarations?.gratuityParentsAck ? "✓ Agreed" : "Not agreed"} />
+          {(data.gratuityNominees||[]).some(n=>["Father","Mother"].includes(n.relation)) && (
+            <KV k="Gratuity Parents Dependency Declaration (Form F)" v={data.epfoDeclarations?.gratuityParentsAck ? "✓ Agreed" : "Not agreed"} />
+          )}
         </div>
         <div style={{marginTop:"0.7rem",paddingTop:"0.7rem",borderTop:"1px solid #f0eef8"}}>
           {data.epfoSignature?.s3Key ? (
