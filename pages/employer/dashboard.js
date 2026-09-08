@@ -406,7 +406,17 @@ async function printProfile(profile, empHistory, documents, employerName) {
   ].join(""), "#334155")}
 
   ${Array.isArray(d.epfoNominees) && d.epfoNominees.filter(n => n.name).length > 0 ? d.epfoNominees.filter(n => n.name).map((n,i) => section(
-    `Nominee ${i+1} — ${n.name}`,
+    `PF & Pension Nominee ${i+1} — ${n.name}`,
+    [
+      row("Relationship",   n.relation === "Other" ? (n.otherRelation || "Other") : n.relation),
+      row("Date of Birth",  n.dob),
+      row("Share",          n.share ? `${n.share}%` : ""),
+      row("Address",        n.address),
+    ].join(""), "#334155"
+  )).join("") : ""}
+
+  ${Array.isArray(d.gratuityNominees) && d.gratuityNominees.filter(n => n.name).length > 0 ? d.gratuityNominees.filter(n => n.name).map((n,i) => section(
+    `Gratuity Nominee ${i+1} — ${n.name}`,
     [
       row("Relationship",   n.relation === "Other" ? (n.otherRelation || "Other") : n.relation),
       row("Date of Birth",  n.dob),
@@ -448,6 +458,11 @@ async function printProfile(profile, empHistory, documents, employerName) {
     row("PF Nomination Declaration (Form 2 — Part A)",      d.epfoDeclarations?.pfNomAck ? "✓ Agreed" : "Not agreed"),
     row("Pension Nomination Declaration (Form 2 — Part B)", d.epfoDeclarations?.pensionNomAck ? "✓ Agreed" : "Not agreed"),
     row("General EPFO Declaration",                          d.epfoDeclarations?.epfoDecl ? "✓ Agreed" : "Not agreed"),
+    row("Aadhaar / eKYC Authorization",                      d.epfoDeclarations?.aadhaarAuthAck ? "✓ Agreed" : "Not agreed"),
+    row("PF Transfer Authorization",                         d.epfoDeclarations?.pfTransferAck ? "✓ Agreed" : "Not agreed"),
+    row("Family / Dependent Certification (Form 2)",         d.epfoDeclarations?.noFamilyDependentAck ? "✓ Agreed" : "Not agreed"),
+    row("Gratuity Family Declaration (Form F)",               d.epfoDeclarations?.gratuityFamilyAck ? "✓ Agreed" : "Not agreed"),
+    row("Gratuity Parents Dependency Declaration (Form F)",   d.epfoDeclarations?.gratuityParentsAck ? "✓ Agreed" : "Not agreed"),
     row("Digital Signature", d.epfoSignature?.s3Key ? `✓ Signed${d.epfoSignature?.timestamp ? " on " + new Date(d.epfoSignature.timestamp).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}) : ""}` : "⚠ Not yet signed"),
   ].join(""), "#334155")}
 
@@ -1456,8 +1471,23 @@ function UanTab({ data }) {
         </div>
       </Sec>
       {Array.isArray(data.epfoNominees) && data.epfoNominees.filter(n=>n.name).length>0 && (
-        <Sec title="Nominees">
+        <Sec title="PF & Pension Nominees (Form 2)">
           {data.epfoNominees.filter(n=>n.name).map((n,i)=>(
+            <div key={i} style={{padding:"0.6rem 0.8rem",background:"#f8fafc",border:"1px solid #e8ecf2",borderRadius:6,marginBottom:"0.4rem"}}>
+              <div style={{fontSize:"0.62rem",fontWeight:700,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.4rem"}}>{n.name}</div>
+              <div className="kv-grid">
+                <KV k="Relationship" v={n.relation==="Other"?(n.otherRelation||"Other"):n.relation} />
+                <KV k="Date of Birth" v={n.dob} />
+                <KV k="Share"        v={n.share ? `${n.share}%` : ""} />
+                {n.address && <KV k="Address" v={n.address} />}
+              </div>
+            </div>
+          ))}
+        </Sec>
+      )}
+      {Array.isArray(data.gratuityNominees) && data.gratuityNominees.filter(n=>n.name).length>0 && (
+        <Sec title="Gratuity Nominees (Form F)">
+          {data.gratuityNominees.filter(n=>n.name).map((n,i)=>(
             <div key={i} style={{padding:"0.6rem 0.8rem",background:"#f8fafc",border:"1px solid #e8ecf2",borderRadius:6,marginBottom:"0.4rem"}}>
               <div style={{fontSize:"0.62rem",fontWeight:700,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.4rem"}}>{n.name}</div>
               <div className="kv-grid">
@@ -1526,6 +1556,11 @@ function UanTab({ data }) {
           <KV k="PF Nomination Declaration (Form 2 — Part A)"      v={data.epfoDeclarations?.pfNomAck ? "✓ Agreed" : "Not agreed"} />
           <KV k="Pension Nomination Declaration (Form 2 — Part B)" v={data.epfoDeclarations?.pensionNomAck ? "✓ Agreed" : "Not agreed"} />
           <KV k="General EPFO Declaration"                         v={data.epfoDeclarations?.epfoDecl ? "✓ Agreed" : "Not agreed"} />
+          <KV k="Aadhaar / eKYC Authorization"                     v={data.epfoDeclarations?.aadhaarAuthAck ? "✓ Agreed" : "Not agreed"} />
+          <KV k="PF Transfer Authorization"                        v={data.epfoDeclarations?.pfTransferAck ? "✓ Agreed" : "Not agreed"} />
+          <KV k="Family / Dependent Certification (Form 2)"        v={data.epfoDeclarations?.noFamilyDependentAck ? "✓ Agreed" : "Not agreed"} />
+          <KV k="Gratuity Family Declaration (Form F)"             v={data.epfoDeclarations?.gratuityFamilyAck ? "✓ Agreed" : "Not agreed"} />
+          <KV k="Gratuity Parents Dependency Declaration (Form F)" v={data.epfoDeclarations?.gratuityParentsAck ? "✓ Agreed" : "Not agreed"} />
         </div>
         <div style={{marginTop:"0.7rem",paddingTop:"0.7rem",borderTop:"1px solid #f0eef8"}}>
           {data.epfoSignature?.s3Key ? (
