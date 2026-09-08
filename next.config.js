@@ -20,15 +20,20 @@
 //   - connect-src/img-src allow the API and any *.amazonaws.com host, since
 //     documents/photos are served via presigned S3 URLs whose exact domain
 //     depends on bucket/region and isn't hardcoded anywhere in the app.
-// Treat this as a starting point, not a finished CSP — tighten further once
-// you've confirmed nothing legitimate gets blocked in staging.
+//   - connect-src also needs 'data:' — the signature-capture flow calls
+//     fetch(dataUrl) internally to convert the canvas's data:image/jpeg;base64,...
+//     output into a Blob before uploading it to S3. Without 'data:' here, the
+//     browser silently blocks that internal fetch — no network error, just a
+//     CSP violation — which made every signature upload fail while looking
+//     like a generic "couldn't save" error. Confirmed directly via a real
+//     browser console CSP violation on a data: URL.
 const csp = [
   "default-src 'self'",
   "script-src 'self'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: https://*.amazonaws.com",
   "font-src 'self' data: https://fonts.gstatic.com",
-  "connect-src 'self' https://api.datagate.co.in https://*.amazonaws.com",
+  "connect-src 'self' data: https://api.datagate.co.in https://*.amazonaws.com",
   "frame-ancestors 'none'",
   "object-src 'none'",
   "base-uri 'self'",
