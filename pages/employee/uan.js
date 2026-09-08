@@ -820,7 +820,7 @@ async function buildMyProfilePdf(profile, empHistory, documents, employeeSelfNam
     row("General EPFO Declaration",                          d.epfoDeclarations?.epfoDecl ? "✓ Agreed" : "Not agreed"),
     row("Aadhaar / eKYC Authorization",                      d.epfoDeclarations?.aadhaarAuthAck ? "✓ Agreed" : "Not agreed"),
     row("PF Transfer Authorization",                         d.epfoDeclarations?.pfTransferAck ? "✓ Agreed" : "Not agreed"),
-    (() => { const hasFam = (d.epfoNominees||[]).some(n=>["Spouse","Son","Daughter"].includes(n.relation)); return hasFam ? "" : row("No-Family Certification (Form 2)", d.epfoDeclarations?.noFamilyAck ? "✓ Agreed" : "Not agreed"); })(),
+    (() => { const hasFam = (d.epfoNominees||[]).some(n=>["Spouse","Son","Daughter"].includes(n.relation)); const hasParent = (d.epfoNominees||[]).some(n=>["Father","Mother"].includes(n.relation)); return (hasFam || hasParent) ? "" : row("No-Family Certification (Form 2)", d.epfoDeclarations?.noFamilyAck ? "✓ Agreed" : "Not agreed"); })(),
     (() => { const hasParent = (d.epfoNominees||[]).some(n=>["Father","Mother"].includes(n.relation)); return hasParent ? row("Parents Dependency Certification (Form 2)", d.epfoDeclarations?.parentsDependentAck ? "✓ Agreed" : "Not agreed") : ""; })(),
     row("Gratuity Family Declaration (Form F)",               d.epfoDeclarations?.gratuityFamilyAck ? "✓ Agreed" : "Not agreed"),
     row("Gratuity Parents Dependency Declaration (Form F)",   d.epfoDeclarations?.gratuityParentsAck ? "✓ Agreed" : "Not agreed"),
@@ -1765,7 +1765,11 @@ export default function UanDetails() {
       if (!pfTransferAck)  errs.push("PF Transfer Authorization");
       // Only require whichever certification actually applies to who's being nominated —
       // never both, and never either one for someone nominating spouse/children only.
-      if (!hasImmediateFamilyNominee && !noFamilyAck) errs.push("No-Family Certification (Form 2) — required since none of your nominees are your spouse or children");
+      // "No-Family" can never legitimately show alongside "Parents Dependency" — a dependent
+      // parent legally counts as family under the EPF Scheme's own definition, so certifying
+      // a parent's dependency IS having family. Only show/require "No-Family" when NEITHER
+      // an immediate-family nominee (spouse/child) NOR a parent is being nominated at all.
+      if (!hasImmediateFamilyNominee && !hasParentNominee && !noFamilyAck) errs.push("No-Family Certification (Form 2) — required since none of your nominees are family under the EPF Scheme");
       if (hasParentNominee && !parentsDependentAck) errs.push("Parents Dependency Certification (Form 2) — required since you've nominated a parent");
       if (editedAfterSign) errs.push("Digital Signature (information changed — please sign again)");
       else if (!sigS3Key && !sigDataUrl) errs.push("Digital Signature");
@@ -2351,21 +2355,13 @@ export default function UanDetails() {
                 </label>
               </div>
 
-              {/* Not sure which of the two certifications below applies to you (or whether
-                  neither does)? Point straight at the support flow this page already has,
-                  rather than leaving people to guess on a legal declaration. */}
-              {(!hasImmediateFamilyNominee || hasParentNominee) && (
-                <div style={{fontSize:"0.75rem",color:"#6b6894",marginBottom:"0.75rem",lineHeight:1.5}}>
-                  Not sure which of the declarations below applies to your situation?{" "}
-                  <button type="button" onClick={()=>setShowSupport(true)} style={{background:"none",border:"none",padding:0,color:"#0d6e6e",fontWeight:700,fontSize:"0.75rem",cursor:"pointer",textDecoration:"underline",fontFamily:"inherit"}}>Contact support</button>{" "}
-                  before checking either box — this is a legal declaration, so it's worth getting right.
-                </div>
-              )}
-
-              {/* Declaration 6a — "no family" certification. Only shown when it's actually true/relevant:
-                  none of the nominees above are a spouse or child. Showing this to someone nominating
-                  their spouse and kids would force them to check a factually false statement. */}
-              {!hasImmediateFamilyNominee && (
+              {/* Declaration 6a — "no family" certification. Only shown when it's actually true:
+                  no spouse/child AND no parent among the nominees. A dependent parent legally
+                  IS family under the EPF Scheme's own definition, so this must never show at
+                  the same time as the parents-dependency certification below — checking both
+                  would be a direct contradiction ("I have no family" + "my parent depends on
+                  me" can't both be true), not just confusingly worded. */}
+              {!hasImmediateFamilyNominee && !hasParentNominee && (
                 <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"0.75rem",borderLeft:noFamilyAck?"3px solid #16a34a":"3px solid #e4e2f0"}}>
                   <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
                     <input type="checkbox" checked={noFamilyAck} onChange={e=>{setNoFamilyAck(e.target.checked);isDirtyRef.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
