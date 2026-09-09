@@ -1280,8 +1280,19 @@ function OverviewTab({ data, docUrls }) {
             <KV k="Pincode"        v={perm.pin} mono />
           </div>
           {data.permanentAddressProofType && <div className="kv-grid" style={{marginTop:"0.5rem"}}><KV k="Address Proof Type" v={data.permanentAddressProofType} /></div>}
+          {data.sameAsCurrent && !data.permanentAddressProofType && data.currentAddressProofType && <div className="kv-grid" style={{marginTop:"0.5rem"}}><KV k="Address Proof Type" v={data.currentAddressProofType} /></div>}
           {data.permanentAddressProofKey && docUrls?.["permanentAddressProof"] && (
             <a href={docUrls["permanentAddressProof"]} target="_blank" rel="noopener noreferrer" className="doc-view" style={{display:"inline-flex",alignItems:"center",gap:"0.35rem",marginTop:"0.6rem"}}>📄 View Permanent Address Proof ↗</a>
+          )}
+          {/* When the employee declared permanent == current address, no separate proof
+              file was ever uploaded (correctly — nothing to duplicate). But the CURRENT
+              address proof genuinely does cover both, since the two are declared identical,
+              so the employer should still see something here rather than a blank gap. */}
+          {data.sameAsCurrent && !data.permanentAddressProofKey && data.currentAddressProofKey && docUrls?.["currentAddressProof"] && (
+            <div style={{marginTop:"0.6rem"}}>
+              <div style={{fontSize:"0.72rem",color:"#94a3b8",marginBottom:"0.3rem"}}>Same as current address — using the Current Address Proof on file.</div>
+              <a href={docUrls["currentAddressProof"]} target="_blank" rel="noopener noreferrer" className="doc-view" style={{display:"inline-flex",alignItems:"center",gap:"0.35rem"}}>📄 View Address Proof (same as current) ↗</a>
+            </div>
           )}
         </Sec>
       )}
@@ -1670,7 +1681,10 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
   const [selectedVendor, setSelectedVendor] = useState("");
   const [vendorSearch,   setVendorSearch]   = useState("");
   const [assignMsg, setAssignMsg] = useState("");
-  const [reportUrl, setReportUrl] = useState("");
+  const [reportUrls, setReportUrls] = useState({}); // keyed by reportKey — multiple distinct
+    // reports (current vendor + any historical ones) can now be viewed in the same
+    // session, so a single global URL would silently reuse the wrong report's link
+    // the moment more than one "View Report" button exists on screen.
 
   useEffect(() => {
     if (!consentData?.consent_id) return;
@@ -1719,14 +1733,15 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
   };
 
   const viewReport = async (reportKey) => {
-    if (!consentData?.employee_id || reportUrl) { if(reportUrl) window.open(reportUrl,"_blank"); return; }
+    if (!consentData?.employee_id) return;
+    if (reportUrls[reportKey]) { window.open(reportUrls[reportKey], "_blank"); return; }
     try {
       const res = await apiFetch(`${apiUrl}/documents/${consentData.employee_id}`);
       if (res.ok) {
         const docs = await res.json();
         const bgvDocs = docs.documents?.bgv || {};
         const found = Object.values(bgvDocs).find(d => d.s3_key === reportKey);
-        if (found?.url) { setReportUrl(found.url); window.open(found.url, "_blank"); }
+        if (found?.url) { setReportUrls(prev => ({...prev, [reportKey]: found.url})); window.open(found.url, "_blank"); }
       }
     } catch(_) {}
   };
@@ -1784,6 +1799,11 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
                       );
                     })}
                     {h.bgv_summary && <div style={{marginTop:"0.6rem",fontSize:"0.76rem",color:"#475569",background:"#f8fafc",padding:"0.6rem",borderRadius:7}}>{h.bgv_summary}</div>}
+                    {h.bgv_report_key && (
+                      <button onClick={()=>viewReport(h.bgv_report_key)} style={{marginTop:"0.6rem",padding:"0.4rem 0.9rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:7,fontSize:"0.76rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                        View {h.vendor_email}'s Report ↗
+                      </button>
+                    )}
                     {!h.bgv_report_key && <div style={{marginTop:"0.6rem",fontSize:"0.72rem",color:"#94a3b8",fontStyle:"italic"}}>No final report was submitted before this vendor was replaced.</div>}
                   </div>
                 )}
@@ -1802,7 +1822,7 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
           </div>
           {showReassign && (
             <div style={{background:"#fef2f2",border:"1px solid #fecaca",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.75rem",fontSize:"0.76rem",color:"#991b1b"}}>
-              ⚠ Reassigning resets all verification checks to pending — any progress the current vendor has made will be lost. The new vendor starts from scratch.
+              ⚠ Reassigning moves the current vendor's checks and report into history below — nothing is deleted, and you'll be able to view both this vendor's work and the new vendor's separately once assigned.
             </div>
           )}
           {/* Searchable BGV vendor selector */}
@@ -3016,14 +3036,18 @@ return (
             {/* 5 stat cards */}
             <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"0.5px",background:"#c8c2b8",border:"1px solid #c8c2b8",borderRadius:10,overflow:"hidden",marginBottom:"1.25rem"}}>
               {[
-                {label:"Total Requests",   val:consents.length,         sub:"",                        col:"#111"},
-                {label:"Approved",         val:approved.length,         sub:"Profiles shared",        col:"#0d6e6e"},
-                {label:"Pending",          val:pending.length,          sub:"Awaiting employee",      col:"#d97706"},
-                {label:"Declined",         val:declined.length,         sub:"By candidates",          col:"#dc2626"},
-                {label:"Revoked",          val:revoked.length,          sub:"Withdrawn by employee",  col:"#7c3aed"},
-                {label:"BGV",              val:bgvNeedsAttention,       sub:"Needs BGV attention",    col:"#2563eb", clickable:true},
+                {label:"Total Requests",   val:consents.length,         sub:"",                        col:"#111",     clickable:true, cTab:null},
+                {label:"Approved",         val:approved.length,         sub:"Profiles shared",        col:"#0d6e6e",  clickable:true, cTab:"approved"},
+                {label:"Pending",          val:pending.length,          sub:"Awaiting employee",      col:"#d97706",  clickable:true, cTab:"pending"},
+                {label:"Declined",         val:declined.length,         sub:"By candidates",          col:"#dc2626",  clickable:true, cTab:"declined"},
+                {label:"Revoked",          val:revoked.length,          sub:"Withdrawn by employee",  col:"#7c3aed",  clickable:true, cTab:"revoked"},
+                {label:"BGV",              val:bgvNeedsAttention,       sub:"Needs BGV attention",    col:"#2563eb",  clickable:true, cTab:null, goToBgvTab:true},
               ].map(s=>(
-                <div key={s.label} onClick={s.clickable?()=>setMainTab("BGV"):undefined} style={{background:"#fff",padding:"12px 16px",position:"relative",cursor:s.clickable?"pointer":"default"}}>
+                <div key={s.label} onClick={s.clickable?()=>{
+                  if (s.goToBgvTab) { setMainTab("BGV"); return; }
+                  setMainTab("Candidates");
+                  if (s.cTab) setCTab(s.cTab);
+                }:undefined} style={{background:"#fff",padding:"12px 16px",position:"relative",cursor:s.clickable?"pointer":"default"}}>
                   <div style={{position:"absolute",top:0,left:0,right:0,height:2.5,background:s.col}}/>
                   <div style={{fontSize:9,fontWeight:700,letterSpacing:"1px",textTransform:"uppercase",color:"#a09890",marginBottom:4}}>{s.label}</div>
                   <div style={{fontSize:22,fontWeight:800,color:s.col,letterSpacing:-1,lineHeight:1}}>{loading?"…":s.val}</div>
