@@ -1686,6 +1686,14 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
       setLoading(false);
     };
     load();
+    // Live refresh — this used to only fetch once on mount, so an admin approving a
+    // vendor, or the assigned BGV vendor completing checks, would never show up here
+    // until the employer navigated away and back. Polling keeps this genuinely live,
+    // matching the "updated lively" requirement for the standalone BGV tab specifically.
+    // Safe to poll unconditionally: nothing here touches selectedVendor/vendorSearch/
+    // showReassign, so an in-progress vendor selection never gets clobbered mid-poll.
+    const id = setInterval(load, 15000);
+    return () => clearInterval(id);
   }, [consentData?.consent_id, apiFetch, apiUrl]);
 
   const assignVendor = async () => {
@@ -2016,6 +2024,13 @@ export default function EmployerDashboard() {
   const [inboxSearch,    setInboxSearch]    = useState("");
   const employerInboxListRef = useRef(null);
   const [mainTab,       setMainTab]        = useState("Overview");
+  // ── Standalone BGV tab — deliberately independent of the Candidates tab's state.
+  // No shared search/selection with Candidates, no profile/employment data fetched —
+  // only consent_id + employee_id ever get passed to BgvTab, which fetches its own
+  // BGV case data internally. This tab exists specifically so checking BGV status
+  // across many candidates never requires going through the general candidate profile.
+  const [bgvHomeSearch,   setBgvHomeSearch]   = useState("");
+  const [bgvHomeSelected, setBgvHomeSelected] = useState(null);
   const [inboxThreads,   setInboxThreads]   = useState([]);
   const [inboxLoading,   setInboxLoading]   = useState(false);
   const [activeThread,   setActiveThread]   = useState(null); // consent_id
@@ -2874,7 +2889,7 @@ return (
               </div>
             </div>
             {/* Nav tabs */}
-            {["Overview","Candidates"].map(tab=>(
+            {["Overview","Candidates","BGV"].map(tab=>(
               <button key={tab} onClick={()=>setMainTab(tab)}
                 style={{padding:"0 4px",height:52,background:"none",border:"none",borderBottom:`2.5px solid ${mainTab===tab?"#0d6e6e":"transparent"}`,fontSize:"0.8rem",fontWeight:mainTab===tab?700:500,color:mainTab===tab?"#0d6e6e":"#7a6e64",cursor:"pointer",fontFamily:"inherit",transition:"all .12s",marginBottom:-1}}>
                 {tab}
@@ -2925,7 +2940,7 @@ return (
                 {label:"Revoked",          val:revoked.length,          sub:"Withdrawn by employee",  col:"#7c3aed"},
                 {label:"BGV",              val:bgvNeedsAttention,       sub:"Needs BGV attention",    col:"#2563eb", clickable:true},
               ].map(s=>(
-                <div key={s.label} onClick={s.clickable?()=>{setMainTab("Candidates");setCTab("bgv");}:undefined} style={{background:"#fff",padding:"12px 16px",position:"relative",cursor:s.clickable?"pointer":"default"}}>
+                <div key={s.label} onClick={s.clickable?()=>setMainTab("BGV"):undefined} style={{background:"#fff",padding:"12px 16px",position:"relative",cursor:s.clickable?"pointer":"default"}}>
                   <div style={{position:"absolute",top:0,left:0,right:0,height:2.5,background:s.col}}/>
                   <div style={{fontSize:9,fontWeight:700,letterSpacing:"1px",textTransform:"uppercase",color:"#a09890",marginBottom:4}}>{s.label}</div>
                   <div style={{fontSize:22,fontWeight:800,color:s.col,letterSpacing:-1,lineHeight:1}}>{loading?"…":s.val}</div>
@@ -3198,6 +3213,60 @@ return (
                 </>
               )}
             </main>
+          </div>
+        )}
+
+        {/* ══ STANDALONE BGV TAB — completely independent of Candidates. No shared
+            search/selection state, no profile or employment data fetched at this
+            level — only consent_id + employee_id ever get passed down, and BgvTab
+            fetches its own case data. Checking BGV across many candidates never
+            requires detouring through the general candidate profile. ══ */}
+        {mainTab==="BGV" && (
+          <div style={{flex:1,overflow:"auto",padding:"1.5rem 2rem",background:"#f5f2ee"}}>
+            {!bgvHomeSelected ? (
+              <>
+                <h2 style={{margin:"0 0 1rem",fontSize:"1.1rem",fontWeight:800,color:"#111"}}>BGV Status — All Candidates</h2>
+                <input
+                  className="search-in"
+                  placeholder="Search by name or email…"
+                  value={bgvHomeSearch}
+                  onChange={e=>setBgvHomeSearch(e.target.value)}
+                  style={{width:"100%",maxWidth:420,padding:"0.55rem 0.9rem",border:"1.5px solid #c8c2b8",borderRadius:8,fontFamily:"inherit",fontSize:"0.85rem",marginBottom:"1.1rem",outline:"none",background:"#fff"}}
+                />
+                <div style={{background:"#fff",border:"1px solid #e8e3da",borderRadius:10,overflow:"hidden"}}>
+                  {(() => {
+                    const q = bgvHomeSearch.trim().toLowerCase();
+                    const list = [...approvedGrouped]
+                      .filter(c => !q || (c.employee_name||"").toLowerCase().includes(q) || (c.employee_email||"").toLowerCase().includes(q))
+                      .sort((a,b) => (a.employee_name||a.employee_email||"").localeCompare(b.employee_name||b.employee_email||""));
+                    if (list.length===0) return <div style={{padding:"2rem",textAlign:"center",color:"#a09890",fontSize:"0.85rem"}}>No approved candidates yet</div>;
+                    return list.map((c,i) => {
+                      const stColor = {assigned:"#3b82f6",groomed:"#3b82f6",in_progress:"#3b82f6",completed:"#16a34a",on_hold:"#f59e0b"}[c.bgv_status] || "#94a3b8";
+                      const stLabel = {assigned:"Assigned",groomed:"Assigned",in_progress:"In Progress",completed:"Completed",on_hold:"On Hold"}[c.bgv_status] || "Not Assigned";
+                      return (
+                        <div key={c.consent_id||i} onClick={()=>setBgvHomeSelected({consent_id:c.consent_id,employee_id:c.employee_id,employee_name:c.employee_name,employee_email:c.employee_email})}
+                          style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0.85rem 1.1rem",borderTop:i>0?"1px solid #f0eee9":"none",cursor:"pointer"}}>
+                          <div>
+                            <div style={{fontWeight:700,fontSize:"0.88rem",color:"#111"}}>{c.employee_name || c.employee_email}</div>
+                            {c.employee_name && <div style={{fontSize:"0.75rem",color:"#a09890",marginTop:2}}>{c.employee_email}</div>}
+                          </div>
+                          <span style={{fontSize:10,fontWeight:700,color:stColor,background:`${stColor}18`,padding:"3px 9px",borderRadius:999,whiteSpace:"nowrap"}}>{stLabel}</span>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </>
+            ) : (
+              <>
+                <button onClick={()=>setBgvHomeSelected(null)} style={{background:"none",border:"none",color:"#0d6e6e",fontWeight:700,fontSize:"0.82rem",cursor:"pointer",fontFamily:"inherit",marginBottom:"1rem",padding:0}}>← Back to all candidates</button>
+                <div style={{marginBottom:"1rem"}}>
+                  <div style={{fontWeight:800,fontSize:"1.05rem",color:"#111"}}>{bgvHomeSelected.employee_name || bgvHomeSelected.employee_email}</div>
+                  {bgvHomeSelected.employee_name && <div style={{fontSize:"0.82rem",color:"#a09890"}}>{bgvHomeSelected.employee_email}</div>}
+                </div>
+                <BgvTab consentData={{consent_id:bgvHomeSelected.consent_id, employee_id:bgvHomeSelected.employee_id}} apiFetch={apiFetch} API={API}/>
+              </>
+            )}
           </div>
         )}
 
