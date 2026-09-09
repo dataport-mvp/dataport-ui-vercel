@@ -874,11 +874,14 @@ function ConsentTab({ apiFetch, profileStatus }) {
     <p style={{fontSize:"0.82rem",color:"#8b88b0",marginTop:6}}>This is likely temporary — check your connection and try again.</p>
     <button onClick={()=>{setLoading(true);load();}} style={{marginTop:16,padding:"0.6rem 1.4rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:8,fontSize:"0.85rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Retry</button>
   </div>);
-  if(!consents.length)return(<div style={{textAlign:"center",padding:"3rem",background:"#fff",borderRadius:14,boxShadow:"0 6px 28px rgba(30,26,62,0.22)"}}>
-    <div style={{fontSize:38,marginBottom:10}}>📋</div>
-    <p style={{color:"#1a1730",margin:0,fontWeight:700}}>No consent requests yet</p>
-    <p style={{fontSize:"0.82rem",color:"#8b88b0",marginTop:6}}>Employers will appear here when they request your data</p>
-  </div>);
+  // Deliberately no "if consents.length === 0, show one blanket message" here anymore.
+  // That used to hide the entire tab bar — Pending/Approved/Declined/Withdrawn/Activity —
+  // whenever there were zero consent records at all, which also hid the Activity tab even
+  // though it tracks the employee's OWN profile edits and has nothing to do with whether
+  // any employer has requested consent yet. Each tab below already renders its own correct
+  // empty state ("No pending requests", "No activity yet", etc.) when its specific list is
+  // empty, so the tab structure should always be visible once loaded — not conditionally
+  // hidden behind whether any consent exists yet.
   const all=consents.map(norm);
   const pending=all.filter(c=>c.status==="pending");const approved=all.filter(c=>c.status==="approved");
   const declined=all.filter(c=>c.status==="declined");const revoked=all.filter(c=>c.status==="revoked");
