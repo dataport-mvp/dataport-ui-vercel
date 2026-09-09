@@ -2906,8 +2906,8 @@ return (
                 </>
               )}
             </div>
-            <button onClick={()=>setShowSignout(true)} style={{padding:"5px 10px",border:"1.5px solid #fca5a5",borderRadius:6,background:"#fef2f2",fontSize:11,fontWeight:700,color:"#dc2626",cursor:"pointer",fontFamily:"inherit"}}>Sign out</button>
             <button onClick={()=>setShowDrawer(true)} style={{padding:"6px 14px",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:7,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 8px rgba(13,110,110,.3)"}}>+ Request Data Access</button>
+            <button onClick={()=>setShowSignout(true)} style={{padding:"5px 10px",border:"1.5px solid #fca5a5",borderRadius:6,background:"#fef2f2",fontSize:11,fontWeight:700,color:"#dc2626",cursor:"pointer",fontFamily:"inherit"}}>Sign out</button>
           </div>
         </div>
 
@@ -2923,8 +2923,9 @@ return (
                 {label:"Pending",          val:pending.length,          sub:"Awaiting employee",      col:"#d97706"},
                 {label:"Declined",         val:declined.length,         sub:"By candidates",          col:"#dc2626"},
                 {label:"Revoked",          val:revoked.length,          sub:"Withdrawn by employee",  col:"#7c3aed"},
+                {label:"BGV",              val:bgvNeedsAttention,       sub:"Needs BGV attention",    col:"#2563eb", clickable:true},
               ].map(s=>(
-                <div key={s.label} style={{background:"#fff",padding:"12px 16px",position:"relative"}}>
+                <div key={s.label} onClick={s.clickable?()=>{setMainTab("Candidates");setCTab("bgv");}:undefined} style={{background:"#fff",padding:"12px 16px",position:"relative",cursor:s.clickable?"pointer":"default"}}>
                   <div style={{position:"absolute",top:0,left:0,right:0,height:2.5,background:s.col}}/>
                   <div style={{fontSize:9,fontWeight:700,letterSpacing:"1px",textTransform:"uppercase",color:"#a09890",marginBottom:4}}>{s.label}</div>
                   <div style={{fontSize:22,fontWeight:800,color:s.col,letterSpacing:-1,lineHeight:1}}>{loading?"…":s.val}</div>
@@ -3199,8 +3200,6 @@ return (
             </main>
           </div>
         )}
-
-
 
       </div>
     </>
