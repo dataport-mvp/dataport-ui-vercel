@@ -26,6 +26,7 @@ export default function ResetPassword() {
   const [confirm, setConfirm] = useState("");
   const [status, setStatus] = useState("idle"); // idle | loading | done | error
   const [error, setError] = useState("");
+  const [role, setRole] = useState("");
 
   const handle = async () => {
     setError("");
@@ -47,7 +48,17 @@ export default function ResetPassword() {
         setStatus("error");
         return;
       }
+      const data = await res.json();
+      // The account's role is already known to the system — no reason to make someone
+      // manually pick employee/employer/bgv after resetting. Auto-redirect straight to
+      // the right login page; the button choice is now only a fallback for the rare case
+      // the role comes back missing or unrecognized.
+      setRole(data.role || "");
       setStatus("done");
+      const roleToPath = { employee: "/employee/login", employer: "/employer/login", bgv: "/bgv/login" };
+      if (roleToPath[data.role]) {
+        setTimeout(() => router.push(roleToPath[data.role]), 1800);
+      }
     } catch {
       setError("Network error — please try again");
       setStatus("error");
@@ -67,16 +78,27 @@ export default function ResetPassword() {
             <>
               <div style={{...styles.iconCircle, background: "#dcfce7"}}><CheckIcon/></div>
               <h1 style={styles.title}>Password updated</h1>
-              <p style={styles.sub}>Your password has been reset successfully. You can now sign in with your new password.</p>
-              <button style={styles.btn} onClick={() => router.push("/employee/login")}>
-                Employee sign in
-              </button>
-              <button style={{...styles.btn, background:"#1e3a5f"}} onClick={() => router.push("/employer/login")}>
-                Employer sign in
-              </button>
-              <button style={{...styles.btn, background:"#334155"}} onClick={() => router.push("/bgv/login")}>
-                BGV Vendor sign in
-              </button>
+              {["employee","employer","bgv"].includes(role) ? (
+                <>
+                  <p style={styles.sub}>Your password has been reset successfully. Taking you to sign in…</p>
+                  <button style={styles.btn} onClick={() => router.push({employee:"/employee/login",employer:"/employer/login",bgv:"/bgv/login"}[role])}>
+                    Continue to sign in
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p style={styles.sub}>Your password has been reset successfully. You can now sign in with your new password.</p>
+                  <button style={styles.btn} onClick={() => router.push("/employee/login")}>
+                    Employee sign in
+                  </button>
+                  <button style={{...styles.btn, background:"#1e3a5f"}} onClick={() => router.push("/employer/login")}>
+                    Employer sign in
+                  </button>
+                  <button style={{...styles.btn, background:"#334155"}} onClick={() => router.push("/bgv/login")}>
+                    BGV Vendor sign in
+                  </button>
+                </>
+              )}
             </>
           ) : (
             <>

@@ -1585,27 +1585,33 @@ export default function ReviewPage() {
         {showDeleteModal && <DeleteAccountModal onConfirm={handleDeleteAccount} onCancel={()=>{setShowDeleteModal(false);}} loading={deleteLoading}/>}
         {showPwChange && (
           <div style={{position:"fixed",inset:0,background:"rgba(15,12,40,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000,backdropFilter:"blur(4px)"}}>
-            <div style={{background:"#fff",borderRadius:14,padding:"1.75rem",maxWidth:360,width:"90%",boxShadow:"0 32px 80px rgba(0,0,0,0.2)"}}>
-              <div style={{fontSize:"0.95rem",fontWeight:700,color:"#0f172a",marginBottom:"1rem"}}>Change Password</div>
-              {[["Current password",pwCurrent,setPwCurrent],["New password",pwNew,setPwNew],["Confirm new password",pwConfirm,setPwConfirm]].map(([label,val,setter])=>(
-                <div key={label} style={{marginBottom:"0.65rem"}}>
-                  <div style={{fontSize:"0.65rem",fontWeight:600,color:"#6b7280",marginBottom:"0.3rem",textTransform:"uppercase",letterSpacing:"0.4px"}}>{label}</div>
-                  <PasswordInput value={val} onChange={e=>setter(e.target.value)}
-                    maxLength={label==="Current password"?undefined:12}
-                    showCounter={label!=="Current password"}
-                    placeholder={label==="Current password"?undefined:"8-12 chars, incl. a letter, number & symbol"}
-                    inputStyle={{width:"100%",padding:"0.6rem 0.8rem",border:"1.5px solid #dddaf0",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",outline:"none",background:"#f8f7ff"}} />
+            <div style={{background:"#fff",borderRadius:16,maxWidth:440,width:"92%",boxShadow:"0 32px 80px rgba(0,0,0,0.22)",overflow:"hidden"}}>
+              <div style={{background:"#0d6e6e",padding:"1.3rem 1.75rem"}}>
+                <div style={{fontSize:"1.05rem",fontWeight:800,color:"#fff"}}>Change Password</div>
+                <div style={{fontSize:"0.78rem",color:"rgba(255,255,255,0.75)",marginTop:2}}>Keep your account secure with a strong password</div>
+              </div>
+              <div style={{padding:"1.6rem 1.75rem"}}>
+                {[["Current password",pwCurrent,setPwCurrent],["New password",pwNew,setPwNew],["Confirm new password",pwConfirm,setPwConfirm]].map(([label,val,setter])=>(
+                  <div key={label} style={{marginBottom:"1.1rem"}}>
+                    <div style={{fontSize:"0.72rem",fontWeight:700,color:"#4b5563",marginBottom:"0.4rem",textTransform:"uppercase",letterSpacing:"0.5px"}}>{label}</div>
+                    <PasswordInput value={val} onChange={e=>setter(e.target.value)}
+                      maxLength={label==="Current password"?undefined:12}
+                      showCounter={label!=="Current password"}
+                      placeholder={label==="Current password"?"":"Enter new password"}
+                      inputStyle={{width:"100%",padding:"0.75rem 0.9rem",border:"1.5px solid #dddaf0",borderRadius:9,fontFamily:"inherit",fontSize:"0.92rem",outline:"none",background:"#f8f7ff"}} />
+                    {label!=="Current password" && <div style={{fontSize:"0.72rem",color:"#8b88b0",marginTop:"0.35rem"}}>8–12 characters, with a letter, number &amp; symbol</div>}
+                  </div>
+                ))}
+                {pwErr && <div style={{fontSize:"0.8rem",color:"#ef4444",marginBottom:"0.7rem",fontWeight:600,background:"#fef2f2",padding:"0.6rem 0.8rem",borderRadius:8}}>{pwErr}</div>}
+                {pwOk  && <div style={{fontSize:"0.8rem",color:"#16a34a",marginBottom:"0.7rem",fontWeight:600,background:"#f0fdf4",padding:"0.6rem 0.8rem",borderRadius:8}}>{pwOk}</div>}
+                <div style={{display:"flex",gap:"0.7rem",marginTop:"0.6rem"}}>
+                  <button onClick={()=>{setShowPwChange(false);setPwErr("");setPwOk("");setPwCurrent("");setPwNew("");setPwConfirm("");}}
+                    style={{flex:1,padding:"0.75rem",borderRadius:9,border:"1.5px solid #dddaf0",background:"#f5f4f0",cursor:"pointer",fontWeight:700,color:"#4b5563",fontFamily:"inherit",fontSize:"0.88rem"}}>Cancel</button>
+                  <button onClick={handleChangePassword} disabled={pwBusy}
+                    style={{flex:1,padding:"0.75rem",borderRadius:9,border:"none",background:"#0d6e6e",color:"#fff",cursor:pwBusy?"not-allowed":"pointer",fontWeight:700,fontFamily:"inherit",fontSize:"0.88rem",opacity:pwBusy?0.6:1}}>
+                    {pwBusy?"Saving…":"Change Password"}
+                  </button>
                 </div>
-              ))}
-              {pwErr && <div style={{fontSize:"0.72rem",color:"#ef4444",marginBottom:"0.6rem",fontWeight:600}}>{pwErr}</div>}
-              {pwOk  && <div style={{fontSize:"0.72rem",color:"#16a34a",marginBottom:"0.6rem",fontWeight:600}}>{pwOk}</div>}
-              <div style={{display:"flex",gap:"0.6rem",marginTop:"0.5rem"}}>
-                <button onClick={()=>{setShowPwChange(false);setPwErr("");setPwOk("");setPwCurrent("");setPwNew("");setPwConfirm("");}}
-                  style={{flex:1,padding:"0.6rem",borderRadius:7,border:"1px solid #dddaf0",background:"#f5f4f0",cursor:"pointer",fontWeight:600,color:"#6b7280",fontFamily:"inherit",fontSize:"0.82rem"}}>Cancel</button>
-                <button onClick={handleChangePassword} disabled={pwBusy}
-                  style={{flex:1,padding:"0.6rem",borderRadius:7,border:"none",background:"#0d6e6e",color:"#fff",cursor:pwBusy?"not-allowed":"pointer",fontWeight:700,fontFamily:"inherit",fontSize:"0.82rem",opacity:pwBusy?0.6:1}}>
-                  {pwBusy?"Saving…":"Change Password"}
-                </button>
               </div>
             </div>
           </div>

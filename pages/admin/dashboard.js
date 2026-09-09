@@ -505,6 +505,30 @@ export default function AdminDashboard() {
     } catch(_) { setVendorMsg("Network error"); }
   };
 
+  const approveEmailChange = async (email) => {
+    setVendorMsg("");
+    try {
+      const r = await apiFetch(`${API}/admin/bgv/email-change/approve`, {
+        method: "POST",
+        body: JSON.stringify({ email })
+      });
+      if (r.ok) { setVendorMsg(`✓ Email change approved for ${email}`); loadVendors(); }
+      else { const d = await r.json(); setVendorMsg(errToStr(d)); }
+    } catch(_) { setVendorMsg("Network error"); }
+  };
+
+  const rejectEmailChange = async (email) => {
+    setVendorMsg("");
+    try {
+      const r = await apiFetch(`${API}/admin/bgv/email-change/reject`, {
+        method: "POST",
+        body: JSON.stringify({ email })
+      });
+      if (r.ok) { setVendorMsg(`✗ Email change rejected for ${email}`); loadVendors(); }
+      else { const d = await r.json(); setVendorMsg(errToStr(d)); }
+    } catch(_) { setVendorMsg("Network error"); }
+  };
+
   const sendBroadcast = async () => {
     setBroadcastSending(true);
     setBroadcastResult(null);
@@ -770,18 +794,20 @@ export default function AdminDashboard() {
         <div className="modal-overlay" onClick={() => setShowChPw(false)}>
           <div className="modal-box" onClick={e => e.stopPropagation()}>
             <div className="modal-title">🔑 Change Admin Password</div>
+            <div style={{fontSize:"0.78rem",color:"#7a9494",marginTop:"-0.7rem",marginBottom:"1.1rem"}}>Keep your account secure with a strong password</div>
             {[["Current password", pwCurrent, setPwCurrent], ["New password", pwNew, setPwNew], ["Confirm new password", pwConfirm, setPwConfirm]].map(([label, val, setter]) => (
-              <div key={label} style={{marginBottom:"0.65rem"}}>
-                <div style={{fontSize:"0.6rem",fontWeight:700,color:"#7a9494",textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:"0.35rem"}}>{label}</div>
+              <div key={label} style={{marginBottom:"1.05rem"}}>
+                <div style={{fontSize:"0.72rem",fontWeight:700,color:"#7a9494",textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:"0.4rem"}}>{label}</div>
                 <PasswordInput value={val} onChange={e => setter(e.target.value)}
                   maxLength={label==="Current password"?undefined:12}
                   showCounter={label!=="Current password"}
-                  placeholder={label==="Current password"?undefined:"8-12 chars, incl. a letter, number & symbol"}
-                  inputStyle={{background:"#f2efe9",border:"1px solid #1e1b2e",borderRadius:"7px",fontFamily:"inherit",fontSize:"0.82rem",color:"#1c2b2b"}}/>
+                  placeholder={label==="Current password"?"":"Enter new password"}
+                  inputStyle={{width:"100%",padding:"0.75rem 0.9rem",background:"#f2efe9",border:"1px solid #1e1b2e",borderRadius:"9px",fontFamily:"inherit",fontSize:"0.92rem",color:"#1c2b2b"}}/>
+                {label!=="Current password" && <div style={{fontSize:"0.72rem",color:"#7a9494",marginTop:"0.35rem"}}>8–12 characters, with a letter, number &amp; symbol</div>}
               </div>
             ))}
-            {pwErr && <div style={{fontSize:"0.72rem",color:"#fca5a5",marginBottom:"0.5rem",fontWeight:600}}>{pwErr}</div>}
-            {pwOk  && <div style={{fontSize:"0.72rem",color:"#6ee7b7",marginBottom:"0.5rem",fontWeight:600}}>{pwOk}</div>}
+            {pwErr && <div style={{fontSize:"0.8rem",color:"#fca5a5",marginBottom:"0.6rem",fontWeight:600,background:"rgba(252,165,165,0.1)",padding:"0.6rem 0.8rem",borderRadius:8}}>{pwErr}</div>}
+            {pwOk  && <div style={{fontSize:"0.8rem",color:"#6ee7b7",marginBottom:"0.6rem",fontWeight:600,background:"rgba(110,231,183,0.1)",padding:"0.6rem 0.8rem",borderRadius:8}}>{pwOk}</div>}
             <div className="modal-row">
               <button className="modal-cancel" onClick={() => { setShowChPw(false); setPwErr(""); setPwOk(""); setPwCurrent(""); setPwNew(""); setPwConfirm(""); }}>Cancel</button>
               <button className="modal-save" onClick={handleChangePassword} disabled={pwBusy}
@@ -1197,6 +1223,13 @@ export default function AdminDashboard() {
                           {v.bgv_approved ? "✓ Approved" : "⏳ Pending Approval"}
                         </span>
                       </div>
+                      {v.pending_email_change && v.pending_email_change.new_email && (
+                        <div style={{marginTop:"0.5rem",padding:"0.5rem 0.7rem",background:"#eef2ff",border:"1px solid #c7d2fe",borderRadius:8}}>
+                          <div style={{fontSize:"0.66rem",fontWeight:700,color:"#4338ca",textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:"0.25rem"}}>✉️ Email Change Requested</div>
+                          <div style={{fontSize:"0.75rem",color:"#3730a3"}}>{v.email} → <strong>{v.pending_email_change.new_email}</strong></div>
+                          {v.pending_email_change.requested_at && <div style={{fontSize:"0.66rem",color:"#6366f1",marginTop:"0.15rem"}}>Requested {new Date(v.pending_email_change.requested_at).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</div>}
+                        </div>
+                      )}
                     </div>
                     <div style={{display:"flex",gap:"0.5rem",flexShrink:0}}>
                       {!v.bgv_approved && (
@@ -1212,6 +1245,20 @@ export default function AdminDashboard() {
                         </button>
                       )}
                     </div>
+                  </div>
+                  {v.pending_email_change && v.pending_email_change.new_email && (
+                    <div style={{display:"flex",gap:"0.5rem",marginTop:"0.65rem",borderTop:"1px solid rgba(255,255,255,0.08)",paddingTop:"0.6rem"}}>
+                      <button onClick={()=>approveEmailChange(v.email)}
+                        style={{padding:"0.35rem 0.85rem",background:"#4f46e5",color:"#fff",border:"none",borderRadius:7,fontSize:"0.75rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                        Approve Email Change
+                      </button>
+                      <button onClick={()=>rejectEmailChange(v.email)}
+                        style={{padding:"0.35rem 0.85rem",background:"#18151f",color:"#f87171",border:"1px solid #dc2626",borderRadius:7,fontSize:"0.75rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                        Reject
+                      </button>
+                    </div>
+                  )}
+                </div>
                   </div>
                 </div>
               ))}

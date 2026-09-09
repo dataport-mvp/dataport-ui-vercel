@@ -851,7 +851,23 @@ function ConsentTab({ apiFetch, profileStatus }) {
     }catch(e){setActionError(p=>({...p,[consentId]:"Network error — please retry"}));}
     setActing(null);
   };
-  const norm=(c)=>({...c,status:String(c.status||"pending").toLowerCase()});
+  // A consent with pending_reapproval set was already approved/declined/revoked once
+  // before, and a fresh request has come in since (see backend: _create_consent_request's
+  // reuse path deliberately leaves top-level `status` untouched in this case, specifically
+  // so employer/BGV views don't lose access to the last-approved data mid-cycle). For
+  // bucketing and display here, though, the employee needs to see this as something
+  // awaiting their action — so it's surfaced as "pending" with the NEW request's message/
+  // requestor, not the stale top-level fields left over from the original approval.
+  const norm=(c)=>{
+    if (c.pending_reapproval) {
+      return {
+        ...c, status:"pending", isReapproval:true,
+        message: c.pending_reapproval.message || "",
+        requestor_name: c.pending_reapproval.requestor_name || c.requestor_name,
+      };
+    }
+    return {...c,status:String(c.status||"pending").toLowerCase()};
+  };
 
   // ── ALL hooks must be before any early return (React rules) ──────
   const [cInnerTab, setCInnerTab] = useState("pending");
@@ -915,6 +931,7 @@ function ConsentTab({ apiFetch, profileStatus }) {
       </p>
     )}
     {c.status==="pending"&&(<div style={{marginTop:"0.8rem"}}>
+      {c.isReapproval&&<div style={{fontSize:"0.75rem",color:"#0d6e6e",background:"#eef2ff",border:"1px solid #c7d2fe",borderRadius:8,padding:"0.5rem 0.75rem",marginBottom:"0.6rem"}}>ℹ️ You previously approved this employer — they're requesting a refresh with your current profile.</div>}
       {profileNotSubmitted&&<div style={{fontSize:"0.75rem",color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:"0.5rem 0.75rem",marginBottom:"0.6rem"}}>⚠️ Complete and submit your profile before approving consent requests.</div>}
       <textarea className="cmsg" placeholder="Optional message to employer…" value={replyMsg[c.consent_id]||""} onFocus={()=>{textareaFocused.current=true;}} onBlur={()=>{textareaFocused.current=false;}} onChange={e=>{const val=e.target.value;setReplyMsg(p=>({...p,[c.consent_id]:val}));}} style={{marginBottom:"0.5rem"}}/>
       <div style={{display:"flex",gap:"0.5rem"}}>

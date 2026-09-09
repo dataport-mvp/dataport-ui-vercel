@@ -464,6 +464,14 @@ export default function BgvDashboard() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showGear,    setShowGear]    = useState(false);
   const [showPwModal, setShowPwModal] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [newEmail,       setNewEmail]       = useState("");
+  const [emailOtp,       setEmailOtp]       = useState("");
+  const [emailOtpSent,   setEmailOtpSent]   = useState(false);
+  const [emailChangeMsg, setEmailChangeMsg] = useState("");
+  const [emailChangeErr, setEmailChangeErr] = useState("");
+  const [emailChangeLod, setEmailChangeLod] = useState(false);
+  const [emailChangeSubmitted, setEmailChangeSubmitted] = useState(false);
   const [showSupport, setShowSupport] = useState(false);
   const [pwCurrent,   setPwCurrent]   = useState("");
   const [pwNew,       setPwNew]       = useState("");
@@ -677,6 +685,44 @@ export default function BgvDashboard() {
     finally { setPwBusy(false); }
   };
 
+  const requestEmailChange = async () => {
+    if (!newEmail || !newEmail.includes("@")) { setEmailChangeErr("Enter a valid email"); return; }
+    setEmailChangeLod(true); setEmailChangeErr(""); setEmailChangeMsg("");
+    try {
+      const res = await apiFetch(`${API}/auth/request-email-change`, {
+        method: "POST",
+        body: JSON.stringify({ new_email: newEmail }),
+      });
+      const d = await res.json();
+      if (!res.ok) { setEmailChangeErr(d.detail || "Failed"); }
+      else { setEmailOtpSent(true); setEmailChangeMsg(d.message); }
+    } catch (_) { setEmailChangeErr("Network error"); }
+    setEmailChangeLod(false);
+  };
+
+  const verifyEmailChange = async () => {
+    if (!emailOtp || emailOtp.length !== 6) { setEmailChangeErr("Enter the 6-digit OTP"); return; }
+    setEmailChangeLod(true); setEmailChangeErr("");
+    try {
+      const res = await apiFetch(`${API}/auth/verify-email-change`, {
+        method: "POST",
+        body: JSON.stringify({ otp: emailOtp, new_email: newEmail }),
+      });
+      const d = await res.json();
+      if (!res.ok) { setEmailChangeErr(d.detail || "Failed"); }
+      else if (d.pending_admin_approval) {
+        // BGV email changes never apply immediately — same trust boundary as BGV
+        // registration itself needing admin approval before an account can be used.
+        setEmailChangeMsg(d.message);
+        setEmailChangeSubmitted(true);
+      } else {
+        setEmailChangeMsg("Email updated. Logging you out now...");
+        setTimeout(() => logout(), 2500);
+      }
+    } catch (_) { setEmailChangeErr("Network error"); }
+    setEmailChangeLod(false);
+  };
+
   const sendHoldRequest = async (consentId) => {
     if (!consentId || !holdMsg.trim()) return;
     setHoldSending(true);
@@ -822,6 +868,7 @@ export default function BgvDashboard() {
                   <div style={{position:"fixed",inset:0,zIndex:199}} onClick={()=>setShowGear(false)}/>
                   <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,boxShadow:"0 8px 24px rgba(15,23,42,0.14)",minWidth:190,zIndex:200,overflow:"hidden"}}>
                     <button onClick={()=>{setShowGear(false);setShowPwModal(true);}} style={{display:"block",width:"100%",textAlign:"left",padding:"0.6rem 0.9rem",background:"none",border:"none",fontSize:"0.78rem",fontWeight:600,color:"#0f172a",cursor:"pointer",fontFamily:"inherit"}}>🔑 Change password</button>
+                    <button onClick={()=>{setShowGear(false);setShowEmailModal(true);setEmailOtpSent(false);setEmailOtp("");setNewEmail("");setEmailChangeMsg("");setEmailChangeErr("");setEmailChangeSubmitted(false);}} style={{display:"block",width:"100%",textAlign:"left",padding:"0.6rem 0.9rem",background:"none",border:"none",fontSize:"0.78rem",fontWeight:600,color:"#0f172a",cursor:"pointer",fontFamily:"inherit",borderTop:"1px solid #f1f5f9"}}>✉️ Change email</button>
                     <button onClick={()=>{setShowGear(false);setShowSupport(true);}} style={{display:"block",width:"100%",textAlign:"left",padding:"0.6rem 0.9rem",background:"none",border:"none",fontSize:"0.78rem",fontWeight:600,color:"#0f172a",cursor:"pointer",fontFamily:"inherit",borderTop:"1px solid #f1f5f9"}}>🎧 Help & Support</button>
                   </div>
                 </>
@@ -836,19 +883,65 @@ export default function BgvDashboard() {
 
         {showPwModal && (
           <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000,backdropFilter:"blur(4px)"}}>
-            <div style={{background:"#fff",borderRadius:14,padding:"1.75rem",maxWidth:380,width:"90%",boxShadow:"0 32px 80px rgba(0,0,0,0.2)",border:"1px solid #e2e8f0"}}>
-              <div style={{fontSize:"0.95rem",fontWeight:700,color:"#0f172a",marginBottom:"1rem"}}>Change Password</div>
-              {[["Current password","password",pwCurrent,setPwCurrent],["New password","password",pwNew,setPwNew],["Confirm new password","password",pwConfirm,setPwConfirm]].map(([label,type,val,setter])=>(
-                <div key={label} style={{marginBottom:"0.65rem"}}>
-                  <div style={{fontSize:"0.65rem",fontWeight:600,color:"#64748b",marginBottom:"0.3rem",textTransform:"uppercase",letterSpacing:"0.4px"}}>{label}</div>
-                  <PasswordInput value={val} onChange={e=>setter(e.target.value)} maxLength={label==="Current password"?undefined:12} showCounter={label!=="Current password"} placeholder={label==="Current password"?undefined:"8-12 chars, incl. a letter, number & symbol"} inputStyle={{border:"1.5px solid #e2e8f0",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",background:"#f8fafc"}}/>
+            <div style={{background:"#fff",borderRadius:16,maxWidth:440,width:"92%",boxShadow:"0 32px 80px rgba(0,0,0,0.22)",overflow:"hidden",border:"1px solid #e2e8f0"}}>
+              <div style={{background:"#4f46e5",padding:"1.3rem 1.75rem"}}>
+                <div style={{fontSize:"1.05rem",fontWeight:800,color:"#fff"}}>Change Password</div>
+                <div style={{fontSize:"0.78rem",color:"rgba(255,255,255,0.75)",marginTop:2}}>Keep your account secure with a strong password</div>
+              </div>
+              <div style={{padding:"1.6rem 1.75rem"}}>
+                {[["Current password","password",pwCurrent,setPwCurrent],["New password","password",pwNew,setPwNew],["Confirm new password","password",pwConfirm,setPwConfirm]].map(([label,type,val,setter])=>(
+                  <div key={label} style={{marginBottom:"1.1rem"}}>
+                    <div style={{fontSize:"0.72rem",fontWeight:700,color:"#64748b",marginBottom:"0.4rem",textTransform:"uppercase",letterSpacing:"0.5px"}}>{label}</div>
+                    <PasswordInput value={val} onChange={e=>setter(e.target.value)} maxLength={label==="Current password"?undefined:12} showCounter={label!=="Current password"} placeholder={label==="Current password"?"":"Enter new password"} inputStyle={{width:"100%",padding:"0.75rem 0.9rem",border:"1.5px solid #e2e8f0",borderRadius:9,fontFamily:"inherit",fontSize:"0.92rem",background:"#f8fafc"}}/>
+                    {label!=="Current password" && <div style={{fontSize:"0.72rem",color:"#94a3b8",marginTop:"0.35rem"}}>8–12 characters, with a letter, number &amp; symbol</div>}
+                  </div>
+                ))}
+                {pwErr && <div style={{fontSize:"0.8rem",color:"#ef4444",marginBottom:"0.7rem",fontWeight:600,background:"#fef2f2",padding:"0.6rem 0.8rem",borderRadius:8}}>{pwErr}</div>}
+                {pwOk  && <div style={{fontSize:"0.8rem",color:"#16a34a",marginBottom:"0.7rem",fontWeight:600,background:"#f0fdf4",padding:"0.6rem 0.8rem",borderRadius:8}}>{pwOk}</div>}
+                <div style={{display:"flex",gap:"0.7rem",marginTop:"0.6rem"}}>
+                  <button onClick={()=>{setShowPwModal(false);setPwErr("");setPwOk("");setPwCurrent("");setPwNew("");setPwConfirm("");}} style={{flex:1,padding:"0.75rem",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:700,color:"#475569",fontFamily:"inherit",fontSize:"0.88rem"}}>Cancel</button>
+                  <button onClick={handleChangePassword} disabled={pwBusy} style={{flex:1,padding:"0.75rem",borderRadius:9,border:"none",background:"#4f46e5",color:"#fff",cursor:pwBusy?"not-allowed":"pointer",fontWeight:700,fontFamily:"inherit",fontSize:"0.88rem",opacity:pwBusy?0.6:1}}>{pwBusy?"Saving…":"Change Password"}</button>
                 </div>
-              ))}
-              {pwErr && <div style={{fontSize:"0.72rem",color:"#ef4444",marginBottom:"0.6rem",fontWeight:600}}>{pwErr}</div>}
-              {pwOk  && <div style={{fontSize:"0.72rem",color:"#16a34a",marginBottom:"0.6rem",fontWeight:600}}>{pwOk}</div>}
-              <div style={{display:"flex",gap:"0.6rem",marginTop:"0.5rem"}}>
-                <button onClick={()=>{setShowPwModal(false);setPwErr("");setPwOk("");setPwCurrent("");setPwNew("");setPwConfirm("");}} style={{flex:1,padding:"0.6rem",borderRadius:7,border:"1px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:600,color:"#475569",fontFamily:"inherit",fontSize:"0.82rem"}}>Cancel</button>
-                <button onClick={handleChangePassword} disabled={pwBusy} style={{flex:1,padding:"0.6rem",borderRadius:7,border:"none",background:"#4f46e5",color:"#fff",cursor:pwBusy?"not-allowed":"pointer",fontWeight:700,fontFamily:"inherit",fontSize:"0.82rem",opacity:pwBusy?0.6:1}}>{pwBusy?"Saving…":"Change Password"}</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Change Email Modal — BGV specifically: after OTP, the request goes to
+            admin for approval, same trust boundary as BGV registration itself. Nothing
+            changes on the account until admin approves. ── */}
+        {showEmailModal && (
+          <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000,backdropFilter:"blur(4px)"}}>
+            <div style={{background:"#fff",borderRadius:16,maxWidth:440,width:"92%",boxShadow:"0 32px 80px rgba(0,0,0,0.22)",overflow:"hidden",border:"1px solid #e2e8f0"}}>
+              <div style={{background:"#4f46e5",padding:"1.3rem 1.75rem"}}>
+                <div style={{fontSize:"1.05rem",fontWeight:800,color:"#fff"}}>Change Email</div>
+                <div style={{fontSize:"0.78rem",color:"rgba(255,255,255,0.75)",marginTop:2}}>{emailChangeSubmitted?"Awaiting admin approval":"We'll verify it's really you first"}</div>
+              </div>
+              <div style={{padding:"1.6rem 1.75rem"}}>
+                {emailChangeSubmitted ? (
+                  <>
+                    <div style={{fontSize:38,textAlign:"center",marginBottom:10}}>⏳</div>
+                    <p style={{fontSize:"0.85rem",color:"#334155",textAlign:"center",lineHeight:1.6,marginBottom:"1.2rem"}}>{emailChangeMsg}</p>
+                    <p style={{fontSize:"0.75rem",color:"#94a3b8",textAlign:"center"}}>Your account continues to use your current email until this is reviewed.</p>
+                  </>
+                ) : !emailOtpSent ? (<>
+                  <p style={{fontSize:"0.78rem",color:"#3730a3",background:"#eef2ff",border:"1px solid #c7d2fe",borderRadius:8,padding:"0.6rem 0.8rem",marginBottom:"1rem",lineHeight:1.5}}>ℹ️ As a BGV vendor, email changes need admin approval before they take effect — same as your original registration.</p>
+                  <div style={{fontSize:"0.72rem",fontWeight:700,color:"#64748b",marginBottom:"0.4rem",textTransform:"uppercase",letterSpacing:"0.5px"}}>New Email Address</div>
+                  <input type="email" value={newEmail} onChange={e=>{setNewEmail(e.target.value);setEmailChangeErr("");}} placeholder="Enter new email address" style={{width:"100%",padding:"0.75rem 0.9rem",border:"1.5px solid #e2e8f0",borderRadius:9,fontFamily:"inherit",fontSize:"0.92rem",background:"#f8fafc",boxSizing:"border-box",marginBottom:"1rem"}}/>
+                </>) : (<>
+                  <p style={{fontSize:"0.82rem",color:"#334155",marginBottom:"1rem"}}>{emailChangeMsg}</p>
+                  <div style={{fontSize:"0.72rem",fontWeight:700,color:"#64748b",marginBottom:"0.4rem",textTransform:"uppercase",letterSpacing:"0.5px"}}>6-Digit OTP</div>
+                  <input value={emailOtp} maxLength={6} inputMode="numeric" onChange={e=>{setEmailOtp(e.target.value.replace(/\D/g,"").slice(0,6));setEmailChangeErr("");}} placeholder="Enter OTP" style={{width:"100%",padding:"0.75rem 0.9rem",border:"1.5px solid #e2e8f0",borderRadius:9,fontFamily:"inherit",fontSize:"1.1rem",letterSpacing:"5px",textAlign:"center",background:"#f8fafc",boxSizing:"border-box",marginBottom:"1rem"}}/>
+                </>)}
+                {emailChangeErr && <div style={{fontSize:"0.8rem",color:"#ef4444",marginBottom:"0.7rem",fontWeight:600,background:"#fef2f2",padding:"0.6rem 0.8rem",borderRadius:8}}>{emailChangeErr}</div>}
+                <div style={{display:"flex",gap:"0.7rem",marginTop:"0.6rem"}}>
+                  {emailChangeSubmitted ? (
+                    <button onClick={()=>{setShowEmailModal(false);setEmailChangeSubmitted(false);setEmailOtpSent(false);setEmailOtp("");setNewEmail("");setEmailChangeMsg("");}} style={{flex:1,padding:"0.75rem",borderRadius:9,border:"none",background:"#4f46e5",color:"#fff",cursor:"pointer",fontWeight:700,fontFamily:"inherit",fontSize:"0.88rem"}}>Got it</button>
+                  ) : (<>
+                    <button onClick={()=>{setShowEmailModal(false);setEmailOtpSent(false);setEmailOtp("");setNewEmail("");setEmailChangeMsg("");setEmailChangeErr("");}} style={{flex:1,padding:"0.75rem",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontWeight:700,color:"#475569",fontFamily:"inherit",fontSize:"0.88rem"}}>Cancel</button>
+                    <button onClick={emailOtpSent?verifyEmailChange:requestEmailChange} disabled={emailChangeLod} style={{flex:1,padding:"0.75rem",borderRadius:9,border:"none",background:"#4f46e5",color:"#fff",cursor:emailChangeLod?"not-allowed":"pointer",fontWeight:700,fontFamily:"inherit",fontSize:"0.88rem",opacity:emailChangeLod?0.6:1}}>{emailChangeLod?(emailOtpSent?"Verifying…":"Sending…"):(emailOtpSent?"Submit for Approval":"Send OTP")}</button>
+                  </>)}
+                </div>
               </div>
             </div>
           </div>

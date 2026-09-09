@@ -2007,6 +2007,13 @@ export default function EmployerDashboard() {
   const [bulkRemindBusy, setBulkRemindBusy] = useState(false);
   const [bulkRemindMsg,  setBulkRemindMsg]  = useState("");
   const [showPwModal,    setShowPwModal]    = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [newEmail,       setNewEmail]       = useState("");
+  const [emailOtp,       setEmailOtp]       = useState("");
+  const [emailOtpSent,   setEmailOtpSent]   = useState(false);
+  const [emailChangeMsg, setEmailChangeMsg] = useState("");
+  const [emailChangeErr, setEmailChangeErr] = useState("");
+  const [emailChangeLod, setEmailChangeLod] = useState(false);
   const [showGear,       setShowGear]       = useState(false);
   const [showSupport,    setShowSupport]    = useState(false);
   const [pwCurrent,      setPwCurrent]      = useState("");
@@ -2106,8 +2113,16 @@ export default function EmployerDashboard() {
   const nc = c => ({
     ...c,
     consent_id:      c?.consent_id||c?.id||c?.consentId||c?._id,
-    status:          normalizeStatus(c?.status),
-    request_message: c?.request_message||c?.message||c?.comment||c?.note||"",
+    // A consent with pending_reapproval was already approved once before, and the
+    // employee has since made changes + the employer sent a fresh request — the backend
+    // deliberately leaves top-level `status` as "approved" in this case (so nothing else
+    // that gates on status=="approved" loses access to the last-confirmed data mid-cycle).
+    // For the employer's own dashboard, though, this needs to show as awaiting the
+    // employee's response — otherwise the employer has no way to tell their fresh request
+    // hasn't been acknowledged yet, since it would otherwise look identical to "approved."
+    status:          c?.pending_reapproval ? "pending" : normalizeStatus(c?.status),
+    isReapproval:    !!c?.pending_reapproval,
+    request_message: c?.pending_reapproval?.message || c?.request_message||c?.message||c?.comment||c?.note||"",
     employee_email:  c?.employee_email||c?.employeeEmail||c?.email||c?.user_email||"",
     employee_name:   c?.employee_name||c?.employeeName||c?.name||c?.user_name||"",
   });
@@ -2344,6 +2359,39 @@ export default function EmployerDashboard() {
     finally { setPwBusy(false); }
   };
 
+  const requestEmailChange = async () => {
+    if (!newEmail || !newEmail.includes("@")) { setEmailChangeErr("Enter a valid email"); return; }
+    setEmailChangeLod(true); setEmailChangeErr(""); setEmailChangeMsg("");
+    try {
+      const res = await apiFetch(`${API}/auth/request-email-change`, {
+        method: "POST",
+        body: JSON.stringify({ new_email: newEmail }),
+      });
+      const d = await res.json();
+      if (!res.ok) { setEmailChangeErr(d.detail || "Failed"); }
+      else { setEmailOtpSent(true); setEmailChangeMsg(d.message); }
+    } catch (_) { setEmailChangeErr("Network error"); }
+    setEmailChangeLod(false);
+  };
+
+  const verifyEmailChange = async () => {
+    if (!emailOtp || emailOtp.length !== 6) { setEmailChangeErr("Enter the 6-digit OTP"); return; }
+    setEmailChangeLod(true); setEmailChangeErr("");
+    try {
+      const res = await apiFetch(`${API}/auth/verify-email-change`, {
+        method: "POST",
+        body: JSON.stringify({ otp: emailOtp, new_email: newEmail }),
+      });
+      const d = await res.json();
+      if (!res.ok) { setEmailChangeErr(d.detail || "Failed"); }
+      else {
+        setEmailChangeMsg("Email updated. Logging you out now...");
+        setTimeout(() => logout(), 2500);
+      }
+    } catch (_) { setEmailChangeErr("Network error"); }
+    setEmailChangeLod(false);
+  };
+
   const sendReminder = async (consentId) => {
     setRemindBusy(true); setRemindMsg("");
     try {
@@ -2553,19 +2601,53 @@ return (
       {/* ── Change Password Modal ── */}
       {showPwModal && (
         <div style={{position:"fixed",inset:0,background:"rgba(17,13,10,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000,backdropFilter:"blur(4px)"}}>
-          <div style={{background:"#fff",borderRadius:14,padding:"1.75rem",maxWidth:380,width:"90%",boxShadow:"0 32px 80px rgba(0,0,0,0.2)",border:"1px solid #c8c2b8"}}>
-            <div style={{fontSize:"0.95rem",fontWeight:700,color:"#111",marginBottom:"1rem"}}>Change Password</div>
-            {[["Current password","password",pwCurrent,setPwCurrent],["New password","password",pwNew,setPwNew],["Confirm new password","password",pwConfirm,setPwConfirm]].map(([label,type,val,setter])=>(
-              <div key={label} style={{marginBottom:"0.65rem"}}>
-                <div style={{fontSize:"0.65rem",fontWeight:600,color:"#7a6e64",marginBottom:"0.3rem",textTransform:"uppercase",letterSpacing:"0.4px"}}>{label}</div>
-                <PasswordInput value={val} onChange={e=>setter(e.target.value)} maxLength={label==="Current password"?undefined:12} showCounter={label!=="Current password"} placeholder={label==="Current password"?undefined:"8-12 chars, incl. a letter, number & symbol"} inputStyle={{border:"1.5px solid #c8c2b8",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",background:"#f5f2ee"}}/>
+          <div style={{background:"#fff",borderRadius:16,maxWidth:440,width:"92%",boxShadow:"0 32px 80px rgba(0,0,0,0.22)",overflow:"hidden",border:"1px solid #c8c2b8"}}>
+            <div style={{background:"#5c4a3a",padding:"1.3rem 1.75rem"}}>
+              <div style={{fontSize:"1.05rem",fontWeight:800,color:"#fff"}}>Change Password</div>
+              <div style={{fontSize:"0.78rem",color:"rgba(255,255,255,0.75)",marginTop:2}}>Keep your account secure with a strong password</div>
+            </div>
+            <div style={{padding:"1.6rem 1.75rem"}}>
+              {[["Current password","password",pwCurrent,setPwCurrent],["New password","password",pwNew,setPwNew],["Confirm new password","password",pwConfirm,setPwConfirm]].map(([label,type,val,setter])=>(
+                <div key={label} style={{marginBottom:"1.1rem"}}>
+                  <div style={{fontSize:"0.72rem",fontWeight:700,color:"#7a6e64",marginBottom:"0.4rem",textTransform:"uppercase",letterSpacing:"0.5px"}}>{label}</div>
+                  <PasswordInput value={val} onChange={e=>setter(e.target.value)} maxLength={label==="Current password"?undefined:12} showCounter={label!=="Current password"} placeholder={label==="Current password"?"":"Enter new password"} inputStyle={{width:"100%",padding:"0.75rem 0.9rem",border:"1.5px solid #c8c2b8",borderRadius:9,fontFamily:"inherit",fontSize:"0.92rem",background:"#f5f2ee"}}/>
+                  {label!=="Current password" && <div style={{fontSize:"0.72rem",color:"#9a8f83",marginTop:"0.35rem"}}>8–12 characters, with a letter, number &amp; symbol</div>}
+                </div>
+              ))}
+              {pwErr && <div style={{fontSize:"0.8rem",color:"#ef4444",marginBottom:"0.7rem",fontWeight:600,background:"#fef2f2",padding:"0.6rem 0.8rem",borderRadius:8}}>{pwErr}</div>}
+              {pwOk  && <div style={{fontSize:"0.8rem",color:"#16a34a",marginBottom:"0.7rem",fontWeight:600,background:"#f0fdf4",padding:"0.6rem 0.8rem",borderRadius:8}}>{pwOk}</div>}
+              <div style={{display:"flex",gap:"0.7rem",marginTop:"0.6rem"}}>
+                <button onClick={()=>{setShowPwModal(false);setPwErr("");setPwOk("");setPwCurrent("");setPwNew("");setPwConfirm("");}} style={{flex:1,padding:"0.75rem",borderRadius:9,border:"1.5px solid #c8c2b8",background:"#f5f2ee",cursor:"pointer",fontWeight:700,color:"#5c4a3a",fontFamily:"inherit",fontSize:"0.88rem"}}>Cancel</button>
+                <button onClick={handleChangePassword} disabled={pwBusy} style={{flex:1,padding:"0.75rem",borderRadius:9,border:"none",background:"#0d6e6e",color:"#fff",cursor:pwBusy?"not-allowed":"pointer",fontWeight:700,fontFamily:"inherit",fontSize:"0.88rem",opacity:pwBusy?0.6:1}}>{pwBusy?"Saving…":"Change Password"}</button>
               </div>
-            ))}
-            {pwErr && <div style={{fontSize:"0.72rem",color:"#ef4444",marginBottom:"0.6rem",fontWeight:600}}>{pwErr}</div>}
-            {pwOk  && <div style={{fontSize:"0.72rem",color:"#16a34a",marginBottom:"0.6rem",fontWeight:600}}>{pwOk}</div>}
-            <div style={{display:"flex",gap:"0.6rem",marginTop:"0.5rem"}}>
-              <button onClick={()=>{setShowPwModal(false);setPwErr("");setPwOk("");setPwCurrent("");setPwNew("");setPwConfirm("");}} style={{flex:1,padding:"0.6rem",borderRadius:7,border:"1px solid #c8c2b8",background:"#f5f2ee",cursor:"pointer",fontWeight:600,color:"#7a6e64",fontFamily:"inherit",fontSize:"0.82rem"}}>Cancel</button>
-              <button onClick={handleChangePassword} disabled={pwBusy} style={{flex:1,padding:"0.6rem",borderRadius:7,border:"none",background:"#0d6e6e",color:"#fff",cursor:pwBusy?"not-allowed":"pointer",fontWeight:700,fontFamily:"inherit",fontSize:"0.82rem",opacity:pwBusy?0.6:1}}>{pwBusy?"Saving…":"Change Password"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Change Email Modal ── */}
+      {showEmailModal && (
+        <div style={{position:"fixed",inset:0,background:"rgba(17,13,10,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000,backdropFilter:"blur(4px)"}}>
+          <div style={{background:"#fff",borderRadius:16,maxWidth:440,width:"92%",boxShadow:"0 32px 80px rgba(0,0,0,0.22)",overflow:"hidden",border:"1px solid #c8c2b8"}}>
+            <div style={{background:"#5c4a3a",padding:"1.3rem 1.75rem"}}>
+              <div style={{fontSize:"1.05rem",fontWeight:800,color:"#fff"}}>Change Email</div>
+              <div style={{fontSize:"0.78rem",color:"rgba(255,255,255,0.75)",marginTop:2}}>We'll verify it's really you before switching</div>
+            </div>
+            <div style={{padding:"1.6rem 1.75rem"}}>
+              {!emailOtpSent ? (<>
+                <p style={{fontSize:"0.78rem",color:"#92400e",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:"0.6rem 0.8rem",marginBottom:"1rem",lineHeight:1.5}}>⚠️ Make sure any unsaved work is saved before changing your email — you'll be signed out once it's updated.</p>
+                <div style={{fontSize:"0.72rem",fontWeight:700,color:"#7a6e64",marginBottom:"0.4rem",textTransform:"uppercase",letterSpacing:"0.5px"}}>New Email Address</div>
+                <input type="email" value={newEmail} onChange={e=>{setNewEmail(e.target.value);setEmailChangeErr("");}} placeholder="Enter new email address" style={{width:"100%",padding:"0.75rem 0.9rem",border:"1.5px solid #c8c2b8",borderRadius:9,fontFamily:"inherit",fontSize:"0.92rem",background:"#f5f2ee",boxSizing:"border-box",marginBottom:"1rem"}}/>
+              </>) : (<>
+                <p style={{fontSize:"0.82rem",color:"#5c4a3a",marginBottom:"1rem"}}>{emailChangeMsg}</p>
+                <div style={{fontSize:"0.72rem",fontWeight:700,color:"#7a6e64",marginBottom:"0.4rem",textTransform:"uppercase",letterSpacing:"0.5px"}}>6-Digit OTP</div>
+                <input value={emailOtp} maxLength={6} inputMode="numeric" onChange={e=>{setEmailOtp(e.target.value.replace(/\D/g,"").slice(0,6));setEmailChangeErr("");}} placeholder="Enter OTP" style={{width:"100%",padding:"0.75rem 0.9rem",border:"1.5px solid #c8c2b8",borderRadius:9,fontFamily:"inherit",fontSize:"1.1rem",letterSpacing:"5px",textAlign:"center",background:"#f5f2ee",boxSizing:"border-box",marginBottom:"1rem"}}/>
+              </>)}
+              {emailChangeErr && <div style={{fontSize:"0.8rem",color:"#ef4444",marginBottom:"0.7rem",fontWeight:600,background:"#fef2f2",padding:"0.6rem 0.8rem",borderRadius:8}}>{emailChangeErr}</div>}
+              <div style={{display:"flex",gap:"0.7rem",marginTop:"0.6rem"}}>
+                <button onClick={()=>{setShowEmailModal(false);setEmailOtpSent(false);setEmailOtp("");setNewEmail("");setEmailChangeMsg("");setEmailChangeErr("");}} style={{flex:1,padding:"0.75rem",borderRadius:9,border:"1.5px solid #c8c2b8",background:"#f5f2ee",cursor:"pointer",fontWeight:700,color:"#5c4a3a",fontFamily:"inherit",fontSize:"0.88rem"}}>Cancel</button>
+                <button onClick={emailOtpSent?verifyEmailChange:requestEmailChange} disabled={emailChangeLod} style={{flex:1,padding:"0.75rem",borderRadius:9,border:"none",background:"#0d6e6e",color:"#fff",cursor:emailChangeLod?"not-allowed":"pointer",fontWeight:700,fontFamily:"inherit",fontSize:"0.88rem",opacity:emailChangeLod?0.6:1}}>{emailChangeLod?(emailOtpSent?"Verifying…":"Sending…"):(emailOtpSent?"Confirm Change":"Send OTP")}</button>
+              </div>
             </div>
           </div>
         </div>
@@ -2915,6 +2997,7 @@ return (
                   <div style={{position:"fixed",inset:0,zIndex:199}} onClick={()=>setShowGear(false)}/>
                   <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,background:"#fff",border:"1px solid #c8c2b8",borderRadius:8,boxShadow:"0 8px 24px rgba(17,13,10,0.14)",minWidth:190,zIndex:200,overflow:"hidden"}}>
                     <button onClick={()=>{setShowGear(false);setShowPwModal(true);}} style={{display:"block",width:"100%",textAlign:"left",padding:"0.6rem 0.9rem",background:"none",border:"none",fontSize:"0.78rem",fontWeight:600,color:"#1a1a1a",cursor:"pointer",fontFamily:"inherit"}}>🔑 Change password</button>
+                    <button onClick={()=>{setShowGear(false);setShowEmailModal(true);setEmailOtpSent(false);setEmailOtp("");setNewEmail("");setEmailChangeMsg("");setEmailChangeErr("");}} style={{display:"block",width:"100%",textAlign:"left",padding:"0.6rem 0.9rem",background:"none",border:"none",fontSize:"0.78rem",fontWeight:600,color:"#1a1a1a",cursor:"pointer",fontFamily:"inherit",borderTop:"1px solid #f0eee9"}}>✉️ Change email</button>
                     <button onClick={()=>{setShowGear(false);setShowSupport(true);}} style={{display:"block",width:"100%",textAlign:"left",padding:"0.6rem 0.9rem",background:"none",border:"none",fontSize:"0.78rem",fontWeight:600,color:"#1a1a1a",cursor:"pointer",fontFamily:"inherit",borderTop:"1px solid #f0eee9"}}>🎧 Help & Support</button>
                     <button onClick={()=>{setShowGear(false);setShowDeleteModal(true);}} style={{display:"block",width:"100%",textAlign:"left",padding:"0.6rem 0.9rem",background:"none",border:"none",fontSize:"0.78rem",fontWeight:600,color:"#dc2626",cursor:"pointer",fontFamily:"inherit",borderTop:"1px solid #f0eee9"}}>🗑️ Delete account</button>
                   </div>
