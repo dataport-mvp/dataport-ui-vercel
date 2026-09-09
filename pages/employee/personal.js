@@ -1542,22 +1542,28 @@ export default function PersonalDetails() {
     });
   };
 
-  // @bgv → sends to BGV vendor, employer auto-CC'd. Otherwise → employer only, private.
+  // @bgv → sends to BGV vendor, employer auto-CC'd. @employer → employer only, private.
   // No @here for employee: there's no third party to reach — @bgv already includes the employer via CC.
+  // Previously an untagged message silently defaulted to "employer" — sent successfully
+  // with no confirmation of who it was actually going to. Now returns null when no tag is
+  // present, and sendReply blocks the send instead of guessing.
   const detectRecipient = (text) => {
     const t = (text||"").toLowerCase();
     if (/@bgv\b/.test(t)) return "bgv";
-    return "employer";
+    if (/@employer\b/.test(t)) return "employer";
+    return null;
   };
-  const recipientLabel = (rt) => rt==="bgv" ? "→ BGV Vendor (Employer will also see this)" : "→ Employer only (private)";
+  const recipientLabel = (rt) => rt==="bgv" ? "→ BGV Vendor (Employer will also see this)" : rt==="employer" ? "→ Employer only (private)" : "";
 
   const sendReply = async () => {
     if (!msgBody.trim() || !activeThread) return;
+    const recipient = detectRecipient(msgBody);
+    if (!recipient) { setMsgErr("Tag @employer or @bgv so we know who this message is for."); return; }
     setMsgSending(true); setMsgErr("");
     try {
       const r = await apiFetch(`${API}/messages/send`, {
         method: "POST",
-        body: JSON.stringify({ consent_id: activeThread, body: msgBody.trim(), subject: msgSubject.trim(), recipient_type: detectRecipient(msgBody), attachment_s3_key: msgAttach?.s3_key || "" }),
+        body: JSON.stringify({ consent_id: activeThread, body: msgBody.trim(), subject: msgSubject.trim(), recipient_type: recipient, attachment_s3_key: msgAttach?.s3_key || "" }),
       });
       if (r.ok) { setMsgBody(""); setMsgSubject(""); setMsgAttach(null); await loadThread(activeThread); loadInbox(); }
       else { const d = await r.json(); setMsgErr(d.detail || "Failed to send"); }
@@ -2265,7 +2271,7 @@ export default function PersonalDetails() {
                         <textarea
                           value={msgBody} onChange={e=>setMsgBody(e.target.value)}
                           onKeyDown={e=>{if(e.key==="Enter"&&e.ctrlKey){e.preventDefault();sendReply();}}}
-                          placeholder="Type your reply… @bgv to loop in the BGV vendor (employer sees it too). (Ctrl+Enter to send)"
+                          placeholder="Type your reply… tag @employer (private) or @bgv (employer sees it too). (Ctrl+Enter to send)"
                           style={{width:"100%",padding:"0.55rem 0.75rem",background:"#f8f7ff",border:"1.5px solid #ddd8f5",borderRadius:9,fontFamily:"inherit",fontSize:"0.82rem",color:"#1a1730",outline:"none",resize:"none",minHeight:60,marginBottom:"0.4rem",transition:"border-color 0.15s"}}
                         />
                         {msgAttach ? (

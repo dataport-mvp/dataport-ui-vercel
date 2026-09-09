@@ -444,6 +444,8 @@ export default function BgvDashboard() {
     });
   };
   // @employeeName → candidate, employer CC'd. @employerName → employer only, private.
+  // Previously an untagged message silently defaulted to "employee" — now returns null
+  // when neither name is tagged, and sendMsg blocks the send instead of guessing.
   const detectRecipientBgv = (text) => {
     const t = inbox.find(x=>x.consent_id===activeThread);
     const employeeName = t?.employee_name || t?.candidate_name || "";
@@ -451,7 +453,7 @@ export default function BgvDashboard() {
     const body = text||"";
     if (employerName && body.includes(`@${employerName}`)) return "employer";
     if (employeeName && body.includes(`@${employeeName}`)) return "employee";
-    return "employee";
+    return null;
   };
   const recipientLabelBgv = (rt) => rt==="employer" ? "→ Employer only (private)" : "→ Candidate (Employer will also see this)";
   const [msgSubject, setMsgSubject] = useState("");
@@ -470,6 +472,7 @@ export default function BgvDashboard() {
   const [pwOk,        setPwOk]        = useState("");
   const [pwBusy,      setPwBusy]      = useState(false);
   const [sendingMsg, setSendingMsg] = useState(false);
+  const [msgErr, setMsgErr] = useState("");
 
   // Check update
   const [savingCheck, setSavingCheck] = useState({});
@@ -761,11 +764,20 @@ export default function BgvDashboard() {
 
   const sendMsg = async () => {
     if (!msgBody.trim() || !activeThread) return;
+    const recipient = detectRecipientBgv(msgBody);
+    if (!recipient) {
+      const t = inbox.find(x=>x.consent_id===activeThread);
+      const empName = t?.employee_name || t?.candidate_name || "the candidate";
+      const erName  = t?.employer_name || "the employer";
+      setMsgErr(`Tag @${empName} or @${erName} so we know who this message is for.`);
+      return;
+    }
+    setMsgErr("");
     setSendingMsg(true);
     try {
       const res = await apiFetch(`${API}/messages/send`, {
         method: "POST",
-        body: JSON.stringify({ consent_id: activeThread, body: msgBody, subject: msgSubject.trim(), recipient_type: detectRecipientBgv(msgBody), attachment_s3_key: msgAttach?.s3_key || "" }),
+        body: JSON.stringify({ consent_id: activeThread, body: msgBody, subject: msgSubject.trim(), recipient_type: recipient, attachment_s3_key: msgAttach?.s3_key || "" }),
       });
       if (res.ok) {
         setMsgBody(""); setMsgSubject(""); setMsgAttach(null);
@@ -1482,7 +1494,8 @@ export default function BgvDashboard() {
                         style={{width:"100%",padding:"0.45rem 0.75rem",background:"#f8fafc",border:"1.5px solid #e2e8f0",borderRadius:7,fontFamily:"inherit",fontSize:"0.75rem",color:"#0f172a",outline:"none"}}/>
                     </div>
                     <div style={{padding:"0.4rem 1.25rem 0"}}>
-                      <textarea className="msg-textarea" value={msgBody} onChange={e=>setMsgBody(e.target.value)} placeholder="Type a message… @employee name or @employer name" onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg();}}} style={{width:"100%"}}/>
+                      <textarea className="msg-textarea" value={msgBody} onChange={e=>{setMsgBody(e.target.value);if(msgErr)setMsgErr("");}} placeholder="Type a message… tag @[candidate name] or @[employer name] to send" onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg();}}} style={{width:"100%"}}/>
+                      {msgErr && <p style={{fontSize:"0.72rem",color:"#ef4444",fontWeight:600,marginTop:"0.3rem"}}>⚠️ {msgErr}</p>}
                     </div>
                     <div style={{padding:"0.4rem 1.25rem 0"}}>
                       {msgAttach ? (

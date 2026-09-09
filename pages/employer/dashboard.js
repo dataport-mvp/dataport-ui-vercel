@@ -2045,9 +2045,10 @@ export default function EmployerDashboard() {
     const t = (text||"").toLowerCase();
     if (/@everyone\b/.test(t)) return "both";
     if (/@bgv\b/.test(t))  return "bgv";
-    return "employee";
+    if (/@employee\b/.test(t)) return "employee";
+    return null;
   };
-  const recipientLabelEmployer = (rt) => rt==="bgv" ? "→ BGV Vendor only (private)" : rt==="both" ? "→ Everyone (Candidate + BGV Vendor)" : "→ Candidate only (private)";
+  const recipientLabelEmployer = (rt) => rt==="bgv" ? "→ BGV Vendor only (private)" : rt==="both" ? "→ Everyone (Candidate + BGV Vendor)" : rt==="employee" ? "→ Candidate only (private)" : "";
   const [msgSending,     setMsgSending]     = useState(false);
   const [msgErr,         setMsgErr]         = useState("");
   const [unreadCount,    setUnreadCount]    = useState(0);
@@ -2445,11 +2446,13 @@ export default function EmployerDashboard() {
   const sendMessage = async () => {
     if (!msgBody.trim()) { setMsgErr("Message cannot be empty"); return; }
     if (!activeThread)   { setMsgErr("No thread selected"); return; }
+    const recipient = detectRecipientEmployer(msgBody);
+    if (!recipient) { setMsgErr("Tag @employee, @bgv, or @everyone so we know who this message is for."); return; }
     setMsgSending(true); setMsgErr("");
     try {
       const r = await apiFetch(`${API}/messages/send`, {
         method: "POST",
-        body: JSON.stringify({ consent_id: activeThread, body: msgBody.trim(), subject: msgSubject.trim(), recipient_type: detectRecipientEmployer(msgBody), attachment_s3_key: msgAttach?.s3_key || "" }),
+        body: JSON.stringify({ consent_id: activeThread, body: msgBody.trim(), subject: msgSubject.trim(), recipient_type: recipient, attachment_s3_key: msgAttach?.s3_key || "" }),
       });
       if (r.ok) {
         setMsgBody(""); setMsgSubject(""); setMsgAttach(null);
@@ -2510,7 +2513,14 @@ export default function EmployerDashboard() {
     setTermsAccepted(true);
   }} />;
 
-  const counts = { pending:pending.length, approved:approvedGrouped.length, declined:declined.length, revoked:revoked.length, bgv:approvedGrouped.length };
+  // bgv count is deliberately NOT the same as approved.length — it should tell the
+  // employer something actionable: how many approved candidates still need BGV
+  // attention (not yet completed), not just "how many are in the eligible pool."
+  // Recomputed from live c.bgv_status on every render, so it can never go stale —
+  // any assignment, reassignment, or check completion updates this the moment the
+  // underlying consent data refreshes.
+  const bgvNeedsAttention = fa.filter(c => c.bgv_status !== "completed").length;
+  const counts = { pending:pending.length, approved:approvedGrouped.length, declined:declined.length, revoked:revoked.length, bgv:bgvNeedsAttention };
   const faBgvSorted = [...fa].sort((a,b) => (a.employee_name||a.employee_email||"").localeCompare(b.employee_name||b.employee_email||""));
   const list   = cTab==="pending" ? fp : cTab==="approved" ? fa : cTab==="revoked" ? fr : cTab==="bgv" ? faBgvSorted : fd;
   const search = cTab==="pending" ? spPending : cTab==="approved" ? spApproved : cTab==="revoked" ? spRevoked : cTab==="bgv" ? spApproved : spDeclined;
