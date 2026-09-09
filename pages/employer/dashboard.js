@@ -1767,51 +1767,6 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
         </div>
       )}
 
-      {bgvCase?.bgv_history?.length > 0 && (
-        <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"1rem",marginBottom:"1rem"}}>
-          <div style={{fontWeight:700,fontSize:"0.84rem",color:"#0f172a",marginBottom:"0.6rem"}}>Past BGV Vendors ({bgvCase.bgv_history.length})</div>
-          {bgvCase.bgv_history.map((h, idx) => {
-            const isOpen = viewingHistoryIdx === idx;
-            const hChecks = h.bgv_checks || [];
-            const hDone = hChecks.filter(c=>c.status==="verified"||c.status==="failed"||c.status==="not_applicable").length;
-            return (
-              <div key={idx} style={{border:"1px solid #e2e8f0",borderRadius:8,marginBottom:"0.5rem",overflow:"hidden"}}>
-                <div onClick={()=>setViewingHistoryIdx(isOpen?null:idx)} style={{padding:"0.65rem 0.85rem",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",background:isOpen?"#f8fafc":"#fff"}}>
-                  <div>
-                    <span style={{fontWeight:700,fontSize:"0.8rem",color:"#0f172a"}}>{h.vendor_email}</span>
-                    <span style={{fontSize:"0.68rem",color:"#94a3b8",marginLeft:"0.5rem"}}>assigned {toISTDate(h.assigned_at)} → replaced {toISTDate(h.replaced_at)}</span>
-                  </div>
-                  <div style={{display:"flex",alignItems:"center",gap:"0.5rem"}}>
-                    {h.bgv_overall_status && <span style={{fontSize:"0.68rem",fontWeight:700,color:OVERALL[h.bgv_overall_status]||"#64748b"}}>{h.bgv_overall_status.toUpperCase()}</span>}
-                    <span style={{fontSize:"0.72rem",color:"#4f46e5",fontWeight:700}}>{isOpen?"▲":"▼"}</span>
-                  </div>
-                </div>
-                {isOpen && (
-                  <div style={{padding:"0.85rem",borderTop:"1px solid #e2e8f0"}}>
-                    <div style={{fontSize:"0.72rem",color:"#64748b",marginBottom:"0.6rem"}}>{hDone} of {hChecks.length} checks completed when replaced</div>
-                    {hChecks.map((c,ci) => {
-                      const cs = CHECK_STATUS_COLORS[c.status] || CHECK_STATUS_COLORS.pending;
-                      return (
-                        <div key={ci} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"0.4rem 0",borderBottom:ci<hChecks.length-1?"1px solid #f1f5f9":"none"}}>
-                          <span style={{fontSize:"0.76rem",color:"#334155"}}>{c.label}</span>
-                          <span style={{fontSize:"0.68rem",fontWeight:700,color:cs.color,background:cs.bg,padding:"0.15rem 0.55rem",borderRadius:999}}>{cs.label}</span>
-                        </div>
-                      );
-                    })}
-                    {h.bgv_summary && <div style={{marginTop:"0.6rem",fontSize:"0.76rem",color:"#475569",background:"#f8fafc",padding:"0.6rem",borderRadius:7}}>{h.bgv_summary}</div>}
-                    {h.bgv_report_key && (
-                      <button onClick={()=>viewReport(h.bgv_report_key)} style={{marginTop:"0.6rem",padding:"0.4rem 0.9rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:7,fontSize:"0.76rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                        View {h.vendor_email}'s Report ↗
-                      </button>
-                    )}
-                    {!h.bgv_report_key && <div style={{marginTop:"0.6rem",fontSize:"0.72rem",color:"#94a3b8",fontStyle:"italic"}}>No final report was submitted before this vendor was replaced.</div>}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
 
       {/* Assign vendor section */}
       {(!bgvCase?.bgv_vendor_email || showReassign) && (
@@ -1895,6 +1850,61 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
 
       {!bgvCase?.bgv_checks?.length && bgvCase?.bgv_vendor_email && (
         <div className="nd-box">BGV vendor has not started checks yet.</div>
+      )}
+
+      {bgvCase?.bgv_summary && (
+        <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"1rem",marginBottom:"1rem"}}>
+          <div style={{fontWeight:700,fontSize:"0.84rem",color:"#0f172a",marginBottom:"0.5rem"}}>Summary / Remarks</div>
+          <div style={{fontSize:"0.82rem",color:"#334155",lineHeight:1.6,whiteSpace:"pre-wrap"}}>{bgvCase.bgv_summary}</div>
+        </div>
+      )}
+
+      {/* Past vendor history — deliberately last, clearly separated from the current
+          vendor's active info/checks above, instead of interleaved between them. */}
+      {bgvCase?.bgv_history?.length > 0 && (
+        <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"1rem",marginBottom:"1rem"}}>
+          <div style={{fontWeight:700,fontSize:"0.84rem",color:"#0f172a",marginBottom:"0.6rem"}}>Past BGV Vendors ({bgvCase.bgv_history.length})</div>
+          {bgvCase.bgv_history.map((h, idx) => {
+            const isOpen = viewingHistoryIdx === idx;
+            const hChecks = h.bgv_checks || [];
+            const hDone = hChecks.filter(c=>c.status==="verified"||c.status==="failed"||c.status==="not_applicable").length;
+            return (
+              <div key={idx} style={{border:"1px solid #e2e8f0",borderRadius:8,marginBottom:"0.5rem",overflow:"hidden"}}>
+                <div onClick={()=>setViewingHistoryIdx(isOpen?null:idx)} style={{padding:"0.65rem 0.85rem",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",background:isOpen?"#f8fafc":"#fff"}}>
+                  <div>
+                    <span style={{fontWeight:700,fontSize:"0.8rem",color:"#0f172a"}}>{h.vendor_email}</span>
+                    <span style={{fontSize:"0.68rem",color:"#94a3b8",marginLeft:"0.5rem"}}>assigned {toISTDate(h.assigned_at)} → replaced {toISTDate(h.replaced_at)}</span>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:"0.5rem"}}>
+                    {h.bgv_overall_status && <span style={{fontSize:"0.68rem",fontWeight:700,color:OVERALL[h.bgv_overall_status]||"#64748b"}}>{h.bgv_overall_status.toUpperCase()}</span>}
+                    <span style={{fontSize:"0.72rem",color:"#4f46e5",fontWeight:700}}>{isOpen?"▲":"▼"}</span>
+                  </div>
+                </div>
+                {isOpen && (
+                  <div style={{padding:"0.85rem",borderTop:"1px solid #e2e8f0"}}>
+                    <div style={{fontSize:"0.72rem",color:"#64748b",marginBottom:"0.6rem"}}>{hDone} of {hChecks.length} checks completed when replaced</div>
+                    {hChecks.map((c,ci) => {
+                      const cs = CHECK_STATUS_COLORS[c.status] || CHECK_STATUS_COLORS.pending;
+                      return (
+                        <div key={ci} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"0.4rem 0",borderBottom:ci<hChecks.length-1?"1px solid #f1f5f9":"none"}}>
+                          <span style={{fontSize:"0.76rem",color:"#334155"}}>{c.label}</span>
+                          <span style={{fontSize:"0.68rem",fontWeight:700,color:cs.color,background:cs.bg,padding:"0.15rem 0.55rem",borderRadius:999}}>{cs.label}</span>
+                        </div>
+                      );
+                    })}
+                    {h.bgv_summary && <div style={{marginTop:"0.6rem",fontSize:"0.76rem",color:"#475569",background:"#f8fafc",padding:"0.6rem",borderRadius:7}}>{h.bgv_summary}</div>}
+                    {h.bgv_report_key && (
+                      <button onClick={()=>viewReport(h.bgv_report_key)} style={{marginTop:"0.6rem",padding:"0.4rem 0.9rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:7,fontSize:"0.76rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                        View {h.vendor_email}'s Report ↗
+                      </button>
+                    )}
+                    {!h.bgv_report_key && <div style={{marginTop:"0.6rem",fontSize:"0.72rem",color:"#94a3b8",fontStyle:"italic"}}>No final report was submitted before this vendor was replaced.</div>}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );
