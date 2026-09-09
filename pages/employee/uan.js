@@ -1797,9 +1797,14 @@ export default function UanDetails() {
       // an immediate-family nominee (spouse/child) NOR a parent is being nominated at all.
       if (!hasImmediateFamilyNominee && !hasParentNominee && !noFamilyAck) errs.push("No-Family Certification (Form 2) — required since none of your nominees are family under the EPF Scheme");
       if (hasParentNominee && !parentsDependentAck) errs.push("Parents Dependency Certification (Form 2) — required since you've nominated a parent");
-      if (editedAfterSign) errs.push("Digital Signature (information changed — please sign again)");
-      else if (!sigS3Key && !sigDataUrl) errs.push("Digital Signature");
     }
+    // Digital Signature is REQUIRED REGARDLESS of hasUan — it's what formally signs the
+    // Gratuity nomination (Form F) too, which applies to everyone, fresher or not. This
+    // used to live inside the hasUan==="yes" block above, which meant a fresher could
+    // complete Gratuity nominees + both Gratuity declarations and successfully proceed
+    // having never been asked to sign anything at all.
+    if (editedAfterSign) errs.push("Digital Signature (information changed — please sign again)");
+    else if (!sigS3Key && !sigDataUrl) errs.push("Digital Signature");
     // Gratuity nomination (Form F, Payment of Gratuity Act 1972) is a separate statutory
     // benefit — eligibility isn't tied to having a UAN/PF account, so this is validated
     // unconditionally, not nested inside the hasUan check above.
@@ -2313,21 +2318,31 @@ export default function UanDetails() {
           </div>
 
           {/* ── EPFO Declarations + Signature ── only required when user has UAN ── */}
-          {hasUan === "yes" && (
-            <div id="epfo-decl-section" className="sc" style={{marginBottom:"1.1rem",position:"relative",overflow:"hidden"}}>
-              <div style={{position:"absolute",top:0,left:0,bottom:0,width:4,borderRadius:"16px 0 0 16px",background:"#0d6e6e"}}/>
-              <div className="sh"><div className="si" style={{background:"#eef2ff"}}>📜</div><span className="st">EPFO Declarations & Digital Signature</span></div>
+          {/* This section's outer container is now ALWAYS shown, regardless of hasUan —
+              the Digital Signature capture below is what formally signs the Gratuity
+              nomination too (Form F applies to everyone, fresher or not), and that
+              requirement was previously hidden entirely whenever hasUan==="no", meaning
+              a fresher could complete Gratuity nominees + declarations and proceed with
+              zero signature ever captured. Only the EPF/UAN-specific declarations (1-6b
+              below) stay conditionally shown — those genuinely don't apply without a UAN. */}
+          <div id="epfo-decl-section" className="sc" style={{marginBottom:"1.1rem",position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",top:0,left:0,bottom:0,width:4,borderRadius:"16px 0 0 16px",background:"#0d6e6e"}}/>
+            <div className="sh"><div className="si" style={{background:"#eef2ff"}}>📜</div><span className="st">{hasUan==="yes"?"EPFO Declarations & Digital Signature":"Gratuity Declaration & Digital Signature"}</span></div>
 
-              {editedAfterSign && (
-                <div style={{background:"#fff8f0",border:"1.5px solid #fbbf24",borderRadius:10,padding:"0.65rem 1rem",marginBottom:"0.75rem",fontSize:"0.75rem",color:"#92400e",fontWeight:600}}>
-                  ⚠️ You changed information on this page. Your previous signature no longer applies — re-confirm all 3 declarations below and sign again before you can continue.
-                </div>
-              )}
+            {editedAfterSign && (
+              <div style={{background:"#fff8f0",border:"1.5px solid #fbbf24",borderRadius:10,padding:"0.65rem 1rem",marginBottom:"0.75rem",fontSize:"0.75rem",color:"#92400e",fontWeight:600}}>
+                ⚠️ You changed information on this page. Your previous signature no longer applies — {hasUan==="yes"?"re-confirm all declarations below and sign again":"sign again"} before you can continue.
+              </div>
+            )}
 
-              <p style={{fontSize:"0.75rem",color:"#6b6894",marginBottom:"0.9rem",fontWeight:500,lineHeight:1.5}}>
-                The following declarations are mandatory. All three must be confirmed and a signature must be drawn before you can continue.
-              </p>
+            <p style={{fontSize:"0.75rem",color:"#6b6894",marginBottom:"0.9rem",fontWeight:500,lineHeight:1.5}}>
+              {hasUan==="yes"
+                ? "The following declarations are mandatory. Every one shown must be confirmed and a signature must be drawn before you can continue."
+                : "Your Gratuity nomination above (Form F) needs to be formally signed before you can continue."}
+            </p>
 
+            {hasUan === "yes" && (
+              <>
               {/* Declaration 1 */}
               <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"0.75rem",borderLeft:pfNomAck?"3px solid #16a34a":"3px solid #e4e2f0"}}>
                 <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
@@ -2424,6 +2439,8 @@ export default function UanDetails() {
                   <span style={{fontSize:"0.78rem",color:"#166534",fontWeight:600,lineHeight:1.5}}>✓ Since you've nominated your spouse and/or children, no additional family-status certification is needed here.</span>
                 </div>
               )}
+              </>
+            )}
 
               {/* Digital Signature — persists across normal revisits; editing the page after
                   signing forces this back into draw mode, and every replaced signature is
@@ -2572,15 +2589,14 @@ export default function UanDetails() {
                 )}
               </div>
             </div>
-          )}
 
-          {hasUan === "yes" && (
           <div style={{background:"#fff",borderRadius:12,padding:"1rem 1.25rem",marginBottom:"1.1rem",border:"1px solid #e8e5f0",boxShadow:"0 2px 8px rgba(30,26,62,0.06)"}}>
             <p style={{fontSize:"0.78rem",color:"#6b6894",lineHeight:1.6,fontWeight:500}}>
-              ℹ️ All 3 declarations must be checked and a signature must be drawn before you can continue to the Review page.
+              {hasUan==="yes"
+                ? "ℹ️ Every declaration above must be checked and a signature must be drawn before you can continue to the Review page."
+                : "ℹ️ Both Gratuity declarations above must be checked and a signature must be drawn before you can continue to the Review page."}
             </p>
           </div>
-          )}
 
           <div className="sbar">
             <button className="sbtn" onClick={() => handleNavigate("/employee/previous")}>← Previous</button>
