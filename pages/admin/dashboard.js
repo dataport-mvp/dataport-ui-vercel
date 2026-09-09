@@ -1208,52 +1208,66 @@ export default function AdminDashboard() {
               {vendorLoading && <div style={{color:"#94a3b8",fontSize:"0.82rem"}}>Loading…</div>}
               {!vendorLoading && vendors.length === 0 && <div style={{color:"#94a3b8",fontSize:"0.82rem"}}>No BGV vendors registered yet.</div>}
               {vendors.map(v => (
-                <div key={v.email} style={{background:"#18151f",border:"1px solid rgba(255,255,255,0.08)",borderRadius:10,padding:"0.85rem 1rem",marginBottom:"0.6rem"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:"0.5rem"}}>
-                    <div>
-                      <div style={{fontWeight:700,fontSize:"0.85rem",color:"#f1f5f9"}}>{v.name || "—"}</div>
-                      {v.company_name && <div style={{fontSize:"0.78rem",color:"#c4b5fd",marginTop:"0.1rem",fontWeight:600}}>{v.company_name}</div>}
-                      <div style={{fontSize:"0.72rem",color:"#94a3b8",marginTop:"0.25rem"}}>{v.email}</div>
-                      {v.phone && <div style={{fontSize:"0.72rem",color:"#94a3b8",marginTop:"0.1rem"}}>{v.phone}</div>}
-                      {v.created_at && <div style={{fontSize:"0.68rem",color:"#64748b",marginTop:"0.15rem"}}>Registered {new Date(v.created_at).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</div>}
-                      <div style={{marginTop:"0.35rem"}}>
-                        <span style={{padding:"0.15rem 0.55rem",borderRadius:999,fontSize:"0.68rem",fontWeight:700,
-                          background:v.bgv_approved?"#f0fdf4":"#fef9c3",
-                          color:v.bgv_approved?"#16a34a":"#92400e"}}>
+                <div key={v.email} style={{background:"#2a2536",border:"1px solid rgba(255,255,255,0.12)",borderRadius:12,padding:"1.25rem 1.4rem",marginBottom:"0.85rem"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:"0.75rem"}}>
+                    <div style={{flex:1,minWidth:260}}>
+                      <div style={{display:"flex",alignItems:"center",gap:"0.6rem",marginBottom:"0.85rem"}}>
+                        <div style={{fontWeight:800,fontSize:"1.05rem",color:"#f8fafc"}}>{v.name || "—"}</div>
+                        <span style={{padding:"0.2rem 0.65rem",borderRadius:999,fontSize:"0.7rem",fontWeight:700,
+                          background:v.bgv_approved?"#0f3d2e":"#3d2f0f",
+                          color:v.bgv_approved?"#4ade80":"#fbbf24"}}>
                           {v.bgv_approved ? "✓ Approved" : "⏳ Pending Approval"}
                         </span>
                       </div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0.7rem 1.5rem"}}>
+                        <div>
+                          <div style={{fontSize:"0.66rem",fontWeight:700,color:"#9d94b8",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.2rem"}}>Agency / Company</div>
+                          <div style={{fontSize:"0.86rem",color:"#e2ddf5",fontWeight:600}}>{v.company_name || "—"}</div>
+                        </div>
+                        <div>
+                          <div style={{fontSize:"0.66rem",fontWeight:700,color:"#9d94b8",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.2rem"}}>Registered</div>
+                          <div style={{fontSize:"0.86rem",color:"#e2ddf5"}}>{v.created_at ? new Date(v.created_at).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}) : "—"}</div>
+                        </div>
+                        <div>
+                          <div style={{fontSize:"0.66rem",fontWeight:700,color:"#9d94b8",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.2rem"}}>Work Email</div>
+                          <div style={{fontSize:"0.86rem",color:"#e2ddf5"}}>{v.email}</div>
+                        </div>
+                        <div>
+                          <div style={{fontSize:"0.66rem",fontWeight:700,color:"#9d94b8",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.2rem"}}>Mobile Number</div>
+                          <div style={{fontSize:"0.86rem",color:"#e2ddf5"}}>{v.phone || "—"}</div>
+                        </div>
+                      </div>
                       {v.pending_email_change && v.pending_email_change.new_email && (
-                        <div style={{marginTop:"0.5rem",padding:"0.5rem 0.7rem",background:"#eef2ff",border:"1px solid #c7d2fe",borderRadius:8}}>
-                          <div style={{fontSize:"0.66rem",fontWeight:700,color:"#4338ca",textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:"0.25rem"}}>✉️ Email Change Requested</div>
-                          <div style={{fontSize:"0.75rem",color:"#3730a3"}}>{v.email} → <strong>{v.pending_email_change.new_email}</strong></div>
-                          {v.pending_email_change.requested_at && <div style={{fontSize:"0.66rem",color:"#6366f1",marginTop:"0.15rem"}}>Requested {new Date(v.pending_email_change.requested_at).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</div>}
+                        <div style={{marginTop:"1rem",padding:"0.75rem 0.9rem",background:"#312e5c",border:"1px solid #4f46e5",borderRadius:9}}>
+                          <div style={{fontSize:"0.68rem",fontWeight:700,color:"#a5b4fc",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.35rem"}}>✉️ Email Change Requested</div>
+                          <div style={{fontSize:"0.85rem",color:"#e0e7ff"}}>{v.email} → <strong>{v.pending_email_change.new_email}</strong></div>
+                          {v.pending_email_change.requested_at && <div style={{fontSize:"0.72rem",color:"#a5b4fc",marginTop:"0.25rem"}}>Requested {new Date(v.pending_email_change.requested_at).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</div>}
                         </div>
                       )}
                     </div>
-                    <div style={{display:"flex",gap:"0.5rem",flexShrink:0}}>
+                    <div style={{display:"flex",gap:"0.6rem",flexShrink:0}}>
                       {!v.bgv_approved && (
                         <button onClick={()=>approveVendor(v.email)}
-                          style={{padding:"0.35rem 0.85rem",background:"#16a34a",color:"#fff",border:"none",borderRadius:7,fontSize:"0.75rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                          style={{padding:"0.55rem 1.1rem",background:"#16a34a",color:"#fff",border:"none",borderRadius:8,fontSize:"0.85rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                           Approve
                         </button>
                       )}
                       {v.bgv_approved && (
                         <button onClick={()=>rejectVendor(v.email)}
-                          style={{padding:"0.35rem 0.85rem",background:"#dc2626",color:"#fff",border:"none",borderRadius:7,fontSize:"0.75rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                          style={{padding:"0.55rem 1.1rem",background:"#dc2626",color:"#fff",border:"none",borderRadius:8,fontSize:"0.85rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                           Revoke
                         </button>
                       )}
                     </div>
                   </div>
                   {v.pending_email_change && v.pending_email_change.new_email && (
-                    <div style={{display:"flex",gap:"0.5rem",marginTop:"0.65rem",borderTop:"1px solid rgba(255,255,255,0.08)",paddingTop:"0.6rem"}}>
+                    <div style={{display:"flex",gap:"0.6rem",marginTop:"1rem",borderTop:"1px solid rgba(255,255,255,0.12)",paddingTop:"0.9rem"}}>
                       <button onClick={()=>approveEmailChange(v.email)}
-                        style={{padding:"0.35rem 0.85rem",background:"#4f46e5",color:"#fff",border:"none",borderRadius:7,fontSize:"0.75rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                        style={{padding:"0.5rem 1rem",background:"#4f46e5",color:"#fff",border:"none",borderRadius:8,fontSize:"0.82rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                         Approve Email Change
                       </button>
                       <button onClick={()=>rejectEmailChange(v.email)}
-                        style={{padding:"0.35rem 0.85rem",background:"#18151f",color:"#f87171",border:"1px solid #dc2626",borderRadius:7,fontSize:"0.75rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                        style={{padding:"0.5rem 1rem",background:"#2a2536",color:"#f87171",border:"1px solid #dc2626",borderRadius:8,fontSize:"0.82rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                         Reject
                       </button>
                     </div>
