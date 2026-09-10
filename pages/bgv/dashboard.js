@@ -27,8 +27,14 @@ const CHECK_STATUS = {
 };
 
 const BGV_STATUS_BADGE = {
-  assigned:    { label:"Assigned",    color:"#4f46e5", bg:"#eef2ff" },
+  // BUG FIX (2026-09-09): the backend's actual status vocabulary is groomed/in_progress/
+  // on_hold/completed (confirmed directly in _bgv_overall_status and /bgv/assign) — this
+  // object only ever had "assigned", a value the backend never actually sets. Every fresh
+  // case (bgv_status === "groomed") and every on_hold case were silently falling back to
+  // an "Assigned" badge, which is misleading either way.
+  groomed:     { label:"Not Started", color:"#6366f1", bg:"#eef2ff" },
   in_progress: { label:"In Progress", color:"#3b82f6", bg:"#eff6ff" },
+  on_hold:     { label:"On Hold",     color:"#dc2626", bg:"#fef2f2" },
   discrepancy: { label:"Discrepancy", color:"#ef4444", bg:"#fef2f2" },
   completed:   { label:"Completed",   color:"#16a34a", bg:"#f0fdf4" },
 };
@@ -840,7 +846,15 @@ export default function BgvDashboard() {
     total:      cases.length,
     in_prog:    cases.filter(c => c.bgv_status === "in_progress").length,
     completed:  cases.filter(c => c.bgv_status === "completed").length,
-    pending:    cases.filter(c => c.bgv_status === "assigned").length,
+    // BUG FIX (2026-09-09): checked for "assigned", a status value the backend never
+    // actually sets — every freshly-assigned case (bgv_status === "groomed", set
+    // explicitly in /bgv/assign) was invisible in this count, always showing 0 even
+    // when a case genuinely was sitting untouched. Same root cause as the badge fix
+    // above. on_hold added too — it was missing from every bucket here entirely,
+    // meaning an on_hold case was counted in Total but literally unreachable via any
+    // of these filter cards, with the filtered-list click doing nothing either.
+    pending:    cases.filter(c => c.bgv_status === "groomed").length,
+    on_hold:    cases.filter(c => c.bgv_status === "on_hold").length,
   };
 
   const selectedCase = cases.find(c => c.consent_id === selectedId);
@@ -965,7 +979,8 @@ export default function BgvDashboard() {
                   {num:stats.total,     label:"Total Cases",   filterVal:null},
                   {num:stats.in_prog,   label:"In Progress",   filterVal:"in_progress"},
                   {num:stats.completed, label:"Completed",     filterVal:"completed"},
-                  {num:stats.pending,   label:"Pending Start", filterVal:"assigned"},
+                  {num:stats.pending,   label:"Pending Start", filterVal:"groomed"},
+                  {num:stats.on_hold,   label:"On Hold",       filterVal:"on_hold"},
                 ].map((s,i)=>(
                   <div key={i} className="stat-card" onClick={()=>setCaseFilter(s.filterVal)}
                     style={{cursor:"pointer",border:caseFilter===s.filterVal?"2px solid #4f46e5":"2px solid transparent",transition:"border-color 0.15s"}}>
@@ -976,7 +991,7 @@ export default function BgvDashboard() {
               </div>
               {caseFilter && (
                 <div style={{fontSize:"0.75rem",color:"#4f46e5",fontWeight:600,margin:"0.5rem 0 -0.5rem",display:"flex",alignItems:"center",gap:"0.5rem"}}>
-                  Showing: {caseFilter==="in_progress"?"In Progress":caseFilter==="completed"?"Completed":"Pending Start"}
+                  Showing: {caseFilter==="in_progress"?"In Progress":caseFilter==="completed"?"Completed":caseFilter==="on_hold"?"On Hold":"Pending Start"}
                   <button onClick={()=>setCaseFilter(null)} style={{background:"none",border:"none",color:"#4f46e5",textDecoration:"underline",cursor:"pointer",fontSize:"0.72rem",fontWeight:600,padding:0,fontFamily:"inherit"}}>Clear</button>
                 </div>
               )}
@@ -995,7 +1010,7 @@ export default function BgvDashboard() {
                 {!loadingCases && cases.length === 0 && <div className="empty-state">No cases assigned yet.</div>}
                 {!loadingCases && cases.length > 0 && cases.filter(c=>!caseFilter || c.bgv_status===caseFilter).length === 0 && <div className="empty-state">No cases match this filter.</div>}
                 {cases.filter(c=>!caseFilter || c.bgv_status===caseFilter).map(c => {
-                  const bs = BGV_STATUS_BADGE[c.bgv_status] || BGV_STATUS_BADGE.assigned;
+                  const bs = BGV_STATUS_BADGE[c.bgv_status] || BGV_STATUS_BADGE.groomed;
                   const pct = c.checks_total > 0 ? Math.round((c.checks_done / c.checks_total) * 100) : 0;
                   return (
                     <div key={c.consent_id} className={`tbl-row${selectedId===c.consent_id?" selected":""}`} onClick={()=>selectCase(c.consent_id)}>
@@ -1053,9 +1068,9 @@ export default function BgvDashboard() {
                           {caseDetail.consent_status !== "APPROVED" && (
                             <span className="badge" style={{color:"#991b1b",background:"#fee2e2"}}>CONSENT REVOKED — read-only history</span>
                           )}
-                          {(BGV_STATUS_BADGE[caseDetail.bgv_status]||BGV_STATUS_BADGE.assigned) && (
-                            <span className="badge" style={{color:(BGV_STATUS_BADGE[caseDetail.bgv_status]||BGV_STATUS_BADGE.assigned).color,background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.25)",color:"#fff"}}>
-                              {(BGV_STATUS_BADGE[caseDetail.bgv_status]||BGV_STATUS_BADGE.assigned).label}
+                          {(BGV_STATUS_BADGE[caseDetail.bgv_status]||BGV_STATUS_BADGE.groomed) && (
+                            <span className="badge" style={{color:(BGV_STATUS_BADGE[caseDetail.bgv_status]||BGV_STATUS_BADGE.groomed).color,background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.25)",color:"#fff"}}>
+                              {(BGV_STATUS_BADGE[caseDetail.bgv_status]||BGV_STATUS_BADGE.groomed).label}
                             </span>
                           )}
                         </div>
@@ -1709,7 +1724,7 @@ export default function BgvDashboard() {
                   <div style={{fontWeight:700,fontSize:"0.85rem",color:"#0f172a",marginBottom:"0.25rem"}}>{activeEmployer.name}</div>
                   <div style={{fontSize:"0.72rem",color:"#64748b",marginBottom:"0.85rem"}}>{activeEmployer.total} total · {activeEmployer.completed} completed · {activeEmployer.pending} pending{activeEmployer.failed>0?` · ${activeEmployer.failed} failed`:""}</div>
                   {activeEmployer.cases.map(c => {
-                    const bs = BGV_STATUS_BADGE[c.bgv_status] || BGV_STATUS_BADGE.assigned;
+                    const bs = BGV_STATUS_BADGE[c.bgv_status] || BGV_STATUS_BADGE.groomed;
                     const ov = OVERALL_STATUS[c.bgv_overall_status];
                     return (
                       <div key={c.consent_id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"0.7rem 0.9rem",border:"1px solid #f1f5f9",borderRadius:9,marginBottom:"0.5rem"}}>
