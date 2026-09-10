@@ -425,7 +425,7 @@ export default function BgvDashboard() {
   const docLink = (group, subKey) => {
     const doc = caseDocs?.[group]?.[subKey];
     if (!doc?.url) return null;
-    return <a href={doc.url} target="_blank" rel="noopener noreferrer" style={{marginLeft:6,fontSize:"0.68rem",color:"#0d6e6e",fontWeight:700,textDecoration:"none",whiteSpace:"nowrap"}}>📎 View</a>;
+    return <a href={doc.url} target="_blank" rel="noopener noreferrer" style={{marginLeft:8,fontSize:"0.8rem",color:"#0d6e6e",fontWeight:700,textDecoration:"none",whiteSpace:"nowrap"}}>📎 View</a>;
   };
   const [loadingCases, setLoadingCases] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -1207,15 +1207,13 @@ export default function BgvDashboard() {
                               <div style={{fontSize:"0.72rem",fontWeight:700,color:"#0d6e6e",marginBottom:"0.5rem"}}>CURRENT ADDRESS</div>
                               <Grid>
                                 <F label="Address" value={[prof.currentAddress?.door,prof.currentAddress?.village,prof.currentAddress?.locality,prof.currentAddress?.district,prof.currentAddress?.state,prof.currentAddress?.pincode].filter(Boolean).join(", ")} />
-                                <F label="Proof Type" value={prof.currentAddressProofType} />
+                                <F label="Proof Type" value={prof.currentAddressProofType} docGroup="personal" docKey="currentAddressProof" />
                               </Grid>
-                              {docLink("personal","currentAddressProof") && <div style={{marginTop:"0.6rem"}}>Current Address Proof {docLink("personal","currentAddressProof")}</div>}
                               <div style={{fontSize:"0.72rem",fontWeight:700,color:"#0d6e6e",margin:"0.9rem 0 0.5rem"}}>PERMANENT / NATIVE ADDRESS {prof.sameAsCurrent && <span style={{color:"#94a3b8",fontWeight:500}}>(same as current)</span>}</div>
                               <Grid>
                                 <F label="Address" value={[prof.permanentAddress?.door,prof.permanentAddress?.village,prof.permanentAddress?.locality,prof.permanentAddress?.district,prof.permanentAddress?.state,prof.permanentAddress?.pincode].filter(Boolean).join(", ")} />
-                                <F label="Proof Type" value={prof.permanentAddressProofType || (prof.sameAsCurrent ? prof.currentAddressProofType : null)} />
+                                <F label="Proof Type" value={prof.permanentAddressProofType || (prof.sameAsCurrent ? prof.currentAddressProofType : null)} docGroup="personal" docKey={prof.sameAsCurrent ? "currentAddressProof" : "permanentAddressProof"} />
                               </Grid>
-                              {docLink("personal", prof.sameAsCurrent ? "currentAddressProof" : "permanentAddressProof") && <div style={{marginTop:"0.6rem"}}>Permanent Address Proof {docLink("personal", prof.sameAsCurrent ? "currentAddressProof" : "permanentAddressProof")}</div>}
                             </Sec>
 
                             {eduLevel("classX","Class X — SSC / Matriculation","🏫")}
@@ -1257,9 +1255,14 @@ export default function BgvDashboard() {
                             )}
 
                             {(caseDetail.employment_history||[]).map((emp,i) => {
-                              const gapAfterThis = (caseDetail.employment_history||[])[i+1]?.gap;
                               return (
                                 <Sec key={`emp-${i}`} icon="💼" title={emp.companyName ? `${emp.companyName}${emp.designation?" — "+emp.designation:""}` : `Employment ${i+1}`}>
+                                  {emp.gap?.hasGap === "Yes" && (
+                                    <div style={{marginBottom:"0.9rem",padding:"0.6rem 0.8rem",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8}}>
+                                      <div style={{fontSize:"0.7rem",fontWeight:700,color:"#92400e",marginBottom:"0.15rem"}}>⚠ Gap before {i===0?"first job":"this job"}{(emp.gap.from||emp.gap.to)?` (${emp.gap.from||""} — ${emp.gap.to||""})`:""}</div>
+                                      <div style={{fontSize:"0.8rem",color:"#78350f"}}>{emp.gap.reason}</div>
+                                    </div>
+                                  )}
                                   <Grid>
                                     <F label="Company" value={emp.companyName} />
                                     <F label="Office Address" value={emp.officeAddress} />
@@ -1301,18 +1304,11 @@ export default function BgvDashboard() {
                                     {docLink(`employment/${emp.company_id}`,"experience") && <span>Experience / Relieving Letter {docLink(`employment/${emp.company_id}`,"experience")}</span>}
                                     {docLink(`employment/${emp.company_id}`,"idCard") && <span>Company ID Card {docLink(`employment/${emp.company_id}`,"idCard")}</span>}
                                   </div>
-
-                                  {gapAfterThis?.hasGap === "Yes" && (
-                                    <div style={{marginTop:"0.9rem",padding:"0.6rem 0.8rem",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8}}>
-                                      <div style={{fontSize:"0.7rem",fontWeight:700,color:"#92400e",marginBottom:"0.15rem"}}>⚠ Gap before next job</div>
-                                      <div style={{fontSize:"0.8rem",color:"#78350f"}}>{gapAfterThis.reason}</div>
-                                    </div>
-                                  )}
                                 </Sec>
                               );
                             })}
 
-                            {prof.hasUan === "Yes" && (
+                            {prof.hasUan === "yes" && (
                               <Sec icon="🏦" title="UAN / EPFO Details">
                                 <Grid>
                                   <F label="UAN Number" value={prof.uanNumber} docGroup="uan" docKey="uanCard" />
