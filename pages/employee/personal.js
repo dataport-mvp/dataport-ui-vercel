@@ -1440,6 +1440,8 @@ export default function PersonalDetails() {
   const [freshnessWarn, setFreshnessWarn]   = useState(false);
   const [inboxThreads,  setInboxThreads]   = useState([]);
   const [activeThread,  setActiveThread]   = useState(null);
+  const [activeAssignmentId, setActiveAssignmentId] = useState(null);
+  const [activeThreadId, setActiveThreadId] = useState(null);
   const [threadMsgs,    setThreadMsgs]     = useState([]);
   const [threadSegments, setThreadSegments] = useState({});
   const msgListRef      = useRef(null);
@@ -1485,10 +1487,12 @@ export default function PersonalDetails() {
     setInboxLoading(false);
   };
 
-  const loadThread = async (consentId) => {
-    setActiveThread(consentId); setThreadMsgs([]); setThreadLoading(true); setMsgErr("");
+  const loadThread = async (consentId, assignmentId, threadId) => {
+    setActiveThread(consentId); setActiveAssignmentId(assignmentId || null); setActiveThreadId(threadId || null);
+    setThreadMsgs([]); setThreadLoading(true); setMsgErr("");
     try {
-      const r = await apiFetch(`${API}/messages/thread/${consentId}`);
+      const qs = assignmentId ? `?assignment_id=${encodeURIComponent(assignmentId)}` : "";
+      const r = await apiFetch(`${API}/messages/thread/${consentId}${qs}`);
       if (r.ok) {
         const d = await r.json();
         const msgs = d.messages || [];
@@ -1515,7 +1519,8 @@ export default function PersonalDetails() {
   const [refreshingThread, setRefreshingThread] = useState(false);
   const silentRefreshThread = async (consentId) => {
     try {
-      const r = await apiFetch(`${API}/messages/thread/${consentId}`);
+      const qs = activeAssignmentId ? `?assignment_id=${encodeURIComponent(activeAssignmentId)}` : "";
+      const r = await apiFetch(`${API}/messages/thread/${consentId}${qs}`);
       if (r.ok) {
         const d = await r.json();
         setThreadMsgs(d.messages || []);
@@ -1580,9 +1585,9 @@ export default function PersonalDetails() {
     try {
       const r = await apiFetch(`${API}/messages/send`, {
         method: "POST",
-        body: JSON.stringify({ consent_id: activeThread, body: msgBody.trim(), subject: msgSubject.trim(), recipient_type: recipient, attachment_s3_key: msgAttach?.s3_key || "" }),
+        body: JSON.stringify({ consent_id: activeThread, body: msgBody.trim(), subject: msgSubject.trim(), recipient_type: recipient, attachment_s3_key: msgAttach?.s3_key || "", assignment_id: activeAssignmentId || "" }),
       });
-      if (r.ok) { setMsgBody(""); setMsgSubject(""); setMsgAttach(null); await loadThread(activeThread); loadInbox(); }
+      if (r.ok) { setMsgBody(""); setMsgSubject(""); setMsgAttach(null); await loadThread(activeThread, activeAssignmentId, activeThreadId); loadInbox(); }
       else { const d = await r.json(); setMsgErr(d.detail || "Failed to send"); }
     } catch(_) { setMsgErr("Network error"); }
     setMsgSending(false);
@@ -2191,9 +2196,9 @@ export default function PersonalDetails() {
                     (t.other_party_email||"").toLowerCase().includes(inboxSearch.toLowerCase()) ||
                     (t.latest_message||"").toLowerCase().includes(inboxSearch.toLowerCase())
                   ) : inboxThreads).map(t=>(
-                    <div key={t.thread_id} onClick={()=>loadThread(t.consent_id)}
-                      style={{padding:"0.65rem 0.9rem",cursor:"pointer",borderBottom:"1px solid #f5f3ff",background:activeThread===t.consent_id?"#eef2ff":"#fff",borderLeft:activeThread===t.consent_id?"3px solid #0d6e6e":"3px solid transparent",transition:"all 0.1s"}}>
-                      <div style={{fontSize:"0.71rem",fontWeight:700,color:"#1a1730",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.other_party_name||t.other_party_email}</div>
+                    <div key={t.thread_id} onClick={()=>loadThread(t.consent_id, t.assignment_id, t.thread_id)}
+                      style={{padding:"0.65rem 0.9rem",cursor:"pointer",borderBottom:"1px solid #f5f3ff",background:activeThreadId===t.thread_id?"#eef2ff":"#fff",borderLeft:activeThreadId===t.thread_id?"3px solid #0d6e6e":"3px solid transparent",transition:"all 0.1s"}}>
+                      <div style={{fontSize:"0.71rem",fontWeight:700,color:"#1a1730",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.other_party_name||t.other_party_email}{t.bgv_name && <span style={{fontWeight:500,color:"#8b88b0"}}> — BGV: {t.bgv_name}</span>}</div>
                       <div style={{fontSize:"0.62rem",color:t.has_messages?"#94a3b8":"#8b88b0",fontStyle:t.has_messages?"normal":"italic",marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.latest_message||"No messages yet — tap to start"}</div>
                       <div style={{display:"flex",justifyContent:"space-between",marginTop:2}}>
                         <span style={{fontSize:"0.58rem",color:"#c4bfdb"}}>{t.latest_at?new Date(t.latest_at).toLocaleDateString("en-IN"):""}</span>
