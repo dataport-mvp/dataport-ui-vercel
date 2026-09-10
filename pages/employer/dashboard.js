@@ -1671,8 +1671,10 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
     not_applicable: { color:"#64748b", bg:"#f8fafc", label:"N/A" },
   };
   const OVERALL = { clear:"#16a34a", discrepancy:"#f59e0b", failed:"#ef4444", refer:"#3b82f6" };
+  const BGV_STATUS_BADGE_LABELS = { groomed:"Not Started", in_progress:"In Progress", on_hold:"On Hold", completed:"Completed" };
 
   const [bgvCase, setBgvCase] = useState(null);
+  const [selectedAssignmentId, setSelectedAssignmentId] = useState(null); // null = let backend default to most-recent active vendor
   const [loading, setLoading] = useState(true);
   const [vendors, setVendors] = useState([]);
   const [assigning, setAssigning] = useState(false);
@@ -1690,11 +1692,20 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
     if (!consentData?.consent_id) return;
     const load = async () => {
       try {
+        const qs = selectedAssignmentId ? `?assignment_id=${encodeURIComponent(selectedAssignmentId)}` : "";
         const [cRes, vRes] = await Promise.all([
-          apiFetch(`${apiUrl}/bgv/case/${consentData.consent_id}`),
+          apiFetch(`${apiUrl}/bgv/case/${consentData.consent_id}${qs}`),
           apiFetch(`${apiUrl}/bgv/vendors`),
         ]);
-        if (cRes.ok) setBgvCase(await cRes.json());
+        if (cRes.ok) {
+          const cd = await cRes.json();
+          setBgvCase(cd);
+          // Backend defaults to the most-recently-assigned active vendor when no
+          // assignment_id is given — lock the picker onto whichever one actually came
+          // back, so the 15-second poll keeps refreshing THIS SAME vendor rather than
+          // silently drifting to a different one if a newer assignment shows up mid-view.
+          if (!selectedAssignmentId && cd.assignment_id) setSelectedAssignmentId(cd.assignment_id);
+        }
         if (vRes.ok) setVendors(await vRes.json());
       } catch(_) {}
       setLoading(false);
@@ -1708,7 +1719,7 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
     // showReassign, so an in-progress vendor selection never gets clobbered mid-poll.
     const id = setInterval(load, 15000);
     return () => clearInterval(id);
-  }, [consentData?.consent_id, apiFetch, apiUrl]);
+  }, [consentData?.consent_id, selectedAssignmentId, apiFetch, apiUrl]);
 
   const assignVendor = async () => {
     if (!selectedVendor || !consentData?.consent_id) return;
@@ -1722,6 +1733,7 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
       if (res.ok) {
         setAssignMsg(`✓ Assigned to ${selectedVendor} — ${d.checks_created} checks created`);
         setShowReassign(false);
+        setSelectedAssignmentId(null); // let the next poll pick up whichever vendor is now most-recent
         const cRes = await apiFetch(`${apiUrl}/bgv/case/${consentData.consent_id}`);
         if (cRes.ok) setBgvCase(await cRes.json());
       } else {
@@ -1750,6 +1762,20 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
 
   return (
     <div>
+      {/* Multi-vendor picker — only shows when this case genuinely has more than one
+          vendor actively working it in parallel. Switching here sets selectedAssignmentId,
+          which both the next fetch AND the 15-second poll use, so the view stays locked
+          onto whichever vendor the employer is actually looking at. */}
+      {bgvCase?.all_active_assignments?.length > 1 && (
+        <div style={{display:"flex",gap:"0.5rem",marginBottom:"0.9rem",flexWrap:"wrap"}}>
+          {bgvCase.all_active_assignments.map(a => (
+            <button key={a.assignment_id} onClick={()=>setSelectedAssignmentId(a.assignment_id)}
+              style={{padding:"0.45rem 0.9rem",borderRadius:8,border:a.assignment_id===bgvCase.assignment_id?"2px solid #4f46e5":"1.5px solid #e2e8f0",background:a.assignment_id===bgvCase.assignment_id?"#eef2ff":"#fff",color:a.assignment_id===bgvCase.assignment_id?"#4338ca":"#475569",fontSize:"0.8rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+              {a.vendor_email} — {(BGV_STATUS_BADGE_LABELS[a.bgv_status] || a.bgv_status || "Not Started")}
+            </button>
+          ))}
+        </div>
+      )}
       {bgvCase?.bgv_vendor_email && (
         <div style={{background:showReassign?"#fffbeb":"#f0fdf4",border:showReassign?"1px solid #fde68a":"1px solid #bbf7d0",borderRadius:10,padding:"0.75rem 1rem",marginBottom:"1rem",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"0.5rem"}}>
           <div>
