@@ -2097,6 +2097,11 @@ export default function EmployerDashboard() {
   const [inboxThreads,   setInboxThreads]   = useState([]);
   const [inboxLoading,   setInboxLoading]   = useState(false);
   const [activeThread,   setActiveThread]   = useState(null); // consent_id
+  // Which specific vendor-assignment's thread is open — now that a case can have
+  // multiple vendors active in parallel, consent_id alone can no longer distinguish
+  // which of several possible threads is currently selected.
+  const [activeAssignmentId, setActiveAssignmentId] = useState(null);
+  const [activeThreadId, setActiveThreadId] = useState(null); // the unique thread_id itself, for correct "active" highlighting when multiple rows share one consent_id
   const [msgAttachUrls,  setMsgAttachUrls]  = useState({}); // s3_key -> presigned view URL
   const [showNewMsg,     setShowNewMsg]     = useState(false);
   const [threadMsgs,     setThreadMsgs]     = useState([]);
@@ -2496,10 +2501,12 @@ export default function EmployerDashboard() {
     setInboxLoading(false);
   };
 
-  const loadThread = async (consentId) => {
-    setActiveThread(consentId); setThreadMsgs([]); setThreadLoading(true); setMsgErr(""); setShowNewMsg(false);
+  const loadThread = async (consentId, assignmentId, threadId) => {
+    setActiveThread(consentId); setActiveAssignmentId(assignmentId || null); setActiveThreadId(threadId || null);
+    setThreadMsgs([]); setThreadLoading(true); setMsgErr(""); setShowNewMsg(false);
     try {
-      const r = await apiFetch(`${API}/messages/thread/${consentId}`);
+      const qs = assignmentId ? `?assignment_id=${encodeURIComponent(assignmentId)}` : "";
+      const r = await apiFetch(`${API}/messages/thread/${consentId}${qs}`);
       if (r.ok) {
         const d = await r.json();
         const msgs = d.messages || [];
@@ -2527,7 +2534,8 @@ export default function EmployerDashboard() {
   const [refreshingThread, setRefreshingThread] = useState(false);
   const silentRefreshThread = async (consentId) => {
     try {
-      const r = await apiFetch(`${API}/messages/thread/${consentId}`);
+      const qs = activeAssignmentId ? `?assignment_id=${encodeURIComponent(activeAssignmentId)}` : "";
+      const r = await apiFetch(`${API}/messages/thread/${consentId}${qs}`);
       if (r.ok) {
         const d = await r.json();
         setThreadMsgs(d.messages || []);
@@ -2571,11 +2579,11 @@ export default function EmployerDashboard() {
     try {
       const r = await apiFetch(`${API}/messages/send`, {
         method: "POST",
-        body: JSON.stringify({ consent_id: activeThread, body: msgBody.trim(), subject: msgSubject.trim(), recipient_type: recipient, attachment_s3_key: msgAttach?.s3_key || "" }),
+        body: JSON.stringify({ consent_id: activeThread, body: msgBody.trim(), subject: msgSubject.trim(), recipient_type: recipient, attachment_s3_key: msgAttach?.s3_key || "", assignment_id: activeAssignmentId || "" }),
       });
       if (r.ok) {
         setMsgBody(""); setMsgSubject(""); setMsgAttach(null);
-        await loadThread(activeThread); // refresh thread
+        await loadThread(activeThread, activeAssignmentId, activeThreadId); // refresh thread
         loadInbox(); // refresh inbox list
       } else {
         const d = await r.json();
@@ -2782,9 +2790,9 @@ return (
                               return (
                                 <div key={t.thread_id}>
                                   {showHeader && <AlphaHeader letter={letter} accentColor="#0d6e6e" />}
-                                  <div className={`thread-item${activeThread===t.consent_id?" active":""}`} onClick={()=>loadThread(t.consent_id)}>
+                                  <div className={`thread-item${activeThreadId===t.thread_id?" active":""}`} onClick={()=>loadThread(t.consent_id, t.assignment_id, t.thread_id)}>
                                     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}>
-                                      <div className="thread-email" style={{flex:1}}>{t.other_party_name || t.other_party_email}</div>
+                                      <div className="thread-email" style={{flex:1}}>{t.other_party_name || t.other_party_email}{t.bgv_name && <span style={{fontWeight:500,color:"#7a6e64"}}> — BGV: {t.bgv_name}</span>}</div>
                                       {t.recipient_type&&t.recipient_type!=="Employee"&&(
                                         <span style={{fontSize:"0.55rem",fontWeight:700,padding:"1px 6px",borderRadius:4,background:t.recipient_type==="Both"?"rgba(124,58,237,0.15)":"rgba(217,119,6,0.15)",color:t.recipient_type==="Both"?"#7c3aed":"#d97706",textTransform:"uppercase",letterSpacing:.4,flexShrink:0}}>{t.recipient_type}</span>
                                       )}
