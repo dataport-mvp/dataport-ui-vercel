@@ -100,6 +100,8 @@ export default function Home() {
         .nav-r{display:flex;align-items:center;gap:8px}
         .n-emp{padding:7px 18px;border-radius:7px;border:1.5px solid #c8c2b8;color:#5a5248;font-size:13px;font-weight:600;background:transparent;cursor:pointer;transition:all .15s}
         .n-emp:hover{border-color:#0d6e6e;color:#0d6e6e}
+        .n-bgv{padding:7px 18px;border-radius:7px;border:1.5px solid #a8d5ce;color:#0d6e6e;font-size:13px;font-weight:600;background:rgba(13,110,110,.06);cursor:pointer;transition:all .15s}
+        .n-bgv:hover{border-color:#0d6e6e;background:rgba(13,110,110,.12)}
         .n-er{padding:7px 20px;border-radius:7px;background:#0d6e6e;color:#fff;font-size:13px;font-weight:700;border:none;cursor:pointer;transition:all .15s;box-shadow:0 2px 8px rgba(13,110,110,.3)}
         .n-er:hover{background:#0a5656}
         .n-li{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:7px;border:1.5px solid #c8c2b8;color:#5a5248;font-size:12px;font-weight:600;text-decoration:none;transition:all .15s}
@@ -208,7 +210,7 @@ export default function Home() {
         .fd{font-size:13px;color:#7a6e64;line-height:1.75}
 
         /* FOR WHO */
-        .for-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+        .for-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
         .for-card{border:1.5px solid #c8c2b8;border-radius:16px;padding:40px;background:#fff;position:relative;overflow:hidden;transition:all .22s}
         .for-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:#0d6e6e;transform:scaleX(0);transform-origin:left;transition:transform .25s}
         .for-card:hover{border-color:#0d6e6e;box-shadow:0 12px 48px rgba(13,110,110,.12)}
@@ -281,6 +283,7 @@ export default function Home() {
         </div>
         <div className="nav-r">
           <Link href="/employee/login"><button className="n-emp">Employee</button></Link>
+          <Link href="/bgv/login"><button className="n-bgv">BGV Vendor</button></Link>
           <Link href="/employer/login"><button className="n-er">Employer Login</button></Link>
         </div>
       </nav>
@@ -439,6 +442,7 @@ export default function Home() {
             {[
               {ey:"For Individuals",t:"Tired of filling the same forms for every employer?",d:"Build your verified employment profile once. Share it with any company, any time. You stay in full control of who sees what — always.",pts:["Fill details once — personal, education, employment","Approve or decline every employer request individually","See exactly who accessed your data and when"],href:"/employee/login",cta:"Create your profile"},
               {ey:"For Organisations",t:"Verified candidate data without the paperwork chase?",d:"Stop chasing candidates for documents. Request access to a pre-built verified profile and receive structured data the moment they approve.",pts:["Send a consent request in one click","Receive structured BGV and onboarding data instantly","Full consent audit trail for every data access"],href:"/employer/login",cta:"Access employer portal"},
+              {ey:"For BGV Vendors",t:"Cases assigned to you, with everything you need in one place?",d:"No more chasing employers for candidate documents. Once assigned, you get the full verified profile, checks tracker, and a direct line to both employer and candidate — all in one case view.",pts:["See every case assigned to you, organised by status","Full profile, education, and employment history per case","Message the employer or candidate directly, per case"],href:"/bgv/login",cta:"Access BGV portal"},
             ].map(card=>(
               <div className="for-card" key={card.ey}>
                 <div className="for-ey">{card.ey}</div>
