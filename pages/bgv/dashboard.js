@@ -82,8 +82,8 @@ const G = `
   .case-detail-header{background:#1e1b4b;padding:1.1rem 1.5rem;display:flex;justify-content:space-between;align-items:center;}
   .case-title{font-size:1rem;font-weight:800;color:#fff;}
   .case-subtitle{font-size:0.78rem;color:#a5b4fc;margin-top:0.15rem;}
-  .case-body{display:grid;grid-template-columns:1fr 1.6fr;gap:0;}
-  .profile-panel{padding:1.25rem;border-right:1px solid #f1f5f9;}
+  .case-body{display:flex;flex-direction:column;gap:1.5rem;}
+  .profile-panel{padding:1.25rem;}
   .checks-panel{padding:1.25rem;}
   .panel-title{font-size:0.72rem;font-weight:800;color:#4f46e5;text-transform:uppercase;letter-spacing:1px;margin-bottom:1rem;}
   .profile-kv{display:flex;flex-direction:column;gap:0.12rem;margin-bottom:0.75rem;}
@@ -1077,290 +1077,226 @@ export default function BgvDashboard() {
                       </div>
 
                       <div className="case-body">
-                        {/* Profile Panel */}
-                        <div className="profile-panel">
-                          <div className="panel-title">Candidate Profile</div>
-                          {[
-                            ["Full Name", `${caseDetail.profile?.firstName||""} ${caseDetail.profile?.middleName||""} ${caseDetail.profile?.lastName||""}`.replace(/\s+/g," ").trim()],
-                            ["Date of Birth", caseDetail.profile?.dob],
-                            ["Gender", caseDetail.profile?.gender],
-                            ["Mobile", caseDetail.profile?.mobile],
-                            ["Email", caseDetail.employee_email],
-                            ["PAN", caseDetail.profile?.pan, "personal", "pan"],
-                            ["Aadhaar (last 4)", caseDetail.profile?.aadhaar || caseDetail.profile?.aadhar, "personal", "aadhaar"],
-                            ["Passport", caseDetail.profile?.passport, "personal", "passport"],
-                            ["Nationality", caseDetail.profile?.nationality],
-                            ["Father's Name", caseDetail.profile?.fatherName],
-                            ["Father's Date of Birth", caseDetail.profile?.fatherDob],
-                            ["Mother's Name", caseDetail.profile?.motherName],
-                            ["Mother's Date of Birth", caseDetail.profile?.motherDob],
-                          ].map(([k,v,docGroup,docKey])=>v?(
-                            <div key={k} className="profile-kv">
-                              <span className="profile-key">{k}</span>
-                              <span className="profile-val">{v}{docGroup && docLink(docGroup,docKey)}</span>
-                            </div>
-                          ):null)}
-
-                          <div className="panel-title" style={{marginTop:"1rem"}}>Current Address</div>
-                          {caseDetail.profile?.currentAddress && (
-                            <div className="profile-kv">
-                              <span className="profile-key">Address</span>
-                              <span className="profile-val" style={{fontSize:"0.8rem",lineHeight:1.5}}>
-                                {[caseDetail.profile.currentAddress.door, caseDetail.profile.currentAddress.village, caseDetail.profile.currentAddress.locality, caseDetail.profile.currentAddress.district, caseDetail.profile.currentAddress.state, caseDetail.profile.currentAddress.pin].filter(Boolean).join(", ")}
-                              </span>
-                            </div>
-                          )}
-                          {caseDetail.profile?.currentAddressProofType && (
-                            <div className="profile-kv">
-                              <span className="profile-key">Address Proof</span>
-                              <span className="profile-val">{caseDetail.profile.currentAddressProofType}{docLink("personal","currentAddressProof")}</span>
-                            </div>
-                          )}
-
-                          <div className="panel-title" style={{marginTop:"1rem"}}>Permanent Address</div>
-                          {caseDetail.profile?.permanentAddress && (
-                            <div className="profile-kv">
-                              <span className="profile-key">Address</span>
-                              <span className="profile-val" style={{fontSize:"0.8rem",lineHeight:1.5}}>
-                                {[caseDetail.profile.permanentAddress.door, caseDetail.profile.permanentAddress.village, caseDetail.profile.permanentAddress.locality, caseDetail.profile.permanentAddress.district, caseDetail.profile.permanentAddress.state, caseDetail.profile.permanentAddress.pin].filter(Boolean).join(", ")}
-                              </span>
-                            </div>
-                          )}
-                          {caseDetail.profile?.permanentAddressProofType && (
-                            <div className="profile-kv">
-                              <span className="profile-key">Address Proof</span>
-                              <span className="profile-val">{caseDetail.profile.permanentAddressProofType}{docLink("personal","permanentAddressProof")}</span>
-                            </div>
-                          )}
-                          <button className="view-btn" style={{marginTop:"0.4rem",marginBottom:"0.5rem"}} onClick={async()=>{
-                            try {
-                              const r = await apiFetch(`${API}/documents/${caseDetail.employee_id}`);
-                              if (r.ok) {
-                                const docs = await r.json();
-                                const personalDocs = docs.documents?.["personal"] || {};
-                                const available = Object.entries(personalDocs);
-                                if (available.length === 0) { setSaveStatus("No personal documents uploaded"); return; }
-                                available.forEach(([_, d]) => d?.url && window.open(d.url, "_blank"));
-                              }
-                            } catch(_) {}
-                          }}>View Uploaded Documents</button>
-
-                          <div className="panel-title" style={{marginTop:"1rem"}}>Education Summary</div>
-                          {caseDetail.profile?.education?.classX?.school && (() => { const ed = caseDetail.profile.education.classX; return (
-                            <div style={{border:"1px solid #e5e7eb",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.6rem",background:"#fafafa"}}>
-                              <div className="profile-kv"><span className="profile-key">Class X</span><span className="profile-val">{ed.school}{ed.board?` — ${ed.board}`:""}
-                                {ed.country === "Outside India" && (
-                                  <span style={{marginLeft:8,padding:"1px 8px",borderRadius:999,background:"#fef3c7",color:"#92400e",fontSize:"0.7rem",fontWeight:700}}>
-                                    Foreign — {ed.countryName || "Outside India"}{ed.equivalencyKey ? " · Equivalency uploaded" : " · Equivalency pending"}
-                                  </span>
-                                )}
-                              </span></div>
-                              {docLink("education","classX") && <div className="profile-kv"><span className="profile-key">Class X Certificate</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{docLink("education","classX")}</span></div>}
-                              {ed.address && <div className="profile-kv"><span className="profile-key">School Address</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.address}</span></div>}
-                              {ed.yearOfPassing && <div className="profile-kv"><span className="profile-key">Year of Passing</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.yearOfPassing}</span></div>}
-                              {ed.resultType && <div className="profile-kv"><span className="profile-key">Result</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.resultType==="Other"?(ed.resultTypeOther||"Other"):ed.resultType}{ed.resultValue?`: ${ed.resultValue}`:""}</span></div>}
-                              {ed.medium && <div className="profile-kv"><span className="profile-key">Medium of Study</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.medium}</span></div>}
-                            </div>
-                          );})()}
-                          {caseDetail.profile?.education?.intermediate?.college && (() => { const ed = caseDetail.profile.education.intermediate; return (
-                            <div style={{border:"1px solid #e5e7eb",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.6rem",background:"#fafafa"}}>
-                              <div className="profile-kv"><span className="profile-key">Class XII / Intermediate</span><span className="profile-val">{ed.college}{ed.board?` — ${ed.board}`:""}
-                                {ed.country === "Outside India" && (
-                                  <span style={{marginLeft:8,padding:"1px 8px",borderRadius:999,background:"#fef3c7",color:"#92400e",fontSize:"0.7rem",fontWeight:700}}>
-                                    Foreign — {ed.countryName || "Outside India"}{ed.equivalencyKey ? " · Equivalency uploaded" : " · Equivalency pending"}
-                                  </span>
-                                )}
-                              </span></div>
-                              {docLink("education","intermediate") && <div className="profile-kv"><span className="profile-key">Class XII Certificate</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{docLink("education","intermediate")}</span></div>}
-                              {ed.address && <div className="profile-kv"><span className="profile-key">College Address</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.address}</span></div>}
-                              {ed.yearOfPassing && <div className="profile-kv"><span className="profile-key">Year of Passing</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.yearOfPassing}</span></div>}
-                              {ed.stream && <div className="profile-kv"><span className="profile-key">Stream</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.stream==="Other"?(ed.streamOther||"Other"):ed.stream}</span></div>}
-                              {ed.resultType && <div className="profile-kv"><span className="profile-key">Result</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.resultType==="Other"?(ed.resultTypeOther||"Other"):ed.resultType}{ed.resultValue?`: ${ed.resultValue}`:""}</span></div>}
-                              {ed.medium && <div className="profile-kv"><span className="profile-key">Medium of Study</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.medium}</span></div>}
-                            </div>
-                          );})()}
-                          {caseDetail.profile?.education?.diploma?.institute && (() => { const ed = caseDetail.profile.education.diploma; return (
-                            <div style={{border:"1px solid #e5e7eb",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.6rem",background:"#fafafa"}}>
-                              <div className="profile-kv"><span className="profile-key">Diploma</span><span className="profile-val">{ed.course} — {ed.institute}
-                                {ed.country === "Outside India" && (
-                                  <span style={{marginLeft:8,padding:"1px 8px",borderRadius:999,background:"#fef3c7",color:"#92400e",fontSize:"0.7rem",fontWeight:700}}>
-                                    Foreign — {ed.countryName || "Outside India"}{ed.equivalencyKey ? " · Equivalency uploaded" : " · Equivalency pending"}
-                                  </span>
-                                )}
-                              </span></div>
-                              {docLink("education","diploma") && <div className="profile-kv"><span className="profile-key">Diploma Certificate</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{docLink("education","diploma")}</span></div>}
-                              {ed.address && <div className="profile-kv"><span className="profile-key">Institute Address</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.address}</span></div>}
-                              {ed.yearOfPassing && <div className="profile-kv"><span className="profile-key">Year of Passing</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.yearOfPassing}</span></div>}
-                              {ed.resultType && <div className="profile-kv"><span className="profile-key">Result</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.resultType==="Other"?(ed.resultTypeOther||"Other"):ed.resultType}{ed.resultValue?`: ${ed.resultValue}`:""}</span></div>}
-                              {ed.medium && <div className="profile-kv"><span className="profile-key">Medium of Study</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.medium}</span></div>}
-                            </div>
-                          );})()}
-                          {caseDetail.profile?.education?.undergraduate?.college && (() => { const ed = caseDetail.profile.education.undergraduate; return (
-                            <div style={{border:"1px solid #e5e7eb",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.6rem",background:"#fafafa"}}>
-                              <div className="profile-kv"><span className="profile-key">UG</span><span className="profile-val">{ed.course} — {ed.college}
-                                {ed.country === "Outside India" && (
-                                  <span style={{marginLeft:8,padding:"1px 8px",borderRadius:999,background:"#fef3c7",color:"#92400e",fontSize:"0.7rem",fontWeight:700}}>
-                                    Foreign — {ed.countryName || "Outside India"}{ed.equivalencyKey ? " · Equivalency uploaded" : " · Equivalency pending"}
-                                  </span>
-                                )}
-                              </span></div>
-                              {ed.yearOfPassing && <div className="profile-kv"><span className="profile-key">Year of Passing</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.yearOfPassing}</span></div>}
-                              {ed.resultType && <div className="profile-kv"><span className="profile-key">Result</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.resultType==="Other"?(ed.resultTypeOther||"Other"):ed.resultType}{ed.resultValue?`: ${ed.resultValue}`:""}</span></div>}
-                              {ed.medium && <div className="profile-kv"><span className="profile-key">Medium of Study</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.medium}</span></div>}
-                              {ed.address && <div className="profile-kv"><span className="profile-key">College Address</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.address}</span></div>}
-                              {docLink("education","ug_provisional") && <div className="profile-kv"><span className="profile-key">Provisional Marksheet</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{docLink("education","ug_provisional")}</span></div>}
-                              {docLink("education","ug_convocation") && <div className="profile-kv"><span className="profile-key">Convocation Certificate</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{docLink("education","ug_convocation")}</span></div>}
-                            </div>
-                          );})()}
-                          {caseDetail.profile?.education?.postgraduate?.college && (() => { const ed = caseDetail.profile.education.postgraduate; return (
-                            <div style={{border:"1px solid #e5e7eb",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.6rem",background:"#fafafa"}}>
-                              <div className="profile-kv"><span className="profile-key">PG</span><span className="profile-val">{ed.course} — {ed.college}
-                                {ed.country === "Outside India" && (
-                                  <span style={{marginLeft:8,padding:"1px 8px",borderRadius:999,background:"#fef3c7",color:"#92400e",fontSize:"0.7rem",fontWeight:700}}>
-                                    Foreign — {ed.countryName || "Outside India"}{ed.equivalencyKey ? " · Equivalency uploaded" : " · Equivalency pending"}
-                                  </span>
-                                )}
-                              </span></div>
-                              {ed.yearOfPassing && <div className="profile-kv"><span className="profile-key">Year of Passing</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.yearOfPassing}</span></div>}
-                              {ed.resultType && <div className="profile-kv"><span className="profile-key">Result</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.resultType==="Other"?(ed.resultTypeOther||"Other"):ed.resultType}{ed.resultValue?`: ${ed.resultValue}`:""}</span></div>}
-                              {ed.medium && <div className="profile-kv"><span className="profile-key">Medium of Study</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.medium}</span></div>}
-                              {ed.address && <div className="profile-kv"><span className="profile-key">College Address</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{ed.address}</span></div>}
-                              {docLink("education","pg_provisional") && <div className="profile-kv"><span className="profile-key">Provisional Marksheet</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{docLink("education","pg_provisional")}</span></div>}
-                              {docLink("education","pg_convocation") && <div className="profile-kv"><span className="profile-key">Convocation Certificate</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{docLink("education","pg_convocation")}</span></div>}
-                            </div>
-                          );})()}
-                          {(caseDetail.profile?.education?.articleships||[]).map((a,i)=>a?.firmName ? (
-                            <div key={`art-${i}`} style={{border:"1px solid #e5e7eb",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.6rem",background:"#fafafa"}}>
-                              <div className="profile-kv"><span className="profile-key">{a.type==="Other Practical Training"?(a.otherType||a.type):a.type||"Articleship"}</span><span className="profile-val">{a.firmName} — {a.startDate} to {a.endDate||"Present"}</span></div>
-                              {a.regNo && <div className="profile-kv"><span className="profile-key">Registration / Membership No.</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{a.regNo}</span></div>}
-                              {docLink("education",`articleship_${i}`) && <div className="profile-kv"><span className="profile-key">Training Letter</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{docLink("education",`articleship_${i}`)}</span></div>}
-                            </div>
-                          ) : null)}
-                          {(caseDetail.profile?.education?.professionalQualifications||[]).map((p,i)=>p?.type ? (
-                            <div key={`pq-${i}`} style={{border:"1px solid #e5e7eb",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.6rem",background:"#fafafa"}}>
-                              <div className="profile-kv"><span className="profile-key">Professional Qualification</span><span className="profile-val">{p.type==="Other"?(p.otherType||"Other"):p.type}{p.level?` — ${p.level}`:""}</span></div>
-                              {p.year && <div className="profile-kv"><span className="profile-key">Year</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{p.year}</span></div>}
-                              {p.regNo && <div className="profile-kv"><span className="profile-key">Registration / Membership No.</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{p.regNo}</span></div>}
-                              {docLink("education",`profqual_${i}`) && <div className="profile-kv"><span className="profile-key">Certificate</span><span className="profile-val" style={{fontSize:"0.8rem"}}>{docLink("education",`profqual_${i}`)}</span></div>}
-                            </div>
-                          ) : null)}
-                          <button className="view-btn" style={{marginTop:"0.4rem",marginBottom:"0.5rem"}} onClick={async()=>{
-                            try {
-                              const r = await apiFetch(`${API}/documents/${caseDetail.employee_id}`);
-                              if (r.ok) {
-                                const docs = await r.json();
-                                const eduDocs = docs.documents?.["education"] || {};
-                                const available = Object.entries(eduDocs);
-                                if (available.length === 0) { setSaveStatus("No education documents uploaded"); return; }
-                                available.forEach(([_, d]) => d?.url && window.open(d.url, "_blank"));
-                              }
-                            } catch(_) {}
-                          }}>View Uploaded Documents</button>
-
-                          <div className="panel-title" style={{marginTop:"1rem"}}>Employment History</div>
-                          {(caseDetail.employment_history||[]).filter(e=>e?.company_id!=="__meta__").map((e,i)=>(
-                            <div key={i} style={{border:"1px solid #e5e7eb",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.6rem",background:"#fafafa"}}>
-                              <div className="profile-kv">
-                                <span className="profile-key">{e.currentlyWorking==="Yes"?"Current":"Previous"}</span>
-                                <span className="profile-val">{e.companyName} — {e.designation}</span>
-                                <span style={{fontSize:"0.72rem",color:"#94a3b8"}}>{e.startDate} to {e.endDate||"Present"}</span>
+                        {/* Candidate Profile — rebuilt into full-width, clearly sectioned
+                            cards (matching the employer dashboard's visual language) instead
+                            of a single cramped column of flat key-value rows. Every field's
+                            attachment link sits inline right next to it — no separate
+                            documents page, exactly as specified. Data itself comes from the
+                            backend's _bgv_safe_profile() allowlist, so nothing rendered here
+                            can ever include a field that wasn't explicitly approved. */}
+                        {(() => {
+                          const prof = caseDetail.profile || {};
+                          const edu  = prof.education || {};
+                          const Sec = ({icon,title,children}) => (
+                            <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:12,padding:"1.1rem 1.3rem",marginBottom:"1.1rem"}}>
+                              <div style={{display:"flex",alignItems:"center",gap:"0.5rem",marginBottom:"0.9rem"}}>
+                                <span style={{fontSize:"1.1rem"}}>{icon}</span>
+                                <span style={{fontWeight:800,fontSize:"0.9rem",color:"#0f172a"}}>{title}</span>
                               </div>
-                              {e.employmentType && (
-                                <div className="profile-kv">
-                                  <span className="profile-key">Type</span>
-                                  <span className="profile-val" style={{fontSize:"0.8rem"}}>{e.employmentType}{e.department ? ` · ${e.department}` : ""}</span>
-                                </div>
-                              )}
-                              {e.officeAddress && (
-                                <div className="profile-kv">
-                                  <span className="profile-key">Office Address</span>
-                                  <span className="profile-val" style={{fontSize:"0.8rem"}}>{e.officeAddress}</span>
-                                </div>
-                              )}
-                              {e.workEmail && (
-                                <div className="profile-kv">
-                                  <span className="profile-key">Work Email</span>
-                                  <span className="profile-val" style={{fontSize:"0.8rem"}}>{e.workEmail}</span>
-                                </div>
-                              )}
-                              {e.reasonForRelieving && (
-                                <div className="profile-kv">
-                                  <span className="profile-key">Reason for Leaving</span>
-                                  <span className="profile-val" style={{fontSize:"0.8rem"}}>{e.reasonForRelieving}</span>
-                                </div>
-                              )}
-                              {[["Offer Letter","offerLetter"],["Payslips","payslips"],["Resignation Letter","resignation"],["Experience Letter","experience"],["ID Card","idCard"]].map(([label,key])=>{
-                                const link = docLink(`employment/${e.company_id}`,key);
-                                return link ? (
-                                  <div key={key} className="profile-kv">
-                                    <span className="profile-key">{label}</span>
-                                    <span className="profile-val" style={{fontSize:"0.8rem"}}>{link}</span>
-                                  </div>
-                                ) : null;
-                              })}
-                              {e.reference && (e.reference.name || e.reference.email || e.reference.mobile) && (
-                                <div style={{marginTop:"0.4rem",padding:"0.5rem 0.6rem",background:"#eff6ff",borderRadius:6,border:"1px solid #bfdbfe"}}>
-                                  <div style={{fontSize:"0.68rem",fontWeight:700,color:"#1e40af",marginBottom:"0.2rem"}}>VERIFICATION CONTACT</div>
-                                  <div style={{fontSize:"0.8rem",color:"#1e3a5f"}}>
-                                    {e.reference.name}{e.reference.role ? ` — ${e.reference.role}` : ""}
-                                  </div>
-                                  <div style={{fontSize:"0.75rem",color:"#3b5a80"}}>
-                                    {[e.reference.email, e.reference.mobile].filter(Boolean).join(" · ")}
-                                  </div>
-                                </div>
-                              )}
-                              <button className="view-btn" style={{marginTop:"0.4rem"}} onClick={async()=>{
-                                try {
-                                  const r = await apiFetch(`${API}/documents/${caseDetail.employee_id}`);
-                                  if (r.ok) {
-                                    const docs = await r.json();
-                                    const empDocs = docs.documents?.[`employment/${e.company_id}`] || {};
-                                    const available = Object.entries(empDocs);
-                                    if (available.length === 0) { setSaveStatus("No documents uploaded for this employer"); return; }
-                                    available.forEach(([_, d]) => d?.url && window.open(d.url, "_blank"));
-                                  }
-                                } catch(_) {}
-                              }}>View Uploaded Documents</button>
+                              {children}
                             </div>
-                          ))}
+                          );
+                          const Grid = ({children}) => <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:"0.9rem 1.3rem"}}>{children}</div>;
+                          const F = ({label,value,docGroup,docKey}) => value ? (
+                            <div>
+                              <div style={{fontSize:"0.68rem",fontWeight:700,color:"#94a3b8",textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:"0.2rem"}}>{label}</div>
+                              <div style={{fontSize:"0.86rem",color:"#1e293b",fontWeight:600}}>{value}{docGroup && docLink(docGroup,docKey)}</div>
+                            </div>
+                          ) : null;
+                          // Class X/Intermediate/Diploma/UG/PG can each have several documents
+                          // (main certificate, equivalency cert, and for UG/PG also provisional
+                          // marksheet + convocation cert) under slightly different subKeys —
+                          // rather than guess and risk missing one, this opens every document
+                          // whose subKey starts with this level's prefix, guaranteed complete.
+                          const ViewDocsBtn = ({prefix}) => (
+                            <button onClick={async()=>{
+                              try {
+                                const r = await apiFetch(`${API}/documents/${caseDetail.employee_id}`);
+                                if (r.ok) {
+                                  const docs = await r.json();
+                                  const eduDocs = docs.documents?.education || {};
+                                  const p = prefix.toLowerCase();
+                                  const matches = Object.entries(eduDocs).filter(([k])=>{
+                                    const kl = k.toLowerCase();
+                                    return kl===p || kl.startsWith(p+"_") || kl.startsWith(p+".");
+                                  });
+                                  if (matches.length === 0) { setSaveStatus("No documents uploaded for this section"); return; }
+                                  matches.forEach(([_,d])=>d?.url && window.open(d.url,"_blank"));
+                                }
+                              } catch(_) {}
+                            }} style={{marginTop:"0.7rem",padding:"0.35rem 0.85rem",background:"#f0fdfa",color:"#0d6e6e",border:"1px solid #a8d5ce",borderRadius:7,fontSize:"0.75rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                              📎 View Documents
+                            </button>
+                          );
+                          const eduLevel = (key,label,icon) => {
+                            const e = edu[key];
+                            if (!e || (!e.school && !e.college && !e.institution)) return null;
+                            return (
+                              <Sec key={key} icon={icon} title={label}>
+                                <Grid>
+                                  <F label="Institution" value={e.school || e.college || e.institution} />
+                                  <F label="Board / University" value={e.board || e.university} />
+                                  <F label="Hall Ticket / Roll No." value={e.hallTicket || e.rollNo} />
+                                  <F label="Course / Branch" value={e.course || e.branch} />
+                                  <F label="From — To" value={(e.from||e.yearOfPassing) ? `${e.from||""} ${e.to?"— "+e.to:""}`.trim() : null} />
+                                  <F label="Year of Passing" value={e.yearOfPassing} />
+                                  <F label="Result" value={e.resultValue ? `${e.resultType||""} ${e.resultValue}`.trim() : null} />
+                                  <F label="Medium of Study" value={e.medium} />
+                                  <F label="Institution Address" value={e.address} />
+                                  <F label="Location" value={e.location || (e.completedIn ? `Completed ${e.completedIn}` : null)} />
+                                </Grid>
+                                <ViewDocsBtn prefix={key === "undergraduate" ? "ug_" : key === "postgraduate" ? "pg_" : key} />
+                              </Sec>
+                            );
+                          };
+                          return (<>
+                            <Sec icon="🪪" title="Personal Identity">
+                              <Grid>
+                                <F label="Full Name" value={`${prof.firstName||""} ${prof.middleName||""} ${prof.lastName||""}`.replace(/\s+/g," ").trim()} />
+                                <F label="Date of Birth" value={prof.dob} />
+                                <F label="Gender" value={prof.gender} />
+                                <F label="Marital Status" value={prof.maritalStatus} />
+                                <F label="Father's Name" value={prof.fatherName} />
+                                <F label="Mother's Name" value={prof.motherName} />
+                                <F label="PAN" value={prof.pan} docGroup="personal" docKey="pan" />
+                                <F label="Aadhaar" value={prof.aadhaar} docGroup="personal" docKey="aadhaar" />
+                                {prof.hasPassport === "Yes" && <F label="Passport" value={prof.passport} docGroup="personal" docKey="passport" />}
+                              </Grid>
+                            </Sec>
 
-                          {caseDetail.profile?.uanNumber && (
-                            <>
-                              <div className="panel-title" style={{marginTop:"1rem"}}>UAN / PF History</div>
-                              <div className="profile-kv">
-                                <span className="profile-key">UAN Number</span>
-                                <span className="profile-val">{caseDetail.profile.uanNumber}{docLink("uan","uanCard")}</span>
-                              </div>
-                              {docLink("uan","serviceHistory") && (
-                                <div className="profile-kv">
-                                  <span className="profile-key">Service History Snapshot</span>
-                                  <span className="profile-val">{docLink("uan","serviceHistory")}</span>
-                                </div>
-                              )}
-                              {(caseDetail.profile?.pfRecords||[]).filter(p=>p?.companyName && (p.hasPf==="No"||p.pfMemberId||p.dojEpfo||p.doeEpfo)).map((p,i)=>(
-                                <div key={`pf-${i}`} className="profile-kv">
-                                  <span className="profile-key">PF Record</span>
-                                  <span className="profile-val" style={{fontSize:"0.8rem"}}>
-                                    {p.companyName} — Member ID: {p.pfMemberId}<br/>
-                                    {p.dojEpfo} to {p.doeEpfo || "Present"}{p.pfTransferred ? ` · Transferred: ${p.pfTransferred}` : ""}
-                                  </span>
-                                </div>
-                              ))}
-                              <button className="view-btn" style={{marginTop:"0.4rem"}} onClick={async()=>{
-                                try {
-                                  const r = await apiFetch(`${API}/documents/${caseDetail.employee_id}`);
-                                  if (r.ok) {
-                                    const docs = await r.json();
-                                    const uanDocs = docs.documents?.["uan"] || {};
-                                    const available = Object.entries(uanDocs);
-                                    if (available.length === 0) { setSaveStatus("No UAN documents uploaded"); return; }
-                                    available.forEach(([_, d]) => d?.url && window.open(d.url, "_blank"));
-                                  }
-                                } catch(_) {}
-                              }}>View Uploaded Documents</button>
-                            </>
-                          )}
-                        </div>
+                            <Sec icon="📍" title="Address">
+                              <div style={{fontSize:"0.72rem",fontWeight:700,color:"#0d6e6e",marginBottom:"0.5rem"}}>CURRENT ADDRESS</div>
+                              <Grid>
+                                <F label="Address" value={[prof.currentAddress?.door,prof.currentAddress?.village,prof.currentAddress?.locality,prof.currentAddress?.district,prof.currentAddress?.state,prof.currentAddress?.pincode].filter(Boolean).join(", ")} docGroup="personal" docKey="currentAddressProof" />
+                                <F label="Proof Type" value={prof.currentAddressProofType} />
+                              </Grid>
+                              <div style={{fontSize:"0.72rem",fontWeight:700,color:"#0d6e6e",margin:"0.9rem 0 0.5rem"}}>PERMANENT / NATIVE ADDRESS {prof.sameAsCurrent && <span style={{color:"#94a3b8",fontWeight:500}}>(same as current)</span>}</div>
+                              <Grid>
+                                <F label="Address" value={[prof.permanentAddress?.door,prof.permanentAddress?.village,prof.permanentAddress?.locality,prof.permanentAddress?.district,prof.permanentAddress?.state,prof.permanentAddress?.pincode].filter(Boolean).join(", ")} docGroup="personal" docKey={prof.sameAsCurrent ? "currentAddressProof" : "permanentAddressProof"} />
+                                <F label="Proof Type" value={prof.permanentAddressProofType || (prof.sameAsCurrent ? prof.currentAddressProofType : null)} />
+                              </Grid>
+                            </Sec>
+
+                            {eduLevel("classX","Class X — SSC / Matriculation","🏫")}
+                            {eduLevel("intermediate","Intermediate / Class XII","🏫")}
+                            {eduLevel("diploma","Diploma","🎓")}
+                            {eduLevel("undergraduate","Undergraduate","🎓")}
+                            {eduLevel("postgraduate","Postgraduate","🎓")}
+
+                            {Array.isArray(edu.professionalQualifications) && edu.professionalQualifications.filter(q=>q?.name||q?.course).map((q,i)=>(
+                              <Sec key={`pq-${i}`} icon="📜" title={`Professional Qualification ${i+1}`}>
+                                <Grid>
+                                  <F label="Qualification" value={q.name || q.course} />
+                                  <F label="Institution / Body" value={q.institution || q.college} />
+                                  <F label="Year of Passing" value={q.yearOfPassing} />
+                                  <F label="Result" value={q.resultValue} />
+                                </Grid>
+                                {docLink("education",`profqual_${i}`) && <div style={{marginTop:"0.7rem"}}>{docLink("education",`profqual_${i}`)}</div>}
+                              </Sec>
+                            ))}
+
+                            {Array.isArray(edu.articleships) && edu.articleships.filter(a=>a?.firm||a?.organization).map((a,i)=>(
+                              <Sec key={`art-${i}`} icon="📝" title={`Articleship / Practical Training ${i+1}`}>
+                                <Grid>
+                                  <F label="Firm / Organisation" value={a.firm || a.organization} />
+                                  <F label="From — To" value={(a.from||a.to) ? `${a.from||""} — ${a.to||""}` : null} />
+                                  <F label="Role / Nature" value={a.role || a.nature} />
+                                </Grid>
+                                {docLink("education",`articleship_${i}`) && <div style={{marginTop:"0.7rem"}}>{docLink("education",`articleship_${i}`)}</div>}
+                              </Sec>
+                            ))}
+
+                            {edu.hasEduGap === "Yes" && (
+                              <Sec icon="⏱" title="Education Gap / Break Before First Job">
+                                <Grid>
+                                  <F label="From — To" value={(edu.eduGapFrom||edu.eduGapTo) ? `${edu.eduGapFrom||""} — ${edu.eduGapTo||""}` : null} />
+                                  <F label="Reason" value={edu.eduGapReason} />
+                                </Grid>
+                              </Sec>
+                            )}
+
+                            {(caseDetail.employment_history||[]).map((emp,i) => {
+                              const gapAfterThis = (caseDetail.employment_history||[])[i+1]?.gap;
+                              return (
+                                <Sec key={`emp-${i}`} icon="💼" title={emp.companyName ? `${emp.companyName}${emp.designation?" — "+emp.designation:""}` : `Employment ${i+1}`}>
+                                  <Grid>
+                                    <F label="Company" value={emp.companyName} />
+                                    <F label="Office Address" value={emp.officeAddress} />
+                                    <F label="Employee ID" value={emp.employeeId} />
+                                    <F label="Official Work Email" value={emp.officialWorkEmail} />
+                                    <F label="Designation" value={emp.designation} />
+                                    <F label="Department" value={emp.department} />
+                                    <F label="Employment Type" value={emp.employmentType} />
+                                    <F label="Duties & Responsibilities" value={emp.dutiesResponsibilities} />
+                                    <F label="Date of Joining" value={emp.dateOfJoining} />
+                                    <F label="Date of Leaving" value={emp.dateOfLeaving} />
+                                    <F label="Reason for Leaving" value={emp.reasonForLeaving} />
+                                  </Grid>
+
+                                  {emp.employmentType === "Contract" && (emp.contractVendor?.company || emp.contractVendor?.email) && (<>
+                                    <div style={{fontSize:"0.72rem",fontWeight:700,color:"#0d6e6e",margin:"0.9rem 0 0.5rem"}}>VENDOR / THIRD-PARTY DETAILS</div>
+                                    <Grid>
+                                      <F label="Vendor Company" value={emp.contractVendor.company} />
+                                      <F label="Vendor Email" value={emp.contractVendor.email} />
+                                      <F label="Vendor Mobile" value={emp.contractVendor.mobile} />
+                                    </Grid>
+                                  </>)}
+
+                                  {(emp.reference?.name || emp.reference?.email) && (<>
+                                    <div style={{fontSize:"0.72rem",fontWeight:700,color:"#0d6e6e",margin:"0.9rem 0 0.5rem"}}>REFERENCE DETAILS</div>
+                                    <Grid>
+                                      <F label="Reference Role" value={emp.reference.role} />
+                                      <F label="Reference Name" value={emp.reference.name} />
+                                      <F label="Reference Official Email" value={emp.reference.email} />
+                                      <F label="Reference Mobile" value={emp.reference.mobile} />
+                                    </Grid>
+                                  </>)}
+
+                                  <div style={{fontSize:"0.72rem",fontWeight:700,color:"#0d6e6e",margin:"0.9rem 0 0.5rem"}}>ATTACHMENTS</div>
+                                  <div style={{display:"flex",flexWrap:"wrap",gap:"0.6rem 1.3rem"}}>
+                                    {docLink(`employment/${emp.company_id}`,"offerLetter") && <span>Offer Letter {docLink(`employment/${emp.company_id}`,"offerLetter")}</span>}
+                                    {docLink(`employment/${emp.company_id}`,"payslips") && <span>Payslips {docLink(`employment/${emp.company_id}`,"payslips")}</span>}
+                                    {docLink(`employment/${emp.company_id}`,"resignation") && <span>Resignation Acceptance {docLink(`employment/${emp.company_id}`,"resignation")}</span>}
+                                    {docLink(`employment/${emp.company_id}`,"experience") && <span>Experience / Relieving Letter {docLink(`employment/${emp.company_id}`,"experience")}</span>}
+                                    {docLink(`employment/${emp.company_id}`,"idCard") && <span>Company ID Card {docLink(`employment/${emp.company_id}`,"idCard")}</span>}
+                                  </div>
+
+                                  {gapAfterThis?.hasGap === "Yes" && (
+                                    <div style={{marginTop:"0.9rem",padding:"0.6rem 0.8rem",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8}}>
+                                      <div style={{fontSize:"0.7rem",fontWeight:700,color:"#92400e",marginBottom:"0.15rem"}}>⚠ Gap before next job</div>
+                                      <div style={{fontSize:"0.8rem",color:"#78350f"}}>{gapAfterThis.reason}</div>
+                                    </div>
+                                  )}
+                                </Sec>
+                              );
+                            })}
+
+                            {prof.hasUan === "Yes" && (
+                              <Sec icon="🏦" title="UAN / EPFO Details">
+                                <Grid>
+                                  <F label="UAN Number" value={prof.uanNumber} docGroup="uan" docKey="uanCard" />
+                                  <F label="Name as per UAN" value={prof.nameAsPerUan} />
+                                  <F label="Mobile Linked to UAN" value={prof.mobileLinkedToUan} />
+                                  <F label="UAN Active" value={prof.uanActive} />
+                                </Grid>
+                                {docLink("uan","serviceHistory") && <div style={{marginTop:"0.7rem"}}>Service History Record Snapshot {docLink("uan","serviceHistory")}</div>}
+                                {(prof.pfRecords||[]).filter(p=>p?.companyName && (p.hasPf==="No"||p.pfMemberId||p.dojEpfo||p.doeEpfo)).map((p,i)=>(
+                                  <div key={`pf-${i}`} style={{marginTop:"0.9rem",paddingTop:"0.9rem",borderTop:"1px solid #f1f5f9"}}>
+                                    <div style={{fontSize:"0.72rem",fontWeight:700,color:"#0d6e6e",marginBottom:"0.5rem"}}>{p.companyName}</div>
+                                    <Grid>
+                                      <F label="PF Maintained by Employer" value={p.hasPf} />
+                                      <F label="PF Type" value={p.pfType} />
+                                      <F label="EPFO Member ID" value={p.pfMemberId} />
+                                      <F label="Date of Joining (EPFO)" value={p.dojEpfo} />
+                                      <F label="Date of Exit (EPFO)" value={p.doeEpfo} />
+                                      <F label="Was PF Transferred?" value={p.pfTransferred} />
+                                    </Grid>
+                                  </div>
+                                ))}
+                              </Sec>
+                            )}
+                          </>);
+                        })()}
 
                         {/* Checks Panel */}
                         <div className="checks-panel">
