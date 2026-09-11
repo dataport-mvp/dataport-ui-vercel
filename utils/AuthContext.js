@@ -54,7 +54,7 @@ export function AuthProvider({ children }) {
   //                                        invalid session, so callers must not force-logout
   //                                        on this outcome, only on invalid:true.
   const doRefresh = useCallback(async (attempt = 1) => {
-    const rt = localStorage.getItem("dg_refresh_token");
+    const rt = sessionStorage.getItem("dg_refresh_token");
     if (!rt) return { ok: false, invalid: true };
 
     const controller = new AbortController();
@@ -115,8 +115,8 @@ export function AuthProvider({ children }) {
         localStorage.removeItem("name");
         localStorage.removeItem("email");
 
-        const rt = localStorage.getItem("dg_refresh_token");
-        const u  = localStorage.getItem("dg_user");
+        const rt = sessionStorage.getItem("dg_refresh_token");
+        const u  = sessionStorage.getItem("dg_user");
         if (rt && rt !== "undefined" && rt !== "null" && u && u !== "undefined" && u !== "null") {
           const result = await doRefresh();
           if (result.ok) {
@@ -128,8 +128,8 @@ export function AuthProvider({ children }) {
             // initial `undefined`) — pages check for `user === null` specifically to
             // know when to redirect to login. Without this, user stays undefined
             // forever, no redirect ever fires, and the page is left blank.
-            localStorage.removeItem("dg_refresh_token");
-            localStorage.removeItem("dg_user");
+            sessionStorage.removeItem("dg_refresh_token");
+            sessionStorage.removeItem("dg_user");
             setUser(null);
           } else {
             // Could not confirm either way (server unreachable after retries). Don't wipe
@@ -198,15 +198,15 @@ export function AuthProvider({ children }) {
 
     accessTokenRef.current = accessToken;
     setUser(userData);
-    localStorage.setItem("dg_refresh_token", refreshToken);
-    localStorage.setItem("dg_user", JSON.stringify(userData));
+    sessionStorage.setItem("dg_refresh_token", refreshToken);
+    sessionStorage.setItem("dg_user", JSON.stringify(userData));
     resetInactivityTimer();
   }, [resetInactivityTimer]);
 
   const logoutFull = useCallback(async (reason = "explicit") => {
-    const storedUser = localStorage.getItem("dg_user");
+    const storedUser = sessionStorage.getItem("dg_user");
     const role = user?.role || (storedUser ? JSON.parse(storedUser)?.role : null);
-    const rt   = localStorage.getItem("dg_refresh_token");
+    const rt   = sessionStorage.getItem("dg_refresh_token");
     if (rt) {
       fetch(`${API}/auth/logout`, {
         method:  "POST",
@@ -220,8 +220,8 @@ export function AuthProvider({ children }) {
     setShowInactivityWarning(false);
     accessTokenRef.current = null;
     setUser(null);
-    localStorage.removeItem("dg_refresh_token");
-    localStorage.removeItem("dg_user");
+    sessionStorage.removeItem("dg_refresh_token");
+    sessionStorage.removeItem("dg_user");
 
     const dest = role === "employer" ? "/employer/login" : role === "bgv" ? "/bgv/login" : "/employee/login";
     if (typeof window !== "undefined") window.location.href = dest;
