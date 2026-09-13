@@ -632,10 +632,11 @@ const G = `
   .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
   .filter-tabs { display: flex; border-bottom: 1px solid rgba(255,255,255,0.06); padding: 0 0.5rem; }
-  .ft-btn { flex: 1; padding: 0.6rem 0.15rem; background: none; border: none; border-bottom: 2.5px solid transparent; font-size: 0.64rem; font-weight: 600; color: rgba(255,255,255,0.38); cursor: pointer; transition: all 0.12s; text-transform: capitalize; letter-spacing: 0; margin-bottom: -1px; display: flex; align-items: center; justify-content: center; gap: 3px; font-family: inherit; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .ft-btn { flex: 1; padding: 0.6rem 0.1rem; background: none; border: none; border-bottom: 2.5px solid transparent; font-size: 0.62rem; font-weight: 600; color: rgba(255,255,255,0.38); cursor: pointer; transition: all 0.12s; text-transform: capitalize; letter-spacing: 0; margin-bottom: -1px; display: flex; align-items: center; justify-content: center; gap: 3px; font-family: inherit; min-width: 0; }
+  .ft-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .ft-btn:hover { color: rgba(255,255,255,0.7); }
   .ft-btn.on { color: #5eead4; border-bottom-color: #0d6e6e; }
-  .ft-cnt { padding: 1px 6px; border-radius: 4px; font-size: 0.58rem; font-weight: 700; background: rgba(13,110,110,0.2); color: #5eead4; }
+  .ft-cnt { flex-shrink: 0; padding: 1px 6px; border-radius: 4px; font-size: 0.58rem; font-weight: 700; background: rgba(13,110,110,0.2); color: #5eead4; }
   .ft-btn.on .ft-cnt { background: #0d6e6e; color: #fff; }
 
   .search-wrap { padding: 0.65rem 1.3rem 0.3rem; }
@@ -3431,7 +3432,7 @@ return (
                 <div className="filter-tabs">
                   {[["pending","Pending"],["approved","Approved"],["declined","Declined"],["revoked","Revoked"],["bgv","BGV"]].map(([key,label])=>(
                     <button key={key} className={`ft-btn${cTab===key?" on":""}`} onClick={()=>setCTab(key)}>
-                      {label}{counts[key]>0&&<span className="ft-cnt">{counts[key]}</span>}
+                      <span className="ft-label">{label}</span>{counts[key]>0&&<span className="ft-cnt">{counts[key]}</span>}
                     </button>
                   ))}
                 </div>
