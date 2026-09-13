@@ -573,7 +573,7 @@ const G = `
 
   /* ── Sidebar ── */
   .sidebar {
-    width: 300px; min-width: 300px;
+    width: 320px; min-width: 320px;
     background: #111;
     border-right: none;
     display: flex; flex-direction: column;
@@ -631,12 +631,12 @@ const G = `
   .send-btn:hover:not(:disabled) { background: #0a5656; }
   .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-  .filter-tabs { display: flex; border-bottom: 1px solid rgba(255,255,255,0.06); padding: 0 0.5rem; }
-  .ft-btn { flex: 1; padding: 0.6rem 0.1rem; background: none; border: none; border-bottom: 2.5px solid transparent; font-size: 0.62rem; font-weight: 600; color: rgba(255,255,255,0.38); cursor: pointer; transition: all 0.12s; text-transform: capitalize; letter-spacing: 0; margin-bottom: -1px; display: flex; align-items: center; justify-content: center; gap: 3px; font-family: inherit; min-width: 0; }
-  .ft-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .filter-tabs { display: flex; border-bottom: 1px solid rgba(255,255,255,0.06); padding: 0.4rem 0.4rem; gap: 3px; }
+  .ft-btn { flex: 1; padding: 0.55rem 0.2rem; background: none; border: 1px solid transparent; border-radius: 6px; font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.4); cursor: pointer; white-space: nowrap; transition: all 0.12s; text-transform: capitalize; letter-spacing: 0; display: flex; align-items: center; justify-content: center; gap: 4px; font-family: inherit; }
+  .ft-label { white-space: nowrap; }
   .ft-btn:hover { color: rgba(255,255,255,0.7); }
-  .ft-btn.on { color: #5eead4; border-bottom-color: #0d6e6e; }
-  .ft-cnt { flex-shrink: 0; padding: 1px 6px; border-radius: 4px; font-size: 0.58rem; font-weight: 700; background: rgba(13,110,110,0.2); color: #5eead4; }
+  .ft-btn.on { background: rgba(13,110,110,0.18); border-color: rgba(13,110,110,0.45); color: #5eead4; }
+  .ft-cnt { flex-shrink: 0; padding: 1px 5px; border-radius: 4px; font-size: 0.58rem; font-weight: 700; background: rgba(13,110,110,0.2); color: #5eead4; }
   .ft-btn.on .ft-cnt { background: #0d6e6e; color: #fff; }
 
   .search-wrap { padding: 0.65rem 1.3rem 0.3rem; }
