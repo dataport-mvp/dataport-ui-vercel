@@ -573,7 +573,7 @@ const G = `
 
   /* ── Sidebar ── */
   .sidebar {
-    width: 380px; min-width: 380px;
+    width: 300px; min-width: 300px;
     background: #111;
     border-right: none;
     display: flex; flex-direction: column;
@@ -3427,11 +3427,18 @@ return (
         {mainTab==="Candidates" && (
           <div style={{display:"flex",flex:1,overflow:"hidden"}}>
             {/* Sidebar */}
-            <div style={{width:280,minWidth:280,background:"#111",display:"flex",flexDirection:"column",height:"calc(100vh - 52px)",position:"sticky",top:52,overflow:"hidden"}}>
+            <div style={{width:310,minWidth:310,background:"#111",display:"flex",flexDirection:"column",height:"calc(100vh - 52px)",position:"sticky",top:52,overflow:"hidden"}}>
               <div style={{padding:"0.65rem 1.3rem 0.3rem"}}>
                 <div className="filter-tabs">
-                  {[["pending","Pending"],["approved","Approved"],["declined","Declined"],["revoked","Revoked"],["bgv","BGV"]].map(([key,label])=>(
+                  {[["pending","Pending"],["approved","Approved"],["declined","Declined"],["revoked","Revoked"]].map(([key,label])=>(
                     <button key={key} className={`ft-btn${cTab===key?" on":""}`} onClick={()=>setCTab(key)}>
+                      <span className="ft-label">{label}</span>{counts[key]>0&&<span className="ft-cnt">{counts[key]}</span>}
+                    </button>
+                  ))}
+                </div>
+                <div className="filter-tabs" style={{marginTop:"0.4rem"}}>
+                  {[["bgv","BGV"]].map(([key,label])=>(
+                    <button key={key} className={`ft-btn${cTab===key?" on":""}`} onClick={()=>setCTab(key)} style={{flex:"0 0 auto",padding:"0.55rem 1.1rem"}}>
                       <span className="ft-label">{label}</span>{counts[key]>0&&<span className="ft-cnt">{counts[key]}</span>}
                     </button>
                   ))}
