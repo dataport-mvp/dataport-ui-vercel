@@ -632,7 +632,7 @@ const G = `
   .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
   .filter-tabs { display: flex; border-bottom: 1px solid rgba(255,255,255,0.06); padding: 0 0.5rem; }
-  .ft-btn { flex: 1; padding: 0.6rem 0.3rem; background: none; border: none; border-bottom: 2.5px solid transparent; font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.38); cursor: pointer; transition: all 0.12s; text-transform: capitalize; letter-spacing: 0; margin-bottom: -1px; display: flex; align-items: center; justify-content: center; gap: 4px; font-family: inherit; }
+  .ft-btn { flex: 1; padding: 0.6rem 0.15rem; background: none; border: none; border-bottom: 2.5px solid transparent; font-size: 0.64rem; font-weight: 600; color: rgba(255,255,255,0.38); cursor: pointer; transition: all 0.12s; text-transform: capitalize; letter-spacing: 0; margin-bottom: -1px; display: flex; align-items: center; justify-content: center; gap: 3px; font-family: inherit; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   .ft-btn:hover { color: rgba(255,255,255,0.7); }
   .ft-btn.on { color: #5eead4; border-bottom-color: #0d6e6e; }
   .ft-cnt { padding: 1px 6px; border-radius: 4px; font-size: 0.58rem; font-weight: 700; background: rgba(13,110,110,0.2); color: #5eead4; }
@@ -2235,6 +2235,26 @@ export default function EmployerDashboard() {
   const [inboxSearch,    setInboxSearch]    = useState("");
   const employerInboxListRef = useRef(null);
   const [mainTab,       setMainTab]        = useState("Overview");
+  // Genuine "seen" tracking for the Candidates nav badge — persisted so it survives a
+  // page reload, not just cleared for the current session. Previously the badge was
+  // purely a live pending-count, which meant it could never go away just from looking
+  // at it — it only cleared once the employee themselves responded. Now: visiting the
+  // Candidates tab marks every pending consent visible at that moment as seen, and the
+  // badge only counts pending consents NOT in that seen set — so a genuinely new pending
+  // request (one that appeared after the employer last looked) still correctly lights
+  // the badge back up, but nothing stale ever sits there forever once actually viewed.
+  // Starts empty rather than reading localStorage synchronously here — user.email isn't
+  // guaranteed populated yet on the very first render (auth loads async), and useState's
+  // initializer only ever runs once, so a race here could permanently load the wrong
+  // (keyless) bucket. Loaded properly instead in the effect below, once user is ready.
+  const [seenPendingIds, setSeenPendingIds] = useState(() => new Set());
+  useEffect(() => {
+    if (!user?.email) return;
+    try {
+      const raw = localStorage.getItem(`dg_seen_pending_${user.email}`);
+      if (raw) setSeenPendingIds(new Set(JSON.parse(raw)));
+    } catch (_) {}
+  }, [user?.email]);
   // ── Standalone BGV tab — deliberately independent of the Candidates tab's state.
   // No shared search/selection with Candidates, no profile/employment data fetched —
   // only consent_id + employee_id ever get passed to BgvTab, which fetches its own
@@ -2336,6 +2356,24 @@ export default function EmployerDashboard() {
     employee_name:   c?.employee_name||c?.employeeName||c?.name||c?.user_name||"",
   });
   const gcid = c => c?.consent_id||c?.id||c?.consentId||c?._id;
+
+  // Visiting the Candidates tab marks every pending consent currently loaded as seen —
+  // this is the actual "clear the badge" moment. Deliberately does NOT run just because
+  // consents refreshed in the background (that would defeat the point of a badge); only
+  // fires on an explicit tab visit.
+  useEffect(() => {
+    if (mainTab !== "Candidates" || !user?.email) return;
+    const pendingIds = consents.filter(c => c.status === "pending").map(gcid).filter(Boolean);
+    if (pendingIds.length === 0) return;
+    setSeenPendingIds(prev => {
+      const next = new Set(prev);
+      let changed = false;
+      pendingIds.forEach(id => { if (!next.has(id)) { next.add(id); changed = true; } });
+      if (!changed) return prev;
+      try { localStorage.setItem(`dg_seen_pending_${user.email}`, JSON.stringify([...next])); } catch (_) {}
+      return next;
+    });
+  }, [mainTab, consents, user?.email]);
 
   const loadConsents = useCallback(async () => {
     try { const r = await apiFetch(`${API}/consent/my`); if (r.ok) setConsents((await r.json()).map(nc)); } catch (_) {}
@@ -3187,7 +3225,7 @@ return (
               <button key={tab} onClick={()=>setMainTab(tab)}
                 style={{padding:"0 4px",height:52,background:"none",border:"none",borderBottom:`2.5px solid ${mainTab===tab?"#0d6e6e":"transparent"}`,fontSize:"0.8rem",fontWeight:mainTab===tab?700:500,color:mainTab===tab?"#0d6e6e":"#7a6e64",cursor:"pointer",fontFamily:"inherit",transition:"all .12s",marginBottom:-1}}>
                 {tab}
-                {tab==="Candidates"&&consents.filter(c=>c.status==="pending").length>0&&<span style={{marginLeft:5,background:"#dc2626",color:"#fff",fontSize:"0.58rem",fontWeight:800,padding:"1px 5px",borderRadius:999}}>{consents.filter(c=>c.status==="pending").length}</span>}
+                {tab==="Candidates"&&consents.filter(c=>c.status==="pending"&&!seenPendingIds.has(gcid(c))).length>0&&<span style={{marginLeft:5,background:"#dc2626",color:"#fff",fontSize:"0.58rem",fontWeight:800,padding:"1px 5px",borderRadius:999}}>{consents.filter(c=>c.status==="pending"&&!seenPendingIds.has(gcid(c))).length}</span>}
               </button>
             ))}
           </div>
