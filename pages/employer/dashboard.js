@@ -95,6 +95,18 @@ function toISTDate(ts) {
     return d.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" });
   } catch { return "—"; }
 }
+// Message timestamps need date AND time (12-hour, matching BGV dashboard's already-correct
+// format) — toISTDate above deliberately only ever returns a date, used elsewhere for things
+// like "Assigned" or "Requested" dates where time genuinely isn't needed. A separate function
+// here instead of changing toISTDate itself, since toISTDate is used widely throughout this
+// file for date-only displays that would break if time got silently added to all of them.
+function toISTDateTime(ts) {
+  if (!ts) return "—";
+  try {
+    const d = new Date(typeof ts === "number" && ts < 1e12 ? ts * 1000 : ts);
+    return d.toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+  } catch { return "—"; }
+}
 function maskAadhaar(a) {
   if (!a) return "—";
   const d = String(a).replace(/\D/g, "");
@@ -1771,7 +1783,7 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
           {bgvCase.all_active_assignments.map(a => (
             <button key={a.assignment_id} onClick={()=>setSelectedAssignmentId(a.assignment_id)}
               style={{padding:"0.45rem 0.9rem",borderRadius:8,border:a.assignment_id===bgvCase.assignment_id?"2px solid #4f46e5":"1.5px solid #e2e8f0",background:a.assignment_id===bgvCase.assignment_id?"#eef2ff":"#fff",color:a.assignment_id===bgvCase.assignment_id?"#4338ca":"#475569",fontSize:"0.8rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-              {a.vendor_email} — {(BGV_STATUS_BADGE_LABELS[a.bgv_status] || a.bgv_status || "Not Started")}
+              {a.vendor_name || a.vendor_email} — {(BGV_STATUS_BADGE_LABELS[a.bgv_status] || a.bgv_status || "Not Started")}
             </button>
           ))}
         </div>
@@ -1780,7 +1792,7 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
         <div style={{background:showReassign?"#fffbeb":"#f0fdf4",border:showReassign?"1px solid #fde68a":"1px solid #bbf7d0",borderRadius:10,padding:"0.75rem 1rem",marginBottom:"1rem",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"0.5rem"}}>
           <div>
             <span style={{fontSize:"0.72rem",fontWeight:700,color:showReassign?"#92400e":"#15803d",textTransform:"uppercase",letterSpacing:"0.5px"}}>{showReassign?"Current Vendor (being replaced)":"Assigned to BGV Vendor"}</span>
-            <div style={{fontWeight:700,fontSize:"0.875rem",color:"#0f172a",marginTop:"0.1rem"}}>{bgvCase.bgv_vendor_email}</div>
+            <div style={{fontWeight:700,fontSize:"0.875rem",color:"#0f172a",marginTop:"0.1rem"}}>{bgvCase.bgv_vendor_name || bgvCase.bgv_vendor_email}</div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:"0.6rem"}}>
             {bgvCase.bgv_status && <span style={{padding:"0.25rem 0.75rem",borderRadius:999,background:showReassign?"#fef3c7":"#dcfce7",color:showReassign?"#92400e":"#15803d",fontSize:"0.72rem",fontWeight:700}}>{bgvCase.bgv_status.replace("_"," ").toUpperCase()}</span>}
@@ -2871,7 +2883,7 @@ return (
                                 </div>
                               )}
                             </div>
-                            <div className={`msg-time ${mine?"mine":"theirs"}`}>{toISTDate(m.sent_at)}{mine&&m.read_by_recipient&&<span style={{marginLeft:4}}>✓✓</span>}{mine&&!m.read_by_recipient&&<span style={{marginLeft:4}}>✓</span>}</div>
+                            <div className={`msg-time ${mine?"mine":"theirs"}`}>{toISTDateTime(m.sent_at)}{mine&&m.read_by_recipient&&<span style={{marginLeft:4}}>✓✓</span>}{mine&&!m.read_by_recipient&&<span style={{marginLeft:4}}>✓</span>}</div>
                             {!mine&&orgLabel&&<div style={{fontSize:"0.58rem",color:"#a09890",marginTop:2,fontStyle:"italic"}}>{orgLabel}</div>}
                           </div>
                           </div>
@@ -3382,7 +3394,7 @@ return (
                   placeholder="Search by name or email…"
                   value={bgvHomeSearch}
                   onChange={e=>setBgvHomeSearch(e.target.value)}
-                  style={{width:"100%",maxWidth:420,padding:"0.55rem 0.9rem",border:"1.5px solid #c8c2b8",borderRadius:8,fontFamily:"inherit",fontSize:"0.85rem",marginBottom:"1.1rem",outline:"none",background:"#fff"}}
+                  style={{width:"100%",maxWidth:420,padding:"0.55rem 0.9rem",border:"1.5px solid #c8c2b8",borderRadius:8,fontFamily:"inherit",fontSize:"0.85rem",marginBottom:"1.1rem",outline:"none",background:"#fff",color:"#1c2b2b"}}
                 />
                 <div style={{background:"#fff",border:"1px solid #e8e3da",borderRadius:10,overflow:"hidden"}}>
                   {(() => {

@@ -147,6 +147,7 @@ const G = `
   .av-employer { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
   .av-employee { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
   .av-admin    { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+  .av-bgv      { background: #fdf4ff; color: #9333ea; border: 1px solid #e9d5ff; }
 
   .user-email { font-size: 0.72rem; color: var(--text); font-family: var(--mono);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
@@ -1057,7 +1058,7 @@ export default function AdminDashboard() {
                     onKeyDown={e => e.key === "Enter" && loadUsers()}
                     style={{marginBottom:"0.5rem"}} />
                   <div className="filter-row">
-                    {["", "employee", "employer"].map(f => (
+                    {["", "employee", "employer", "bgv"].map(f => (
                       <button key={f} className={`filter-btn${userFilter === f ? " on" : ""}`}
                         onClick={() => setUserFilter(f)}>{f || "All"}</button>
                     ))}
@@ -1072,7 +1073,7 @@ export default function AdminDashboard() {
                         className={`user-row${selUser === u.email ? " selected" : ""}`}
                         onClick={() => { setSelUser(u.email); loadUserDetail(u.email); setMsg({type:"",text:""}); setConfirmDelete(false); }}>
                         <div className={`user-avatar av-${u.role}`}>
-                          {u.role === "employer" ? "E" : u.role === "admin" ? "A" : "e"}
+                          {u.role === "employer" ? "E" : u.role === "admin" ? "A" : u.role === "bgv" ? "V" : "e"}
                         </div>
                         <div style={{overflow:"hidden"}}>
                           <div className="user-email">{u.email}</div>
@@ -1340,14 +1341,14 @@ export default function AdminDashboard() {
                           From: <span className="mono" style={{color:"#0d6e6e"}}>{selTicket.user_email}</span> ({selTicket.user_role})
                         </div>
                         <div className="tick-user-msg">
-                          <div className="tick-user-by">{selTicket.user_name || selTicket.user_email}</div>
+                          <div className="tick-user-by">{selTicket.user_name || selTicket.user_email} · {toIST(selTicket.created_at)}</div>
                           <div style={{fontSize:"0.82rem",color:"#4a6060",lineHeight:1.6,whiteSpace:"pre-wrap"}}>{selTicket.body}</div>
                           {selTicket.attachment_url && <a href={selTicket.attachment_url} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:"0.4rem",fontSize:"0.7rem",color:"#0d6e6e",fontWeight:700,textDecoration:"none"}}>📎 View attachment</a>}
                         </div>
                         {(selTicket.replies || []).map((r, i) => (
                           <div key={i} className={r.by === "admin" ? "tick-reply" : "tick-user-msg"}>
                             <div className={r.by === "admin" ? "tick-reply-by" : "tick-user-by"}>
-                              {r.by === "admin" ? "Datagate Support" : selTicket.user_name}
+                              {r.by === "admin" ? "Datagate Support" : selTicket.user_name} · {toIST(r.at)}
                             </div>
                             <div className="tick-reply-body">{r.body}</div>
                             {r.attachment_url && <a href={r.attachment_url} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:"0.4rem",fontSize:"0.7rem",color:"#0d6e6e",fontWeight:700,textDecoration:"none"}}>📎 View attachment</a>}

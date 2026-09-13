@@ -2263,7 +2263,7 @@ export default function PersonalDetails() {
                                 )}
                               </div>
                               <div style={{fontSize:"0.58rem",color:"#c4bfdb",marginTop:2}}>
-                                {new Date(m.sent_at).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"})}
+                                {new Date(m.sent_at).toLocaleString("en-IN",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}
                                 {mine&&<span style={{marginLeft:4}}>{m.read_by_recipient?"✓✓":"✓"}</span>}
                               </div>
                             </div>
