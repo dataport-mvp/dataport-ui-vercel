@@ -573,7 +573,7 @@ const G = `
 
   /* ── Sidebar ── */
   .sidebar {
-    width: 320px; min-width: 320px;
+    width: 380px; min-width: 380px;
     background: #111;
     border-right: none;
     display: flex; flex-direction: column;
@@ -636,7 +636,7 @@ const G = `
   .ft-label { white-space: nowrap; }
   .ft-btn:hover { color: rgba(255,255,255,0.7); }
   .ft-btn.on { background: rgba(13,110,110,0.18); border-color: rgba(13,110,110,0.45); color: #5eead4; }
-  .ft-cnt { flex-shrink: 0; padding: 1px 5px; border-radius: 4px; font-size: 0.58rem; font-weight: 700; background: rgba(13,110,110,0.2); color: #5eead4; }
+  .ft-cnt { flex-shrink: 0; padding: 1px 4px; border-radius: 4px; font-size: 0.58rem; font-weight: 700; background: rgba(13,110,110,0.2); color: #5eead4; }
   .ft-btn.on .ft-cnt { background: #0d6e6e; color: #fff; }
 
   .search-wrap { padding: 0.65rem 1.3rem 0.3rem; }
