@@ -115,7 +115,7 @@ function maskAadhaar(a) {
 }
 
 // ── PDF with embedded images ──────────────────────────────────────────
-async function printProfile(profile, empHistory, documents, employerName) {
+async function printProfile(profile, empHistory, documents, employerName, employmentDeclarations) {
   const d   = profile || {};
   const cur  = d.currentAddress   || {};
   const perm = d.permanentAddress || {};
@@ -407,6 +407,24 @@ async function printProfile(profile, empHistory, documents, employerName) {
       e.gap?.hasGap === "Yes" ? row("Employment Gap To",   isoToDisplay(e.gap?.to))   : "",
     ].join(""), i === arr.length-1 ? "#18151f" : "#334155"
   )).join("")}
+
+  ${(() => {
+    if (!employmentDeclarations || Object.keys(employmentDeclarations).length === 0) return "";
+    const DECL_LABELS = {
+      business:  "Other Business or Employment",
+      dismissed: "Dismissal or Termination for Cause",
+      criminal:  "Criminal Conviction or Pending Proceedings",
+      civil:     "Civil Judgment",
+      medical:         "Medical Fitness / Substance-Related Declaration",
+      confidentiality: "Confidentiality of Previous Employer Information",
+    };
+    const rows = Object.entries(DECL_LABELS).map(([key, label]) => {
+      const entry = employmentDeclarations[key];
+      if (!entry || (entry.val !== "Yes" && entry.val !== "No")) return "";
+      return row(label, entry.note ? `${entry.val} — ${entry.note}` : entry.val);
+    }).join("");
+    return section("Other Declarations", rows, "#334155");
+  })()}
 
   <!-- ══ SECTION 4: UAN / EPFO ══ -->
   <div style="font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;margin-top:20px">Page 4 — UAN / EPFO</div>
@@ -2748,7 +2766,7 @@ export default function EmployerDashboard() {
     setPrinting(true);
     try {
       const freshDocs = empId ? await loadDocs(empId) : documents;
-      const html = await buildPrintHtml(profileData.profile_snapshot, profileData.employment_snapshot||[], freshDocs||documents, user?.name||user?.email);
+      const html = await buildPrintHtml(profileData.profile_snapshot, profileData.employment_snapshot||[], freshDocs||documents, user?.name||user?.email, profileData.employment_declarations);
       setPrintHtml(html);
     } catch (_) {}
     setPrinting(false);
@@ -2954,8 +2972,8 @@ return (
                 ):(
                   <>
                     <div style={{padding:"0.75rem 1.25rem",borderBottom:"1px solid #c8c2b8",background:"#f5f2ee",flexShrink:0}}>
-                      <div style={{fontSize:"0.78rem",fontWeight:700,color:"#111"}}>{inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_name || inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email || activeThread}</div>
-                      <div style={{fontSize:"0.62rem",color:"#a09890",marginTop:1}}>{inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email}{inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email ? " · " : ""}{threadMsgs.length} message{threadMsgs.length!==1?"s":""}</div>
+                      <div style={{fontSize:"0.78rem",fontWeight:700,color:"#111"}}>{inboxThreads.find(t=>t.thread_id===activeThreadId)?.other_party_name || inboxThreads.find(t=>t.thread_id===activeThreadId)?.other_party_email || activeThread}</div>
+                      <div style={{fontSize:"0.62rem",color:"#a09890",marginTop:1}}>{inboxThreads.find(t=>t.thread_id===activeThreadId)?.other_party_email}{inboxThreads.find(t=>t.thread_id===activeThreadId)?.other_party_email ? " · " : ""}{threadMsgs.length} message{threadMsgs.length!==1?"s":""}</div>
                     </div>
                     <div className="msg-list" ref={msgListRef}>
                       {threadLoading&&<div style={{textAlign:"center",fontSize:"0.72rem",color:"#a09890",padding:"1rem"}}>Loading…</div>}
@@ -3012,7 +3030,7 @@ return (
                       {/* @mention recipient selector — same isolation rules as before, now explicit by name */}
                       <div style={{display:"flex",gap:"0.4rem",marginBottom:"0.45rem",flexWrap:"wrap"}}>
                         {(() => {
-                          const t = inboxThreads.find(x=>x.consent_id===activeThread);
+                          const t = inboxThreads.find(x=>x.thread_id===activeThreadId);
                           const employeeName = t?.employee_name || "Candidate";
                           const hasBgv = !!(t?.bgv_email);
                           const bgvName = t?.bgv_name || "BGV";

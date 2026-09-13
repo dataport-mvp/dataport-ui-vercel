@@ -90,7 +90,7 @@ function ddmmyyyyToDisplaySelf(val) {
   return `${parseInt(dd, 10)} ${mName} ${yyyy}`;
 }
 
-async function buildMyProfilePdf(profile, empHistory, documents, employeeSelfName) {
+async function buildMyProfilePdf(profile, empHistory, documents, employeeSelfName, employmentDeclarations) {
   const d   = profile || {};
   const cur  = d.currentAddress   || {};
   const perm = d.permanentAddress || {};
@@ -376,6 +376,24 @@ async function buildMyProfilePdf(profile, empHistory, documents, employeeSelfNam
       e.gap?.hasGap === "Yes" ? row("Employment Gap To",   isoToDisplay(e.gap?.to))   : "",
     ].join(""), i === arr.length-1 ? "#18151f" : "#334155"
   )).join("")}
+
+  ${(() => {
+    if (!employmentDeclarations || Object.keys(employmentDeclarations).length === 0) return "";
+    const DECL_LABELS = {
+      business:  "Other Business or Employment",
+      dismissed: "Dismissal or Termination for Cause",
+      criminal:  "Criminal Conviction or Pending Proceedings",
+      civil:     "Civil Judgment",
+      medical:         "Medical Fitness / Substance-Related Declaration",
+      confidentiality: "Confidentiality of Previous Employer Information",
+    };
+    const rows = Object.entries(DECL_LABELS).map(([key, label]) => {
+      const entry = employmentDeclarations[key];
+      if (!entry || (entry.val !== "Yes" && entry.val !== "No")) return "";
+      return row(label, entry.note ? `${entry.val} — ${entry.note}` : entry.val);
+    }).join("");
+    return section("Other Declarations", rows, "#334155");
+  })()}
 
   <!-- ══ SECTION 4: UAN / EPFO ══ -->
   <div style="font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;margin-top:20px">Page 4 — UAN / EPFO</div>
@@ -1956,7 +1974,7 @@ export default function PersonalDetails() {
       const employments = Array.isArray(histData.employments) ? histData.employments : [];
       const selfName = [draft.firstName, draft.lastName].filter(Boolean).join(" ") || user?.name || user?.email;
 
-      const html = await buildMyProfilePdf(normalized, employments, docsData.documents || {}, selfName);
+      const html = await buildMyProfilePdf(normalized, employments, docsData.documents || {}, selfName, histData.acknowledgements);
       setMyPrintHtml(html);
     } catch (_) {}
     setDownloadingPdf(false);
@@ -2228,7 +2246,7 @@ export default function PersonalDetails() {
                   ) : (
                     <>
                       <div style={{padding:"0.75rem 1.1rem",borderBottom:"1px solid #ebe9f5",background:"#faf9ff",fontSize:"0.75rem",fontWeight:700,color:"#1a1730"}}>
-                        {inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_name||inboxThreads.find(t=>t.consent_id===activeThread)?.other_party_email}
+                        {inboxThreads.find(t=>t.thread_id===activeThreadId)?.other_party_name||inboxThreads.find(t=>t.thread_id===activeThreadId)?.other_party_email}
                         <span style={{fontSize:"0.62rem",color:"#94a3b8",fontWeight:400,marginLeft:8}}>{threadMsgs.length} message{threadMsgs.length!==1?"s":""}</span>
                       </div>
                       {/* Messages */}
@@ -2285,7 +2303,7 @@ export default function PersonalDetails() {
                       <div style={{padding:"0.75rem 1rem",borderTop:"1px solid #ebe9f5",background:"#fff"}}>
                         <div style={{display:"flex",gap:"0.4rem",marginBottom:"0.4rem",flexWrap:"wrap"}}>
                           {(() => {
-                            const t = inboxThreads.find(x=>x.consent_id===activeThread);
+                            const t = inboxThreads.find(x=>x.thread_id===activeThreadId);
                             const employerName = t?.employer_name || "Employer";
                             const hasBgv = !!(t?.bgv_email);
                             const bgvName = t?.bgv_name || "BGV";

@@ -532,7 +532,7 @@ function ddmmyyyyToDisplaySelf(val) {
   return `${parseInt(dd, 10)} ${mName} ${yyyy}`;
 }
 
-async function buildMyProfilePdf(profile, empHistory, documents, employeeSelfName) {
+async function buildMyProfilePdf(profile, empHistory, documents, employeeSelfName, employmentDeclarations) {
   const d   = profile || {};
   const cur  = d.currentAddress   || {};
   const perm = d.permanentAddress || {};
@@ -818,6 +818,24 @@ async function buildMyProfilePdf(profile, empHistory, documents, employeeSelfNam
       e.gap?.hasGap === "Yes" ? row("Employment Gap To",   isoToDisplay(e.gap?.to))   : "",
     ].join(""), i === arr.length-1 ? "#18151f" : "#334155"
   )).join("")}
+
+  ${(() => {
+    if (!employmentDeclarations || Object.keys(employmentDeclarations).length === 0) return "";
+    const DECL_LABELS = {
+      business:  "Other Business or Employment",
+      dismissed: "Dismissal or Termination for Cause",
+      criminal:  "Criminal Conviction or Pending Proceedings",
+      civil:     "Civil Judgment",
+      medical:         "Medical Fitness / Substance-Related Declaration",
+      confidentiality: "Confidentiality of Previous Employer Information",
+    };
+    const rows = Object.entries(DECL_LABELS).map(([key, label]) => {
+      const entry = employmentDeclarations[key];
+      if (!entry || (entry.val !== "Yes" && entry.val !== "No")) return "";
+      return row(label, entry.note ? `${entry.val} — ${entry.note}` : entry.val);
+    }).join("");
+    return section("Other Declarations", rows, "#334155");
+  })()}
 
   <!-- ══ SECTION 4: UAN / EPFO ══ -->
   <div style="font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;margin-top:20px">Page 4 — UAN / EPFO</div>
@@ -1356,7 +1374,7 @@ export default function ReviewPage() {
       const employments = Array.isArray(histData.employments) ? histData.employments : [];
       const selfName = [draft.firstName, draft.lastName].filter(Boolean).join(" ") || user?.name || user?.email;
 
-      const html = await buildMyProfilePdf(normalized, employments, docsData.documents || {}, selfName);
+      const html = await buildMyProfilePdf(normalized, employments, docsData.documents || {}, selfName, histData.acknowledgements);
       setMyPrintHtml(html);
     } catch (_) {}
     setDownloadingPdf(false);
