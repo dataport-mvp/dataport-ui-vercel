@@ -596,11 +596,22 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!adminUser || !adminToken) return;
-    if (tab === "overview") loadOverview();
+    if (tab === "overview" || tab === "broadcast") loadOverview();
     if (tab === "users")    loadUsers();
     if (tab === "tickets")  loadTickets();
     if (tab === "vendors")  loadVendors();
   }, [tab, adminUser, adminToken, loadOverview, loadUsers, loadTickets]);
+
+  // Keeps the Overview stats and Recent Activity feed live on their own, on the same
+  // 30s cadence already used elsewhere in this app for anything time-sensitive (e.g.
+  // unread message counts) — rather than only ever updating on an explicit manual
+  // refresh click, which is easy to forget and makes the numbers silently go stale
+  // the longer this tab stays open.
+  useEffect(() => {
+    if (!adminUser || !adminToken || tab !== "overview") return;
+    const id = setInterval(loadOverview, 30000);
+    return () => clearInterval(id);
+  }, [adminUser, adminToken, tab, loadOverview]);
 
   useEffect(() => {
     if (tab === "users") loadUsers();
@@ -911,7 +922,7 @@ export default function AdminDashboard() {
                 <div className="panel">
                   <div className="panel-head">
                     <div className="panel-title">Recent Activity</div>
-                    <button onClick={loadOverview} style={{fontSize:"0.65rem",color:"#7a9494",background:"none",border:"none",cursor:"pointer"}}>↻ refresh</button>
+                    <button onClick={loadOverview} disabled={loading} style={{fontSize:"0.65rem",color:"#7a9494",background:"none",border:"none",cursor:loading?"not-allowed":"pointer",opacity:loading?0.6:1}}>{loading?"↻ Refreshing…":"↻ refresh"}</button>
                   </div>
                   <div className="panel-body">
                     {activity.length === 0 && <div className="empty-state">No activity yet</div>}
