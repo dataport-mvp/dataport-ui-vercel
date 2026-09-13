@@ -2189,7 +2189,7 @@ export default function UanDetails() {
             )}
             <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginTop:"0.9rem",borderLeft:gratuityFamilyAck?"3px solid #16a34a":"3px solid #e4e2f0"}}>
               <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
-                <input type="checkbox" checked={gratuityFamilyAck} onChange={e=>{setGratuityFamilyAck(e.target.checked);isDirtyRef.current=true;flagPostSignEdit();}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
+                <input type="checkbox" checked={gratuityFamilyAck} onChange={e=>{setGratuityFamilyAck(e.target.checked);isDirtyRef.current=true;wasEditedAfterLoad.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
                 <div>
                   <div style={{fontSize:"0.68rem",fontWeight:800,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>Gratuity Family Declaration (Form F) <span style={{color:"#ef4444"}}>*</span></div>
                   <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I certify that the person(s) nominated above are members of my family within the meaning of the Payment of Gratuity Act, 1972 — or, if I have no such family, I declare so, and this nomination will stand cancelled should I acquire a family hereafter.</span>
@@ -2199,7 +2199,7 @@ export default function UanDetails() {
             {hasGratuityParentNominee && (
               <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginTop:"0.75rem",borderLeft:gratuityParentsAck?"3px solid #16a34a":"3px solid #e4e2f0"}}>
                 <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
-                  <input type="checkbox" checked={gratuityParentsAck} onChange={e=>{setGratuityParentsAck(e.target.checked);isDirtyRef.current=true;flagPostSignEdit();}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
+                  <input type="checkbox" checked={gratuityParentsAck} onChange={e=>{setGratuityParentsAck(e.target.checked);isDirtyRef.current=true;wasEditedAfterLoad.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
                   <div>
                     <div style={{fontSize:"0.68rem",fontWeight:800,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>Parents Dependency Declaration (Form F) <span style={{color:"#ef4444"}}>*</span></div>
                     <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I declare the dependency status of my parents (or, where applicable, my spouse's parents) as accurately reflected in this nomination, as required under the Payment of Gratuity Act, 1972. This nomination invalidates any gratuity nomination I made previously.</span>
