@@ -1779,12 +1779,22 @@ export default function ReviewPage() {
                 <div key={sec.title} style={{marginBottom:"0.9rem",paddingBottom:"0.9rem",borderBottom:"1px solid #f0eef8"}}>
                   <div style={{fontSize:"0.72rem",fontWeight:700,color:"#d97706",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.5rem"}}>{sec.title}</div>
                   <div className="grid">
-                    <KV label="Institution"     value={s.school||s.college}/>
+                    <KV label="Institution"     value={s.school||s.college||s.institute}/>
                     <KV label="Board / Univ."   value={s.board||s.university}/>
+                    {s.country==="Outside India" && <KV label="Country" value={s.countryName||"Outside India"}/>}
+                    {s.stream && <KV label="Stream" value={s.stream==="Other"?(s.streamOther||"Other"):s.stream}/>}
                     {s.course && <KV label="Degree / Course" value={s.course}/>}
+                    {(s.branch||s.specialization) && <KV label="Branch / Specialization" value={s.branch||s.specialization}/>}
                     <KV label="Year of Passing" value={s.yearOfPassing}/>
+                    {s.from && <KV label="From" value={isoToDisplay(s.from)}/>}
+                    {s.to && <KV label="To" value={isoToDisplay(s.to)}/>}
+                    {s.hallTicket && <KV label="Hall Ticket / Roll No." value={s.hallTicket}/>}
                     <KV label={s.resultType||"Result"} value={s.resultValue}/>
+                    {s.mode && <KV label="Mode" value={s.mode}/>}
+                    {s.medium && <KV label="Medium of Study" value={s.medium}/>}
                     {s.backlogs && <KV label="Backlogs" value={s.backlogs}/>}
+                    {s.country==="Outside India" && <KV label="Equivalency Certificate" value={s.equivalencyKey?"Uploaded":"Not yet uploaded"}/>}
+                    {s.address && <KV label="Institution Address" value={s.address}/>}
                   </div>
                   {(s.certKey||s.provKey) && (
                     <div className="att-grid">
@@ -1802,9 +1812,19 @@ export default function ReviewPage() {
                 <div className="grid">
                   <KV label="College"    value={edu.postgraduate?.college}/>
                   <KV label="University" value={edu.postgraduate?.university}/>
+                  {edu.postgraduate?.country==="Outside India" && <KV label="Country" value={edu.postgraduate?.countryName||"Outside India"}/>}
                   <KV label="Degree"     value={edu.postgraduate?.course}/>
+                  {(edu.postgraduate?.branch||edu.postgraduate?.specialization) && <KV label="Branch / Specialization" value={edu.postgraduate?.branch||edu.postgraduate?.specialization}/>}
                   <KV label="Year"       value={edu.postgraduate?.yearOfPassing}/>
+                  {edu.postgraduate?.from && <KV label="From" value={isoToDisplay(edu.postgraduate.from)}/>}
+                  {edu.postgraduate?.to && <KV label="To" value={isoToDisplay(edu.postgraduate.to)}/>}
+                  {edu.postgraduate?.hallTicket && <KV label="Hall Ticket / Roll No." value={edu.postgraduate.hallTicket}/>}
                   <KV label="Result"     value={edu.postgraduate?.resultValue}/>
+                  {edu.postgraduate?.mode && <KV label="Mode" value={edu.postgraduate.mode}/>}
+                  {edu.postgraduate?.medium && <KV label="Medium of Study" value={edu.postgraduate.medium}/>}
+                  {edu.postgraduate?.backlogs && <KV label="Backlogs" value={edu.postgraduate.backlogs}/>}
+                  {edu.postgraduate?.country==="Outside India" && <KV label="Equivalency Certificate" value={edu.postgraduate?.equivalencyKey?"Uploaded":"Not yet uploaded"}/>}
+                  {edu.postgraduate?.address && <KV label="Institution Address" value={edu.postgraduate.address}/>}
                 </div>
                 {(edu.postgraduate?.provKey||edu.postgraduate?.convoKey) && (
                   <div className="att-grid">
@@ -1819,8 +1839,13 @@ export default function ReviewPage() {
                 <div style={{fontSize:"0.72rem",fontWeight:700,color:"#d97706",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.5rem"}}>Diploma / Technical</div>
                 <div className="grid">
                   <KV label="Institution" value={edu.diploma?.institute}/>
+                  <KV label="Board / University" value={edu.diploma?.board}/>
                   <KV label="Course"      value={edu.diploma?.course}/>
+                  {edu.diploma?.from && <KV label="From" value={isoToDisplay(edu.diploma.from)}/>}
+                  {edu.diploma?.to && <KV label="To" value={isoToDisplay(edu.diploma.to)}/>}
                   <KV label="Year"        value={edu.diploma?.yearOfPassing}/>
+                  <KV label="Result"      value={edu.diploma?.resultValue?`${edu.diploma?.resultType||""} ${edu.diploma.resultValue}`.trim():undefined}/>
+                  {edu.diploma?.mode && <KV label="Mode" value={edu.diploma.mode}/>}
                 </div>
                 {edu.diploma?.certKey && <div className="att-grid"><AttChip label="Diploma Certificate" docKey={edu.diploma.certKey} urls={docUrls}/></div>}
               </div>
