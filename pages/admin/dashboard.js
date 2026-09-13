@@ -595,6 +595,30 @@ export default function AdminDashboard() {
     setLoading(false);
   }, [apiFetch, ticketFilter]);
 
+  // A plain loadTickets() only refreshes the left-hand list — it never touches
+  // selTicket, so a reply that just came in on the ticket currently open in the
+  // detail pane would silently not appear until the admin re-clicked it from the
+  // (now-updated) list. This re-syncs whichever ticket is open too, so a manual
+  // refresh genuinely shows new messages on the ticket being viewed, not just the
+  // list around it — matching the same re-sync doTicketReply already does after
+  // sending a reply.
+  const refreshTickets = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = ticketFilter ? `?status=${ticketFilter}` : "";
+      const r = await apiFetch(`${API}/admin/tickets${params}`);
+      if (r.ok) {
+        const fresh = await r.json();
+        setTickets(fresh);
+        if (selTicket) {
+          const updated = fresh.find(t => t.ticket_id === selTicket.ticket_id);
+          if (updated) setSelTicket(updated);
+        }
+      }
+    } catch (_) {}
+    setLoading(false);
+  }, [apiFetch, ticketFilter, selTicket]);
+
   useEffect(() => {
     if (!adminUser || !adminToken) return;
     if (tab === "overview" || tab === "broadcast") loadOverview();
@@ -1303,6 +1327,7 @@ export default function AdminDashboard() {
                       <button key={f} className={`filter-btn${ticketFilter === f ? " on" : ""}`}
                         onClick={() => setTicketFilter(f)}>{f || "All"}</button>
                     ))}
+                    <button className="filter-btn" onClick={refreshTickets} disabled={loading} style={{marginLeft:"auto",opacity:loading?0.5:1,cursor:loading?"not-allowed":"pointer"}}>{loading?"↻ Refreshing…":"↻"}</button>
                   </div>
                   <div style={{maxHeight:"calc(100vh - 240px)",overflowY:"auto"}}>
                     {loading && tickets.length === 0 && <div className="loading-txt">Loading…</div>}
