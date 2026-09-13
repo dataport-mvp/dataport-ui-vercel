@@ -7,7 +7,7 @@ import { useAuth } from "../../utils/AuthContext";
 import { parseError } from "../../utils/apiError";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
-const DATA_TABS = ["Overview", "Education", "Employment", "UAN & PF", "Documents", "BGV Status"];
+const DATA_TABS = ["Overview", "Education", "Employment", "UAN & PF", "BGV Status"];
 
 // ── Normalizers ───────────────────────────────────────────────────────
 const normalizeEducation = (ed = {}) => {
@@ -1242,6 +1242,11 @@ function OverviewTab({ data, docUrls }) {
             <KV k="Expiry Date"   v={isoToDisplay(data.passportExpiry)} />
           </>}
         </div>
+        <div style={{marginTop:"0.6rem",display:"flex",flexWrap:"wrap",gap:"0.5rem"}}>
+          {docUrls?.["aadhaar"] && <a href={docUrls["aadhaar"]} target="_blank" rel="noopener noreferrer" className="doc-view" style={{display:"inline-flex",alignItems:"center",gap:"0.3rem"}}>📄 Aadhaar — View ↗</a>}
+          {docUrls?.["pan"] && <a href={docUrls["pan"]} target="_blank" rel="noopener noreferrer" className="doc-view" style={{display:"inline-flex",alignItems:"center",gap:"0.3rem"}}>📄 PAN — View ↗</a>}
+          {(data.hasPassport==="Yes") && docUrls?.["passport"] && <a href={docUrls["passport"]} target="_blank" rel="noopener noreferrer" className="doc-view" style={{display:"inline-flex",alignItems:"center",gap:"0.3rem"}}>📄 Passport — View ↗</a>}
+        </div>
       </Sec>
       {(data.fatherFirst||data.fatherName)&&(
         <Sec title="Family">
@@ -1328,9 +1333,14 @@ function OverviewTab({ data, docUrls }) {
 }
 
 // ── Education Tab ─────────────────────────────────────────────────────
-function EducationTab({ data }) {
+function EducationTab({ data, docUrls }) {
   if (!data) return <div className="nd-box">No education records</div>;
-  const EduCard = ({ title, s }) => {
+  const AttLink = ({ label, docKey }) => {
+    const url = docUrls?.[docKey];
+    if (!url) return null;
+    return <a href={url} target="_blank" rel="noopener noreferrer" className="doc-view" style={{display:"inline-flex",alignItems:"center",gap:"0.3rem",marginTop:"0.55rem",marginRight:"0.5rem"}}>📄 {label} — View ↗</a>;
+  };
+  const EduCard = ({ title, s, docKey }) => {
     if (!s||!Object.values(s).some(Boolean)) return null;
     return (
       <div className="edu-card">
@@ -1353,16 +1363,65 @@ function EducationTab({ data }) {
           {s.country==="Outside India"&&<KV k="Equivalency Certificate" v={s.equivalencyKey?"Uploaded":"Not yet uploaded"} />}
           {s.address&&<KV k="Address"   v={s.address} />}
         </div>
+        {docKey && <AttLink label={title.split(" —")[0]+" Certificate"} docKey={docKey} />}
       </div>
     );
   };
   return (
     <div>
-      <EduCard title="Class X — SSC / Matriculation"  s={data.classX} />
-      <EduCard title="Intermediate — HSC / 12th"       s={data.intermediate} />
-      {(data.hasDip==="Yes"||data.diploma?.institute)&&data.diploma&&Object.values(data.diploma).some(Boolean)&&<EduCard title="Diploma / Technical / Vocational" s={data.diploma} />}
-      <EduCard title="Undergraduate / Degree"          s={data.undergraduate} />
-      {data.postgraduate?.college&&<EduCard title="Postgraduate / Masters" s={data.postgraduate} />}
+      <EduCard title="Class X — SSC / Matriculation"  s={data.classX} docKey="classX" />
+      <EduCard title="Intermediate — HSC / 12th"       s={data.intermediate} docKey="intermediate" />
+      {(data.hasDip==="Yes"||data.diploma?.institute)&&data.diploma&&Object.values(data.diploma).some(Boolean)&&<EduCard title="Diploma / Technical / Vocational" s={data.diploma} docKey="diploma" />}
+      {data.undergraduate && Object.values(data.undergraduate).some(Boolean) && (
+        <div className="edu-card">
+          <div className="edu-title">Undergraduate / Degree</div>
+          <div className="kv-grid">
+            <KV k="Institution"           v={data.undergraduate.school||data.undergraduate.college||data.undergraduate.institute} />
+            <KV k="Board / University"    v={data.undergraduate.board||data.undergraduate.university} />
+            {data.undergraduate.country==="Outside India"&&<KV k="Country" v={data.undergraduate.countryName||"Outside India"} />}
+            {data.undergraduate.course&&<KV k="Course / Degree" v={data.undergraduate.course} />}
+            {(data.undergraduate.branch||data.undergraduate.specialization)&&<KV k="Branch / Specialization" v={data.undergraduate.branch||data.undergraduate.specialization} />}
+            <KV k="Year of Passing"       v={data.undergraduate.yearOfPassing} />
+            {data.undergraduate.from&&<KV k="From" v={isoToDisplay(data.undergraduate.from)} />}
+            {data.undergraduate.to&&<KV k="To" v={isoToDisplay(data.undergraduate.to)} />}
+            {data.undergraduate.hallTicket&&<KV k="Hall Ticket / Roll No." v={data.undergraduate.hallTicket} mono />}
+            <KV k="Result"                v={data.undergraduate.resultValue?`${data.undergraduate.resultType||""} ${data.undergraduate.resultValue}`.trim():""} />
+            {data.undergraduate.mode&&<KV k="Mode" v={data.undergraduate.mode} />}
+            {data.undergraduate.medium&&<KV k="Medium" v={data.undergraduate.medium} />}
+            {data.undergraduate.backlogs&&<KV k="Backlogs" v={data.undergraduate.backlogs} />}
+            {data.undergraduate.country==="Outside India"&&<KV k="Equivalency Certificate" v={data.undergraduate.equivalencyKey?"Uploaded":"Not yet uploaded"} />}
+            {data.undergraduate.address&&<KV k="Address" v={data.undergraduate.address} />}
+          </div>
+          <AttLink label="Provisional Marksheet" docKey="ug_provisional" />
+          <AttLink label="Convocation Certificate" docKey="ug_convocation" />
+          {data.undergraduate.country==="Outside India" && <AttLink label="Equivalency Certificate" docKey="ug_equivalency" />}
+        </div>
+      )}
+      {data.postgraduate?.college&&(
+        <div className="edu-card">
+          <div className="edu-title">Postgraduate / Masters</div>
+          <div className="kv-grid">
+            <KV k="Institution"           v={data.postgraduate.school||data.postgraduate.college||data.postgraduate.institute} />
+            <KV k="Board / University"    v={data.postgraduate.board||data.postgraduate.university} />
+            {data.postgraduate.country==="Outside India"&&<KV k="Country" v={data.postgraduate.countryName||"Outside India"} />}
+            {data.postgraduate.course&&<KV k="Course / Degree" v={data.postgraduate.course} />}
+            {(data.postgraduate.branch||data.postgraduate.specialization)&&<KV k="Branch / Specialization" v={data.postgraduate.branch||data.postgraduate.specialization} />}
+            <KV k="Year of Passing"       v={data.postgraduate.yearOfPassing} />
+            {data.postgraduate.from&&<KV k="From" v={isoToDisplay(data.postgraduate.from)} />}
+            {data.postgraduate.to&&<KV k="To" v={isoToDisplay(data.postgraduate.to)} />}
+            {data.postgraduate.hallTicket&&<KV k="Hall Ticket / Roll No." v={data.postgraduate.hallTicket} mono />}
+            <KV k="Result"                v={data.postgraduate.resultValue?`${data.postgraduate.resultType||""} ${data.postgraduate.resultValue}`.trim():""} />
+            {data.postgraduate.mode&&<KV k="Mode" v={data.postgraduate.mode} />}
+            {data.postgraduate.medium&&<KV k="Medium" v={data.postgraduate.medium} />}
+            {data.postgraduate.backlogs&&<KV k="Backlogs" v={data.postgraduate.backlogs} />}
+            {data.postgraduate.country==="Outside India"&&<KV k="Equivalency Certificate" v={data.postgraduate.equivalencyKey?"Uploaded":"Not yet uploaded"} />}
+            {data.postgraduate.address&&<KV k="Address" v={data.postgraduate.address} />}
+          </div>
+          <AttLink label="Provisional Marksheet" docKey="pg_provisional" />
+          <AttLink label="Convocation Certificate" docKey="pg_convocation" />
+          {data.postgraduate.country==="Outside India" && <AttLink label="Equivalency Certificate" docKey="pg_equivalency" />}
+        </div>
+      )}
 
       {(data.hasProfQual==="Yes"||true)&&Array.isArray(data.professionalQualifications)&&data.professionalQualifications.filter(q=>q.type).length>0&&(
         <Sec title="Professional Qualifications">
@@ -1374,6 +1433,7 @@ function EducationTab({ data }) {
                 <KV k="Year"   v={q.year || (q.level==="Pursuing"?"Pursuing":"")} />
                 {q.regNo && <KV k="Registration / Membership No." v={q.regNo} />}
               </div>
+              <AttLink label="Certificate" docKey={`profqual_${i}`} />
             </div>
           ))}
         </Sec>
@@ -1392,6 +1452,7 @@ function EducationTab({ data }) {
                 <KV k="From"       v={isoToDisplay(a.from)} />
                 <KV k="To"         v={a.to?(isoToDisplay(a.to)):(a.isOngoing==="Ongoing"?"Ongoing":"")} />
               </div>
+              <AttLink label="Training Certificate" docKey={`articleship_${i}`} />
             </div>
           ))}
         </Sec>
@@ -1420,9 +1481,17 @@ function EducationTab({ data }) {
 }
 
 // ── Employment Tab ────────────────────────────────────────────────────
-function EmploymentTab({ data, resumeKey, docUrls }) {
+function EmploymentTab({ data, declarations, resumeKey, documents }) {
   const list = Array.isArray(data) ? data : (data?.employments||[]);
-  if (!list.length) return <div className="nd-box">No employment records</div>;
+  const docUrls = Object.values(documents||{}).reduce((acc,grp)=>({...acc,...Object.fromEntries(Object.entries(grp).map(([k,v])=>[k,v.url]))}),{});
+  const EMP_DOC_LABELS = { offerLetter:"Offer Letter", payslips:"Payslips (Last 3 Months)", resignation:"Resignation Acceptance", experience:"Experience / Relieving Letter", idCard:"Company ID Card" };
+  const DECL_LABELS = {
+    business:  "Other Business or Employment",
+    dismissed: "Dismissal or Termination for Cause",
+    criminal:  "Criminal Conviction or Pending Proceedings",
+    civil:     "Civil Judgment",
+  };
+  const hasDeclarations = declarations && Object.keys(declarations).length > 0;
   return (
     <div>
       {resumeKey&&docUrls?.[resumeKey]&&(
@@ -1430,7 +1499,9 @@ function EmploymentTab({ data, resumeKey, docUrls }) {
           <a href={docUrls[resumeKey]} target="_blank" rel="noopener noreferrer" className="doc-view" style={{display:"inline-flex",alignItems:"center",gap:"0.35rem"}}>📄 View Resume / CV ↗</a>
         </div>
       )}
-      {[...list].sort((a,b)=>(Number(a.sort_order??999))-(Number(b.sort_order??999))).map((e,i,arr)=>(
+      {list.length === 0 ? <div className="nd-box">No employment records</div> : [...list].sort((a,b)=>(Number(a.sort_order??999))-(Number(b.sort_order??999))).map((e,i,arr)=>{
+        const empDocs = (documents && documents[`employment/${e.company_id}`]) || {};
+        return (
         <div key={e.company_id||i} className="emp-card">
           <div className="emp-title">
             {i===arr.length-1?"Current / Most Recent Employer":`Previous Employer ${i+1}`}
@@ -1468,11 +1539,46 @@ function EmploymentTab({ data, resumeKey, docUrls }) {
               </div>
             </div>
           )}
+          {Object.keys(empDocs).length > 0 && (
+            <div className="sub-div" style={{display:"flex",flexWrap:"wrap",gap:"0.5rem"}}>
+              {Object.entries(EMP_DOC_LABELS).map(([key,label]) => empDocs[key]?.url ? (
+                <a key={key} href={empDocs[key].url} target="_blank" rel="noopener noreferrer" className="doc-view" style={{display:"inline-flex",alignItems:"center",gap:"0.3rem"}}>📄 {label} — View ↗</a>
+              ) : null)}
+            </div>
+          )}
           {e.gap?.hasGap==="Yes"&&e.gap?.reason&&(
             <div className="gap-note">⏱ Employment gap{(e.gap.from||e.gap.to)?` (${isoToDisplay(e.gap.from)} – ${isoToDisplay(e.gap.to)})`:""}: {e.gap.reason}</div>
           )}
         </div>
-      ))}
+        );
+      })}
+
+      {/* BUG FIX (2026-09-12): this data existed and was correctly saved by the employee,
+          but the consent-snapshot logic threw it away entirely before it ever reached
+          the employer — not a display gap, the data itself never arrived here before.
+          Shown with both the yes/no answer and the free-text detail, matching exactly
+          what the employee actually submitted, nothing summarized or omitted. */}
+      {hasDeclarations && (
+        <Sec title="Other Declarations">
+          <div className="kv-grid">
+            {Object.entries(DECL_LABELS).map(([key,label]) => {
+              const entry = declarations[key];
+              if (!entry) return null;
+              const answered = entry.val === "Yes" || entry.val === "No";
+              if (!answered) return null;
+              return (
+                <div key={key} style={{gridColumn:"1 / -1",padding:"0.6rem 0.75rem",background:entry.val==="Yes"?"#fffbeb":"#f8fafc",border:`1px solid ${entry.val==="Yes"?"#fde68a":"#e8ecf2"}`,borderRadius:6,marginBottom:"0.4rem"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:"0.5rem",marginBottom:entry.details?"0.3rem":0}}>
+                    <span style={{fontSize:"0.68rem",fontWeight:700,color:"#7a6e64",textTransform:"uppercase",letterSpacing:"0.4px"}}>{label}</span>
+                    <span style={{fontSize:"0.65rem",fontWeight:800,padding:"1px 8px",borderRadius:999,background:entry.val==="Yes"?"#fef3c7":"#dcfce7",color:entry.val==="Yes"?"#92400e":"#15803d"}}>{entry.val}</span>
+                  </div>
+                  {entry.details && <div style={{fontSize:"0.82rem",color:"#111",lineHeight:1.5}}>{entry.details}</div>}
+                </div>
+              );
+            })}
+          </div>
+        </Sec>
+      )}
     </div>
   );
 }
@@ -3364,10 +3470,9 @@ return (
                         <div className="tab-nav">{DATA_TABS.map(t=><button key={t} className={`tab-btn${activeTab===t?" on":""}`} onClick={()=>setActiveTab(t)}>{t}</button>)}</div>
                         <div className="tab-pane">
                           {activeTab==="Overview"&&<OverviewTab data={profileData.profile_snapshot} docUrls={Object.values(documents||{}).reduce((acc,grp)=>({...acc,...Object.fromEntries(Object.entries(grp).map(([k,v])=>[k,v.url]))}),{})}/>}
-                          {activeTab==="Education"&&<EducationTab data={profileData.profile_snapshot?.education}/>}
-                          {activeTab==="Employment"&&<EmploymentTab data={profileData.employment_snapshot} resumeKey={profileData.profile_snapshot?.resumeKey} docUrls={Object.values(documents||{}).reduce((acc,grp)=>({...acc,...Object.fromEntries(Object.entries(grp).map(([k,v])=>[k,v.url]))}),{})}/>}
+                          {activeTab==="Education"&&<EducationTab data={profileData.profile_snapshot?.education} docUrls={Object.values(documents||{}).reduce((acc,grp)=>({...acc,...Object.fromEntries(Object.entries(grp).map(([k,v])=>[k,v.url]))}),{})}/>}
+                          {activeTab==="Employment"&&<EmploymentTab data={profileData.employment_snapshot} declarations={profileData.employment_declarations} resumeKey={profileData.profile_snapshot?.resumeKey} documents={documents}/>}
                           {activeTab==="UAN & PF"&&<UanTab data={profileData.profile_snapshot}/>}
-                          {activeTab==="Documents"&&<DocumentsTab documents={documents} loading={docsLoading} empSnap={profileData?.employment_snapshot||[]}/>}
                           {activeTab==="BGV Status"&&<BgvTab consentData={profileData} apiFetch={apiFetch} API={API}/>}
                         </div>
                       </>
