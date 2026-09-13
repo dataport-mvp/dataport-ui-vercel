@@ -282,6 +282,8 @@ async function printProfile(profile, empHistory, documents, employerName) {
     row("Nationality",      d.nationality),
     row("Blood Group",      d.bloodGroup),
     row("Marital Status",   d.maritalStatus),
+    row("Person with Disability (PwD)", d.hasDisability),
+    d.hasDisability === "Yes" ? row("Nature of Disability", d.disabilityDetails) : "",
   ].join(""))}
 
   ${section("Family", [
@@ -1229,6 +1231,8 @@ function OverviewTab({ data, docUrls }) {
           <KV k="Nationality"         v={data.nationality} />
           <KV k="Blood Group"         v={data.bloodGroup} />
           <KV k="Marital Status"      v={data.maritalStatus} />
+          <KV k="Person with Disability (PwD)" v={data.hasDisability} />
+          {data.hasDisability==="Yes"&&data.disabilityDetails&&<KV k="Nature of Disability" v={data.disabilityDetails} />}
           <KV k="Email"               v={data.email} mono />
           <KV k="Mobile"              v={data.mobile ? `+91 ${data.mobile}` : ""} mono />
           <KV k="Aadhaar"             v={maskAadhaar(data.aadhaar||data.aadhar)} mono />
@@ -1490,6 +1494,8 @@ function EmploymentTab({ data, declarations, resumeKey, documents }) {
     dismissed: "Dismissal or Termination for Cause",
     criminal:  "Criminal Conviction or Pending Proceedings",
     civil:     "Civil Judgment",
+    medical:         "Medical Fitness / Substance-Related Declaration",
+    confidentiality: "Confidentiality of Previous Employer Information",
   };
   const hasDeclarations = declarations && Object.keys(declarations).length > 0;
   return (
@@ -1568,11 +1574,11 @@ function EmploymentTab({ data, declarations, resumeKey, documents }) {
               if (!answered) return null;
               return (
                 <div key={key} style={{gridColumn:"1 / -1",padding:"0.6rem 0.75rem",background:entry.val==="Yes"?"#fffbeb":"#f8fafc",border:`1px solid ${entry.val==="Yes"?"#fde68a":"#e8ecf2"}`,borderRadius:6,marginBottom:"0.4rem"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:"0.5rem",marginBottom:entry.details?"0.3rem":0}}>
+                  <div style={{display:"flex",alignItems:"center",gap:"0.5rem",marginBottom:entry.note?"0.3rem":0}}>
                     <span style={{fontSize:"0.68rem",fontWeight:700,color:"#7a6e64",textTransform:"uppercase",letterSpacing:"0.4px"}}>{label}</span>
                     <span style={{fontSize:"0.65rem",fontWeight:800,padding:"1px 8px",borderRadius:999,background:entry.val==="Yes"?"#fef3c7":"#dcfce7",color:entry.val==="Yes"?"#92400e":"#15803d"}}>{entry.val}</span>
                   </div>
-                  {entry.details && <div style={{fontSize:"0.82rem",color:"#111",lineHeight:1.5}}>{entry.details}</div>}
+                  {entry.note && <div style={{fontSize:"0.82rem",color:"#111",lineHeight:1.5}}>{entry.note}</div>}
                 </div>
               );
             })}
@@ -1584,7 +1590,7 @@ function EmploymentTab({ data, declarations, resumeKey, documents }) {
 }
 
 // ── UAN Tab ───────────────────────────────────────────────────────────
-function UanTab({ data }) {
+function UanTab({ data, docUrls }) {
   if (!data) return <div className="nd-box">No UAN data</div>;
   const hasUan = data.hasUan==="yes"||data.hasUan===true;
   return (
@@ -1703,7 +1709,13 @@ function UanTab({ data }) {
           {data.epfoSignature?.s3Key ? (
             <div style={{fontSize:"0.78rem",color:"#16a34a",fontWeight:600}}>
               ✓ Digitally signed{data.epfoSignature?.timestamp ? ` on ${new Date(data.epfoSignature.timestamp).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}` : ""}
-              <span style={{display:"block",fontSize:"0.68rem",color:"#8b88b0",fontWeight:500,marginTop:"0.2rem"}}>See the signature image itself under the Documents tab (UAN / EPFO Documents).</span>
+              {docUrls?.[data.epfoSignature.s3Key] ? (
+                <div style={{marginTop:"0.5rem",border:"1.5px solid #bbf7d0",borderRadius:9,background:"#f0fdf4",padding:"0.5rem",maxWidth:280,display:"inline-block"}}>
+                  <img src={docUrls[data.epfoSignature.s3Key]} alt="Digital Signature" style={{width:"100%",height:60,objectFit:"contain",display:"block"}}/>
+                </div>
+              ) : (
+                <span style={{display:"block",fontSize:"0.68rem",color:"#8b88b0",fontWeight:500,marginTop:"0.2rem"}}>Signature image not available for preview.</span>
+              )}
             </div>
           ) : (
             <div style={{fontSize:"0.78rem",color:"#d97706",fontWeight:600}}>⚠️ Not yet signed</div>
@@ -3472,7 +3484,7 @@ return (
                           {activeTab==="Overview"&&<OverviewTab data={profileData.profile_snapshot} docUrls={Object.values(documents||{}).reduce((acc,grp)=>({...acc,...Object.fromEntries(Object.entries(grp).map(([k,v])=>[k,v.url]))}),{})}/>}
                           {activeTab==="Education"&&<EducationTab data={profileData.profile_snapshot?.education} docUrls={Object.values(documents||{}).reduce((acc,grp)=>({...acc,...Object.fromEntries(Object.entries(grp).map(([k,v])=>[k,v.url]))}),{})}/>}
                           {activeTab==="Employment"&&<EmploymentTab data={profileData.employment_snapshot} declarations={profileData.employment_declarations} resumeKey={profileData.profile_snapshot?.resumeKey} documents={documents}/>}
-                          {activeTab==="UAN & PF"&&<UanTab data={profileData.profile_snapshot}/>}
+                          {activeTab==="UAN & PF"&&<UanTab data={profileData.profile_snapshot} docUrls={Object.values(documents||{}).reduce((acc,grp)=>({...acc,...Object.fromEntries(Object.entries(grp).map(([k,v])=>[k,v.url]))}),{})}/>}
                           {activeTab==="BGV Status"&&<BgvTab consentData={profileData} apiFetch={apiFetch} API={API}/>}
                         </div>
                       </>

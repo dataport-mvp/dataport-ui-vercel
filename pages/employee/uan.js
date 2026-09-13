@@ -629,6 +629,8 @@ async function buildMyProfilePdf(profile, empHistory, documents, employeeSelfNam
     row("Nationality",      d.nationality),
     row("Blood Group",      d.bloodGroup),
     row("Marital Status",   d.maritalStatus),
+    row("Person with Disability (PwD)", d.hasDisability),
+    d.hasDisability === "Yes" ? row("Nature of Disability", d.disabilityDetails) : "",
   ].join(""))}
 
   ${section("Family", [

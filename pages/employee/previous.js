@@ -148,6 +148,8 @@ const ACK_DEFS = [
   { key:"dismissed", title:"Dismissal or Termination for Cause", question:"Have you ever been dismissed, discharged, or asked to resign from any position of employment for reasons of misconduct, performance, or any disciplinary action?", detail:"This includes termination with cause, constructive dismissal, or any exit that followed a formal disciplinary process." },
   { key:"criminal", title:"Criminal Conviction or Pending Proceedings", question:"Have you ever been convicted of a criminal offence, or do you currently have any criminal proceedings pending against you in any court of law?", detail:"This includes convictions resulting in fines, community service, probation, imprisonment, or any other sentence." },
   { key:"civil", title:"Civil Judgments or Regulatory Actions", question:"Have you ever had a civil judgment entered against you, or been subject to a regulatory finding, ban, or sanction by any court, tribunal, or regulatory authority?", detail:"This includes money decrees, injunctions, adverse orders in consumer or labour disputes." },
+  { key:"medical", title:"Medical Fitness / Substance-Related Declaration", question:"Do you have any medical condition, physical or mental, or any history of substance dependency that could affect your ability to safely and effectively perform the duties of this role?", detail:"This includes any condition requiring ongoing treatment or workplace accommodation, and any past or current dependency on alcohol, prescription medication, or other controlled substances that is relevant to workplace safety or performance." },
+  { key:"confidentiality", title:"Confidentiality of Previous Employer Information", question:"Are you currently bound by any confidentiality, non-disclosure, or non-compete agreement with a previous employer that could restrict the information you are able to share, or the work you are able to undertake, in this role?", detail:"This includes non-disclosure agreements covering trade secrets or proprietary information, and any non-compete or non-solicitation clauses that remain in effect." },
 ];
 
 // ── DateField: no calendar, DD/MM/YYYY input, shows month name below ──
@@ -1184,7 +1186,7 @@ export default function PreviousCompany() {
   const [employments,setEmployments]   = useState([emptyEmployment()]);
   const [activeUploads, setActiveUploads] = useState(0);
   const handleUploadState = useCallback((active) => setActiveUploads(c => Math.max(0, c + (active ? 1 : -1))), []);
-  const [ack,setAck]                   = useState({business:emptyAck(),dismissed:emptyAck(),criminal:emptyAck(),civil:emptyAck()});
+  const [ack,setAck]                   = useState({business:emptyAck(),dismissed:emptyAck(),criminal:emptyAck(),civil:emptyAck(),medical:emptyAck(),confidentiality:emptyAck()});
   const [declared,setDeclared]         = useState(false);
   const [errors,setErrors]             = useState({});
   const isDirtyRef = useRef(false);
@@ -1223,7 +1225,7 @@ export default function PreviousCompany() {
           }
           if(data.acknowledgements){
             const a=data.acknowledgements;
-            setAck({business:{val:a.business?.val||"",note:a.business?.note||""},dismissed:{val:a.dismissed?.val||"",note:a.dismissed?.note||""},criminal:{val:a.criminal?.val||"",note:a.criminal?.note||""},civil:{val:a.civil?.val||"",note:a.civil?.note||""}});
+            setAck({business:{val:a.business?.val||"",note:a.business?.note||""},dismissed:{val:a.dismissed?.val||"",note:a.dismissed?.note||""},criminal:{val:a.criminal?.val||"",note:a.criminal?.note||""},civil:{val:a.civil?.val||"",note:a.civil?.note||""},medical:{val:a.medical?.val||"",note:a.medical?.note||""},confidentiality:{val:a.confidentiality?.val||"",note:a.confidentiality?.note||""}});
           }
           if(data.resumeKey) setResumeKey(data.resumeKey);
           if(data.hasExperience) setHasExperience(data.hasExperience);

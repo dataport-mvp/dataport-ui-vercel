@@ -32,7 +32,7 @@ const ACCENTS = { 1:"#0d6e6e", 2:"#d97706", 3:"#7c3aed", 4:"#0891b2", 5:"#16a34a
 
 const ACK_STATEMENTS = [
   "I confirm that I have carefully reviewed all sections of this profile — personal details, education, employment history, UAN/PF records, and supporting documents — and that all information is true, accurate, and complete to the best of my knowledge.",
-  "I authorise Datagate Technologies and its authorised background verification partners to contact my previous employers, educational institutions, government bodies, and references to verify any details submitted in this profile, in accordance with the Digital Personal Data Protection Act 2023 (DPDP Act).",
+  "I authorise Datagate Technologies and its authorised background verification partners to contact my previous employers, educational institutions, government bodies, and references to verify any details submitted in this profile, in accordance with the Digital Personal Data Protection Act 2023 (DPDP Act). I understand that, under the DPDP Act, I retain the right to request access to, correction of, or deletion of my personal data held by Datagate at any time, subject to any legal or contractual retention requirements that may apply.",
   "I understand and agree that this profile and its contents will be shared with a prospective employer only after I provide my explicit, informed consent to that specific employer's request. I retain the right to withdraw that consent at any time, subject to the terms of the Datagate platform.",
   "I acknowledge that any material misrepresentation, falsification, or deliberate omission discovered at any stage — whether before or after commencement of employment — may result in immediate rejection of my application, termination of employment, and/or civil or criminal proceedings under applicable Indian law including the IPC, IT Act 2000, and DPDP Act 2023.",
   "I accept full responsibility for promptly updating my Datagate profile if any submitted information changes in the future, and I acknowledge that sharing outdated or incorrect information with prospective employers may have legal and professional consequences.",
@@ -225,6 +225,7 @@ function getMissingFields(d, empHistory, empAcksData) {
   if (!d.pan)         p1.push("PAN Number");
   if (!d.nameAsPerPan) p1.push("Name as per PAN");
   if (!d.hasPassport)  p1.push("Do you have a Passport?");
+  if (!d.hasDisability) p1.push("Person with Disability (PwD)");
   if (!d.bloodGroup)   p1.push("Blood Group");
   if (!d.maritalStatus) p1.push("Marital Status");
   if (!d.aadhaarKey)  p1.push("Aadhaar Document");
@@ -414,7 +415,7 @@ function getMissingFields(d, empHistory, empAcksData) {
         }
       });
     }
-    const ackLabels = { business:"Other Business/Employment Declaration", dismissed:"Dismissal/Termination Declaration", criminal:"Criminal Conviction Declaration", civil:"Civil Judgment Declaration" };
+    const ackLabels = { business:"Other Business/Employment Declaration", dismissed:"Dismissal/Termination Declaration", criminal:"Criminal Conviction Declaration", civil:"Civil Judgment Declaration", medical:"Medical Fitness / Substance-Related Declaration", confidentiality:"Confidentiality of Previous Employer Information Declaration" };
     Object.entries(ackLabels).forEach(([key, label]) => {
       if (!empAcksData.acknowledgements?.[key]?.val) p3.push(label);
     });
@@ -695,6 +696,8 @@ async function buildMyProfilePdf(profile, empHistory, documents, employeeSelfNam
     row("Nationality",      d.nationality),
     row("Blood Group",      d.bloodGroup),
     row("Marital Status",   d.maritalStatus),
+    row("Person with Disability (PwD)", d.hasDisability),
+    d.hasDisability === "Yes" ? row("Nature of Disability", d.disabilityDetails) : "",
   ].join(""))}
 
   ${section("Family", [
@@ -1701,6 +1704,8 @@ export default function ReviewPage() {
               <KV label="Marital Status" value={d.maritalStatus}/>
               <KV label="Religion"       value={d.religion}/>
               <KV label="Category"       value={d.category}/>
+              <KV label="Person with Disability (PwD)" value={d.hasDisability}/>
+              {d.hasDisability==="Yes"&&d.disabilityDetails&&<KV label="Nature of Disability" value={d.disabilityDetails}/>}
             </div>
             {(d.fatherFirst||d.fatherName||d.maritalStatus==="Married")&&(<>
               <div className="sec-divider">Family</div>
@@ -1953,6 +1958,24 @@ export default function ReviewPage() {
               </div>
               );
             })}
+            {empAcksData?.acknowledgements && Object.keys(empAcksData.acknowledgements).length > 0 && (
+              <div style={{marginTop:"0.9rem",paddingTop:"0.9rem",borderTop:"1px solid #f0eef8"}}>
+                <div style={{fontSize:"0.68rem",fontWeight:700,color:"#7c3aed",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.6rem"}}>Other Declarations</div>
+                {Object.entries({ business:"Other Business/Employment", dismissed:"Dismissal/Termination for Cause", criminal:"Criminal Conviction or Pending Proceedings", civil:"Civil Judgments or Regulatory Actions", medical:"Medical Fitness / Substance-Related Declaration", confidentiality:"Confidentiality of Previous Employer Information" }).map(([key,label]) => {
+                  const entry = empAcksData.acknowledgements[key];
+                  if (!entry || (entry.val !== "Yes" && entry.val !== "No")) return null;
+                  return (
+                    <div key={key} style={{padding:"0.55rem 0.75rem",background:entry.val==="Yes"?"#fffbeb":"#f8f7ff",border:`1px solid ${entry.val==="Yes"?"#fde68a":"#ebe9f5"}`,borderRadius:8,marginBottom:"0.4rem"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:"0.5rem",marginBottom:entry.note?"0.25rem":0}}>
+                        <span style={{fontSize:"0.72rem",fontWeight:600,color:"#3d3a5c"}}>{label}</span>
+                        <span style={{fontSize:"0.62rem",fontWeight:800,padding:"1px 8px",borderRadius:999,background:entry.val==="Yes"?"#fef3c7":"#dcfce7",color:entry.val==="Yes"?"#92400e":"#15803d"}}>{entry.val}</span>
+                      </div>
+                      {entry.note && <div style={{fontSize:"0.78rem",color:"#1a1730"}}>{entry.note}</div>}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* ── Page 4: UAN ── */}

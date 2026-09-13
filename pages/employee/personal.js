@@ -254,6 +254,8 @@ async function buildMyProfilePdf(profile, empHistory, documents, employeeSelfNam
     row("Nationality",      d.nationality),
     row("Blood Group",      d.bloodGroup),
     row("Marital Status",   d.maritalStatus),
+    row("Person with Disability (PwD)", d.hasDisability),
+    d.hasDisability === "Yes" ? row("Nature of Disability", d.disabilityDetails) : "",
   ].join(""))}
 
   ${section("Family", [
@@ -1638,6 +1640,10 @@ export default function PersonalDetails() {
   const [passportExpiry,setPassportExpiry] = useState("");
   const [passportKey,setPassportKey]     = useState("");
   const [bloodGroup,setBloodGroup]       = useState("");
+  // Person with Disability (PwD) — optional, sensitive personal information; never
+  // required. Matches the RPWD Act 2016's own terminology rather than informal phrasing.
+  const [hasDisability,setHasDisability] = useState("");
+  const [disabilityDetails,setDisabilityDetails] = useState("");
   const [maritalStatus,setMaritalStatus] = useState("");
   const [spouseName,setSpouseName] = useState("");
   const [spouseDob,setSpouseDob] = useState("");
@@ -1741,6 +1747,8 @@ export default function PersonalDetails() {
           if (d.pan)          setPan(d.pan);
           if (d.nameAsPerPan) setNameAsPerPan(d.nameAsPerPan);
           if (d.hasPassport)     setHasPassport(d.hasPassport);
+          if (d.hasDisability)   setHasDisability(d.hasDisability);
+          if (d.disabilityDetails) setDisabilityDetails(d.disabilityDetails);
           if (d.passport)       setPassport(d.passport);
           if (d.passportIssue)  setPassportIssue(d.passportIssue);
           if (d.passportExpiry) setPassportExpiry(d.passportExpiry);
@@ -1835,6 +1843,7 @@ export default function PersonalDetails() {
     nameAsPerAadhaar,
     pan, nameAsPerPan,
     hasPassport, passport, passportIssue, passportExpiry, passportKey, bloodGroup, maritalStatus,
+    hasDisability, disabilityDetails,
     emergName, emergRel, emergPhone,
     aadhaarKey, panKey, photoKey, bankProofKey,
     currentAddressProofType: currAddressProofType, currentAddressProofKey: currAddressProofKey,
@@ -2005,6 +2014,7 @@ export default function PersonalDetails() {
     if (!pan)           e.pan = true;
     if (!nameAsPerPan)  e.nameAsPerPan = true;
     if (!hasPassport)   e.hasPassport = true;
+    if (!hasDisability) e.hasDisability = true;
     if (!bloodGroup)    e.bloodGroup = true;
     if (!maritalStatus) e.maritalStatus = true;
     if (!curDoor)       e.curDoor = true;
@@ -2495,6 +2505,31 @@ export default function PersonalDetails() {
                   <FS l="Marital Status" v={maritalStatus} s={(v)=>{dirty(setMaritalStatus)(v);if(v!=="Married"){setSpouseName("");setSpouseDob("");}}} o={["Single","Married","Divorced","Widowed","Separated"]} />
                   <div className="fi" />
                 </div>
+                {/* Person with Disability (PwD) — mandatory to answer (so profile
+                    completion always covers it), but the options themselves are broad
+                    enough that no one is ever stuck: "Partial / Temporary" covers anyone
+                    who doesn't fit a strict yes/no, and "Prefer not to disclose" means
+                    nobody is forced to reveal specifics just to satisfy the requirement. */}
+                <div className="fr">
+                  <div className="fi" style={{minWidth:320}}>
+                    <span className="fl">Do you identify as a Person with Disability (PwD)? <span style={{color:"#ef4444"}}>*</span></span>
+                    <div style={{display:"flex",gap:"0.5rem",marginTop:"0.15rem",flexWrap:"wrap"}}>
+                      {["No","Yes","Partial / Temporary","Prefer not to disclose"].map(v=>(
+                        <button key={v} type="button" onClick={()=>{dirty(setHasDisability)(v);if(v==="No"||v==="Prefer not to disclose")setDisabilityDetails("");}} style={{padding:"0.55rem 0.9rem",borderRadius:9,border:hasDisability===v?"2px solid #0d6e6e":"1.5px solid #d8d4e3",background:hasDisability===v?"#0d6e6e":"#f5f4f0",color:hasDisability===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.78rem",fontWeight:700,fontFamily:"inherit",transition:"all 0.18s",whiteSpace:"nowrap"}}>{v}</button>
+                      ))}
+                    </div>
+                    {errors.hasDisability&&<span className="err-msg">Please select an option — "Prefer not to disclose" is always available</span>}
+                  </div>
+                  <div className="fi"/><div className="fi"/>
+                </div>
+                {(hasDisability==="Yes"||hasDisability==="Partial / Temporary")&&(
+                  <div className="fr">
+                    <div className="fi" style={{minWidth:280}}>
+                      <span className="fl">Nature of disability (optional)</span>
+                      <input className="in" value={disabilityDetails} placeholder="You're welcome to share as much or as little detail as you're comfortable with" onChange={e=>dirty(setDisabilityDetails)(e.target.value)}/>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Spouse Details — appears when Married */}
