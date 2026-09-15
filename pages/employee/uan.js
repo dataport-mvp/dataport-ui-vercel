@@ -1586,7 +1586,10 @@ export default function UanDetails() {
               const histRes = await histPromise;
               if (histRes && histRes.ok) {
                 const hist = await histRes.json();
-                const emps = Array.isArray(hist.employments) ? hist.employments : [];
+                // Defensive filter: older saves (before the fresher-submission fix) could include
+                // a single blank placeholder employment entry even for freshers with no real work
+                // history — filter those out so they don't show up as a phantom "Employer 1" here.
+                const emps = (Array.isArray(hist.employments) ? hist.employments : []).filter(e => e && e.companyName && e.companyName.trim());
                 const lastEmpIdx = emps.length - 1;
                 const companies = emps.map((e, idx) => {
                       const isCurrentlyWorking = e.currentlyWorking === "Yes";
@@ -1624,6 +1627,9 @@ export default function UanDetails() {
                       ? { ...saved, companyName: c.name, isCurrent: c.isCurrent }
                       : { ...makePfRecord(c.name), isCurrent: c.isCurrent };
                   }));
+                } else {
+                  // Fresher / no employment history — no employer-linked PF section applies.
+                  setPfRecords([]);
                 }
               }
             } catch(_) {}
@@ -1979,7 +1985,7 @@ export default function UanDetails() {
             <div className="sc vio">
               <div className="sh"><div className="si vio">📋</div><span className="st">PF Details — Per Employer</span></div>
               <p style={{fontSize:"0.75rem",color:"#8b88b0",marginBottom:"0.75rem",fontWeight:500,lineHeight:1.5}}>
-                {page3Companies.length > 0 ? "Pre-filled from your employment history on page 3." : "Enter PF details for each employer."}
+                {page3Companies.length > 0 ? "Pre-filled from your employment history on page 3." : "No employer-linked PF records — this applies once you have employment history to link on page 3."}
               </p>
 
               {pfRecords.map((rec, i) => {

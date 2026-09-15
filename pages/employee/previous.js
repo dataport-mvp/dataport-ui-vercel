@@ -1356,7 +1356,7 @@ export default function PreviousCompany() {
       })});
     }
 
-    const res=await apiFetch(`${API}/employee/employment-history`,{method:"POST",body:JSON.stringify({employments,acknowledgements:ack,declared,resumeKey,hasExperience})});
+    const res=await apiFetch(`${API}/employee/employment-history`,{method:"POST",body:JSON.stringify({employments: hasExperience==="No" ? [] : employments,acknowledgements:ack,declared,resumeKey,hasExperience})});
     if(!res.ok) throw new Error(parseError(await res.json().catch(()=>({}))));
     isDirtyRef.current=false;
   };

@@ -1241,6 +1241,11 @@ function OverviewTab({ data, docUrls }) {
   return (
     <div>
       <Sec title="Identity">
+        {docUrls?.["photo"] && (
+          <div style={{display:"flex",justifyContent:"center",marginBottom:"0.9rem"}}>
+            <img src={docUrls["photo"]} alt="Profile" style={{width:90,height:90,borderRadius:"50%",objectFit:"cover",border:"1px solid rgba(0,0,0,0.08)"}}/>
+          </div>
+        )}
         <div className="kv-grid">
           <KV k="Full Name"           v={[data.firstName,data.middleName,data.lastName].filter(Boolean).join(" ")} />
           <KV k="Date of Birth"       v={isoToDisplay(data.dob)} />
@@ -1504,8 +1509,12 @@ function EducationTab({ data, docUrls }) {
 }
 
 // ── Employment Tab ────────────────────────────────────────────────────
-function EmploymentTab({ data, declarations, resumeKey, documents }) {
-  const list = Array.isArray(data) ? data : (data?.employments||[]);
+function EmploymentTab({ data, declarations, resumeKey, hasExperience, documents }) {
+  const rawList = Array.isArray(data) ? data : (data?.employments||[]);
+  // Defensive filter: older saves (before the fresher-submission fix) could include a single
+  // blank placeholder employment entry even when the employee has no real work history.
+  // Treat an entry with no company name as a non-entry rather than rendering an empty card.
+  const list = rawList.filter(e => e && e.companyName && e.companyName.trim());
   const docUrls = Object.values(documents||{}).reduce((acc,grp)=>({...acc,...Object.fromEntries(Object.entries(grp).map(([k,v])=>[k,v.url]))}),{});
   const EMP_DOC_LABELS = { offerLetter:"Offer Letter", payslips:"Payslips (Last 3 Months)", resignation:"Resignation Acceptance", experience:"Experience / Relieving Letter", idCard:"Company ID Card" };
   const DECL_LABELS = {
@@ -1524,7 +1533,7 @@ function EmploymentTab({ data, declarations, resumeKey, documents }) {
           <a href={docUrls[resumeKey]} target="_blank" rel="noopener noreferrer" className="doc-view" style={{display:"inline-flex",alignItems:"center",gap:"0.35rem"}}>📄 View Resume / CV ↗</a>
         </div>
       )}
-      {list.length === 0 ? <div className="nd-box">No employment records</div> : [...list].sort((a,b)=>(Number(a.sort_order??999))-(Number(b.sort_order??999))).map((e,i,arr)=>{
+      {list.length === 0 ? <div className="nd-box">{hasExperience==="No" ? "Fresher — no prior employment declared" : "No employment records"}</div> : [...list].sort((a,b)=>(Number(a.sort_order??999))-(Number(b.sort_order??999))).map((e,i,arr)=>{
         const empDocs = (documents && documents[`employment/${e.company_id}`]) || {};
         return (
         <div key={e.company_id||i} className="emp-card">
@@ -1728,9 +1737,9 @@ function UanTab({ data, docUrls }) {
           {data.epfoSignature?.s3Key ? (
             <div style={{fontSize:"0.78rem",color:"#16a34a",fontWeight:600}}>
               ✓ Digitally signed{data.epfoSignature?.timestamp ? ` on ${new Date(data.epfoSignature.timestamp).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}` : ""}
-              {docUrls?.[data.epfoSignature.s3Key] ? (
+              {docUrls?.["signature"] ? (
                 <div style={{marginTop:"0.5rem",border:"1.5px solid #bbf7d0",borderRadius:9,background:"#f0fdf4",padding:"0.5rem",maxWidth:280,display:"inline-block"}}>
-                  <img src={docUrls[data.epfoSignature.s3Key]} alt="Digital Signature" style={{width:"100%",height:60,objectFit:"contain",display:"block"}}/>
+                  <img src={docUrls["signature"]} alt="Digital Signature" style={{width:"100%",height:60,objectFit:"contain",display:"block"}}/>
                 </div>
               ) : (
                 <span style={{display:"block",fontSize:"0.68rem",color:"#8b88b0",fontWeight:500,marginTop:"0.2rem"}}>Signature image not available for preview.</span>
@@ -3547,7 +3556,7 @@ return (
                         <div className="tab-pane">
                           {activeTab==="Overview"&&<OverviewTab data={profileData.profile_snapshot} docUrls={Object.values(documents||{}).reduce((acc,grp)=>({...acc,...Object.fromEntries(Object.entries(grp).map(([k,v])=>[k,v.url]))}),{})}/>}
                           {activeTab==="Education"&&<EducationTab data={profileData.profile_snapshot?.education} docUrls={Object.values(documents||{}).reduce((acc,grp)=>({...acc,...Object.fromEntries(Object.entries(grp).map(([k,v])=>[k,v.url]))}),{})}/>}
-                          {activeTab==="Employment"&&<EmploymentTab data={profileData.employment_snapshot} declarations={profileData.employment_declarations} resumeKey={profileData.profile_snapshot?.resumeKey} documents={documents}/>}
+                          {activeTab==="Employment"&&<EmploymentTab data={profileData.employment_snapshot} declarations={profileData.employment_declarations} resumeKey={profileData.profile_snapshot?.resumeKey} hasExperience={profileData.profile_snapshot?.hasExperience} documents={documents}/>}
                           {activeTab==="UAN & PF"&&<UanTab data={profileData.profile_snapshot} docUrls={Object.values(documents||{}).reduce((acc,grp)=>({...acc,...Object.fromEntries(Object.entries(grp).map(([k,v])=>[k,v.url]))}),{})}/>}
                           {activeTab==="BGV Status"&&<BgvTab consentData={profileData} apiFetch={apiFetch} API={API}/>}
                         </div>
