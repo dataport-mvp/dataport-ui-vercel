@@ -1,5 +1,5 @@
 // pages/admin/dashboard.js
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import PasswordInput from "../../components/PasswordInput";
 
 const API = process.env.NEXT_PUBLIC_API_URL_PROD;
@@ -312,8 +312,12 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     try {
-      const tok = localStorage.getItem("dg_admin_token");
-      const usr = localStorage.getItem("dg_admin_user");
+      // SECURITY FIX: moved from localStorage to sessionStorage, matching the pattern
+      // used by every other role (AuthContext.js) — localStorage persists indefinitely
+      // and is readable by any script on the page, a worse XSS target than sessionStorage
+      // for a long-lived credential.
+      const tok = sessionStorage.getItem("dg_admin_token");
+      const usr = sessionStorage.getItem("dg_admin_user");
       if (tok && usr) {
         const parsed = JSON.parse(usr);
         if (parsed.role === "admin") { setAdminToken(tok); setAdminUser(parsed); }
@@ -335,8 +339,12 @@ export default function AdminDashboard() {
       if (!res.ok) { setLoginErr(d.detail || "Login failed"); return; }
       if (d.role !== "admin") { setLoginErr("This portal is for admins only"); return; }
       const userData = { email: loginEmail.trim().toLowerCase(), role: d.role, name: d.name };
-      localStorage.setItem("dg_admin_token", d.access_token);
-      localStorage.setItem("dg_admin_user", JSON.stringify(userData));
+      // BUG FIX: the backend has always returned a refresh_token here — it was simply
+      // never captured or stored, so every admin session died 15 minutes after login
+      // (access-token TTL) with no way to silently renew it, unlike every other role.
+      sessionStorage.setItem("dg_admin_token", d.access_token);
+      if (d.refresh_token) sessionStorage.setItem("dg_admin_refresh_token", d.refresh_token);
+      sessionStorage.setItem("dg_admin_user", JSON.stringify(userData));
       setAdminToken(d.access_token);
       setAdminUser(userData);
     } catch(_) { setLoginErr("Network error — please try again"); }
@@ -360,8 +368,9 @@ export default function AdminDashboard() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("dg_admin_token");
-    localStorage.removeItem("dg_admin_user");
+    sessionStorage.removeItem("dg_admin_token");
+    sessionStorage.removeItem("dg_admin_refresh_token");
+    sessionStorage.removeItem("dg_admin_user");
     setAdminToken(null); setAdminUser(null);
   };
 
@@ -427,26 +436,64 @@ export default function AdminDashboard() {
   const [noteText, setNoteText]     = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  // FIX BUG-3: apiFetch with 401 auto-logout
+  // BUG FIX: previously force-logged-out immediately on any 401, which happens every
+  // 15 minutes when the access token expires — even mid-session with a perfectly valid
+  // refresh token sitting unused right next to it. Now attempts a silent refresh first,
+  // matching how every other role already behaves, and only logs out if the refresh
+  // token itself is genuinely invalid or missing.
+  const refreshingRef = useRef(null);
+  const doAdminRefresh = useCallback(async () => {
+    if (refreshingRef.current) return refreshingRef.current;
+    const run = (async () => {
+      const rt = sessionStorage.getItem("dg_admin_refresh_token");
+      if (!rt) return null;
+      try {
+        const r = await fetch(`${API}/auth/refresh`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh_token: rt }),
+        });
+        if (!r.ok) return null;
+        const d = await r.json();
+        if (!d.access_token) return null;
+        sessionStorage.setItem("dg_admin_token", d.access_token);
+        setAdminToken(d.access_token);
+        return d.access_token;
+      } catch (_) { return null; }
+    })();
+    refreshingRef.current = run;
+    try { return await run; } finally { refreshingRef.current = null; }
+  }, []);
+
   const apiFetch = useCallback(async (url, opts = {}) => {
-    const token = adminToken || (typeof window !== "undefined" ? localStorage.getItem("dg_admin_token") : null);
-    const res = await fetch(url, {
+    const token = adminToken || (typeof window !== "undefined" ? sessionStorage.getItem("dg_admin_token") : null);
+    const doCall = (t) => fetch(url, {
       ...opts,
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(t ? { Authorization: `Bearer ${t}` } : {}),
         ...(opts.headers || {}),
       },
     });
-    // FIX BUG-3: auto-logout on token expiry
+    let res = await doCall(token);
     if (res.status === 401) {
-      localStorage.removeItem("dg_admin_token");
-      localStorage.removeItem("dg_admin_user");
-      setAdminToken(null);
-      setAdminUser(null);
+      const newToken = await doAdminRefresh();
+      if (newToken) {
+        // Refresh succeeded — retry the original request once with the new token,
+        // rather than surfacing a 401 to the caller for a session that's actually fine.
+        res = await doCall(newToken);
+      }
+      if (res.status === 401) {
+        // Either there was no refresh token, or the backend rejected it outright —
+        // a genuinely dead session, not a routine expiry. Now force-logout.
+        sessionStorage.removeItem("dg_admin_token");
+        sessionStorage.removeItem("dg_admin_refresh_token");
+        sessionStorage.removeItem("dg_admin_user");
+        setAdminToken(null);
+        setAdminUser(null);
+      }
     }
     return res;
-  }, [adminToken]);
+  }, [adminToken, doAdminRefresh]);
 
   const doEmailOverride = async () => {
     if (!emailOverride.old || !emailOverride.new) { setEmailOverride(v=>({...v,err:"Both emails required"})); return; }
