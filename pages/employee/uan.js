@@ -1318,6 +1318,13 @@ export default function UanDetails() {
   const [loading,     setLoading]     = useState(true);
   const [draft,       setDraft]       = useState(null);
   const isDirtyRef = useRef(false);
+  // Serializes every saveDraft() call so overlapping saves (e.g. clicking "Save draft"
+  // mid-form, then "Save & Continue" shortly after, before the first request has returned)
+  // can never race each other. Without this, whichever request's response happens to
+  // arrive LAST wins — even if it was actually SENT first with older, less-complete data —
+  // silently overwriting a more complete save with a stale one. Chaining every call onto
+  // this ref guarantees saves resolve strictly in the order they were started.
+  const saveQueueRef = useRef(Promise.resolve());
   // Track whether user edited AFTER page was loaded (triggers ack reset)
   const wasEditedAfterLoad = useRef(false);
 
@@ -1721,7 +1728,7 @@ export default function UanDetails() {
     setSigningMode(false); // flip back to "view" mode — only now that upload is CONFIRMED successful
   };
 
-  const saveDraft = async () => {
+  const saveDraftInner = async () => {
     if (!draft?.employee_id) throw new Error("Please complete and save Page 1 first");
     const freshRes = await apiFetch(`${API}/employee/draft`);
     const freshDraft = freshRes.ok ? await freshRes.json() : draft;
@@ -1764,6 +1771,17 @@ export default function UanDetails() {
     const res = await apiFetch(`${API}/employee`, { method:"POST", body:JSON.stringify(payload) });
     if (!res.ok) throw new Error(parseError(await res.json().catch(() => ({}))));
     isDirtyRef.current = false;
+  };
+
+  // Public entry point — every call chains strictly after whatever save (if any) is
+  // already in flight, so two saves can never overlap and resolve out of order. Each
+  // call still reads the LATEST checkbox/field state when it actually runs (via the
+  // closure captured at call time), so nothing here delays what gets saved — it only
+  // guarantees the order they land in the backend matches the order they were triggered.
+  const saveDraft = () => {
+    const run = saveQueueRef.current.then(() => saveDraftInner(), () => saveDraftInner());
+    saveQueueRef.current = run.catch(() => {}); // keep the queue alive even if this save fails
+    return run;
   };
 
   const handleNavigate = async (path) => {
