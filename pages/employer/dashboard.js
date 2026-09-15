@@ -1241,11 +1241,6 @@ function OverviewTab({ data, docUrls }) {
   return (
     <div>
       <Sec title="Identity">
-        {docUrls?.["photo"] && (
-          <div style={{display:"flex",justifyContent:"center",marginBottom:"0.9rem"}}>
-            <img src={docUrls["photo"]} alt="Profile" style={{width:90,height:90,borderRadius:"50%",objectFit:"cover",border:"1px solid rgba(0,0,0,0.08)"}}/>
-          </div>
-        )}
         <div className="kv-grid">
           <KV k="Full Name"           v={[data.firstName,data.middleName,data.lastName].filter(Boolean).join(" ")} />
           <KV k="Date of Birth"       v={isoToDisplay(data.dob)} />
@@ -1271,6 +1266,7 @@ function OverviewTab({ data, docUrls }) {
           </>}
         </div>
         <div style={{marginTop:"0.6rem",display:"flex",flexWrap:"wrap",gap:"0.5rem"}}>
+          {docUrls?.["photo"] && <a href={docUrls["photo"]} target="_blank" rel="noopener noreferrer" className="doc-view" style={{display:"inline-flex",alignItems:"center",gap:"0.3rem"}}>📄 Profile Photo — View ↗</a>}
           {docUrls?.["aadhaar"] && <a href={docUrls["aadhaar"]} target="_blank" rel="noopener noreferrer" className="doc-view" style={{display:"inline-flex",alignItems:"center",gap:"0.3rem"}}>📄 Aadhaar — View ↗</a>}
           {docUrls?.["pan"] && <a href={docUrls["pan"]} target="_blank" rel="noopener noreferrer" className="doc-view" style={{display:"inline-flex",alignItems:"center",gap:"0.3rem"}}>📄 PAN — View ↗</a>}
           {(data.hasPassport==="Yes") && docUrls?.["passport"] && <a href={docUrls["passport"]} target="_blank" rel="noopener noreferrer" className="doc-view" style={{display:"inline-flex",alignItems:"center",gap:"0.3rem"}}>📄 Passport — View ↗</a>}
