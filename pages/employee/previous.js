@@ -1208,6 +1208,10 @@ export default function PreviousCompany() {
   const [declared,setDeclared]         = useState(false);
   const [errors,setErrors]             = useState({});
   const isDirtyRef = useRef(false);
+  // Serializes every saveHistory() call — see uan.js for the full explanation. Especially
+  // important here since this function makes two sequential POST requests internally,
+  // widening the window in which an overlapping save could interleave and land stale data.
+  const saveQueueRef = useRef(Promise.resolve());
   const wasEdited = useRef(false);
 
   const todayISO = new Date().toISOString().split("T")[0];
@@ -1337,7 +1341,7 @@ export default function PreviousCompany() {
     return e;
   };
 
-  const saveHistory=async()=>{
+  const saveHistoryInner=async()=>{
     if(!employeeId) throw new Error("Please complete and save Page 1 first");
 
     if(resumeKey||hasExperience){
@@ -1359,6 +1363,12 @@ export default function PreviousCompany() {
     const res=await apiFetch(`${API}/employee/employment-history`,{method:"POST",body:JSON.stringify({employments: hasExperience==="No" ? [] : employments,acknowledgements:ack,declared,resumeKey,hasExperience})});
     if(!res.ok) throw new Error(parseError(await res.json().catch(()=>({}))));
     isDirtyRef.current=false;
+  };
+
+  const saveHistory=()=>{
+    const run=saveQueueRef.current.then(()=>saveHistoryInner(),()=>saveHistoryInner());
+    saveQueueRef.current=run.catch(()=>{});
+    return run;
   };
 
   const handleSaveSignout=async()=>{

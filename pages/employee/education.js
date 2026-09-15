@@ -1127,6 +1127,8 @@ export default function EducationDetails() {
   const [serverDraft,setServerDraft]=useState(null);
   const [errors,setErrors]=useState({});
   const isDirtyRef=useRef(false);
+  // Serializes every saveDraft() call — see uan.js for the full explanation.
+  const saveQueueRef=useRef(Promise.resolve());
   const wasEditedRef=useRef(false);
   const d=(fn)=>(val)=>{fn(val);isDirtyRef.current=true;wasEditedRef.current=true;};
   const fixErr=(key)=>setErrors(p=>({...p,[key]:false}));
@@ -1304,7 +1306,7 @@ export default function EducationDetails() {
     eduGapTo: hasEduGap==="Yes"?eduGapTo:"",
   });
 
-  const saveDraft=async()=>{
+  const saveDraftInner=async()=>{
     if(!serverDraft||!serverDraft.employee_id)throw new Error("Please complete and save Page 1 first");
     const dr=serverDraft;
     const res=await apiFetch(`${API}/employee`,{method:"POST",body:JSON.stringify({
@@ -1325,6 +1327,12 @@ export default function EducationDetails() {
     })});
     if(!res.ok)throw new Error(parseError(await res.json().catch(()=>({}))));
     setServerDraft({...dr,education:buildEducation()});isDirtyRef.current=false;
+  };
+
+  const saveDraft=()=>{
+    const run=saveQueueRef.current.then(()=>saveDraftInner(),()=>saveDraftInner());
+    saveQueueRef.current=run.catch(()=>{});
+    return run;
   };
 
   const handleSaveSignout=async()=>{

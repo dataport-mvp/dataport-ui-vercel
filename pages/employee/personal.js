@@ -1489,6 +1489,12 @@ export default function PersonalDetails() {
   const [photoPreview,setPhotoPreview]   = useState(null);
   const [errors,setErrors]               = useState({});
   const isDirtyRef = useRef(false);
+  // Serializes every saveDraft() call so overlapping saves (e.g. clicking a mid-save
+  // button, then navigating away shortly after, before the first request has returned)
+  // can never race each other. See uan.js for the full explanation — this is the exact
+  // same fix, applied here because the same multi-entry-point save pattern exists on
+  // this page too.
+  const saveQueueRef = useRef(Promise.resolve());
   // page1_edited: set when user makes any change; saves to DB so page 5 re-asks acks
   const wasEditedRef = useRef(false);
   const fixErr = (key) => setErrors(p => ({ ...p, [key]: false }));
@@ -1931,7 +1937,7 @@ export default function PersonalDetails() {
     setEmailChangeLod(false);
   };
 
-  const saveDraft = async () => {
+  const saveDraftInner = async () => {
     const empId = employeeId || `emp-${Date.now()}`;
     if (!employeeId) setEmployeeId(empId);
 
@@ -1953,6 +1959,12 @@ export default function PersonalDetails() {
     const rd = await res.json().catch(() => ({}));
     if (rd.employee_id) setEmployeeId(rd.employee_id);
     if (accountNo.length >= 4) { setAccountFull(accountNo); setAccountLast4(accountNo.slice(-4)); setAccountNo(""); setAccountNoConfirm(""); }
+  };
+
+  const saveDraft = () => {
+    const run = saveQueueRef.current.then(() => saveDraftInner(), () => saveDraftInner());
+    saveQueueRef.current = run.catch(() => {});
+    return run;
   };
 
   const downloadMyProfile = async () => {

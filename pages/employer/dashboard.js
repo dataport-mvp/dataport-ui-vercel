@@ -136,6 +136,7 @@ async function printProfile(profile, empHistory, documents, employerName, employ
     { key: "classX",         label: "Class X Certificate",            group: "education" },
     { key: "intermediate",   label: "Intermediate Certificate",       group: "education" },
     { key: "diploma",        label: "Diploma Certificate",            group: "education" },
+    { key: "diploma_equivalency", label: "Diploma Equivalency Certificate (Foreign Diploma)", group: "education" },
     { key: "ug_provisional", label: "UG Provisional Marksheet",       group: "education" },
     { key: "ug_convocation", label: "UG Convocation Certificate",     group: "education" },
     { key: "ug_equivalency", label: "UG Equivalency Certificate (Foreign Degree)", group: "education" },
@@ -1758,7 +1759,7 @@ const DOC_LABELS = {
   ug_equivalency:"UG Equivalency Certificate (Foreign Degree)",
   pg_provisional:"PG Provisional Marksheet", pg_convocation:"PG Convocation",
   pg_equivalency:"PG Equivalency Certificate (Foreign Degree)",
-  diploma:"Diploma Certificate", uanCard:"UAN Card / Passbook",
+  diploma:"Diploma Certificate", diploma_equivalency:"Diploma Equivalency Certificate (Foreign Diploma)", uanCard:"UAN Card / Passbook",
   serviceHistory:"UAN Service History Snapshot", signature:"Digital Signature (latest)",
   payslips:"Payslips (Last 3 Months)", offerLetter:"Offer Letter",
   resignation:"Resignation Acceptance", experience:"Experience / Relieving Letter",
@@ -1780,7 +1781,7 @@ const SEC_TITLES_DOC = { personal:"Identity Documents", education:"Education Cer
 // order S3/the backend happens to return.
 const SEC_ORDER = ["personal", "education", "employment", "uan", "general"];
 const PERSONAL_ORDER = ["photo", "passport", "aadhaar", "pan"];
-const EDUCATION_FIXED_ORDER = ["classX", "intermediate", "diploma", "ug_provisional", "ug_convocation", "ug_equivalency", "pg_provisional", "pg_convocation", "pg_equivalency"];
+const EDUCATION_FIXED_ORDER = ["classX", "intermediate", "diploma", "diploma_equivalency", "ug_provisional", "ug_convocation", "ug_equivalency", "pg_provisional", "pg_convocation", "pg_equivalency"];
 const EDUCATION_DYNAMIC_PREFIX_ORDER = ["certification", "profqual", "articleship"]; // Certifications, then Prof Quals, then Articleship — matches education.js section order
 const EMPLOYMENT_ORDER = ["offerLetter", "payslips", "resignation", "experience", "idCard"];
 const UAN_ORDER = ["uanCard", "serviceHistory", "signature"];
