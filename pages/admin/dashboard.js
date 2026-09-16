@@ -310,21 +310,67 @@ export default function AdminDashboard() {
   const [pwOk,       setPwOk]       = useState("");
   const [pwBusy,     setPwBusy]     = useState(false);
 
-  useEffect(() => {
-    try {
-      // SECURITY FIX: moved from localStorage to sessionStorage, matching the pattern
-      // used by every other role (AuthContext.js) — localStorage persists indefinitely
-      // and is readable by any script on the page, a worse XSS target than sessionStorage
-      // for a long-lived credential.
-      const tok = sessionStorage.getItem("dg_admin_token");
-      const usr = sessionStorage.getItem("dg_admin_user");
-      if (tok && usr) {
-        const parsed = JSON.parse(usr);
-        if (parsed.role === "admin") { setAdminToken(tok); setAdminUser(parsed); }
-      }
-    } catch(_) {}
-    setAuthReady(true);
+  // BUG FIX: previously force-logged-out immediately on any 401, which happens every
+  // 15 minutes when the access token expires — even mid-session with a perfectly valid
+  // refresh token sitting unused right next to it. Now attempts a silent refresh first,
+  // matching how every other role already behaves, and only logs out if the refresh
+  // token itself is genuinely invalid or missing.
+  // Moved above the rehydration effect below (which now needs to call this on page
+  // load) since a const function can't be referenced before its own declaration.
+  const refreshingRef = useRef(null);
+  const doAdminRefresh = useCallback(async () => {
+    if (refreshingRef.current) return refreshingRef.current;
+    const run = (async () => {
+      const rt = sessionStorage.getItem("dg_admin_refresh_token");
+      if (!rt) return null;
+      try {
+        const r = await fetch(`${API}/auth/refresh`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh_token: rt }),
+        });
+        if (!r.ok) return null;
+        const d = await r.json();
+        if (!d.access_token) return null;
+        // SECURITY FIX: previously also wrote this to sessionStorage. The access
+        // token now lives only in React state (setAdminToken below) — never in any
+        // persistent storage — matching the stronger pattern already used by
+        // AuthContext.js for every other role (employee/employer/BGV), where the
+        // access token exists purely in memory and only the refresh token and basic
+        // user info are persisted. This matters most for the admin role specifically,
+        // since it's the single highest-privilege account in the system: a successful
+        // XSS pop no longer yields a directly-usable access token just by reading
+        // sessionStorage, only a refresh token that still requires exchanging.
+        setAdminToken(d.access_token);
+        return d.access_token;
+      } catch (_) { return null; }
+    })();
+    refreshingRef.current = run;
+    try { return await run; } finally { refreshingRef.current = null; }
   }, []);
+
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const usr = sessionStorage.getItem("dg_admin_user");
+        if (usr) {
+          const parsed = JSON.parse(usr);
+          if (parsed.role === "admin") {
+            // SECURITY FIX: previously read a persisted dg_admin_token directly from
+            // sessionStorage here. Since the access token is no longer written there
+            // at all, rehydration now always goes through a fresh refresh call instead
+            // — exactly how AuthContext.js rehydrates every other role. One extra
+            // network round-trip on page load, in exchange for the access token never
+            // sitting in storage across a reload.
+            const newToken = await doAdminRefresh();
+            if (newToken) { setAdminUser(parsed); }
+            else { sessionStorage.removeItem("dg_admin_refresh_token"); sessionStorage.removeItem("dg_admin_user"); }
+          }
+        }
+      } catch(_) {}
+      setAuthReady(true);
+    };
+    init();
+  }, [doAdminRefresh]);
 
   const handleLogin = async () => {
     setLoginErr("");
@@ -342,7 +388,8 @@ export default function AdminDashboard() {
       // BUG FIX: the backend has always returned a refresh_token here — it was simply
       // never captured or stored, so every admin session died 15 minutes after login
       // (access-token TTL) with no way to silently renew it, unlike every other role.
-      sessionStorage.setItem("dg_admin_token", d.access_token);
+      // SECURITY FIX: the access token itself is no longer persisted to sessionStorage
+      // — it lives only in React state (setAdminToken), matching AuthContext.js.
       if (d.refresh_token) sessionStorage.setItem("dg_admin_refresh_token", d.refresh_token);
       sessionStorage.setItem("dg_admin_user", JSON.stringify(userData));
       setAdminToken(d.access_token);
@@ -368,7 +415,7 @@ export default function AdminDashboard() {
   };
 
   const handleLogout = () => {
-    sessionStorage.removeItem("dg_admin_token");
+    // dg_admin_token was removed — nothing ever writes it to storage anymore.
     sessionStorage.removeItem("dg_admin_refresh_token");
     sessionStorage.removeItem("dg_admin_user");
     setAdminToken(null); setAdminUser(null);
@@ -436,36 +483,11 @@ export default function AdminDashboard() {
   const [noteText, setNoteText]     = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  // BUG FIX: previously force-logged-out immediately on any 401, which happens every
-  // 15 minutes when the access token expires — even mid-session with a perfectly valid
-  // refresh token sitting unused right next to it. Now attempts a silent refresh first,
-  // matching how every other role already behaves, and only logs out if the refresh
-  // token itself is genuinely invalid or missing.
-  const refreshingRef = useRef(null);
-  const doAdminRefresh = useCallback(async () => {
-    if (refreshingRef.current) return refreshingRef.current;
-    const run = (async () => {
-      const rt = sessionStorage.getItem("dg_admin_refresh_token");
-      if (!rt) return null;
-      try {
-        const r = await fetch(`${API}/auth/refresh`, {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ refresh_token: rt }),
-        });
-        if (!r.ok) return null;
-        const d = await r.json();
-        if (!d.access_token) return null;
-        sessionStorage.setItem("dg_admin_token", d.access_token);
-        setAdminToken(d.access_token);
-        return d.access_token;
-      } catch (_) { return null; }
-    })();
-    refreshingRef.current = run;
-    try { return await run; } finally { refreshingRef.current = null; }
-  }, []);
-
   const apiFetch = useCallback(async (url, opts = {}) => {
-    const token = adminToken || (typeof window !== "undefined" ? sessionStorage.getItem("dg_admin_token") : null);
+    // SECURITY FIX: previously fell back to reading dg_admin_token from sessionStorage
+    // if React state was empty. Since the access token is never written there anymore,
+    // this fallback would always be a no-op now — removed rather than left as dead code.
+    const token = adminToken;
     const doCall = (t) => fetch(url, {
       ...opts,
       headers: {
@@ -485,7 +507,6 @@ export default function AdminDashboard() {
       if (res.status === 401) {
         // Either there was no refresh token, or the backend rejected it outright —
         // a genuinely dead session, not a routine expiry. Now force-logout.
-        sessionStorage.removeItem("dg_admin_token");
         sessionStorage.removeItem("dg_admin_refresh_token");
         sessionStorage.removeItem("dg_admin_user");
         setAdminToken(null);
