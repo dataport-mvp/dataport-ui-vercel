@@ -217,7 +217,7 @@ export default function Home() {
         .fd{font-size:13px;color:#7a6e64;line-height:1.75}
 
         /* FOR WHO */
-        .for-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+        .for-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
         .for-card{border:1.5px solid #c8c2b8;border-radius:16px;padding:40px;background:#fff;position:relative;overflow:hidden;transition:all .22s}
         .for-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:#0d6e6e;transform:scaleX(0);transform-origin:left;transition:transform .25s}
         .for-card:hover{border-color:#0d6e6e;box-shadow:0 12px 48px rgba(13,110,110,.12)}
@@ -310,9 +310,9 @@ export default function Home() {
       {/* HERO */}
       <section className="hero">
         <div>
-          <div className="tag f1"><span className="tag-dot"/>Consent-based employment verification</div>
+          <div className="tag f1"><span className="tag-dot"/>Portable, consent-based career profile</div>
           <h1 className="h1 f2">One profile.<br/>Every employer.<br/><em>Your consent.</em></h1>
-          <p className="hero-p f3">Employees build a verified career profile once. Employers get a structured onboarding profile the moment you approve — background verification completed the same day, no forms, no chasing, no duplicate effort.</p>
+          <p className="hero-p f3">Employees build one portable, verified career profile, once. Employers get a structured onboarding profile the moment you approve — background verification completed the same day, no forms, no chasing, no duplicate effort.</p>
           <div className="btns f4">
             <Link href="/employee/login"><button className="btn-p">Create employee profile <Arr/></button></Link>
             <Link href="/employer/login"><button className="btn-s">Employer portal</button></Link>
@@ -442,12 +442,14 @@ export default function Home() {
       {/* FOR WHO */}
       <div className="sec-wrap">
         <div className="sec-inner">
-          <div className="lbl">Who it's for</div>
-          <div className="sec-h">Built for both<br/>sides of hiring</div>
+          <div className="lbl">Three portals, one platform</div>
+          <div className="sec-h">Employee. Employer.<br/>BGV vendor.</div>
+          <p style={{fontSize:"0.95rem",color:"#5a5248",maxWidth:"640px",marginTop:"-0.5rem",marginBottom:"1.5rem",lineHeight:1.7}}>One platform, three dedicated workflows — built so onboarding starts on day one, instant, with background verification running alongside it rather than blocking it.</p>
           <div className="for-grid">
             {[
-              {ey:"For Individuals",t:"Tired of filling the same forms for every employer?",d:"Build your verified employment profile once. Share it with any company, any time. You stay in full control of who sees what — always.",pts:["Fill details once — personal, education, employment","Approve or decline every employer request individually","See exactly who accessed your data and when"],href:"/employee/login",cta:"Create your profile"},
-              {ey:"For Organisations",t:"Verified candidate data without the paperwork chase?",d:"Stop chasing candidates for documents. Request access to a pre-built verified profile and receive structured data the moment they approve.",pts:["Send a consent request in one click","Run instant pre-interview checks — before you even schedule a call","Receive a structured onboarding profile instantly — BGV completed same-day","Full consent audit trail for every data access"],href:"/employer/login",cta:"Access employer portal"},
+              {ey:"Employee Portal",t:"Tired of filling the same forms for every employer?",d:"Build one portable, verified career profile — once. Take it to any company, any time. You stay in full control of who sees what — always.",pts:["Fill details once — personal, education, employment","Portable — reused with every future employer","Approve or decline every employer request individually","See exactly who accessed your data and when"],href:"/employee/login",cta:"Create your profile"},
+              {ey:"Employer Portal",t:"Day-one onboarding, without the paperwork chase?",d:"Stop chasing candidates for documents. Request access to a pre-built verified profile and get structured onboarding data the moment they approve.",pts:["Send a consent request in one click","Run instant pre-interview checks — before you even schedule a call","Receive a structured onboarding profile instantly — BGV completed same-day","Full consent audit trail for every data access"],href:"/employer/login",cta:"Access employer portal"},
+              {ey:"BGV Vendor Portal",t:"Tired of chasing candidates for documents on every case?",d:"Get a centralised case view with pre-loaded, encrypted documentation the moment a case is assigned — no separate document requests, no back-and-forth.",pts:["Pre-loaded, encrypted documentation per case","Built-in tracking for every check, start to finish","Direct communication with both employer and candidate"],href:"/bgv/login",cta:"Access BGV vendor portal"},
             ].map(card=>(
               <div className="for-card" key={card.ey}>
                 <div className="for-ey">{card.ey}</div>
@@ -483,7 +485,7 @@ export default function Home() {
         <div className="f-top">
           <div className="f-brand">
             <Logo variant="light"/>
-            <p className="f-tagline">Consent-based employment verification for India. Built on the DPDP Act 2023. Your data, your control — always.</p>
+            <p className="f-tagline">One portable, consent-based career profile for India. Built on the DPDP Act 2023. Your data, your control — always.</p>
             <div className="f-social">
               <a href="https://www.linkedin.com/company/datagate-technologies" target="_blank" rel="noopener noreferrer" className="f-social-lk">
                 <LinkedInIcon /> LinkedIn
