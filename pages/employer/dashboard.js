@@ -3083,7 +3083,16 @@ return (
                                   {showHeader && <AlphaHeader letter={letter} accentColor="#0d6e6e" />}
                                   <div className={`thread-item${activeThreadId===t.thread_id?" active":""}`} onClick={()=>loadThread(t.consent_id, t.assignment_id, t.thread_id)}>
                                     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}>
-                                      <div className="thread-email" style={{flex:1}}>{t.other_party_name || t.other_party_email}{t.bgv_name && <span style={{fontWeight:500,color:"#7a6e64"}}> — BGV: {t.bgv_name}</span>}</div>
+                                      <div className="thread-email" style={{flex:1}}>
+                                        {t.other_party_name || t.other_party_email}
+                                        {/* Each row is now its own isolated channel — a direct
+                                            employee thread, or one dedicated row per BGV vendor —
+                                            so this tags which kind of row it is instead of
+                                            repeating the vendor's name a second time. */}
+                                        <span style={{fontWeight:600,fontSize:"0.58rem",color:t.channel==="bgv"?"#0d6e6e":"#7a6e64",marginLeft:5,padding:"1px 6px",borderRadius:999,background:t.channel==="bgv"?"#e0f0ee":"#f0ece6",verticalAlign:"middle"}}>
+                                          {t.channel==="bgv" ? "BGV" : "Employee"}
+                                        </span>
+                                      </div>
                                       {t.recipient_type&&t.recipient_type!=="Employee"&&(
                                         <span style={{fontSize:"0.55rem",fontWeight:700,padding:"1px 6px",borderRadius:4,background:t.recipient_type==="Both"?"rgba(124,58,237,0.15)":"rgba(217,119,6,0.15)",color:t.recipient_type==="Both"?"#7c3aed":"#d97706",textTransform:"uppercase",letterSpacing:.4,flexShrink:0}}>{t.recipient_type}</span>
                                       )}
