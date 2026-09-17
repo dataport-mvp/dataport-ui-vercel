@@ -1829,11 +1829,23 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
   const BGV_STATUS_BADGE_LABELS = { groomed:"Not Started", in_progress:"In Progress", on_hold:"On Hold", completed:"Completed" };
 
   const [bgvCase, setBgvCase] = useState(null);
-  const [selectedAssignmentId, setSelectedAssignmentId] = useState(null); // null = let backend default to most-recent active vendor
+  // Per-assignment full detail, keyed by assignment_id — this is what makes the
+  // multiple-vendor sections below genuinely isolated: each section only ever reads
+  // its own entry here, fetched with its own ?assignment_id= call, so one vendor's
+  // checks/report/summary can never bleed into another vendor's section.
+  const [assignmentDetails, setAssignmentDetails] = useState({});
   const [loading, setLoading] = useState(true);
   const [vendors, setVendors] = useState([]);
   const [assigning, setAssigning] = useState(false);
-  const [showReassign, setShowReassign] = useState(false);
+  const [showAssignPanel, setShowAssignPanel] = useState(false);
+  // "add"     = assign a genuinely new, parallel vendor — the default, safe path.
+  //             Existing vendors on this case are completely untouched.
+  // "replace" = archive one specific existing assignment and hand its slot to a new
+  //             vendor (the old sequential "Reassign" flow) — only affects the one
+  //             assignment picked in replaceTargetId; every other active vendor on
+  //             this case is unaffected.
+  const [assignMode, setAssignMode] = useState("add");
+  const [replaceTargetId, setReplaceTargetId] = useState(null); // assignment_id being replaced, only set/used when assignMode === "replace"
   const [viewingHistoryIdx, setViewingHistoryIdx] = useState(null); // index into bgvCase.bgv_history, or null
   const [selectedVendor, setSelectedVendor] = useState("");
   const [vendorSearch,   setVendorSearch]   = useState("");
@@ -1845,50 +1857,78 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
 
   useEffect(() => {
     if (!consentData?.consent_id) return;
+    let cancelled = false;
     const load = async () => {
       try {
-        const qs = selectedAssignmentId ? `?assignment_id=${encodeURIComponent(selectedAssignmentId)}` : "";
         const [cRes, vRes] = await Promise.all([
-          apiFetch(`${apiUrl}/bgv/case/${consentData.consent_id}${qs}`),
+          apiFetch(`${apiUrl}/bgv/case/${consentData.consent_id}`),
           apiFetch(`${apiUrl}/bgv/vendors`),
         ]);
+        let cd = null;
         if (cRes.ok) {
-          const cd = await cRes.json();
-          setBgvCase(cd);
-          // Backend defaults to the most-recently-assigned active vendor when no
-          // assignment_id is given — lock the picker onto whichever one actually came
-          // back, so the 15-second poll keeps refreshing THIS SAME vendor rather than
-          // silently drifting to a different one if a newer assignment shows up mid-view.
-          if (!selectedAssignmentId && cd.assignment_id) setSelectedAssignmentId(cd.assignment_id);
+          cd = await cRes.json();
+          if (!cancelled) setBgvCase(cd);
         }
-        if (vRes.ok) setVendors(await vRes.json());
+        if (vRes.ok && !cancelled) setVendors(await vRes.json());
+
+        // The default (no assignment_id) response gives us the full list of active
+        // assignments (all_active_assignments) but only the DETAILS of the most-recent
+        // one. To show every vendor's own section at once — not one-at-a-time via a
+        // picker — we fetch each active assignment's own detail explicitly, in parallel.
+        const activeList = cd?.all_active_assignments?.length
+          ? cd.all_active_assignments
+          : (cd?.assignment_id ? [{ assignment_id: cd.assignment_id, vendor_name: cd.bgv_vendor_name, vendor_email: cd.bgv_vendor_email, bgv_status: cd.bgv_status }] : []);
+
+        if (activeList.length) {
+          const details = await Promise.all(activeList.map(async (a) => {
+            // Already have the full payload for whichever assignment the default
+            // response resolved to — no need to refetch it.
+            if (a.assignment_id === cd.assignment_id) return [a.assignment_id, cd];
+            try {
+              const r = await apiFetch(`${apiUrl}/bgv/case/${consentData.consent_id}?assignment_id=${encodeURIComponent(a.assignment_id)}`);
+              if (r.ok) return [a.assignment_id, await r.json()];
+            } catch(_) {}
+            return [a.assignment_id, null];
+          }));
+          if (!cancelled) {
+            const map = {};
+            details.forEach(([id, d]) => { if (d) map[id] = d; });
+            setAssignmentDetails(map);
+          }
+        } else if (!cancelled) {
+          setAssignmentDetails({});
+        }
       } catch(_) {}
-      setLoading(false);
+      if (!cancelled) setLoading(false);
     };
     load();
     // Live refresh — this used to only fetch once on mount, so an admin approving a
-    // vendor, or the assigned BGV vendor completing checks, would never show up here
-    // until the employer navigated away and back. Polling keeps this genuinely live,
-    // matching the "updated lively" requirement for the standalone BGV tab specifically.
+    // vendor, or an assigned BGV vendor completing checks, would never show up here
+    // until the employer navigated away and back. Polling keeps this genuinely live.
     // Safe to poll unconditionally: nothing here touches selectedVendor/vendorSearch/
-    // showReassign, so an in-progress vendor selection never gets clobbered mid-poll.
+    // showAssignPanel, so an in-progress vendor selection never gets clobbered mid-poll.
     const id = setInterval(load, 15000);
-    return () => clearInterval(id);
-  }, [consentData?.consent_id, selectedAssignmentId, apiFetch, apiUrl]);
+    return () => { cancelled = true; clearInterval(id); };
+  }, [consentData?.consent_id, apiFetch, apiUrl]);
 
   const assignVendor = async () => {
     if (!selectedVendor || !consentData?.consent_id) return;
+    if (assignMode === "replace" && !replaceTargetId) return;
     setAssigning(true); setAssignMsg("");
     try {
+      const body = { consent_id: consentData.consent_id, bgv_vendor_email: selectedVendor };
+      if (assignMode === "replace") body.replace_assignment_id = replaceTargetId;
       const res = await apiFetch(`${apiUrl}/bgv/assign`, {
         method: "POST",
-        body: JSON.stringify({ consent_id: consentData.consent_id, bgv_vendor_email: selectedVendor }),
+        body: JSON.stringify(body),
       });
       const d = await res.json();
       if (res.ok) {
-        setAssignMsg(`✓ Assigned to ${selectedVendor} — ${d.checks_created} checks created`);
-        setShowReassign(false);
-        setSelectedAssignmentId(null); // let the next poll pick up whichever vendor is now most-recent
+        setAssignMsg(assignMode === "replace"
+          ? `✓ Replaced — ${selectedVendor} assigned, ${d.checks_created} checks created`
+          : `✓ ${selectedVendor} added as an additional, fully isolated vendor — ${d.checks_created} checks created`);
+        setShowAssignPanel(false);
+        setSelectedVendor(""); setVendorSearch(""); setReplaceTargetId(null); setAssignMode("add");
         const cRes = await apiFetch(`${apiUrl}/bgv/case/${consentData.consent_id}`);
         if (cRes.ok) setBgvCase(await cRes.json());
       } else {
@@ -1915,133 +1955,191 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
 
   if (loading) return <div className="nd-box">Loading BGV status…</div>;
 
+  // Every currently-active vendor on this case. Rendered as one independent section
+  // each, further down — this is what replaces the old "one vendor shown at a time,
+  // switch via a picker button" pattern, and it scales to any number of vendors.
+  const activeAssignments = bgvCase?.all_active_assignments?.length
+    ? bgvCase.all_active_assignments
+    : (bgvCase?.assignment_id ? [{ assignment_id: bgvCase.assignment_id, vendor_name: bgvCase.bgv_vendor_name, vendor_email: bgvCase.bgv_vendor_email, bgv_status: bgvCase.bgv_status }] : []);
+
   return (
     <div>
-      {/* Multi-vendor picker — only shows when this case genuinely has more than one
-          vendor actively working it in parallel. Switching here sets selectedAssignmentId,
-          which both the next fetch AND the 15-second poll use, so the view stays locked
-          onto whichever vendor the employer is actually looking at. */}
-      {bgvCase?.all_active_assignments?.length > 1 && (
+      {/* Quick-glance strip of every active vendor — informational only; the full,
+          isolated detail for each one is in its own section below. */}
+      {activeAssignments.length > 0 && (
         <div style={{display:"flex",gap:"0.5rem",marginBottom:"0.9rem",flexWrap:"wrap"}}>
-          {bgvCase.all_active_assignments.map(a => (
-            <button key={a.assignment_id} onClick={()=>setSelectedAssignmentId(a.assignment_id)}
-              style={{padding:"0.45rem 0.9rem",borderRadius:8,border:a.assignment_id===bgvCase.assignment_id?"2px solid #4f46e5":"1.5px solid #e2e8f0",background:a.assignment_id===bgvCase.assignment_id?"#eef2ff":"#fff",color:a.assignment_id===bgvCase.assignment_id?"#4338ca":"#475569",fontSize:"0.8rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+          {activeAssignments.map(a => (
+            <div key={a.assignment_id} style={{padding:"0.45rem 0.9rem",borderRadius:8,border:"1.5px solid #bbf7d0",background:"#f0fdf4",fontSize:"0.8rem",fontWeight:700,color:"#15803d"}}>
               {a.vendor_name || a.vendor_email} — {(BGV_STATUS_BADGE_LABELS[a.bgv_status] || a.bgv_status || "Not Started")}
-            </button>
+            </div>
           ))}
         </div>
       )}
-      {bgvCase?.bgv_vendor_email && (
-        <div style={{background:showReassign?"#fffbeb":"#f0fdf4",border:showReassign?"1px solid #fde68a":"1px solid #bbf7d0",borderRadius:10,padding:"0.75rem 1rem",marginBottom:"1rem",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"0.5rem"}}>
-          <div>
-            <span style={{fontSize:"0.72rem",fontWeight:700,color:showReassign?"#92400e":"#15803d",textTransform:"uppercase",letterSpacing:"0.5px"}}>{showReassign?"Current Vendor (being replaced)":"Assigned to BGV Vendor"}</span>
-            <div style={{fontWeight:700,fontSize:"0.875rem",color:"#0f172a",marginTop:"0.1rem"}}>{bgvCase.bgv_vendor_name || bgvCase.bgv_vendor_email}</div>
-          </div>
-          <div style={{display:"flex",alignItems:"center",gap:"0.6rem"}}>
-            {bgvCase.bgv_status && <span style={{padding:"0.25rem 0.75rem",borderRadius:999,background:showReassign?"#fef3c7":"#dcfce7",color:showReassign?"#92400e":"#15803d",fontSize:"0.72rem",fontWeight:700}}>{bgvCase.bgv_status.replace("_"," ").toUpperCase()}</span>}
-            {!showReassign && (
-              <button onClick={()=>setShowReassign(true)} style={{padding:"0.3rem 0.7rem",background:"#fff",border:"1.5px solid #cbd5e1",borderRadius:7,fontFamily:"inherit",fontSize:"0.72rem",fontWeight:700,color:"#475569",cursor:"pointer"}}>
-                Reassign
-              </button>
-            )}
-          </div>
-        </div>
-      )}
 
+      <div style={{marginBottom:"1rem"}}>
+        <button onClick={()=>{
+            const next = !showAssignPanel;
+            setShowAssignPanel(next);
+            if (next) { setAssignMode("add"); setReplaceTargetId(null); setSelectedVendor(""); setVendorSearch(""); }
+          }}
+          style={{padding:"0.45rem 0.9rem",background:"#fff",border:"1.5px solid #4f46e5",borderRadius:8,fontFamily:"inherit",fontSize:"0.8rem",fontWeight:700,color:"#4f46e5",cursor:"pointer"}}>
+          {showAssignPanel ? "Cancel" : (activeAssignments.length ? "+ Assign Another Vendor / Replace" : "+ Assign BGV Vendor")}
+        </button>
+      </div>
 
-      {/* Assign vendor section */}
-      {(!bgvCase?.bgv_vendor_email || showReassign) && (
+      {/* Assign / replace panel */}
+      {showAssignPanel && (
         <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:"1rem",marginBottom:"1rem"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.6rem"}}>
-            <div style={{fontWeight:700,fontSize:"0.84rem",color:"#0f172a"}}>{showReassign?"Reassign BGV Vendor":"Assign BGV Vendor"}</div>
-            {showReassign && <button onClick={()=>setShowReassign(false)} style={{padding:"0.2rem 0.6rem",background:"none",border:"1px solid #cbd5e1",borderRadius:6,fontSize:"0.7rem",fontWeight:600,color:"#64748b",cursor:"pointer",fontFamily:"inherit"}}>Cancel</button>}
-          </div>
-          {showReassign && (
-            <div style={{background:"#fef2f2",border:"1px solid #fecaca",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.75rem",fontSize:"0.76rem",color:"#991b1b"}}>
-              ⚠ Reassigning moves the current vendor's checks and report into history below — nothing is deleted, and you'll be able to view both this vendor's work and the new vendor's separately once assigned.
+          {activeAssignments.length > 0 && (
+            <div style={{display:"flex",gap:"0.5rem",marginBottom:"0.85rem"}}>
+              <button onClick={()=>{setAssignMode("add"); setReplaceTargetId(null);}}
+                style={{flex:1,padding:"0.5rem",borderRadius:8,border:assignMode==="add"?"2px solid #4f46e5":"1.5px solid #e2e8f0",background:assignMode==="add"?"#eef2ff":"#fff",fontFamily:"inherit",fontSize:"0.78rem",fontWeight:700,color:assignMode==="add"?"#4338ca":"#475569",cursor:"pointer"}}>
+                Add Parallel Vendor
+              </button>
+              <button onClick={()=>setAssignMode("replace")}
+                style={{flex:1,padding:"0.5rem",borderRadius:8,border:assignMode==="replace"?"2px solid #f59e0b":"1.5px solid #e2e8f0",background:assignMode==="replace"?"#fffbeb":"#fff",fontFamily:"inherit",fontSize:"0.78rem",fontWeight:700,color:assignMode==="replace"?"#92400e":"#475569",cursor:"pointer"}}>
+                Replace Existing Vendor
+              </button>
             </div>
           )}
-          {/* Searchable BGV vendor selector */}
-              <div>
-                <input type="text" placeholder="Search BGV vendor by name or email…"
-                  value={vendorSearch} onChange={e=>setVendorSearch(e.target.value)}
-                  style={{width:"100%",padding:"0.5rem 0.75rem",border:"1.5px solid #e2e8f0",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",boxSizing:"border-box",marginBottom:"0.5rem",outline:"none"}}/>
-                <div style={{maxHeight:180,overflowY:"auto",border:"1px solid #e2e8f0",borderRadius:8,marginBottom:"0.5rem"}}>
-                  {vendors.filter(v=>(v.company_name||v.name||"").toLowerCase().includes(vendorSearch.toLowerCase())||(v.email||"").toLowerCase().includes(vendorSearch.toLowerCase())).length===0&&<div style={{padding:"0.75rem",fontSize:"0.78rem",color:"#94a3b8"}}>No vendors found</div>}
-                  {vendors.filter(v=>(v.company_name||v.name||"").toLowerCase().includes(vendorSearch.toLowerCase())||(v.email||"").toLowerCase().includes(vendorSearch.toLowerCase())).map(v=>(
-                    <div key={v.email} onClick={()=>setSelectedVendor(v.email)}
-                      style={{padding:"0.6rem 0.85rem",cursor:"pointer",borderBottom:"1px solid #f1f5f9",
-                        background:selectedVendor===v.email?"#eef2ff":"#fff",
-                        fontWeight:selectedVendor===v.email?700:400,fontSize:"0.84rem",color:"#0f172a"}}>
-                      <span style={{fontWeight:700}}>{v.company_name||v.name}</span>
-                      <span style={{fontSize:"0.72rem",color:"#64748b",marginLeft:"0.5rem"}}>{v.email}</span>
-                      {selectedVendor===v.email&&<span style={{float:"right",color:"#4f46e5",fontSize:"0.72rem",fontWeight:800}}>✓ Selected</span>}
-                    </div>
-                  ))}
-                </div>
-                <button onClick={assignVendor} disabled={!selectedVendor||assigning}
-                  style={{width:"100%",padding:"0.55rem",background:"#4f46e5",color:"#fff",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",fontWeight:700,cursor:"pointer",opacity:(!selectedVendor||assigning)?0.6:1}}>
-                  {assigning?"Assigning…":selectedVendor?`Assign to ${vendors.find(v=>v.email===selectedVendor)?.company_name||selectedVendor} →`:"Select a vendor first"}
-                </button>
-                {vendors.length===0&&<p style={{fontSize:"0.72rem",color:"#94a3b8",marginTop:"0.5rem"}}>No approved BGV vendors. Contact admin to onboard a vendor.</p>}
+
+          {assignMode === "add" && activeAssignments.length > 0 && (
+            <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.75rem",fontSize:"0.76rem",color:"#1e40af"}}>
+              The new vendor gets a completely separate inbox, checks, and report — fully isolated from the vendor(s) already on this case. Nothing existing is touched, replaced, or deleted.
+            </div>
+          )}
+
+          {assignMode === "replace" && (
+            <>
+              <div style={{fontSize:"0.76rem",fontWeight:700,color:"#0f172a",marginBottom:"0.4rem"}}>Which vendor is being replaced?</div>
+              <div style={{display:"flex",flexDirection:"column",gap:"0.4rem",marginBottom:"0.75rem"}}>
+                {activeAssignments.map(a => (
+                  <div key={a.assignment_id} onClick={()=>setReplaceTargetId(a.assignment_id)}
+                    style={{padding:"0.5rem 0.75rem",borderRadius:7,cursor:"pointer",border:replaceTargetId===a.assignment_id?"2px solid #f59e0b":"1px solid #e2e8f0",background:replaceTargetId===a.assignment_id?"#fffbeb":"#fff",fontSize:"0.8rem",fontWeight:600,color:"#0f172a"}}>
+                    {a.vendor_name || a.vendor_email}
+                    {replaceTargetId===a.assignment_id && <span style={{float:"right",color:"#92400e",fontSize:"0.72rem",fontWeight:800}}>✓ Selected</span>}
+                  </div>
+                ))}
               </div>
+              {replaceTargetId && (
+                <div style={{background:"#fef2f2",border:"1px solid #fecaca",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.75rem",fontSize:"0.76rem",color:"#991b1b"}}>
+                  ⚠ This archives the selected vendor's checks and report into history below — nothing is deleted, but that one vendor loses further access to this case. Every other vendor on this case is unaffected.
+                </div>
+              )}
+            </>
+          )}
+
+          {(assignMode === "add" || replaceTargetId) && (
+            <div>
+              <input type="text" placeholder="Search BGV vendor by name or email…"
+                value={vendorSearch} onChange={e=>setVendorSearch(e.target.value)}
+                style={{width:"100%",padding:"0.5rem 0.75rem",border:"1.5px solid #e2e8f0",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",boxSizing:"border-box",marginBottom:"0.5rem",outline:"none"}}/>
+              <div style={{maxHeight:180,overflowY:"auto",border:"1px solid #e2e8f0",borderRadius:8,marginBottom:"0.5rem"}}>
+                {vendors.filter(v=>(v.company_name||v.name||"").toLowerCase().includes(vendorSearch.toLowerCase())||(v.email||"").toLowerCase().includes(vendorSearch.toLowerCase())).length===0&&<div style={{padding:"0.75rem",fontSize:"0.78rem",color:"#94a3b8"}}>No vendors found</div>}
+                {vendors.filter(v=>(v.company_name||v.name||"").toLowerCase().includes(vendorSearch.toLowerCase())||(v.email||"").toLowerCase().includes(vendorSearch.toLowerCase())).map(v=>(
+                  <div key={v.email} onClick={()=>setSelectedVendor(v.email)}
+                    style={{padding:"0.6rem 0.85rem",cursor:"pointer",borderBottom:"1px solid #f1f5f9",
+                      background:selectedVendor===v.email?"#eef2ff":"#fff",
+                      fontWeight:selectedVendor===v.email?700:400,fontSize:"0.84rem",color:"#0f172a"}}>
+                    <span style={{fontWeight:700}}>{v.company_name||v.name}</span>
+                    <span style={{fontSize:"0.72rem",color:"#64748b",marginLeft:"0.5rem"}}>{v.email}</span>
+                    {selectedVendor===v.email&&<span style={{float:"right",color:"#4f46e5",fontSize:"0.72rem",fontWeight:800}}>✓ Selected</span>}
+                  </div>
+                ))}
+              </div>
+              <button onClick={assignVendor} disabled={!selectedVendor||assigning||(assignMode==="replace"&&!replaceTargetId)}
+                style={{width:"100%",padding:"0.55rem",background:assignMode==="replace"?"#f59e0b":"#4f46e5",color:"#fff",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",fontWeight:700,cursor:"pointer",opacity:(!selectedVendor||assigning||(assignMode==="replace"&&!replaceTargetId))?0.6:1}}>
+                {assigning?"Assigning…":selectedVendor?(assignMode==="replace"?`Replace with ${vendors.find(v=>v.email===selectedVendor)?.company_name||selectedVendor} →`:`Add ${vendors.find(v=>v.email===selectedVendor)?.company_name||selectedVendor} in Parallel →`):"Select a vendor first"}
+              </button>
+              {vendors.length===0&&<p style={{fontSize:"0.72rem",color:"#94a3b8",marginTop:"0.5rem"}}>No approved BGV vendors. Contact admin to onboard a vendor.</p>}
+            </div>
+          )}
           {assignMsg && <p style={{fontSize:"0.78rem",marginTop:"0.5rem",color:assignMsg.startsWith("✓")?"#16a34a":"#ef4444",fontWeight:600}}>{assignMsg}</p>}
         </div>
       )}
 
-      {/* Final Report */}
-      {bgvCase?.bgv_report_key && (
-        <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:10,padding:"1rem",marginBottom:"1rem"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"0.5rem"}}>
-            <div>
-              <div style={{fontWeight:800,fontSize:"0.875rem",color:"#0f172a"}}>✅ Final BGV Report Submitted</div>
-              {bgvCase.bgv_overall_status && (
-                <span style={{display:"inline-block",marginTop:"0.35rem",padding:"0.2rem 0.6rem",borderRadius:999,background:`${OVERALL[bgvCase.bgv_overall_status]||"#64748b"}20`,color:OVERALL[bgvCase.bgv_overall_status]||"#64748b",fontSize:"0.72rem",fontWeight:800,textTransform:"uppercase"}}>
-                  {bgvCase.bgv_overall_status.toUpperCase()}
+      {/* Per-vendor isolated sections — one independent block per active assignment.
+          Each block reads only its own assignmentDetails[assignment_id] payload, so a
+          field from one vendor's case (checks, report, summary) can never appear inside
+          another vendor's section, no matter how many are active at once. */}
+      {activeAssignments.length === 0 && (
+        <div className="nd-box">No BGV vendor assigned yet.</div>
+      )}
+      {activeAssignments.map(a => {
+        const d = assignmentDetails[a.assignment_id];
+        const statusKey = d?.bgv_status || a.bgv_status;
+        return (
+          <div key={a.assignment_id} style={{border:"2px solid #e2e8f0",borderRadius:12,padding:"1rem",marginBottom:"1.25rem"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.75rem",flexWrap:"wrap",gap:"0.5rem"}}>
+              <div>
+                <span style={{fontSize:"0.68rem",fontWeight:700,color:"#4f46e5",textTransform:"uppercase",letterSpacing:"0.5px"}}>BGV Vendor</span>
+                <div style={{fontWeight:800,fontSize:"0.95rem",color:"#0f172a"}}>{d?.bgv_vendor_name || a.vendor_name || a.vendor_email}</div>
+              </div>
+              {statusKey && (
+                <span style={{padding:"0.25rem 0.75rem",borderRadius:999,background:"#dcfce7",color:"#15803d",fontSize:"0.72rem",fontWeight:700}}>
+                  {(BGV_STATUS_BADGE_LABELS[statusKey] || statusKey).toString().replace("_"," ").toUpperCase()}
                 </span>
               )}
-              {bgvCase.bgv_summary && <div style={{fontSize:"0.78rem",color:"#475569",marginTop:"0.4rem",lineHeight:1.5}}>{bgvCase.bgv_summary}</div>}
             </div>
-            <button onClick={()=>viewReport(bgvCase.bgv_report_key)} style={{padding:"0.4rem 0.9rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:7,fontSize:"0.78rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-              View Report ↗
-            </button>
-          </div>
-        </div>
-      )}
 
-      {/* Check Tracker */}
-      {bgvCase?.bgv_checks?.length > 0 && (
-        <div>
-          <div style={{fontWeight:700,fontSize:"0.84rem",color:"#0f172a",marginBottom:"0.65rem"}}>Check Status</div>
-          {bgvCase.bgv_checks.map((ch,i) => {
-            const st = CHECK_STATUS_COLORS[ch.status] || CHECK_STATUS_COLORS.pending;
-            return (
-              <div key={i} style={{display:"grid",gridTemplateColumns:"2fr 1.2fr 1fr",gap:"0.5rem",padding:"0.65rem 0",borderBottom:"1px solid #f1f5f9",alignItems:"center"}}>
-                <div>
-                  <div style={{fontSize:"0.82rem",fontWeight:600,color:"#0f172a"}}>{ch.label}</div>
-                  {ch.notes && <div style={{fontSize:"0.72rem",color:"#64748b",marginTop:"0.15rem",lineHeight:1.4}}>{ch.notes}</div>}
+            {!d && <div style={{fontSize:"0.78rem",color:"#94a3b8"}}>Loading this vendor's details…</div>}
+
+            {d?.bgv_report_key && (
+              <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:10,padding:"0.85rem",marginBottom:"0.85rem"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"0.5rem"}}>
+                  <div>
+                    <div style={{fontWeight:800,fontSize:"0.84rem",color:"#0f172a"}}>✅ Final Report Submitted</div>
+                    {d.bgv_overall_status && (
+                      <span style={{display:"inline-block",marginTop:"0.35rem",padding:"0.2rem 0.6rem",borderRadius:999,background:`${OVERALL[d.bgv_overall_status]||"#64748b"}20`,color:OVERALL[d.bgv_overall_status]||"#64748b",fontSize:"0.7rem",fontWeight:800,textTransform:"uppercase"}}>
+                        {d.bgv_overall_status.toUpperCase()}
+                      </span>
+                    )}
+                    {d.bgv_summary && <div style={{fontSize:"0.76rem",color:"#475569",marginTop:"0.4rem",lineHeight:1.5}}>{d.bgv_summary}</div>}
+                  </div>
+                  <button onClick={()=>viewReport(d.bgv_report_key)} style={{padding:"0.4rem 0.9rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:7,fontSize:"0.76rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                    View Report ↗
+                  </button>
                 </div>
-                <span style={{display:"inline-block",padding:"0.2rem 0.6rem",borderRadius:999,background:st.bg,color:st.color,fontSize:"0.7rem",fontWeight:700}}>{st.label}</span>
-                <div style={{fontSize:"0.68rem",color:"#94a3b8"}}>{ch.completed_at ? new Date(ch.completed_at).toLocaleDateString("en-IN",{day:"2-digit",month:"short"}) : "—"}</div>
               </div>
-            );
-          })}
-        </div>
-      )}
+            )}
 
-      {!bgvCase?.bgv_checks?.length && bgvCase?.bgv_vendor_email && (
-        <div className="nd-box">BGV vendor has not started checks yet.</div>
-      )}
+            {d?.bgv_checks?.length > 0 && (
+              <div>
+                <div style={{fontWeight:700,fontSize:"0.8rem",color:"#0f172a",marginBottom:"0.5rem"}}>Check Status</div>
+                {d.bgv_checks.map((ch,i) => {
+                  const st = CHECK_STATUS_COLORS[ch.status] || CHECK_STATUS_COLORS.pending;
+                  return (
+                    <div key={i} style={{display:"grid",gridTemplateColumns:"2fr 1.2fr 1fr",gap:"0.5rem",padding:"0.55rem 0",borderBottom:"1px solid #f1f5f9",alignItems:"center"}}>
+                      <div>
+                        <div style={{fontSize:"0.8rem",fontWeight:600,color:"#0f172a"}}>{ch.label}</div>
+                        {ch.notes && <div style={{fontSize:"0.7rem",color:"#64748b",marginTop:"0.15rem",lineHeight:1.4}}>{ch.notes}</div>}
+                      </div>
+                      <span style={{display:"inline-block",padding:"0.2rem 0.6rem",borderRadius:999,background:st.bg,color:st.color,fontSize:"0.68rem",fontWeight:700}}>{st.label}</span>
+                      <div style={{fontSize:"0.66rem",color:"#94a3b8"}}>{ch.completed_at ? new Date(ch.completed_at).toLocaleDateString("en-IN",{day:"2-digit",month:"short"}) : "—"}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
-      {bgvCase?.bgv_summary && (
-        <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"1rem",marginBottom:"1rem"}}>
-          <div style={{fontWeight:700,fontSize:"0.84rem",color:"#0f172a",marginBottom:"0.5rem"}}>Summary / Remarks</div>
-          <div style={{fontSize:"0.82rem",color:"#334155",lineHeight:1.6,whiteSpace:"pre-wrap"}}>{bgvCase.bgv_summary}</div>
-        </div>
-      )}
+            {d && !d.bgv_checks?.length && (
+              <div style={{fontSize:"0.78rem",color:"#94a3b8"}}>This vendor has not started checks yet.</div>
+            )}
 
-      {/* Past vendor history — deliberately last, clearly separated from the current
-          vendor's active info/checks above, instead of interleaved between them. */}
+            {d?.bgv_summary && !d?.bgv_report_key && (
+              <div style={{marginTop:"0.75rem"}}>
+                <div style={{fontWeight:700,fontSize:"0.78rem",color:"#0f172a",marginBottom:"0.3rem"}}>Summary / Remarks</div>
+                <div style={{fontSize:"0.78rem",color:"#334155",lineHeight:1.6,whiteSpace:"pre-wrap"}}>{d.bgv_summary}</div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Past vendor history — deliberately last, clearly separated from the active
+          vendors' sections above, instead of interleaved between them. This is global
+          to the consent (it only ever holds vendors REPLACED via assignMode "replace"),
+          so it's shown once rather than per-section. */}
       {bgvCase?.bgv_history?.length > 0 && (
         <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"1rem",marginBottom:"1rem"}}>
           <div style={{fontWeight:700,fontSize:"0.84rem",color:"#0f172a",marginBottom:"0.6rem"}}>Past BGV Vendors ({bgvCase.bgv_history.length})</div>
