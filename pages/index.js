@@ -32,7 +32,7 @@ const Logo = ({ variant = "dark" }) => (
       <div style={{fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"15px",
         color:variant==="light"?"#fff":"#111",letterSpacing:"-0.4px",lineHeight:1}}>Datagate</div>
       <div style={{fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:"6.5px",
-        color:"#0d6e6e",letterSpacing:"2px",textTransform:"uppercase",marginTop:"3px"}}>Verified Employment</div>
+        color:"#0d6e6e",letterSpacing:"2px",textTransform:"uppercase",marginTop:"3px"}}>Employee-Owned Profiles</div>
     </div>
   </div>
 );
@@ -299,7 +299,7 @@ export default function Home() {
         <div className="ticker-track">
           {[...Array(2)].map((_,i)=>(
             <span key={i} style={{display:"flex"}}>
-              {["DPDP Act 2023 Compliant","Consent-first architecture","Zero document chasing","Instant BGV on approval","Employee-controlled access","EPFO-linked verification","Full audit trail","No data sold ever","Background verification simplified","Built for India"].map((t,j)=>(
+              {["DPDP Act 2023 Compliant","Consent-first architecture","Zero document chasing","Instant day-one onboarding","Employee-controlled access","EPFO-linked verification","Full audit trail","No data sold ever","Same-day BGV, built in","Built for India"].map((t,j)=>(
                 <span className="ti" key={j}><span className="ti-dot">●</span>{t}</span>
               ))}
             </span>
@@ -312,7 +312,7 @@ export default function Home() {
         <div>
           <div className="tag f1"><span className="tag-dot"/>Consent-based employment verification</div>
           <h1 className="h1 f2">One profile.<br/>Every employer.<br/><em>Your consent.</em></h1>
-          <p className="hero-p f3">Employees build a verified employment record once. Employers get structured, reliable BGV data the moment you approve — no forms, no chasing, no duplicate effort.</p>
+          <p className="hero-p f3">Employees build a verified career profile once. Employers get a structured onboarding profile the moment you approve — background verification completed the same day, no forms, no chasing, no duplicate effort.</p>
           <div className="btns f4">
             <Link href="/employee/login"><button className="btn-p">Create employee profile <Arr/></button></Link>
             <Link href="/employer/login"><button className="btn-s">Employer portal</button></Link>
@@ -367,15 +367,15 @@ export default function Home() {
           <div className="prob-head">
             <div>
               <div className="prob-lbl">The problem we solve</div>
-              <div className="prob-h">BGV without<br/><em>the chaos.</em></div>
+              <div className="prob-h">Onboarding without<br/><em>the chaos.</em></div>
             </div>
-            <p className="prob-p">Traditional background verification involves duplicate paperwork, manual chasing, and no audit trail. Datagate solves all of it — with employee consent at every step.</p>
+            <p className="prob-p">Every new job means the same forms, the same documents, chased from scratch. Datagate ends that — professionals build one verified profile, once, and reuse it everywhere, with background verification completed the same day as a natural result, not a separate ordeal.</p>
           </div>
           <table className="ct">
             <thead>
               <tr>
                 <th>What changes</th>
-                <th>Traditional BGV</th>
+                <th>Traditional onboarding</th>
                 <th className="th-dg">With Datagate</th>
               </tr>
             </thead>
@@ -424,7 +424,7 @@ export default function Home() {
       <div className="sec-wrap sec-alt" id="features">
         <div className="sec-inner">
           <div className="lbl">Platform capabilities</div>
-          <div className="sec-h" style={{marginBottom:0}}>Everything background<br/>verification needs</div>
+          <div className="sec-h" style={{marginBottom:0}}>Everything onboarding<br/>needs, BGV included</div>
           <div className="feat-grid">
             {[["🔐","Consent on every share","No employer sees your data without your explicit approval. Every access is logged with timestamp and stated purpose."],
               ["📄","Complete BGV coverage","Aadhaar, PAN, education records, employment history, UAN and PF — all structured in one verified profile."],
@@ -447,7 +447,7 @@ export default function Home() {
           <div className="for-grid">
             {[
               {ey:"For Individuals",t:"Tired of filling the same forms for every employer?",d:"Build your verified employment profile once. Share it with any company, any time. You stay in full control of who sees what — always.",pts:["Fill details once — personal, education, employment","Approve or decline every employer request individually","See exactly who accessed your data and when"],href:"/employee/login",cta:"Create your profile"},
-              {ey:"For Organisations",t:"Verified candidate data without the paperwork chase?",d:"Stop chasing candidates for documents. Request access to a pre-built verified profile and receive structured data the moment they approve.",pts:["Send a consent request in one click","Receive structured BGV and onboarding data instantly","Full consent audit trail for every data access"],href:"/employer/login",cta:"Access employer portal"},
+              {ey:"For Organisations",t:"Verified candidate data without the paperwork chase?",d:"Stop chasing candidates for documents. Request access to a pre-built verified profile and receive structured data the moment they approve.",pts:["Send a consent request in one click","Run instant pre-interview checks — before you even schedule a call","Receive a structured onboarding profile instantly — BGV completed same-day","Full consent audit trail for every data access"],href:"/employer/login",cta:"Access employer portal"},
             ].map(card=>(
               <div className="for-card" key={card.ey}>
                 <div className="for-ey">{card.ey}</div>
