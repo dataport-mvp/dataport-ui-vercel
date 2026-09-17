@@ -30,7 +30,7 @@ const Logo = ({ variant = "dark" }) => (
     </svg>
     <div>
       <div style={{fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"15px",
-        color:variant==="light"?"#fff":"#111",letterSpacing:"-0.4px",lineHeight:1}}>Datagate</div>
+        color:variant==="light"?"#fff":"#111",letterSpacing:"-0.4px",lineHeight:1}}>Datagate.co.in</div>
       <div style={{fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:"6.5px",
         color:"#0d6e6e",letterSpacing:"2px",textTransform:"uppercase",marginTop:"3px"}}>Employee-Owned Profiles</div>
     </div>
@@ -62,7 +62,7 @@ function CookieBanner() {
   return (
     <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:999,background:"#1a1510",borderTop:"1px solid rgba(255,255,255,0.1)",padding:"0.9rem 2rem",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:"0.75rem",fontFamily:"'DM Sans',sans-serif"}}>
       <p style={{fontSize:"0.78rem",color:"rgba(255,255,255,0.7)",lineHeight:1.6,margin:0,maxWidth:"680px"}}>
-        We use essential cookies to keep you signed in and make Datagate work. No tracking, no advertising cookies. By continuing to use Datagate you agree to our{" "}
+        We use essential cookies to keep you signed in and make Datagate.co.in work. No tracking, no advertising cookies. By continuing to use Datagate.co.in you agree to our{" "}
         <a href="/privacy" style={{color:"#0d6e6e",textDecoration:"none",fontWeight:600}}>Privacy Policy</a>.
       </p>
       <div style={{display:"flex",gap:"0.6rem",flexShrink:0}}>
@@ -78,10 +78,10 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Datagate — Employee-Owned Career Profiles | DPDP Act 2023</title>
-        <meta name="description" content="DPDP Act 2023-native. Professionals build one secure, portable career profile and keep it current. Employers get onboarding completed within minutes and pre-BGV checks, with background verification assigned the same day." />
-        <meta property="og:title" content="Datagate — Employee-Owned Career Profiles | DPDP Act 2023" />
-        <meta property="og:description" content="DPDP Act 2023-native. Professionals build one secure, portable career profile and keep it current. Employers get onboarding completed within minutes and pre-BGV checks, with background verification assigned the same day." />
+        <title>Datagate.co.in — Employment Data Portability Platform | Digital Career Profiles</title>
+        <meta name="description" content="Datagate.co.in is an India-based employment data portability platform that gives professionals one reusable digital career profile. Keep it updated, share it with employers through explicit consent, complete onboarding in minutes, run pre-BGV checks, and initiate BGV at the same time." />
+        <meta property="og:title" content="Datagate.co.in — Employment Data Portability Platform | Digital Career Profiles" />
+        <meta property="og:description" content="Datagate.co.in is an India-based employment data portability platform that gives professionals one reusable digital career profile. Keep it updated, share it with employers through explicit consent, complete onboarding in minutes, run pre-BGV checks, and initiate BGV at the same time." />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary" />
       </Head>
@@ -300,7 +300,7 @@ export default function Home() {
         <div className="ticker-track">
           {[...Array(2)].map((_,i)=>(
             <span key={i} style={{display:"flex"}}>
-              {["DPDP Act 2023 Compliant","Consent-first architecture","Zero document chasing","Onboarding completed in minutes","Employee-controlled access","EPFO-linked verification","Full audit trail","No data sold ever","BGV assigned same-day","Built for India"].map((t,j)=>(
+              {["Built around the DPDP Act 2023","Explicit employee consent","Less document chasing","Onboarding in minutes","Employee-controlled access","Structured employment records","Full access history","No data shared without consent","BGV initiated at the same time","Built in India. Designed for India\'s employment ecosystem."].map((t,j)=>(
                 <span className="ti" key={j}><span className="ti-dot">●</span>{t}</span>
               ))}
             </span>
@@ -311,15 +311,15 @@ export default function Home() {
       {/* HERO */}
       <section className="hero">
         <div>
-          <div className="tag f1"><span className="tag-dot"/>Portable, consent-based career profile</div>
-          <h1 className="h1 f2">One profile.<br/>Every employer.<br/><em>Your consent.</em></h1>
-          <p className="hero-p f3">Employees build one portable career profile and keep it current as new opportunities come in. The moment you approve an employer's request, your data transfers in real time — onboarding is complete within minutes, and background verification is assigned that same day.</p>
+          <div className="tag f1"><span className="tag-dot"/>Digital, portable career profile</div>
+          <h1 className="h1 f2">One profile.<br/>Every opportunity.<br/><em>Your consent.</em></h1>
+          <p className="hero-p f3">Build one digital career profile and keep it updated as your career evolves. When an employer requests access, you can approve or decline. Once approved, your profile is shared instantly — enabling onboarding within minutes and allowing BGV to be initiated at the same time.</p>
           <div className="btns f4">
             <Link href="/employee/login"><button className="btn-p">Create employee profile <Arr/></button></Link>
             <Link href="/employer/login"><button className="btn-s">Employer portal</button></Link>
           </div>
           <div className="trust-pills f4">
-            {["DPDP Act 2023","End-to-end encrypted","No data sold","Consent-first","EPFO-linked"].map(t=>(
+            {["DPDP Act 2023 aligned","End-to-end encrypted","No data shared without consent","Consent-first","Structured employment records"].map(t=>(
               <div className="t-pill" key={t}><span className="t-dot"/>{t}</div>
             ))}
           </div>
@@ -332,20 +332,20 @@ export default function Home() {
           </div>
           <div className="hc-body">
             <div className="flow">
-              <div className="fn"><div className="fn-ic">👤</div><div className="fn-lbl">Employee</div><div className="fn-sub">Owns the data</div></div>
+              <div className="fn"><div className="fn-ic">👤</div><div className="fn-lbl">Employee</div><div className="fn-sub">Owns the profile</div></div>
               <span className="fn-arr">→</span>
-              <div className="fn gate"><div className="fn-ic">🔐</div><div className="fn-lbl">Datagate</div><div className="fn-sub">Consent gateway</div></div>
+              <div className="fn gate"><div className="fn-ic">🔐</div><div className="fn-lbl">Datagate.co.in</div><div className="fn-sub">Consent gateway</div></div>
               <span className="fn-arr">→</span>
-              <div className="fn"><div className="fn-ic">🏢</div><div className="fn-lbl">Employer</div><div className="fn-sub">Receives data</div></div>
+              <div className="fn"><div className="fn-ic">🏢</div><div className="fn-lbl">Employer</div><div className="fn-sub">Receives approved data</div></div>
             </div>
             <div className="flow-status"><span className="fs-dot"/><span className="fs-txt">Data moves only after your explicit approval</span></div>
             <div className="hc-checks">
-              {["Approve each request individually — no auto-sharing","Revoke access at any time, instantly","Full log of every data share with timestamps"].map(t=>(
+              {["Approve each employer request individually","Decline requests you do not want to share","View the access history for your profile"].map(t=>(
                 <div className="hc-chk" key={t}><div className="hc-chk-ic"><Chk/></div>{t}</div>
               ))}
             </div>
             <div className="hc-table">
-              {[["Profile sections","4 structured sections"],["Document types","8 accepted formats"],["Consent log","Full audit trail"],["Data sharing","Employee-approved only"],["Compliance","DPDP Act 2023"]].map(([k,v])=>(
+              {[["Profile","Digital career profile"],["Documents","Supporting documents"],["Consent","Full access history"],["Data sharing","Employer-specific consent"],["Data protection","DPDP Act 2023 aligned"]].map(([k,v])=>(
                 <div className="hctr" key={k}><span className="hctr-k">{k}</span><span className="hctr-v">{v}</span></div>
               ))}
             </div>
@@ -356,7 +356,7 @@ export default function Home() {
       {/* STATS BAND */}
       <div className="stats-band">
         <div className="stats-inner">
-          {[["Consent-first","Architecture, not an afterthought"],["1-click","Consent request sent"],["Instant","Data on employer approval"],["100%","Employee-consented sharing"]].map(([n,l])=>(
+          {[["Consent-first","Employee-controlled access"],["1-click","One profile"],["Instant","Data shared after approval"],["Same-time BGV","Initiate verification alongside onboarding"]].map(([n,l])=>(
             <div className="sc" key={l}><div className="sc-ey">Platform principle</div><div className="sc-num" style={{fontSize:"clamp(1.6rem,3vw,2.8rem)",letterSpacing:"-1px"}}>{n}</div><div className="sc-desc">{l}</div></div>
           ))}
         </div>
@@ -368,26 +368,26 @@ export default function Home() {
           <div className="prob-head">
             <div>
               <div className="prob-lbl">The problem we solve</div>
-              <div className="prob-h">Onboarding without<br/><em>the chaos.</em></div>
+              <div className="prob-h">Onboarding without<br/><em>the repetition.</em></div>
             </div>
-            <p className="prob-p">Every new job means the same forms, the same documents, chased from scratch — costing the employer time and money on every hire. Datagate ends that: professionals build one verified profile, once, and reuse it everywhere. The moment an employer approves, onboarding is complete within minutes, and background verification is assigned that same day.</p>
+            <p className="prob-p">Every new opportunity can mean entering the same personal, education and employment information again, collecting documents again, and waiting for verification to begin. Datagate.co.in gives professionals one digital career profile they can maintain and reuse. Once an employer receives consent, onboarding can move forward within minutes and BGV can be initiated at the same time.</p>
           </div>
           <table className="ct">
             <thead>
               <tr>
                 <th>What changes</th>
                 <th>Traditional onboarding</th>
-                <th className="th-dg">With Datagate</th>
+                <th className="th-dg">With Datagate.co.in</th>
               </tr>
             </thead>
             <tbody>
               {[
-                ["Employee fills forms","Every new employer",<span style={{color:"#4ade80",fontWeight:700}}>Once, ever</span>],
-                ["Document collection","Manual, weeks of chasing",<span style={{color:"#4ade80",fontWeight:700}}>Instant on approval</span>],
-                ["Employee consent","Assumed or buried in T&Cs",<span style={{color:"#4ade80",fontWeight:700}}>Explicit, logged, revocable</span>],
-                ["Data portability","None — stuck per employer",<span style={{color:"#4ade80",fontWeight:700}}>Fully portable profile</span>],
-                ["Audit trail","Non-existent",<span style={{color:"#4ade80",fontWeight:700}}>Timestamped, full log</span>],
-                ["DPDP 2023 compliance","Employer's problem",<span style={{color:"#4ade80",fontWeight:700}}>Built-in from day one</span>],
+                ["Employee information","Enter again for every employer",<span style={{color:"#4ade80",fontWeight:700}}>Build once, keep it updated</span>],
+                ["Document collection","Repeated requests and follow-ups",<span style={{color:"#4ade80",fontWeight:700}}>Reuse your existing profile and documents</span>],
+                ["Employee consent","Unclear or buried in the process",<span style={{color:"#4ade80",fontWeight:700}}>Explicit, employer-specific and logged</span>],
+                ["Data portability","Information stays tied to each employer's process",<span style={{color:"#4ade80",fontWeight:700}}>Portable career profile</span>],
+                ["Audit trail","Difficult to track across systems",<span style={{color:"#4ade80",fontWeight:700}}>Logged access and consent history</span>],
+                ["DPDP 2023 compliance","Employer-managed separately",<span style={{color:"#4ade80",fontWeight:700}}>Designed around consent and data protection</span>],
               ].map(([w,o,n])=>(
                 <tr key={w}>
                   <td style={{fontWeight:600,color:"rgba(255,255,255,.75)"}}>{w}</td>
@@ -404,11 +404,11 @@ export default function Home() {
       <div className="sec-wrap" id="how-it-works">
         <div className="sec-inner">
           <div className="lbl">How it works</div>
-          <div className="sec-h">Three steps to a<br/>verified profile</div>
+          <div className="sec-h">Three steps to a<br/>portable career profile</div>
           <div className="steps-grid">
-            {[["01","Build your profile","Fill personal details, education, employment history and upload documents — once, on Datagate. Structured, verified, ready for any employer.","Step 1"],
-              ["02","Employer requests access","When a company wants your background data, you receive a consent request. You review their stated purpose and decide.","Step 2"],
-              ["03","Approve and done","One tap. Your verified data reaches the employer instantly. Every share is timestamped and logged in your audit trail.","Step 3"]
+            {[["01","Build your profile","Add your identity, education, employment history and supporting documents once on Datagate.co.in. Keep your information accurate and updated as your career changes.","Step 1"],
+              ["02","Employer requests access","When an employer needs your information, you receive a request. Review the request and decide whether to approve or decline.","Step 2"],
+              ["03","Approve and move forward","Once you approve, the requested profile information is shared instantly. Onboarding can continue within minutes, and BGV can be initiated at the same time.","Step 3"]
             ].map(([n,t,d,tag])=>(
               <div className="step-card" key={n}>
                 <div className="step-badge">{tag}</div>
@@ -427,12 +427,12 @@ export default function Home() {
           <div className="lbl">Platform capabilities</div>
           <div className="sec-h" style={{marginBottom:0}}>Everything onboarding<br/>needs, start to finish</div>
           <div className="feat-grid">
-            {[["🔐","Consent on every share","No employer sees your data without your explicit approval. Every access is logged with timestamp and stated purpose."],
-              ["📄","Complete verification coverage","Aadhaar, PAN, education records, employment history, UAN and PF — all structured in one verified profile."],
-              ["⚡","Instant for returning users","Profile built once. Every future employer gets your verified data the moment you approve — zero repeat paperwork."],
-              ["🛡️","Secure document storage","All documents encrypted and stored securely on AWS infrastructure in India. Only you control who gets access."],
-              ["🔗","EPFO-linked records","Employment history sourced from EPFO — not self-reported. Independently verified at the source."],
-              ["📱","Works on any device","Complete your full profile from any phone or computer. No app download required."]
+            {[["🔐","Explicit consent on every share","No employer receives your information without your approval. Every consent action and data access is recorded in an audit trail."],
+              ["📄","One reusable digital career profile","Keep your identity, education, employment history and supporting documents together in one profile that can be reused for future opportunities."],
+              ["⚡","Pre-BGV checks","Review candidate-provided career information and perform preliminary checks earlier in the hiring process, before moving to formal background verification."],
+              ["🛡️","Secure document storage","Store your supporting documents securely and make them available through the consent-driven Datagate.co.in workflow."],
+              ["🔗","Employment records","Structure your employment history in one place and keep it updated throughout your career."],
+              ["📱","Works on any device","Build and manage your digital career profile from any phone or computer. No app download required."]
             ].map(([icon,t,d])=>(
               <div className="fc" key={t}><div className="fi">{icon}</div><div className="ft">{t}</div><div className="fd">{d}</div></div>
             ))}
@@ -445,12 +445,12 @@ export default function Home() {
         <div className="sec-inner">
           <div className="lbl">Three portals, one platform</div>
           <div className="sec-h">Employee. Employer.<br/>BGV vendor.</div>
-          <p style={{fontSize:"0.95rem",color:"#5a5248",maxWidth:"640px",marginTop:"-0.5rem",marginBottom:"1.5rem",lineHeight:1.7}}>Employee, employer and BGV vendor — three workflows integrated into one platform, working together in real time. Onboarding completes within minutes of approval, and background verification is assigned the same day, running alongside onboarding rather than blocking it.</p>
+          <p style={{fontSize:"0.95rem",color:"#5a5248",maxWidth:"640px",marginTop:"-0.5rem",marginBottom:"1.5rem",lineHeight:1.7}}>Employee, employer and BGV vendor workflows connected through one consent-driven platform. Employees maintain one digital career profile, employers request access, and BGV vendors can begin verification once a case is assigned. After employee approval, onboarding can move forward within minutes and BGV can be initiated at the same time.</p>
           <div className="for-grid">
             {[
-              {ey:"Employee Portal",t:"One portable profile, kept up to date",d:"Build one portable, verified career profile — once — and keep it current as new opportunities come in. Take it to any company, any time. You stay in full control of who sees what — always.",pts:["Portable — build once, update as you go, take it to every future employer","Fill details once — personal, education, employment","Approve or decline every employer request individually","See exactly who accessed your data and when"],href:"/employee/login",cta:"Create your profile"},
-              {ey:"Employer Portal",t:"Onboarding in minutes, not weeks of paperwork",d:"You're the one paying for delays — Datagate cuts your onboarding and background-verification time to almost nothing. Request access to a pre-built profile and get data transferred in real time the moment a candidate approves.",pts:["Send a consent request in one click","Run pre-interview and pre-BGV checks before you even schedule a call","Onboarding complete within minutes of approval — BGV assigned the same day","Full consent audit trail for every data access"],href:"/employer/login",cta:"Access employer portal"},
-              {ey:"BGV Vendor Portal",t:"Tired of chasing candidates for documents on every case?",d:"Get a centralised case view with pre-loaded, encrypted documentation the moment a case is assigned — no separate document requests, no back-and-forth.",pts:["Pre-loaded, encrypted documentation per case","Built-in tracking for every check, start to finish","Direct communication with both employer and candidate"],href:"/bgv/login",cta:"Access BGV vendor portal"},
+              {ey:"Employee Portal",t:"Build once. Keep it current. Take it with you.",d:"Create one digital career profile containing your identity, education, employment history and supporting documents. Keep your information updated as your career changes and reuse your profile for future employment opportunities. You decide which employer requests to approve or decline.",pts:["Build once, update as your career changes","Keep personal, education and employment information in one place","Approve or decline every employer request","See your profile access and consent history"],href:"/employee/login",cta:"Create your profile"},
+              {ey:"Employer Portal",t:"Faster onboarding. Earlier visibility.",d:"Request a candidate's digital career profile through explicit consent, access the approved information instantly, run preliminary pre-BGV checks, and initiate formal BGV at the same time as onboarding.",pts:["Send a consent request in one click","Run pre-BGV checks earlier in the hiring process","Complete onboarding within minutes and initiate BGV at the same time","Maintain a clear consent and access audit trail"],href:"/employer/login",cta:"Access employer portal"},
+              {ey:"BGV Vendor Portal",t:"Start with structured, consented candidate information.",d:"Receive assigned verification cases with the candidate's consented profile information and supporting documents available through one centralised workflow, reducing document chasing and back-and-forth.",pts:["Access consented candidate information for assigned cases","Supporting documents available through the case workflow","Track verification progress from start to finish"],href:"/bgv/login",cta:"Access BGV vendor portal"},
             ].map(card=>(
               <div className="for-card" key={card.ey}>
                 <div className="for-ey">{card.ey}</div>
@@ -467,13 +467,13 @@ export default function Home() {
       {/* TRUST */}
       <div className="trust-section">
         <div className="trust-inner">
-          <div className="trust-lbl">Security &amp; compliance</div>
-          <div className="trust-h">Built with trust<br/>at every layer</div>
+          <div className="trust-lbl">Security &amp; data protection</div>
+          <div className="trust-h">Built around trust,<br/><em>consent and control.</em></div>
           <div className="trust-grid">
-            {[["🏛️","DPDP Act 2023 Compliant","Designed to comply with India's Digital Personal Data Protection Act, 2023 from the ground up."],
-              ["🔒","Explicit consent every time","No auto-approvals. No pre-ticked boxes. Every employer request requires your active decision."],
-              ["📋","Full audit trail","Every data access is logged — who requested, when you approved, and when access was revoked."],
-              ["🗑️","Right to delete","Delete your account anytime. Employers are legally notified and required to remove all copies of your data."]
+            {[["🏛️","Built around the DPDP Act 2023","Datagate.co.in is designed around the consent, purpose and data-protection principles of India's Digital Personal Data Protection Act, 2023."],
+              ["🔒","Explicit consent every time","No automatic sharing. No assumed approval. Every employer request requires an active decision from the employee."],
+              ["📋","Full audit trail","Track who requested access, when consent was given, and when profile access occurred."],
+              ["🗑️","Right to delete","Employees can manage their profile and request account deletion through Datagate.co.in's data-management process."]
             ].map(([icon,t,d])=>(
               <div className="tc" key={t}><div className="tc-ic">{icon}</div><div className="tc-t">{t}</div><div className="tc-d">{d}</div></div>
             ))}
@@ -486,7 +486,7 @@ export default function Home() {
         <div className="f-top">
           <div className="f-brand">
             <Logo variant="light"/>
-            <p className="f-tagline">One portable, consent-based career profile for India. Built on the DPDP Act 2023. Your data, your control — always.</p>
+            <p className="f-tagline">Datagate Technologies is an India-based technology company building consent-driven employment data infrastructure for candidates, employers and background verification providers.</p>
             <div className="f-social">
               <a href="https://www.linkedin.com/company/datagate-technologies" target="_blank" rel="noopener noreferrer" className="f-social-lk">
                 <LinkedInIcon /> LinkedIn
@@ -529,7 +529,7 @@ export default function Home() {
           </div>
         </div>
         <div className="f-bottom">
-          <span className="f-copy">© 2026 Datagate. All rights reserved. Data stored in India (AWS Mumbai).</span>
+          <span className="f-copy">© 2026 Datagate.co.in. All rights reserved. Head Office: Hyderabad, Telangana, India. Data stored in India (AWS Mumbai).</span>
           <div className="f-legal">
             <Link href="/privacy" className="f-legal-lk">Privacy Policy</Link>
             <Link href="/employer/terms" className="f-legal-lk">Terms</Link>
