@@ -290,6 +290,7 @@ export default function Home() {
         </div>
         <div className="nav-r">
           <Link href="/employee/login"><button className="n-emp">Employee</button></Link>
+          <Link href="/bgv/login"><button className="n-emp">BGV Vendor</button></Link>
           <Link href="/employer/login"><button className="n-er">Employer Login</button></Link>
         </div>
       </nav>
