@@ -2238,7 +2238,16 @@ export default function PersonalDetails() {
                   ) : inboxThreads).map(t=>(
                     <div key={t.thread_id} onClick={()=>loadThread(t.consent_id, t.assignment_id, t.thread_id)}
                       style={{padding:"0.65rem 0.9rem",cursor:"pointer",borderBottom:"1px solid #f5f3ff",background:activeThreadId===t.thread_id?"#eef2ff":"#fff",borderLeft:activeThreadId===t.thread_id?"3px solid #0d6e6e":"3px solid transparent",transition:"all 0.1s"}}>
-                      <div style={{fontSize:"0.71rem",fontWeight:700,color:"#1a1730",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.other_party_name||t.other_party_email}{t.bgv_name && <span style={{fontWeight:500,color:"#8b88b0"}}> — BGV: {t.bgv_name}</span>}</div>
+                      <div style={{fontSize:"0.71rem",fontWeight:700,color:"#1a1730",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                        {t.other_party_name||t.other_party_email}
+                        {/* Each row is now its own fully isolated channel — a plain employer
+                            thread, or one dedicated row per BGV vendor — so this just tags
+                            which kind of row it is, instead of repeating the vendor's name a
+                            second time (other_party_name already IS the vendor for a bgv row). */}
+                        <span style={{fontWeight:600,fontSize:"0.6rem",color:t.channel==="bgv"?"#0d6e6e":"#8b88b0",marginLeft:5,padding:"1px 6px",borderRadius:999,background:t.channel==="bgv"?"#e0f0ee":"#f1f0fa",verticalAlign:"middle"}}>
+                          {t.channel==="bgv" ? "BGV" : "Employer"}
+                        </span>
+                      </div>
                       <div style={{fontSize:"0.62rem",color:t.has_messages?"#94a3b8":"#8b88b0",fontStyle:t.has_messages?"normal":"italic",marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.latest_message||"No messages yet — tap to start"}</div>
                       <div style={{display:"flex",justifyContent:"space-between",marginTop:2}}>
                         <span style={{fontSize:"0.58rem",color:"#c4bfdb"}}>{t.latest_at?new Date(t.latest_at).toLocaleDateString("en-IN"):""}</span>
