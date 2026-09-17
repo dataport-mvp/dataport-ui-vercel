@@ -79,9 +79,9 @@ export default function Home() {
     <>
       <Head>
         <title>Datagate — Employee-Owned Career Profiles | DPDP Act 2023</title>
-        <meta name="description" content="DPDP Act 2023-native. Professionals build one secure career profile, once. Employers get instant onboarding, pre-interview checks, and same-day BGV." />
+        <meta name="description" content="DPDP Act 2023-native. Professionals build one secure, portable career profile and keep it current. Employers get onboarding completed within minutes and pre-BGV checks, with background verification assigned the same day." />
         <meta property="og:title" content="Datagate — Employee-Owned Career Profiles | DPDP Act 2023" />
-        <meta property="og:description" content="DPDP Act 2023-native. Professionals build one secure career profile, once. Employers get instant onboarding, pre-interview checks, and same-day BGV." />
+        <meta property="og:description" content="DPDP Act 2023-native. Professionals build one secure, portable career profile and keep it current. Employers get onboarding completed within minutes and pre-BGV checks, with background verification assigned the same day." />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary" />
       </Head>
@@ -300,7 +300,7 @@ export default function Home() {
         <div className="ticker-track">
           {[...Array(2)].map((_,i)=>(
             <span key={i} style={{display:"flex"}}>
-              {["DPDP Act 2023 Compliant","Consent-first architecture","Zero document chasing","Instant day-one onboarding","Employee-controlled access","EPFO-linked verification","Full audit trail","No data sold ever","Same-day BGV, built in","Built for India"].map((t,j)=>(
+              {["DPDP Act 2023 Compliant","Consent-first architecture","Zero document chasing","Onboarding completed in minutes","Employee-controlled access","EPFO-linked verification","Full audit trail","No data sold ever","BGV assigned same-day","Built for India"].map((t,j)=>(
                 <span className="ti" key={j}><span className="ti-dot">●</span>{t}</span>
               ))}
             </span>
@@ -313,7 +313,7 @@ export default function Home() {
         <div>
           <div className="tag f1"><span className="tag-dot"/>Portable, consent-based career profile</div>
           <h1 className="h1 f2">One profile.<br/>Every employer.<br/><em>Your consent.</em></h1>
-          <p className="hero-p f3">Employees build one portable, verified career profile, once. Employers get a structured onboarding profile the moment you approve — background verification completed the same day, no forms, no chasing, no duplicate effort.</p>
+          <p className="hero-p f3">Employees build one portable career profile and keep it current as new opportunities come in. The moment you approve an employer's request, your data transfers in real time — onboarding is complete within minutes, and background verification is assigned that same day.</p>
           <div className="btns f4">
             <Link href="/employee/login"><button className="btn-p">Create employee profile <Arr/></button></Link>
             <Link href="/employer/login"><button className="btn-s">Employer portal</button></Link>
@@ -370,7 +370,7 @@ export default function Home() {
               <div className="prob-lbl">The problem we solve</div>
               <div className="prob-h">Onboarding without<br/><em>the chaos.</em></div>
             </div>
-            <p className="prob-p">Every new job means the same forms, the same documents, chased from scratch. Datagate ends that — professionals build one verified profile, once, and reuse it everywhere, with background verification completed the same day as a natural result, not a separate ordeal.</p>
+            <p className="prob-p">Every new job means the same forms, the same documents, chased from scratch — costing the employer time and money on every hire. Datagate ends that: professionals build one verified profile, once, and reuse it everywhere. The moment an employer approves, onboarding is complete within minutes, and background verification is assigned that same day.</p>
           </div>
           <table className="ct">
             <thead>
@@ -425,10 +425,10 @@ export default function Home() {
       <div className="sec-wrap sec-alt" id="features">
         <div className="sec-inner">
           <div className="lbl">Platform capabilities</div>
-          <div className="sec-h" style={{marginBottom:0}}>Everything onboarding<br/>needs, BGV included</div>
+          <div className="sec-h" style={{marginBottom:0}}>Everything onboarding<br/>needs, start to finish</div>
           <div className="feat-grid">
             {[["🔐","Consent on every share","No employer sees your data without your explicit approval. Every access is logged with timestamp and stated purpose."],
-              ["📄","Complete BGV coverage","Aadhaar, PAN, education records, employment history, UAN and PF — all structured in one verified profile."],
+              ["📄","Complete verification coverage","Aadhaar, PAN, education records, employment history, UAN and PF — all structured in one verified profile."],
               ["⚡","Instant for returning users","Profile built once. Every future employer gets your verified data the moment you approve — zero repeat paperwork."],
               ["🛡️","Secure document storage","All documents encrypted and stored securely on AWS infrastructure in India. Only you control who gets access."],
               ["🔗","EPFO-linked records","Employment history sourced from EPFO — not self-reported. Independently verified at the source."],
@@ -445,11 +445,11 @@ export default function Home() {
         <div className="sec-inner">
           <div className="lbl">Three portals, one platform</div>
           <div className="sec-h">Employee. Employer.<br/>BGV vendor.</div>
-          <p style={{fontSize:"0.95rem",color:"#5a5248",maxWidth:"640px",marginTop:"-0.5rem",marginBottom:"1.5rem",lineHeight:1.7}}>One platform, three dedicated workflows — built so onboarding starts on day one, instant, with background verification running alongside it rather than blocking it.</p>
+          <p style={{fontSize:"0.95rem",color:"#5a5248",maxWidth:"640px",marginTop:"-0.5rem",marginBottom:"1.5rem",lineHeight:1.7}}>Employee, employer and BGV vendor — three workflows integrated into one platform, working together in real time. Onboarding completes within minutes of approval, and background verification is assigned the same day, running alongside onboarding rather than blocking it.</p>
           <div className="for-grid">
             {[
-              {ey:"Employee Portal",t:"One portable profile, not a new form every time",d:"Build one portable, verified career profile — once. Take it to any company, any time. You stay in full control of who sees what — always.",pts:["Portable — build once, take it to every future employer","Fill details once — personal, education, employment","Approve or decline every employer request individually","See exactly who accessed your data and when"],href:"/employee/login",cta:"Create your profile"},
-              {ey:"Employer Portal",t:"Day-one onboarding, without the paperwork chase?",d:"Stop chasing candidates for documents. Request access to a pre-built verified profile and get structured onboarding data the moment they approve.",pts:["Send a consent request in one click","Run instant pre-interview checks — before you even schedule a call","Receive a structured onboarding profile instantly — BGV completed same-day","Full consent audit trail for every data access"],href:"/employer/login",cta:"Access employer portal"},
+              {ey:"Employee Portal",t:"One portable profile, kept up to date",d:"Build one portable, verified career profile — once — and keep it current as new opportunities come in. Take it to any company, any time. You stay in full control of who sees what — always.",pts:["Portable — build once, update as you go, take it to every future employer","Fill details once — personal, education, employment","Approve or decline every employer request individually","See exactly who accessed your data and when"],href:"/employee/login",cta:"Create your profile"},
+              {ey:"Employer Portal",t:"Onboarding in minutes, not weeks of paperwork",d:"You're the one paying for delays — Datagate cuts your onboarding and background-verification time to almost nothing. Request access to a pre-built profile and get data transferred in real time the moment a candidate approves.",pts:["Send a consent request in one click","Run pre-interview and pre-BGV checks before you even schedule a call","Onboarding complete within minutes of approval — BGV assigned the same day","Full consent audit trail for every data access"],href:"/employer/login",cta:"Access employer portal"},
               {ey:"BGV Vendor Portal",t:"Tired of chasing candidates for documents on every case?",d:"Get a centralised case view with pre-loaded, encrypted documentation the moment a case is assigned — no separate document requests, no back-and-forth.",pts:["Pre-loaded, encrypted documentation per case","Built-in tracking for every check, start to finish","Direct communication with both employer and candidate"],href:"/bgv/login",cta:"Access BGV vendor portal"},
             ].map(card=>(
               <div className="for-card" key={card.ey}>
