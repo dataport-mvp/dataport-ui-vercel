@@ -520,6 +520,7 @@ export default function BgvDashboard() {
 
   // Report submission
   const [reportFile, setReportFile]     = useState(null);
+  const [reportFileInputKey, setReportFileInputKey] = useState(0); // bump to reset the <input type=file>'s displayed filename after a successful submit
   const [reportSummary, setReportSummary] = useState("");
   const [reportVerdict, setReportVerdict] = useState("clear");
   const [submittingReport, setSubmittingReport] = useState(false);
@@ -687,10 +688,18 @@ export default function BgvDashboard() {
 
   const submitReport = async () => {
     if (!selectedId) return;
+    if (caseDetail?.bgv_status === "on_hold") { setSaveStatus("Case is on hold — release it before submitting a report"); setTimeout(()=>setSaveStatus(""),3000); return; }
+    // FIX: "Report PDF" is marked required (*) but the old code fell back to
+    // caseDetail.bgv_report_key (whatever PDF was uploaded on a PREVIOUS
+    // submission) whenever no new file was chosen — so a re-submit with the
+    // file field left empty silently went through anyway, reusing the old
+    // PDF, which made the required marker meaningless. A file must be chosen
+    // on every submission now, first time or re-submit.
+    if (!reportFile) { setSaveStatus("Please choose a Report PDF — it's required"); setTimeout(()=>setSaveStatus(""),3000); return; }
     setSubmittingReport(true); setSaveStatus("Uploading report…");
     try {
-      let report_key = caseDetail?.bgv_report_key || "";
-      if (reportFile) {
+      let report_key = "";
+      {
         const presignRes = await apiFetch(
           `${API}/bgv/upload/presigned?consent_id=${selectedId}&check_type=bgv_report&filename=${encodeURIComponent(reportFile.name)}`
         );
@@ -700,13 +709,13 @@ export default function BgvDashboard() {
         if (!uploadRes.ok) { setSaveStatus("Report upload failed"); setSubmittingReport(false); return; }
         report_key = s3_key;
       }
-      if (!report_key) { setSaveStatus("Please upload a report PDF"); setSubmittingReport(false); return; }
       const res = await apiFetch(`${API}/bgv/report/submit`, {
         method: "POST",
         body: JSON.stringify({ consent_id: selectedId, report_key, summary: reportSummary, overall_status: reportVerdict }),
       });
       if (res.ok) {
         setReportDone(true); setSaveStatus("✓ Report submitted — employer notified");
+        setReportFile(null); setReportFileInputKey(k=>k+1); // force a fresh file choice for any future re-submission
         const cRes = await apiFetch(`${API}/bgv/cases`); if (cRes.ok) setCases(await cRes.json());
         setTimeout(() => setSaveStatus(""), 4000);
       } else {
@@ -1382,6 +1391,10 @@ export default function BgvDashboard() {
                           </>);
                         })()}
 
+                        {/* Shared by the Checks Panel, the hold-request box, and the Final
+                            Report section below — every editable control on this page must
+                            be locked while the case is on_hold, not just the checks list. */}
+                        {(() => { const isLocked = caseDetail.bgv_status === "on_hold"; return (<>
                         {/* Checks Panel */}
                         <div className="checks-panel">
                           <div className="panel-title">
@@ -1454,23 +1467,41 @@ export default function BgvDashboard() {
                           });
                         })()}
 
-                          {/* Request info from employee / put case on hold */}
+                          {/* Request info from employee / put case on hold — while already
+                              on hold, requesting info again makes no sense, so this box
+                              itself becomes the release control (right next to where the
+                              hold was requested from, not just the badge up top). */}
                           <div style={{marginTop:"1rem",marginLeft:"auto",maxWidth:420,background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:10,padding:"0.85rem"}}>
-                            <div style={{fontWeight:700,fontSize:"0.8rem",color:"#dc2626",marginBottom:"0.35rem"}}>Request info from employee (puts case on hold)</div>
-                            <textarea value={holdMsg} onChange={e=>setHoldMsg(e.target.value)} placeholder="What documents or info are needed?" rows={2}
-                              style={{width:"100%",padding:"0.4rem 0.6rem",border:"1.5px solid #fecaca",borderRadius:7,fontFamily:"inherit",fontSize:"0.77rem",resize:"vertical",boxSizing:"border-box",outline:"none"}}/>
-                            <div style={{display:"flex",gap:"0.5rem",alignItems:"center",marginTop:"0.35rem"}}>
-                              <button onClick={()=>sendHoldRequest(caseDetail&&caseDetail.consent_id)} disabled={holdSending||!holdMsg.trim()}
-                                style={{padding:"0.38rem 0.8rem",background:"#dc2626",color:"#fff",border:"none",borderRadius:7,fontSize:"0.75rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit",opacity:(holdSending||!holdMsg.trim())?0.6:1}}>
-                                {holdSending?"Sending...":"Put on hold & notify"}
+                            {isLocked ? (<>
+                              <div style={{fontWeight:700,fontSize:"0.8rem",color:"#dc2626",marginBottom:"0.5rem"}}>Case is on hold, awaiting employee info</div>
+                              <button onClick={()=>updateCaseStatus("in_progress")}
+                                style={{padding:"0.38rem 0.8rem",background:"#dc2626",color:"#fff",border:"none",borderRadius:7,fontSize:"0.75rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                                🔓 Release from hold
                               </button>
-                              {holdResult&&<span style={{fontSize:"0.72rem",color:holdResult.includes("hold")?"#16a34a":"#dc2626",fontWeight:600}}>{holdResult}</span>}
-                            </div>
+                            </>) : (<>
+                              <div style={{fontWeight:700,fontSize:"0.8rem",color:"#dc2626",marginBottom:"0.35rem"}}>Request info from employee (puts case on hold)</div>
+                              <textarea value={holdMsg} onChange={e=>setHoldMsg(e.target.value)} placeholder="What documents or info are needed?" rows={2}
+                                style={{width:"100%",padding:"0.4rem 0.6rem",border:"1.5px solid #fecaca",borderRadius:7,fontFamily:"inherit",fontSize:"0.77rem",resize:"vertical",boxSizing:"border-box",outline:"none"}}/>
+                              <div style={{display:"flex",gap:"0.5rem",alignItems:"center",marginTop:"0.35rem"}}>
+                                <button onClick={()=>sendHoldRequest(caseDetail&&caseDetail.consent_id)} disabled={holdSending||!holdMsg.trim()}
+                                  style={{padding:"0.38rem 0.8rem",background:"#dc2626",color:"#fff",border:"none",borderRadius:7,fontSize:"0.75rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit",opacity:(holdSending||!holdMsg.trim())?0.6:1}}>
+                                  {holdSending?"Sending...":"Put on hold & notify"}
+                                </button>
+                                {holdResult&&<span style={{fontSize:"0.72rem",color:holdResult.includes("hold")?"#16a34a":"#dc2626",fontWeight:600}}>{holdResult}</span>}
+                              </div>
+                            </>)}
                           </div>
 
-                          {/* Final Report Section */}
-                          <div className="report-section">
-                            <div className="report-title">Submit Final BGV Report</div>
+                          {/* Final Report Section — FIX: this whole panel (verdict, PDF
+                              upload, remarks, submit) was still fully usable while a case
+                              was on_hold, letting a vendor finalize/clear a case that was
+                              explicitly frozen pending more employee info. Locked + dimmed
+                              to match the Checks Panel above. */}
+                          <div className="report-section" style={isLocked?{opacity:0.55,pointerEvents:"none"}:undefined} aria-disabled={isLocked}>
+                            <div className="report-title">
+                              Submit Final BGV Report
+                              {isLocked && <span style={{marginLeft:"0.6rem",fontSize:"0.72rem",fontWeight:700,color:"#dc2626"}}>🔒 Locked — release the case above to resume</span>}
+                            </div>
                             {reportDone && (
                               <div style={{padding:"0.65rem 0.9rem",background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:8,marginBottom:"0.75rem",fontSize:"0.78rem",color:"#15803d",fontWeight:600}}>
                                 ✓ Report submitted. Employer has been notified. You can re-submit if needed.
@@ -1479,7 +1510,7 @@ export default function BgvDashboard() {
                             <div className="report-grid">
                               <div className="fi">
                                 <span className="fl">Overall Verdict</span>
-                                <select className="in" value={reportVerdict} onChange={e=>setReportVerdict(e.target.value)}>
+                                <select className="in" value={reportVerdict} onChange={e=>setReportVerdict(e.target.value)} disabled={isLocked}>
                                   {Object.entries(OVERALL_STATUS).map(([v,{label}])=>(
                                     <option key={v} value={v}>{label}</option>
                                   ))}
@@ -1487,19 +1518,26 @@ export default function BgvDashboard() {
                               </div>
                               <div className="fi">
                                 <span className="fl">Report PDF <span style={{color:"#dc2626"}}>*</span></span>
-                                <input type="file" accept=".pdf" style={{fontSize:"0.78rem",color:"#64748b"}} onChange={e=>setReportFile(e.target.files[0]||null)}/>
+                                <input key={reportFileInputKey} type="file" accept=".pdf" style={{fontSize:"0.78rem",color:"#64748b"}} onChange={e=>setReportFile(e.target.files[0]||null)} disabled={isLocked}/>
                               </div>
                             </div>
                             <div className="fi" style={{marginBottom:"0.75rem"}}>
                               <span className="fl">Summary / Remarks</span>
-                              <textarea className="in" value={reportSummary} onChange={e=>setReportSummary(e.target.value)} placeholder="Brief summary of BGV findings…" rows={3} style={{resize:"vertical"}}/>
+                              <textarea className="in" value={reportSummary} onChange={e=>setReportSummary(e.target.value)} placeholder="Brief summary of BGV findings…" rows={3} style={{resize:"vertical"}} disabled={isLocked}/>
                             </div>
-                            <button className="submit-btn" onClick={submitReport} disabled={submittingReport}>
+                            {/* FIX: "Report PDF *" is marked required but submitReport() let a
+                                re-submission through on a report_key carried over from a PRIOR
+                                submission, so a re-submit with no file chosen silently reused
+                                the old PDF instead of being blocked — the star mark wasn't
+                                actually enforced. A file must now be chosen every time. */}
+                            <button className="submit-btn" onClick={submitReport} disabled={submittingReport||isLocked||!reportFile}>
                               {submittingReport ? "Submitting…" : reportDone ? "Re-submit Report" : "Submit Report to Employer →"}
                             </button>
+                            {!reportFile && <div style={{marginTop:"0.4rem",fontSize:"0.72rem",color:"#94a3b8"}}>Choose a Report PDF to enable submit.</div>}
                             {saveStatus && <div style={{marginTop:"0.5rem",fontSize:"0.78rem",fontWeight:600,color:saveStatus.startsWith("✓")?"#16a34a":"#dc2626"}}>{saveStatus}</div>}
                           </div>
                         </div>
+                        </>); })()}
                       </div>
                     </>
                   ) : (
