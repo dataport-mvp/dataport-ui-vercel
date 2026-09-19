@@ -1675,6 +1675,16 @@ export default function BgvDashboard() {
                                   <div onClick={()=>setExpandedHistory(prev=>({...prev,[h.assignment_id]:!prev[h.assignment_id]}))}
                                     style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"0.5rem",cursor:"pointer"}}>
                                     <div style={{fontSize:"0.76rem",color:"#475569"}}>
+                                      {/* Flags a case that ran under an EARLIER consent cycle for
+                                          this same candidate (not just a reassignment within this
+                                          consent) — a fresh consent is a new data pull, not a new
+                                          candidate, so this history follows the candidate across
+                                          consent renewals. */}
+                                      {h.consent_id && h.consent_id !== caseDetail?.consent_id && (
+                                        <span style={{display:"inline-block",marginRight:"0.4rem",padding:"0.1rem 0.5rem",borderRadius:999,background:"#ede9fe",color:"#6d28d9",fontSize:"0.64rem",fontWeight:800,textTransform:"uppercase"}}>
+                                          Earlier Consent{h.consent_snapshot_at?` · Data as of ${isoDate(h.consent_snapshot_at)}`:""}
+                                        </span>
+                                      )}
                                       Assigned: {h.assigned_at?isoDate(h.assigned_at):"—"}
                                       {h.completed_at && <> · Completed: {isoDate(h.completed_at)}</>}
                                     </div>
