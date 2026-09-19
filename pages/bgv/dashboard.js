@@ -48,6 +48,7 @@ const OVERALL_STATUS = {
 
 const G = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
+  @keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   body{background:#f0ece6;font-family:'DM Sans',sans-serif;}
   .pg{min-height:100vh;background:#f0ece6;padding-bottom:3rem;}
@@ -430,6 +431,21 @@ export default function BgvDashboard() {
   const [loadingCases, setLoadingCases] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
+  // Bug fix: switching the stat-tile filter (Total/In Progress/Pending/On
+  // Hold/Completed) used to leave whatever case was previously selected (and
+  // its detail panel) visible below the newly filtered table — a stale
+  // "phantom" profile that could even belong to a different status than the
+  // one just filtered to. The detail panel must only ever be open because of
+  // an explicit click on a row in the CURRENT filtered list, never carried
+  // over from before the filter changed — so every filter change closes it
+  // unconditionally, and it only reopens when a row in the new list is clicked.
+  const firstFilterRender = useRef(true);
+  useEffect(() => {
+    if (firstFilterRender.current) { firstFilterRender.current = false; return; }
+    setSelectedId(null);
+    setCaseDetail(null);
+  }, [caseFilter]);
+
   // Messaging
   const [inbox, setInbox]         = useState([]);
   const [inboxSearch, setInboxSearch] = useState("");
@@ -437,8 +453,17 @@ export default function BgvDashboard() {
   const [threadMsgs, setThreadMsgs] = useState([]);
   const [threadSegments, setThreadSegments] = useState({});
   const msgListRef = useRef(null);
+  // Bug fix: this used to force-scroll to the bottom on every render of
+  // threadMsgs — including the silent 15s background poll below. If someone
+  // was mid-scroll reading older messages, the poll would yank them back to
+  // the bottom every 15 seconds, which reads as messages "disappearing and
+  // reappearing" / a flicker. Now it only auto-scrolls when the person was
+  // already at (or near) the bottom, so a background refresh never disturbs
+  // someone actively scrolled up.
+  const wasNearBottomRef = useRef(true);
   useEffect(() => {
-    if (msgListRef.current) msgListRef.current.scrollTop = msgListRef.current.scrollHeight;
+    const el = msgListRef.current;
+    if (el && wasNearBottomRef.current) el.scrollTop = el.scrollHeight;
   }, [threadMsgs]);
   const [msgBody, setMsgBody]     = useState("");
   const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -775,6 +800,7 @@ export default function BgvDashboard() {
   const loadThread = async (consentId) => {
     setActiveThread(consentId);
     setShowNewMsg(false);
+    wasNearBottomRef.current = true; // always land at the bottom when opening a thread
     try {
       const res = await apiFetch(`${API}/messages/thread/${consentId}`);
       if (res.ok) {
@@ -794,16 +820,29 @@ export default function BgvDashboard() {
     } catch(_) {}
   };
 
-  // Auto-refresh the open thread — without this, a message from the other party
-  // never appears until something re-triggers loadThread, forcing people to rely
-  // on a full browser refresh just to see new replies.
+  // Manual refresh only — an earlier version auto-polled this thread every 15s,
+  // which replaced the whole message list on a timer and produced a visible
+  // flicker (messages "disappearing and reappearing"), a bad look for anyone
+  // actively reading. Removed the auto-poll entirely; the ↻ button below does
+  // the same fetch on demand instead, and sending a message already refreshes
+  // the thread on its own (see sendMsg), so the sender's own message still
+  // appears immediately without any timer.
   const [refreshingThread, setRefreshingThread] = useState(false);
   const silentRefreshThread = async (consentId) => {
     try {
       const r = await apiFetch(`${API}/messages/thread/${consentId}`);
       if (r.ok) {
         const d = await r.json();
-        setThreadMsgs(d.messages || []);
+        const freshMsgs = d.messages || [];
+        // Skip the state update entirely when the poll came back identical —
+        // replacing the array on every 15s tick forced a re-render (and, with
+        // the old scroll effect, a scroll jump) even when nothing changed,
+        // which is what showed up as messages "flickering"/disappearing.
+        setThreadMsgs(prev => {
+          const same = prev.length === freshMsgs.length &&
+            prev.every((m,i) => (m.message_id||m.id||m.created_at) === (freshMsgs[i]?.message_id||freshMsgs[i]?.id||freshMsgs[i]?.created_at));
+          return same ? prev : freshMsgs;
+        });
         setThreadSegments(d.consent_segments || {});
       }
     } catch(_) {}
@@ -813,12 +852,6 @@ export default function BgvDashboard() {
     await silentRefreshThread(consentId);
     setRefreshingThread(false);
   };
-  useEffect(() => {
-    if (!activeThread || tab !== "inbox") return;
-    const id = setInterval(() => silentRefreshThread(activeThread), 15000);
-    return () => clearInterval(id);
-  }, [activeThread, tab]);
-
   const uploadMsgAttachment = async (file) => {
     if (!file || !activeThread) return;
     setMsgAttaching(true);
@@ -1011,9 +1044,9 @@ export default function BgvDashboard() {
                 ))}
               </div>
               {caseFilter && (
-                <div style={{fontSize:"0.75rem",color:"#4f46e5",fontWeight:600,margin:"0.5rem 0 -0.5rem",display:"flex",alignItems:"center",gap:"0.5rem"}}>
+                <div style={{fontSize:"0.75rem",color:"#4f46e5",fontWeight:600,margin:"0.9rem 0 0.7rem",display:"inline-flex",alignItems:"center",gap:"0.5rem",background:"#eef2ff",border:"1px solid #c7d2fe",borderRadius:999,padding:"0.35rem 0.5rem 0.35rem 0.85rem"}}>
                   Showing: {caseFilter==="in_progress"?"In Progress":caseFilter==="completed"?"Completed":caseFilter==="on_hold"?"On Hold":"Pending Start"}
-                  <button onClick={()=>setCaseFilter(null)} style={{background:"none",border:"none",color:"#4f46e5",textDecoration:"underline",cursor:"pointer",fontSize:"0.72rem",fontWeight:600,padding:0,fontFamily:"inherit"}}>Clear</button>
+                  <button onClick={()=>setCaseFilter(null)} style={{background:"#fff",border:"1px solid #c7d2fe",color:"#4f46e5",cursor:"pointer",fontSize:"0.7rem",fontWeight:700,padding:"0.15rem 0.55rem",borderRadius:999,fontFamily:"inherit"}}>Clear ✕</button>
                 </div>
               )}
 
@@ -1088,7 +1121,21 @@ export default function BgvDashboard() {
                           {caseDetail.consent_status !== "APPROVED" && (
                             <span className="badge" style={{color:"#991b1b",background:"#fee2e2"}}>CONSENT REVOKED — read-only history</span>
                           )}
-                          {(BGV_STATUS_BADGE[caseDetail.bgv_status]||BGV_STATUS_BADGE.groomed) && caseDetail.consent_status === "APPROVED" && (
+                          {/* FIX: on_hold used to be just another dropdown option — you could
+                              switch straight back out of it, or keep editing checks while a
+                              case was supposedly waiting on the employee. Now: while on hold,
+                              the dropdown is replaced by an explicit Release button (below,
+                              near the hold-request box), and the checks tracker is disabled
+                              until release. This is the only supported way out of on_hold. */}
+                          {caseDetail.bgv_status === "on_hold" && caseDetail.consent_status === "APPROVED" && (
+                            <button
+                              onClick={()=>updateCaseStatus("in_progress")}
+                              className="badge"
+                              style={{background:"#dc2626",border:"1px solid rgba(255,255,255,0.25)",color:"#fff",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}>
+                              🔓 Release from hold
+                            </button>
+                          )}
+                          {caseDetail.bgv_status !== "on_hold" && (BGV_STATUS_BADGE[caseDetail.bgv_status]||BGV_STATUS_BADGE.groomed) && caseDetail.consent_status === "APPROVED" && (
                             <select
                               value={caseDetail.bgv_status || "groomed"}
                               onChange={e=>updateCaseStatus(e.target.value)}
@@ -1096,7 +1143,6 @@ export default function BgvDashboard() {
                               style={{color:(BGV_STATUS_BADGE[caseDetail.bgv_status]||BGV_STATUS_BADGE.groomed).color,background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.25)",color:"#fff",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}>
                               <option value="groomed" style={{color:"#0f172a"}}>Not Started</option>
                               <option value="in_progress" style={{color:"#0f172a"}}>In Progress</option>
-                              <option value="on_hold" style={{color:"#0f172a"}}>On Hold</option>
                               <option value="completed" style={{color:"#0f172a"}}>Completed</option>
                             </select>
                           )}
@@ -1172,6 +1218,7 @@ export default function BgvDashboard() {
                                   <F label="Year of Passing" value={e.yearOfPassing} />
                                   <F label="Result" value={e.resultValue ? `${e.resultType||""} ${e.resultValue}`.trim() : null} />
                                   <F label="Medium of Study" value={e.medium} />
+                                  <F label="Active Backlogs" value={e.backlogs} />
                                   <F label="Institution Address" value={e.address} />
                                   <F label="Completed" value={e.country ? (outsideIndia ? `Outside India${e.countryName?" — "+e.countryName:""}` : "India") : null} />
                                 </Grid>
@@ -1337,11 +1384,22 @@ export default function BgvDashboard() {
 
                         {/* Checks Panel */}
                         <div className="checks-panel">
-                          <div className="panel-title">BGV Checks Tracker</div>
-                          {localChecks.map((ch, idx) => {
+                          <div className="panel-title">
+                            BGV Checks Tracker
+                            {caseDetail.bgv_status === "on_hold" && (
+                              <span style={{marginLeft:"0.6rem",fontSize:"0.72rem",fontWeight:700,color:"#dc2626"}}>
+                                🔒 Locked — on hold pending employee info. Release the case above to resume editing.
+                              </span>
+                            )}
+                          </div>
+                          {/* FIX: nothing here was disabled while a case was on_hold, so a
+                              vendor could keep editing checks on a case they'd just told the
+                              employee (and employer) was frozen pending more information.
+                              isLocked gates every input/button in this panel. */}
+                          {(() => { const isLocked = caseDetail.bgv_status === "on_hold"; return localChecks.map((ch, idx) => {
                             const st = CHECK_STATUS[ch.status] || CHECK_STATUS.pending;
                             return (
-                              <div key={ch.type} className="check-row">
+                              <div key={ch.type} className="check-row" style={isLocked?{opacity:0.6}:undefined}>
                                 <div>
                                   <div className="check-label">{ch.label}</div>
                                   <div className="check-type-tag">{ch.type}</div>
@@ -1354,6 +1412,7 @@ export default function BgvDashboard() {
                                     style={{borderColor:st.color,color:st.color}}
                                     onChange={e=>updateCheckLocal(idx,"status",e.target.value)}
                                     onBlur={()=>saveCheck(localChecks[idx])}
+                                    disabled={isLocked}
                                   >
                                     {Object.entries(CHECK_STATUS).map(([v,{label}])=>(
                                       <option key={v} value={v}>{label}</option>
@@ -1368,6 +1427,7 @@ export default function BgvDashboard() {
                                     onChange={e=>updateCheckLocal(idx,"notes",e.target.value)}
                                     onBlur={()=>saveCheck(localChecks[idx])}
                                     rows={2}
+                                    disabled={isLocked}
                                   />
                                 </div>
                                 <div style={{display:"flex",flexDirection:"column",gap:"0.35rem"}}>
@@ -1385,13 +1445,14 @@ export default function BgvDashboard() {
                                     }}>View</button>
                                   ) : null}
                                   <input ref={el=>uploadInputRef.current[ch.type]=el} type="file" accept=".pdf,.jpg,.jpeg,.png" style={{display:"none"}} onChange={e=>{if(e.target.files[0])handleEvidenceUpload(idx,e.target.files[0]);e.target.value="";}}/>
-                                  <button className="upload-btn" onClick={()=>uploadInputRef.current[ch.type]?.click()} disabled={savingCheck[ch.type]}>
+                                  <button className="upload-btn" onClick={()=>uploadInputRef.current[ch.type]?.click()} disabled={savingCheck[ch.type]||isLocked}>
                                     {savingCheck[ch.type]?"…":(ch.evidence_key?"Re-upload":"Upload")}
                                   </button>
                                 </div>
                               </div>
                             );
-                          })}
+                          });
+                        })()}
 
                           {/* Request info from employee / put case on hold */}
                           <div style={{marginTop:"1rem",marginLeft:"auto",maxWidth:420,background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:10,padding:"0.85rem"}}>
@@ -1508,7 +1569,7 @@ export default function BgvDashboard() {
                       Conversation
                       <span style={{fontSize:"0.7rem",fontWeight:500,color:"#64748b",marginLeft:"0.5rem"}}>Messages visible to you based on your role</span>
                     </div>
-                    <div className="msg-thread" ref={msgListRef}>
+                    <div className="msg-thread" ref={msgListRef} onScroll={e=>{const el=e.target;wasNearBottomRef.current=(el.scrollHeight-el.scrollTop-el.clientHeight)<80;}}>
                       {threadMsgs.length===0 && <div style={{color:"#94a3b8",fontSize:"0.84rem",textAlign:"center",padding:"2rem"}}>No messages yet.</div>}
                       {threadMsgs.map((m,i)=>{
                         const isMine = m.sender_role === "bgv";
@@ -1565,7 +1626,10 @@ export default function BgvDashboard() {
                         return (<>
                           <button type="button" onClick={()=>setMention(employeeName,[employerName])} style={btnStyle}>@{employeeName}</button>
                           <button type="button" onClick={()=>setMention(employerName,[employeeName])} style={btnStyle2}>@{employerName}</button>
-                          <button onClick={()=>manualRefreshThread(activeThread)} disabled={refreshingThread} title="Refresh" style={{background:"none",border:"none",cursor:refreshingThread?"not-allowed":"pointer",fontSize:refreshingThread?"0.66rem":"0.85rem",color:"#64748b",opacity:refreshingThread?0.6:1,padding:"0.2rem 0.4rem",fontWeight:600}}>{refreshingThread?"Refreshing…":"↻"}</button>
+                          <button onClick={()=>manualRefreshThread(activeThread)} disabled={refreshingThread} title="Refresh messages" style={{display:"flex",alignItems:"center",gap:"0.3rem",background:"#f1f5f9",border:"1px solid #e2e8f0",borderRadius:999,cursor:refreshingThread?"not-allowed":"pointer",fontSize:"0.72rem",color:"#475569",opacity:refreshingThread?0.6:1,padding:"0.25rem 0.65rem",fontWeight:700}}>
+                            <span style={{display:"inline-block",animation:refreshingThread?"spin 0.8s linear infinite":"none"}}>↻</span>
+                            {refreshingThread?"Refreshing…":"Refresh"}
+                          </button>
                           <span style={{marginLeft:"auto",fontSize:"0.66rem",fontWeight:700,color:"#94a3b8",alignSelf:"center"}}>{recipientLabelBgv(detectRecipientBgv(msgBody))}</span>
                         </>);
                       })()}
