@@ -666,7 +666,7 @@ async function buildMyProfilePdf(profile, empHistory, documents, employeeSelfNam
       business:  "Other Business or Employment",
       dismissed: "Dismissal or Termination for Cause",
       criminal:  "Criminal Conviction or Pending Proceedings",
-      civil:     "Civil Judgment",
+      civil:     "Civil Judgments or Regulatory Actions",
       medical:         "Medical Fitness / Substance-Related Declaration",
       confidentiality: "Confidentiality of Previous Employer Information",
     };

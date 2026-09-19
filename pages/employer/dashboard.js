@@ -114,6 +114,29 @@ function maskAadhaar(a) {
   return `XXXX XXXX ${d.slice(-4)}`;
 }
 
+// A consent can now have several BGV vendors assigned in parallel — the legacy
+// bgv_status/bgv_vendor_email fields on the consent only ever mirror whichever vendor
+// was assigned MOST RECENTLY (see backend main.py), so as soon as a second, parallel
+// vendor is added, that mirror flips back to "groomed" even if the first vendor already
+// completed their work — making real, live progress invisible everywhere that read
+// those two fields directly (the Overview metrics tiles, candidate list badges). This
+// aggregates across every currently-active assignment (bgv_assignments) instead, so
+// progress on ANY vendor is never hidden behind a freshly-added parallel one that
+// hasn't started yet. Falls back to the legacy single-vendor fields for older consents
+// that predate the multi-vendor model, same as the backend's own fallback.
+function bgvAggregateStatus(c) {
+  const assignments = Array.isArray(c.bgv_assignments) && c.bgv_assignments.length
+    ? c.bgv_assignments
+    : (c.bgv_vendor_email ? [{ vendor_email: c.bgv_vendor_email, status: c.bgv_status, replaced_at: null }] : []);
+  const active = assignments.filter(a => !a.replaced_at);
+  if (active.length === 0) return "not_assigned";
+  if (active.some(a => a.status === "on_hold")) return "on_hold";
+  if (active.some(a => a.status === "in_progress")) return "in_progress";
+  if (active.every(a => a.status === "completed")) return "completed";
+  if (active.some(a => a.status === "completed")) return "in_progress"; // some vendors done, others still pending — overall case isn't finished yet
+  return "assigned"; // every active vendor is still groomed / not yet started
+}
+
 // ── PDF with embedded images ──────────────────────────────────────────
 async function printProfile(profile, empHistory, documents, employerName, employmentDeclarations) {
   const d   = profile || {};
@@ -415,7 +438,7 @@ async function printProfile(profile, empHistory, documents, employerName, employ
       business:  "Other Business or Employment",
       dismissed: "Dismissal or Termination for Cause",
       criminal:  "Criminal Conviction or Pending Proceedings",
-      civil:     "Civil Judgment",
+      civil:     "Civil Judgments or Regulatory Actions",
       medical:         "Medical Fitness / Substance-Related Declaration",
       confidentiality: "Confidentiality of Previous Employer Information",
     };
@@ -562,6 +585,7 @@ const buildPrintHtml = printProfile;
 // ── Styles ────────────────────────────────────────────────────────────
 const G = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap');
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: #f0ece6; font-family: 'DM Sans', sans-serif; color: #111; }
 
@@ -1514,13 +1538,18 @@ function EmploymentTab({ data, declarations, resumeKey, hasExperience, documents
   const list = rawList.filter(e => e && e.companyName && e.companyName.trim());
   const docUrls = Object.values(documents||{}).reduce((acc,grp)=>({...acc,...Object.fromEntries(Object.entries(grp).map(([k,v])=>[k,v.url]))}),{});
   const EMP_DOC_LABELS = { offerLetter:"Offer Letter", payslips:"Payslips (Last 3 Months)", resignation:"Resignation Acceptance", experience:"Experience / Relieving Letter", idCard:"Company ID Card" };
-  const DECL_LABELS = {
-    business:  "Other Business or Employment",
-    dismissed: "Dismissal or Termination for Cause",
-    criminal:  "Criminal Conviction or Pending Proceedings",
-    civil:     "Civil Judgment",
-    medical:         "Medical Fitness / Substance-Related Declaration",
-    confidentiality: "Confidentiality of Previous Employer Information",
+  // Kept byte-for-byte identical to the employee's own ACK_DEFS in pages/employee/previous.js
+  // (title, question and detail text) — the employer used to see only a short category
+  // label plus Yes/No and the employee's free-text note, with none of the actual
+  // declaration question the employee was answering. That question is what gives the
+  // Yes/No and note any meaning, so it's shown here exactly as the employee saw it.
+  const DECL_DEFS = {
+    business:        { title:"Other Business or Employment", question:"Are you currently engaged in any other business, employment, or professional activity outside of this role?", detail:"This includes part-time employment, freelance or consulting work, directorships, partnerships, or any activity that generates income or could create a conflict of interest." },
+    dismissed:        { title:"Dismissal or Termination for Cause", question:"Have you ever been dismissed, discharged, or asked to resign from any position of employment for reasons of misconduct, performance, or any disciplinary action?", detail:"This includes termination with cause, constructive dismissal, or any exit that followed a formal disciplinary process." },
+    criminal:         { title:"Criminal Conviction or Pending Proceedings", question:"Have you ever been convicted of a criminal offence, or do you currently have any criminal proceedings pending against you in any court of law?", detail:"This includes convictions resulting in fines, community service, probation, imprisonment, or any other sentence." },
+    civil:            { title:"Civil Judgments or Regulatory Actions", question:"Have you ever had a civil judgment entered against you, or been subject to a regulatory finding, ban, or sanction by any court, tribunal, or regulatory authority?", detail:"This includes money decrees, injunctions, adverse orders in consumer or labour disputes." },
+    medical:          { title:"Medical Fitness / Substance-Related Declaration", question:"Do you have any medical condition, physical or mental, or any history of substance dependency that could affect your ability to safely and effectively perform the duties of this role?", detail:"This includes any condition requiring ongoing treatment or workplace accommodation, and any past or current dependency on alcohol, prescription medication, or other controlled substances that is relevant to workplace safety or performance." },
+    confidentiality:  { title:"Confidentiality of Previous Employer Information", question:"Are you currently bound by any confidentiality, non-disclosure, or non-compete agreement with a previous employer that could restrict the information you are able to share, or the work you are able to undertake, in this role?", detail:"This includes non-disclosure agreements covering trade secrets or proprietary information, and any non-compete or non-solicitation clauses that remain in effect." },
   };
   const hasDeclarations = declarations && Object.keys(declarations).length > 0;
   return (
@@ -1538,6 +1567,14 @@ function EmploymentTab({ data, declarations, resumeKey, hasExperience, documents
             {i===arr.length-1?"Current / Most Recent Employer":`Previous Employer ${i+1}`}
             {i===arr.length-1&&e.currentlyWorking==="Yes"&&<span className="curr-pill">Still Employed</span>}
           </div>
+          {/* FIX: this gap (the break BEFORE joining this employer) was rendered at the
+              very bottom of the card, after Reference and the attachment links — read
+              order put it last even though it's chronologically the first thing that
+              happened for this entry. Moved above the KV grid, right under the title,
+              for this specific employer's card. */}
+          {e.gap?.hasGap==="Yes"&&e.gap?.reason&&(
+            <div className="gap-note">⏱ Employment gap{(e.gap.from||e.gap.to)?` (${isoToDisplay(e.gap.from)} – ${isoToDisplay(e.gap.to)})`:""}: {e.gap.reason}</div>
+          )}
           <div className="kv-grid">
             <KV k="Company"         v={e.companyName} />
             <KV k="Designation"     v={e.designation} />
@@ -1577,9 +1614,6 @@ function EmploymentTab({ data, declarations, resumeKey, hasExperience, documents
               ) : null)}
             </div>
           )}
-          {e.gap?.hasGap==="Yes"&&e.gap?.reason&&(
-            <div className="gap-note">⏱ Employment gap{(e.gap.from||e.gap.to)?` (${isoToDisplay(e.gap.from)} – ${isoToDisplay(e.gap.to)})`:""}: {e.gap.reason}</div>
-          )}
         </div>
         );
       })}
@@ -1592,18 +1626,25 @@ function EmploymentTab({ data, declarations, resumeKey, hasExperience, documents
       {hasDeclarations && (
         <Sec title="Other Declarations">
           <div className="kv-grid">
-            {Object.entries(DECL_LABELS).map(([key,label]) => {
+            {Object.entries(DECL_DEFS).map(([key,def]) => {
               const entry = declarations[key];
               if (!entry) return null;
               const answered = entry.val === "Yes" || entry.val === "No";
               if (!answered) return null;
               return (
-                <div key={key} style={{gridColumn:"1 / -1",padding:"0.6rem 0.75rem",background:entry.val==="Yes"?"#fffbeb":"#f8fafc",border:`1px solid ${entry.val==="Yes"?"#fde68a":"#e8ecf2"}`,borderRadius:6,marginBottom:"0.4rem"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:"0.5rem",marginBottom:entry.note?"0.3rem":0}}>
-                    <span style={{fontSize:"0.68rem",fontWeight:700,color:"#7a6e64",textTransform:"uppercase",letterSpacing:"0.4px"}}>{label}</span>
+                <div key={key} style={{gridColumn:"1 / -1",padding:"0.7rem 0.85rem",background:entry.val==="Yes"?"#fffbeb":"#f8fafc",border:`1px solid ${entry.val==="Yes"?"#fde68a":"#e8ecf2"}`,borderRadius:6,marginBottom:"0.4rem"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:"0.5rem",marginBottom:"0.4rem"}}>
+                    <span style={{fontSize:"0.68rem",fontWeight:700,color:"#7a6e64",textTransform:"uppercase",letterSpacing:"0.4px"}}>{def.title}</span>
                     <span style={{fontSize:"0.65rem",fontWeight:800,padding:"1px 8px",borderRadius:999,background:entry.val==="Yes"?"#fef3c7":"#dcfce7",color:entry.val==="Yes"?"#92400e":"#15803d"}}>{entry.val}</span>
                   </div>
-                  {entry.note && <div style={{fontSize:"0.82rem",color:"#111",lineHeight:1.5}}>{entry.note}</div>}
+                  <div style={{fontSize:"0.8rem",color:"#334155",lineHeight:1.5,fontWeight:600,marginBottom:"0.2rem"}}>{def.question}</div>
+                  <div style={{fontSize:"0.72rem",color:"#8b88b0",lineHeight:1.5,marginBottom:entry.note?"0.5rem":0}}>{def.detail}</div>
+                  {entry.note && (
+                    <div style={{marginTop:"0.3rem",padding:"0.5rem 0.65rem",background:"#fff",border:"1px solid #eee",borderRadius:5}}>
+                      <div style={{fontSize:"0.62rem",fontWeight:700,color:"#7c3aed",textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:"0.15rem"}}>Employee's Details</div>
+                      <div style={{fontSize:"0.82rem",color:"#111",lineHeight:1.5}}>{entry.note}</div>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -1630,6 +1671,19 @@ function UanTab({ data, docUrls }) {
             <KV k="UAN Active"      v={data.isActive} />
           </>}
         </div>
+        {/* These two were uploaded by the employee on the UAN page (category "uan",
+            subKeys "uanCard"/"serviceHistory") but this tab never rendered a link for
+            either one — the data was always there, just never surfaced here. */}
+        {(docUrls?.["uanCard"] || docUrls?.["serviceHistory"]) && (
+          <div style={{marginTop:"0.7rem",display:"flex",flexWrap:"wrap",gap:"0.5rem"}}>
+            {docUrls?.["uanCard"] && (
+              <a href={docUrls["uanCard"]} target="_blank" rel="noopener noreferrer" className="doc-view" style={{display:"inline-flex",alignItems:"center",gap:"0.3rem"}}>📄 UAN Card — View ↗</a>
+            )}
+            {docUrls?.["serviceHistory"] && (
+              <a href={docUrls["serviceHistory"]} target="_blank" rel="noopener noreferrer" className="doc-view" style={{display:"inline-flex",alignItems:"center",gap:"0.3rem"}}>📄 Service History Snapshot — View ↗</a>
+            )}
+          </div>
+        )}
       </Sec>
       {Array.isArray(data.epfoNominees) && data.epfoNominees.filter(n=>n.name).length>0 && (
         <Sec title="PF & Pension Nominees (Form 2)">
@@ -1838,22 +1892,21 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
   const [vendors, setVendors] = useState([]);
   const [assigning, setAssigning] = useState(false);
   const [showAssignPanel, setShowAssignPanel] = useState(false);
-  // "add"     = assign a genuinely new, parallel vendor — the default, safe path.
-  //             Existing vendors on this case are completely untouched.
-  // "replace" = archive one specific existing assignment and hand its slot to a new
-  //             vendor (the old sequential "Reassign" flow) — only affects the one
-  //             assignment picked in replaceTargetId; every other active vendor on
-  //             this case is unaffected.
-  const [assignMode, setAssignMode] = useState("add");
-  const [replaceTargetId, setReplaceTargetId] = useState(null); // assignment_id being replaced, only set/used when assignMode === "replace"
-  const [viewingHistoryIdx, setViewingHistoryIdx] = useState(null); // index into bgvCase.bgv_history, or null
+  // Assigning a vendor always adds them as a genuinely new, parallel vendor — existing
+  // vendors on this case are completely untouched. The old "replace existing vendor"
+  // (sequential reassignment) concept has been removed entirely; only this one flow
+  // exists now.
   const [selectedVendor, setSelectedVendor] = useState("");
   const [vendorSearch,   setVendorSearch]   = useState("");
   const [assignMsg, setAssignMsg] = useState("");
   const [reportUrls, setReportUrls] = useState({}); // keyed by reportKey — multiple distinct
-    // reports (current vendor + any historical ones) can now be viewed in the same
-    // session, so a single global URL would silently reuse the wrong report's link
-    // the moment more than one "View Report" button exists on screen.
+    // reports (one per active vendor) can now be viewed in the same session, so a
+    // single global URL would silently reuse the wrong report's link the moment more
+    // than one "View Report" button exists on screen.
+  // Which active vendor sections are expanded — collapsed by default, one entry per
+  // assignment_id. Clicking a vendor's header toggles its own report/checks dropdown
+  // open, without affecting any other vendor's section.
+  const [expandedVendors, setExpandedVendors] = useState({});
 
   useEffect(() => {
     if (!consentData?.consent_id) return;
@@ -1913,22 +1966,18 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
 
   const assignVendor = async () => {
     if (!selectedVendor || !consentData?.consent_id) return;
-    if (assignMode === "replace" && !replaceTargetId) return;
     setAssigning(true); setAssignMsg("");
     try {
       const body = { consent_id: consentData.consent_id, bgv_vendor_email: selectedVendor };
-      if (assignMode === "replace") body.replace_assignment_id = replaceTargetId;
       const res = await apiFetch(`${apiUrl}/bgv/assign`, {
         method: "POST",
         body: JSON.stringify(body),
       });
       const d = await res.json();
       if (res.ok) {
-        setAssignMsg(assignMode === "replace"
-          ? `✓ Replaced — ${selectedVendor} assigned, ${d.checks_created} checks created`
-          : `✓ ${selectedVendor} added as an additional, fully isolated vendor — ${d.checks_created} checks created`);
+        setAssignMsg(`✓ ${selectedVendor} added as an additional, fully isolated vendor — ${d.checks_created} checks created`);
         setShowAssignPanel(false);
-        setSelectedVendor(""); setVendorSearch(""); setReplaceTargetId(null); setAssignMode("add");
+        setSelectedVendor(""); setVendorSearch("");
         const cRes = await apiFetch(`${apiUrl}/bgv/case/${consentData.consent_id}`);
         if (cRes.ok) setBgvCase(await cRes.json());
       } else {
@@ -1980,80 +2029,45 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
         <button onClick={()=>{
             const next = !showAssignPanel;
             setShowAssignPanel(next);
-            if (next) { setAssignMode("add"); setReplaceTargetId(null); setSelectedVendor(""); setVendorSearch(""); }
+            if (next) { setSelectedVendor(""); setVendorSearch(""); }
           }}
           style={{padding:"0.45rem 0.9rem",background:"#fff",border:"1.5px solid #4f46e5",borderRadius:8,fontFamily:"inherit",fontSize:"0.8rem",fontWeight:700,color:"#4f46e5",cursor:"pointer"}}>
-          {showAssignPanel ? "Cancel" : (activeAssignments.length ? "+ Assign Another Vendor / Replace" : "+ Assign BGV Vendor")}
+          {showAssignPanel ? "Cancel" : (activeAssignments.length ? "+ Add Parallel Vendor" : "+ Assign BGV Vendor")}
         </button>
       </div>
 
-      {/* Assign / replace panel */}
+      {/* Assign panel — parallel vendor only; "replace existing vendor" has been removed. */}
       {showAssignPanel && (
         <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:"1rem",marginBottom:"1rem"}}>
           {activeAssignments.length > 0 && (
-            <div style={{display:"flex",gap:"0.5rem",marginBottom:"0.85rem"}}>
-              <button onClick={()=>{setAssignMode("add"); setReplaceTargetId(null);}}
-                style={{flex:1,padding:"0.5rem",borderRadius:8,border:assignMode==="add"?"2px solid #4f46e5":"1.5px solid #e2e8f0",background:assignMode==="add"?"#eef2ff":"#fff",fontFamily:"inherit",fontSize:"0.78rem",fontWeight:700,color:assignMode==="add"?"#4338ca":"#475569",cursor:"pointer"}}>
-                Add Parallel Vendor
-              </button>
-              <button onClick={()=>setAssignMode("replace")}
-                style={{flex:1,padding:"0.5rem",borderRadius:8,border:assignMode==="replace"?"2px solid #f59e0b":"1.5px solid #e2e8f0",background:assignMode==="replace"?"#fffbeb":"#fff",fontFamily:"inherit",fontSize:"0.78rem",fontWeight:700,color:assignMode==="replace"?"#92400e":"#475569",cursor:"pointer"}}>
-                Replace Existing Vendor
-              </button>
-            </div>
-          )}
-
-          {assignMode === "add" && activeAssignments.length > 0 && (
             <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.75rem",fontSize:"0.76rem",color:"#1e40af"}}>
               The new vendor gets a completely separate inbox, checks, and report — fully isolated from the vendor(s) already on this case. Nothing existing is touched, replaced, or deleted.
             </div>
           )}
 
-          {assignMode === "replace" && (
-            <>
-              <div style={{fontSize:"0.76rem",fontWeight:700,color:"#0f172a",marginBottom:"0.4rem"}}>Which vendor is being replaced?</div>
-              <div style={{display:"flex",flexDirection:"column",gap:"0.4rem",marginBottom:"0.75rem"}}>
-                {activeAssignments.map(a => (
-                  <div key={a.assignment_id} onClick={()=>setReplaceTargetId(a.assignment_id)}
-                    style={{padding:"0.5rem 0.75rem",borderRadius:7,cursor:"pointer",border:replaceTargetId===a.assignment_id?"2px solid #f59e0b":"1px solid #e2e8f0",background:replaceTargetId===a.assignment_id?"#fffbeb":"#fff",fontSize:"0.8rem",fontWeight:600,color:"#0f172a"}}>
-                    {a.vendor_name || a.vendor_email}
-                    {replaceTargetId===a.assignment_id && <span style={{float:"right",color:"#92400e",fontSize:"0.72rem",fontWeight:800}}>✓ Selected</span>}
-                  </div>
-                ))}
-              </div>
-              {replaceTargetId && (
-                <div style={{background:"#fef2f2",border:"1px solid #fecaca",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.75rem",fontSize:"0.76rem",color:"#991b1b"}}>
-                  ⚠ This archives the selected vendor's checks and report into history below — nothing is deleted, but that one vendor loses further access to this case. Every other vendor on this case is unaffected.
+          <div>
+            <input type="text" placeholder="Search BGV vendor by name or email…"
+              value={vendorSearch} onChange={e=>setVendorSearch(e.target.value)}
+              style={{width:"100%",padding:"0.5rem 0.75rem",border:"1.5px solid #e2e8f0",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",boxSizing:"border-box",marginBottom:"0.5rem",outline:"none"}}/>
+            <div style={{maxHeight:180,overflowY:"auto",border:"1px solid #e2e8f0",borderRadius:8,marginBottom:"0.5rem"}}>
+              {vendors.filter(v=>(v.company_name||v.name||"").toLowerCase().includes(vendorSearch.toLowerCase())||(v.email||"").toLowerCase().includes(vendorSearch.toLowerCase())).length===0&&<div style={{padding:"0.75rem",fontSize:"0.78rem",color:"#94a3b8"}}>No vendors found</div>}
+              {vendors.filter(v=>(v.company_name||v.name||"").toLowerCase().includes(vendorSearch.toLowerCase())||(v.email||"").toLowerCase().includes(vendorSearch.toLowerCase())).map(v=>(
+                <div key={v.email} onClick={()=>setSelectedVendor(v.email)}
+                  style={{padding:"0.6rem 0.85rem",cursor:"pointer",borderBottom:"1px solid #f1f5f9",
+                    background:selectedVendor===v.email?"#eef2ff":"#fff",
+                    fontWeight:selectedVendor===v.email?700:400,fontSize:"0.84rem",color:"#0f172a"}}>
+                  <span style={{fontWeight:700}}>{v.company_name||v.name}</span>
+                  <span style={{fontSize:"0.72rem",color:"#64748b",marginLeft:"0.5rem"}}>{v.email}</span>
+                  {selectedVendor===v.email&&<span style={{float:"right",color:"#4f46e5",fontSize:"0.72rem",fontWeight:800}}>✓ Selected</span>}
                 </div>
-              )}
-            </>
-          )}
-
-          {(assignMode === "add" || replaceTargetId) && (
-            <div>
-              <input type="text" placeholder="Search BGV vendor by name or email…"
-                value={vendorSearch} onChange={e=>setVendorSearch(e.target.value)}
-                style={{width:"100%",padding:"0.5rem 0.75rem",border:"1.5px solid #e2e8f0",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",boxSizing:"border-box",marginBottom:"0.5rem",outline:"none"}}/>
-              <div style={{maxHeight:180,overflowY:"auto",border:"1px solid #e2e8f0",borderRadius:8,marginBottom:"0.5rem"}}>
-                {vendors.filter(v=>(v.company_name||v.name||"").toLowerCase().includes(vendorSearch.toLowerCase())||(v.email||"").toLowerCase().includes(vendorSearch.toLowerCase())).length===0&&<div style={{padding:"0.75rem",fontSize:"0.78rem",color:"#94a3b8"}}>No vendors found</div>}
-                {vendors.filter(v=>(v.company_name||v.name||"").toLowerCase().includes(vendorSearch.toLowerCase())||(v.email||"").toLowerCase().includes(vendorSearch.toLowerCase())).map(v=>(
-                  <div key={v.email} onClick={()=>setSelectedVendor(v.email)}
-                    style={{padding:"0.6rem 0.85rem",cursor:"pointer",borderBottom:"1px solid #f1f5f9",
-                      background:selectedVendor===v.email?"#eef2ff":"#fff",
-                      fontWeight:selectedVendor===v.email?700:400,fontSize:"0.84rem",color:"#0f172a"}}>
-                    <span style={{fontWeight:700}}>{v.company_name||v.name}</span>
-                    <span style={{fontSize:"0.72rem",color:"#64748b",marginLeft:"0.5rem"}}>{v.email}</span>
-                    {selectedVendor===v.email&&<span style={{float:"right",color:"#4f46e5",fontSize:"0.72rem",fontWeight:800}}>✓ Selected</span>}
-                  </div>
-                ))}
-              </div>
-              <button onClick={assignVendor} disabled={!selectedVendor||assigning||(assignMode==="replace"&&!replaceTargetId)}
-                style={{width:"100%",padding:"0.55rem",background:assignMode==="replace"?"#f59e0b":"#4f46e5",color:"#fff",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",fontWeight:700,cursor:"pointer",opacity:(!selectedVendor||assigning||(assignMode==="replace"&&!replaceTargetId))?0.6:1}}>
-                {assigning?"Assigning…":selectedVendor?(assignMode==="replace"?`Replace with ${vendors.find(v=>v.email===selectedVendor)?.company_name||selectedVendor} →`:`Add ${vendors.find(v=>v.email===selectedVendor)?.company_name||selectedVendor} in Parallel →`):"Select a vendor first"}
-              </button>
-              {vendors.length===0&&<p style={{fontSize:"0.72rem",color:"#94a3b8",marginTop:"0.5rem"}}>No approved BGV vendors. Contact admin to onboard a vendor.</p>}
+              ))}
             </div>
-          )}
+            <button onClick={assignVendor} disabled={!selectedVendor||assigning}
+              style={{width:"100%",padding:"0.55rem",background:"#4f46e5",color:"#fff",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",fontWeight:700,cursor:"pointer",opacity:(!selectedVendor||assigning)?0.6:1}}>
+              {assigning?"Assigning…":selectedVendor?`Add ${vendors.find(v=>v.email===selectedVendor)?.company_name||selectedVendor} in Parallel →`:"Select a vendor first"}
+            </button>
+            {vendors.length===0&&<p style={{fontSize:"0.72rem",color:"#94a3b8",marginTop:"0.5rem"}}>No approved BGV vendors. Contact admin to onboard a vendor.</p>}
+          </div>
           {assignMsg && <p style={{fontSize:"0.78rem",marginTop:"0.5rem",color:assignMsg.startsWith("✓")?"#16a34a":"#ef4444",fontWeight:600}}>{assignMsg}</p>}
         </div>
       )}
@@ -2068,19 +2082,26 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
       {activeAssignments.map(a => {
         const d = assignmentDetails[a.assignment_id];
         const statusKey = d?.bgv_status || a.bgv_status;
+        const isOpen = !!expandedVendors[a.assignment_id];
         return (
           <div key={a.assignment_id} style={{border:"2px solid #e2e8f0",borderRadius:12,padding:"1rem",marginBottom:"1.25rem"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.75rem",flexWrap:"wrap",gap:"0.5rem"}}>
+            <div onClick={()=>setExpandedVendors(prev=>({...prev,[a.assignment_id]:!prev[a.assignment_id]}))}
+              style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:isOpen?"0.75rem":0,flexWrap:"wrap",gap:"0.5rem",cursor:"pointer"}}>
               <div>
                 <span style={{fontSize:"0.68rem",fontWeight:700,color:"#4f46e5",textTransform:"uppercase",letterSpacing:"0.5px"}}>BGV Vendor</span>
                 <div style={{fontWeight:800,fontSize:"0.95rem",color:"#0f172a"}}>{d?.bgv_vendor_name || a.vendor_name || a.vendor_email}</div>
               </div>
-              {statusKey && (
-                <span style={{padding:"0.25rem 0.75rem",borderRadius:999,background:"#dcfce7",color:"#15803d",fontSize:"0.72rem",fontWeight:700}}>
-                  {(BGV_STATUS_BADGE_LABELS[statusKey] || statusKey).toString().replace("_"," ").toUpperCase()}
-                </span>
-              )}
+              <div style={{display:"flex",alignItems:"center",gap:"0.6rem"}}>
+                {statusKey && (
+                  <span style={{padding:"0.25rem 0.75rem",borderRadius:999,background:"#dcfce7",color:"#15803d",fontSize:"0.72rem",fontWeight:700}}>
+                    {(BGV_STATUS_BADGE_LABELS[statusKey] || statusKey).toString().replace("_"," ").toUpperCase()}
+                  </span>
+                )}
+                <span style={{fontSize:"0.78rem",color:"#4f46e5",fontWeight:800}}>{isOpen?"▲":"▼"}</span>
+              </div>
             </div>
+
+            {isOpen && <>
 
             {!d && <div style={{fontSize:"0.78rem",color:"#94a3b8"}}>Loading this vendor's details…</div>}
 
@@ -2132,59 +2153,10 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
                 <div style={{fontSize:"0.78rem",color:"#334155",lineHeight:1.6,whiteSpace:"pre-wrap"}}>{d.bgv_summary}</div>
               </div>
             )}
+            </>}
           </div>
         );
       })}
-
-      {/* Past vendor history — deliberately last, clearly separated from the active
-          vendors' sections above, instead of interleaved between them. This is global
-          to the consent (it only ever holds vendors REPLACED via assignMode "replace"),
-          so it's shown once rather than per-section. */}
-      {bgvCase?.bgv_history?.length > 0 && (
-        <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"1rem",marginBottom:"1rem"}}>
-          <div style={{fontWeight:700,fontSize:"0.84rem",color:"#0f172a",marginBottom:"0.6rem"}}>Past BGV Vendors ({bgvCase.bgv_history.length})</div>
-          {bgvCase.bgv_history.map((h, idx) => {
-            const isOpen = viewingHistoryIdx === idx;
-            const hChecks = h.bgv_checks || [];
-            const hDone = hChecks.filter(c=>c.status==="verified"||c.status==="failed"||c.status==="not_applicable").length;
-            return (
-              <div key={idx} style={{border:"1px solid #e2e8f0",borderRadius:8,marginBottom:"0.5rem",overflow:"hidden"}}>
-                <div onClick={()=>setViewingHistoryIdx(isOpen?null:idx)} style={{padding:"0.65rem 0.85rem",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",background:isOpen?"#f8fafc":"#fff"}}>
-                  <div>
-                    <span style={{fontWeight:700,fontSize:"0.8rem",color:"#0f172a"}}>{h.vendor_email}</span>
-                    <span style={{fontSize:"0.68rem",color:"#94a3b8",marginLeft:"0.5rem"}}>assigned {toISTDate(h.assigned_at)} → replaced {toISTDate(h.replaced_at)}</span>
-                  </div>
-                  <div style={{display:"flex",alignItems:"center",gap:"0.5rem"}}>
-                    {h.bgv_overall_status && <span style={{fontSize:"0.68rem",fontWeight:700,color:OVERALL[h.bgv_overall_status]||"#64748b"}}>{h.bgv_overall_status.toUpperCase()}</span>}
-                    <span style={{fontSize:"0.72rem",color:"#4f46e5",fontWeight:700}}>{isOpen?"▲":"▼"}</span>
-                  </div>
-                </div>
-                {isOpen && (
-                  <div style={{padding:"0.85rem",borderTop:"1px solid #e2e8f0"}}>
-                    <div style={{fontSize:"0.72rem",color:"#64748b",marginBottom:"0.6rem"}}>{hDone} of {hChecks.length} checks completed when replaced</div>
-                    {hChecks.map((c,ci) => {
-                      const cs = CHECK_STATUS_COLORS[c.status] || CHECK_STATUS_COLORS.pending;
-                      return (
-                        <div key={ci} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"0.4rem 0",borderBottom:ci<hChecks.length-1?"1px solid #f1f5f9":"none"}}>
-                          <span style={{fontSize:"0.76rem",color:"#334155"}}>{c.label}</span>
-                          <span style={{fontSize:"0.68rem",fontWeight:700,color:cs.color,background:cs.bg,padding:"0.15rem 0.55rem",borderRadius:999}}>{cs.label}</span>
-                        </div>
-                      );
-                    })}
-                    {h.bgv_summary && <div style={{marginTop:"0.6rem",fontSize:"0.76rem",color:"#475569",background:"#f8fafc",padding:"0.6rem",borderRadius:7}}>{h.bgv_summary}</div>}
-                    {h.bgv_report_key && (
-                      <button onClick={()=>viewReport(h.bgv_report_key)} style={{marginTop:"0.6rem",padding:"0.4rem 0.9rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:7,fontSize:"0.76rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                        View {h.vendor_email}'s Report ↗
-                      </button>
-                    )}
-                    {!h.bgv_report_key && <div style={{marginTop:"0.6rem",fontSize:"0.72rem",color:"#94a3b8",fontStyle:"italic"}}>No final report was submitted before this vendor was replaced.</div>}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
@@ -2380,8 +2352,13 @@ export default function EmployerDashboard() {
   const [threadMsgs,     setThreadMsgs]     = useState([]);
   const [threadSegments, setThreadSegments] = useState({});
   const msgListRef       = useRef(null);
+  // Same fix as the BGV dashboard: only auto-scroll to the bottom when the
+  // person was already there, so a background refresh never yanks someone
+  // back down while they're reading older messages.
+  const wasNearBottomRef = useRef(true);
   useEffect(() => {
-    if (msgListRef.current) msgListRef.current.scrollTop = msgListRef.current.scrollHeight;
+    const el = msgListRef.current;
+    if (el && wasNearBottomRef.current) el.scrollTop = el.scrollHeight;
   }, [threadMsgs]);
   const [threadLoading,  setThreadLoading]  = useState(false);
   const [msgBody,        setMsgBody]        = useState("");
@@ -2795,6 +2772,7 @@ export default function EmployerDashboard() {
   const loadThread = async (consentId, assignmentId, threadId) => {
     setActiveThread(consentId); setActiveAssignmentId(assignmentId || null); setActiveThreadId(threadId || null);
     setThreadMsgs([]); setThreadLoading(true); setMsgErr(""); setShowNewMsg(false);
+    wasNearBottomRef.current = true; // always land at the bottom when opening a thread
     try {
       const qs = assignmentId ? `?assignment_id=${encodeURIComponent(assignmentId)}` : "";
       const r = await apiFetch(`${API}/messages/thread/${consentId}${qs}`);
@@ -2819,9 +2797,12 @@ export default function EmployerDashboard() {
     apiFetch(`${API}/messages/unread-count`).then(r=>r.ok?r.json():null).then(d=>{ if(d) setUnreadCount(d.unread||0); }).catch(()=>{});
   };
 
-  // Auto-refresh the open thread — without this, a message from the other party
-  // never appears until something re-triggers loadThread, forcing people to rely
-  // on a full browser refresh just to see new replies.
+  // Manual refresh only — an earlier version auto-polled this thread every 15s,
+  // which replaced the whole message list on a timer and produced a visible
+  // flicker (messages disappearing/reappearing), the same issue fixed on the
+  // BGV dashboard. Removed the auto-poll entirely; the ↻ button below does the
+  // same fetch on demand instead, and sending a message already refreshes the
+  // thread on its own, so your own messages still appear without any timer.
   const [refreshingThread, setRefreshingThread] = useState(false);
   const silentRefreshThread = async (consentId) => {
     try {
@@ -2829,7 +2810,14 @@ export default function EmployerDashboard() {
       const r = await apiFetch(`${API}/messages/thread/${consentId}${qs}`);
       if (r.ok) {
         const d = await r.json();
-        setThreadMsgs(d.messages || []);
+        const freshMsgs = d.messages || [];
+        // Skip the state update when the poll came back identical, so a manual
+        // refresh with no new messages doesn't force a re-render/scroll either.
+        setThreadMsgs(prev => {
+          const same = prev.length === freshMsgs.length &&
+            prev.every((m,i) => (m.message_id||m.id||m.created_at) === (freshMsgs[i]?.message_id||freshMsgs[i]?.id||freshMsgs[i]?.created_at));
+          return same ? prev : freshMsgs;
+        });
         setThreadSegments(d.consent_segments || {});
       }
     } catch(_) {}
@@ -2839,11 +2827,6 @@ export default function EmployerDashboard() {
     await silentRefreshThread(consentId);
     setRefreshingThread(false);
   };
-  useEffect(() => {
-    if (!activeThread || !showInbox) return;
-    const id = setInterval(() => silentRefreshThread(activeThread), 15000);
-    return () => clearInterval(id);
-  }, [activeThread, showInbox]);
 
   const uploadMsgAttachment = async (file) => {
     if (!file || !activeThread) return;
@@ -2937,7 +2920,7 @@ export default function EmployerDashboard() {
   // Recomputed from live c.bgv_status on every render, so it can never go stale —
   // any assignment, reassignment, or check completion updates this the moment the
   // underlying consent data refreshes.
-  const bgvNeedsAttention = fa.filter(c => c.bgv_status !== "completed").length;
+  const bgvNeedsAttention = fa.filter(c => bgvAggregateStatus(c) !== "completed").length;
   const counts = { pending:pending.length, approved:approvedGrouped.length, declined:declined.length, revoked:revoked.length, bgv:bgvNeedsAttention };
   const faBgvSorted = [...fa].sort((a,b) => (a.employee_name||a.employee_email||"").localeCompare(b.employee_name||b.employee_email||""));
   const list   = cTab==="pending" ? fp : cTab==="approved" ? fa : cTab==="revoked" ? fr : cTab==="bgv" ? faBgvSorted : fd;
@@ -3127,7 +3110,7 @@ return (
                       <div style={{fontSize:"0.78rem",fontWeight:700,color:"#111"}}>{inboxThreads.find(t=>t.thread_id===activeThreadId)?.other_party_name || inboxThreads.find(t=>t.thread_id===activeThreadId)?.other_party_email || activeThread}</div>
                       <div style={{fontSize:"0.62rem",color:"#a09890",marginTop:1}}>{inboxThreads.find(t=>t.thread_id===activeThreadId)?.other_party_email}{inboxThreads.find(t=>t.thread_id===activeThreadId)?.other_party_email ? " · " : ""}{threadMsgs.length} message{threadMsgs.length!==1?"s":""}</div>
                     </div>
-                    <div className="msg-list" ref={msgListRef}>
+                    <div className="msg-list" ref={msgListRef} onScroll={e=>{const el=e.target;wasNearBottomRef.current=(el.scrollHeight-el.scrollTop-el.clientHeight)<80;}}>
                       {threadLoading&&<div style={{textAlign:"center",fontSize:"0.72rem",color:"#a09890",padding:"1rem"}}>Loading…</div>}
                       {!threadLoading&&threadMsgs.length===0&&<div style={{textAlign:"center",fontSize:"0.72rem",color:"#a09890",padding:"2rem"}}>No messages yet.</div>}
                       {threadMsgs.map((m,i)=>{
@@ -3191,7 +3174,10 @@ return (
                             <button type="button" onClick={()=>setMention(employeeName,["bgv","everyone"])} style={btnStyle}>@{employeeName}</button>
                             {hasBgv && <button type="button" onClick={()=>setMention("bgv",[employeeName,"everyone"])} style={btnStyle}>@{bgvName}</button>}
                             {hasBgv && <button type="button" onClick={()=>setMention("everyone",[employeeName,"bgv"])} style={btnStyle}>@everyone</button>}
-                            <button onClick={()=>manualRefreshThread(activeThread)} disabled={refreshingThread} title="Refresh" style={{marginLeft:"auto",background:"none",border:"none",cursor:refreshingThread?"not-allowed":"pointer",fontSize:refreshingThread?"0.68rem":"0.85rem",color:"#7a6e64",opacity:refreshingThread?0.6:1,padding:"0.2rem 0.4rem",fontWeight:600}}>{refreshingThread?"Refreshing…":"↻"}</button>
+                            <button onClick={()=>manualRefreshThread(activeThread)} disabled={refreshingThread} title="Refresh messages" style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:"0.3rem",background:"#f5f2ee",border:"1px solid #c8c2b8",borderRadius:999,cursor:refreshingThread?"not-allowed":"pointer",fontSize:"0.72rem",color:"#7a6e64",opacity:refreshingThread?0.6:1,padding:"0.25rem 0.65rem",fontWeight:700}}>
+                              <span style={{display:"inline-block",animation:refreshingThread?"spin 0.8s linear infinite":"none"}}>↻</span>
+                              {refreshingThread?"Refreshing…":"Refresh"}
+                            </button>
                           </>);
                         })()}
                       </div>
@@ -3482,11 +3468,11 @@ return (
                   <div style={{fontSize:9,fontWeight:700,letterSpacing:"1px",textTransform:"uppercase",color:"#7a6e64",marginBottom:4}}>BGV Status Metrics</div>
                   <div style={{fontSize:9,color:"#a09890",marginBottom:10,lineHeight:1.5}}>Across {approvedGrouped.length} approved candidate{approvedGrouped.length!==1?"s":""}</div>
                   {[
-                    ["Not Assigned", approvedGrouped.filter(c=>!c.bgv_vendor_email).length, "#94a3b8", "Approved, no BGV vendor yet"],
-                    ["Assigned",     approvedGrouped.filter(c=>["assigned","groomed"].includes(c.bgv_status)).length, "#3b82f6", "Vendor assigned, not yet started"],
-                    ["In Progress",  approvedGrouped.filter(c=>c.bgv_status==="in_progress").length, "#f59e0b", "Verification underway"],
-                    ["Completed",    approvedGrouped.filter(c=>c.bgv_status==="completed").length, "#16a34a", "Final report submitted"],
-                    ["On Hold",      approvedGrouped.filter(c=>c.bgv_status==="on_hold").length, "#dc2626", "Awaiting info from candidate"],
+                    ["Not Assigned", approvedGrouped.filter(c=>bgvAggregateStatus(c)==="not_assigned").length, "#94a3b8", "Approved, no BGV vendor yet"],
+                    ["Assigned",     approvedGrouped.filter(c=>bgvAggregateStatus(c)==="assigned").length, "#3b82f6", "Vendor assigned, not yet started"],
+                    ["In Progress",  approvedGrouped.filter(c=>bgvAggregateStatus(c)==="in_progress").length, "#f59e0b", "Verification underway"],
+                    ["Completed",    approvedGrouped.filter(c=>bgvAggregateStatus(c)==="completed").length, "#16a34a", "Final report submitted"],
+                    ["On Hold",      approvedGrouped.filter(c=>bgvAggregateStatus(c)==="on_hold").length, "#dc2626", "Awaiting info from candidate"],
                   ].map(([label,val,col,sub])=>(
                     <div key={label} style={{marginBottom:9}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
@@ -3574,8 +3560,9 @@ return (
                 :list.map(c=>{
                   const dot=c.status==="approved"?"#16a34a":c.status==="pending"?"#f59e0b":"#ef4444";
                   const ts=c.status==="approved"?(c.responded_at||c.approved_at):(c.requested_at||c.created_at);
-                  const bgvStatusLabel = {assigned:"Assigned",groomed:"Assigned",in_progress:"In Progress",completed:"Completed",on_hold:"On Hold"}[c.bgv_status] || "Not Assigned";
-                  const bgvStatusColor = {assigned:"#3b82f6",groomed:"#3b82f6",in_progress:"#3b82f6",completed:"#16a34a",on_hold:"#f59e0b"}[c.bgv_status] || "#94a3b8";
+                  const bgvAgg = bgvAggregateStatus(c);
+                  const bgvStatusLabel = {assigned:"Assigned",in_progress:"In Progress",completed:"Completed",on_hold:"On Hold"}[bgvAgg] || "Not Assigned";
+                  const bgvStatusColor = {assigned:"#3b82f6",in_progress:"#3b82f6",completed:"#16a34a",on_hold:"#f59e0b"}[bgvAgg] || "#94a3b8";
                   return(
                     <div key={gcid(c)} className={`c-item${gcid(selected)===gcid(c)?" sel":""}`} onClick={async()=>{await selectConsent(c);if(cTab==="bgv")setActiveTab("BGV Status");}}>
                       <div className="c-dot" style={{background:cTab==="bgv"?bgvStatusColor:dot}}/>
@@ -3698,8 +3685,9 @@ return (
                       .sort((a,b) => (a.employee_name||a.employee_email||"").localeCompare(b.employee_name||b.employee_email||""));
                     if (list.length===0) return <div style={{padding:"2rem",textAlign:"center",color:"#a09890",fontSize:"0.85rem"}}>No approved candidates yet</div>;
                     return list.map((c,i) => {
-                      const stColor = {assigned:"#3b82f6",groomed:"#3b82f6",in_progress:"#3b82f6",completed:"#16a34a",on_hold:"#f59e0b"}[c.bgv_status] || "#94a3b8";
-                      const stLabel = {assigned:"Assigned",groomed:"Assigned",in_progress:"In Progress",completed:"Completed",on_hold:"On Hold"}[c.bgv_status] || "Not Assigned";
+                      const bgvAgg = bgvAggregateStatus(c);
+                      const stColor = {assigned:"#3b82f6",in_progress:"#3b82f6",completed:"#16a34a",on_hold:"#f59e0b"}[bgvAgg] || "#94a3b8";
+                      const stLabel = {assigned:"Assigned",in_progress:"In Progress",completed:"Completed",on_hold:"On Hold"}[bgvAgg] || "Not Assigned";
                       return (
                         <div key={c.consent_id||i} onClick={()=>setBgvHomeSelected({consent_id:c.consent_id,employee_id:c.employee_id,employee_name:c.employee_name,employee_email:c.employee_email})}
                           style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0.85rem 1.1rem",borderTop:i>0?"1px solid #f0eee9":"none",cursor:"pointer"}}>
