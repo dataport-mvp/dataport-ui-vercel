@@ -517,6 +517,7 @@ export default function BgvDashboard() {
   const [savingCheck, setSavingCheck] = useState({});
   const [localChecks, setLocalChecks] = useState([]);
   const uploadInputRef = useRef({});
+  const [expandedHistory, setExpandedHistory] = useState({});
 
   // Report submission
   const [reportFile, setReportFile]     = useState(null);
@@ -1332,13 +1333,20 @@ export default function BgvDashboard() {
                             {Array.isArray(edu.articleships) && edu.articleships.filter(a=>a?.firm||a?.organization).map((a,i)=>(
                               <Sec key={`art-${i}`} icon="📝" title={`Articleship / Practical Training ${i+1}`}>
                                 <Grid>
+                                  <F label="Type" value={a.type==="Other Practical Training" ? (a.otherType||a.type) : a.type} />
                                   <F label="Firm / Organisation" value={a.firm || a.organization} />
                                   {/* FIX: "still pursuing" articleships (isOngoing==="Ongoing", no
                                       "to" date yet by design) rendered as a bare trailing "—" with
                                       nothing after it — the ongoing status itself was never shown.
                                       Now shows "Ongoing" in its place, same as the employee-side form. */}
                                   <F label="From — To" value={(a.from||a.to||a.isOngoing) ? `${eduDate(a.from)} — ${a.isOngoing==="Ongoing" ? "Ongoing" : (a.to?eduDate(a.to):"")}`.trim() : null} />
-                                  <F label="Role / Nature" value={a.role || a.nature} />
+                                  {/* FIX: this used to read a.role / a.nature, fields that don't
+                                      exist anywhere in the saved record (pages/employee/education.js
+                                      stores city / principalName / regNo) — so City, Supervisor and
+                                      Registration No. never showed here even when filled in. */}
+                                  <F label="City" value={a.city} />
+                                  <F label="Principal / Supervisor" value={a.principalName} />
+                                  <F label="Registration / Membership No." value={a.regNo} />
                                 </Grid>
                                 {docLink("education",`articleship_${i}`) && <div style={{marginTop:"0.7rem"}}>{docLink("education",`articleship_${i}`)}</div>}
                               </Sec>
@@ -1648,6 +1656,62 @@ export default function BgvDashboard() {
                             {saveStatus && <div style={{marginTop:"0.5rem",fontSize:"0.78rem",fontWeight:600,color:saveStatus.startsWith("✓")?"#16a34a":"#dc2626"}}>{saveStatus}</div>}
                           </div>
                         </div>
+
+                        {/* Past, completed cases YOU held on this same candidate — populated
+                            once the employer reassigns you here after an earlier case was
+                            already completed (a recheck). That old case is never reopened or
+                            merged into this one — it's shown below, exactly as delivered, so
+                            the fresh checks/report can be compared directly against the old
+                            ones. */}
+                        {caseDetail.vendor_history?.length > 0 && (
+                          <div style={{padding:"1.25rem",borderTop:"1px solid #f1f5f9"}}>
+                            <div className="panel-title">
+                              Your Past Case{caseDetail.vendor_history.length>1?"s":""} On This Candidate ({caseDetail.vendor_history.length})
+                            </div>
+                            {caseDetail.vendor_history.map((h,hi) => {
+                              const hOpen = !!expandedHistory[h.assignment_id];
+                              return (
+                                <div key={h.assignment_id||hi} style={{border:"1.5px solid #e2e8f0",borderRadius:10,padding:"0.75rem 1rem",marginBottom:"0.6rem",background:"#f8fafc"}}>
+                                  <div onClick={()=>setExpandedHistory(prev=>({...prev,[h.assignment_id]:!prev[h.assignment_id]}))}
+                                    style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"0.5rem",cursor:"pointer"}}>
+                                    <div style={{fontSize:"0.76rem",color:"#475569"}}>
+                                      Assigned: {h.assigned_at?isoDate(h.assigned_at):"—"}
+                                      {h.completed_at && <> · Completed: {isoDate(h.completed_at)}</>}
+                                    </div>
+                                    <div style={{display:"flex",alignItems:"center",gap:"0.5rem"}}>
+                                      {h.overall_status && (
+                                        <span style={{padding:"0.18rem 0.6rem",borderRadius:999,background:`${OVERALL_STATUS[h.overall_status]?.color||"#64748b"}20`,color:OVERALL_STATUS[h.overall_status]?.color||"#64748b",fontSize:"0.68rem",fontWeight:800}}>
+                                          {OVERALL_STATUS[h.overall_status]?.label || h.overall_status.toUpperCase()}
+                                        </span>
+                                      )}
+                                      <span style={{fontSize:"0.74rem",color:"#4f46e5",fontWeight:800}}>{hOpen?"▲":"▼"}</span>
+                                    </div>
+                                  </div>
+                                  {hOpen && <>
+                                    {h.summary && <div style={{fontSize:"0.78rem",color:"#475569",marginTop:"0.6rem",lineHeight:1.5}}>{h.summary}</div>}
+                                    {h.checks?.length > 0 && (
+                                      <div style={{marginTop:"0.6rem"}}>
+                                        {h.checks.map((ch,i) => {
+                                          const st = CHECK_STATUS[ch.status] || CHECK_STATUS.pending;
+                                          return (
+                                            <div key={i} style={{display:"grid",gridTemplateColumns:"1.8fr 1fr 0.9fr",gap:"0.5rem",padding:"0.45rem 0",borderBottom:"1px solid #e2e8f0",alignItems:"center"}}>
+                                              <div>
+                                                <div style={{fontSize:"0.78rem",fontWeight:600,color:"#0f172a"}}>{ch.label}</div>
+                                                {ch.notes && <div style={{fontSize:"0.68rem",color:"#64748b",marginTop:"0.1rem"}}>{ch.notes}</div>}
+                                              </div>
+                                              <span style={{display:"inline-block",padding:"0.15rem 0.55rem",borderRadius:999,background:st.bg,color:st.color,fontSize:"0.66rem",fontWeight:700}}>{st.label}</span>
+                                              <div style={{fontSize:"0.64rem",color:"#94a3b8"}}>{ch.completed_at ? isoDate(ch.completed_at) : "—"}</div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </>}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                         </>); })()}
                       </div>
                     </>

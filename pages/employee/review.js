@@ -772,6 +772,7 @@ async function buildMyProfilePdf(profile, empHistory, documents, employeeSelfNam
   ${Array.isArray(edu.articleships) && edu.articleships.length > 0 ? section("Articleship / Practical Training", edu.articleships.map((a,i) => [
     row(`Training ${i+1} — Type`,      a.type==="Other Practical Training"?(a.otherType||a.type):a.type),
     row(`Training ${i+1} — Firm`,      a.firm),
+    row(`Training ${i+1} — Status`,    a.isOngoing==="Ongoing"?"Ongoing / Pursuing":a.isOngoing),
     row(`Training ${i+1} — City`,      a.city),
     row(`Training ${i+1} — Principal`, a.principalName),
     row(`Training ${i+1} — Reg. No.`,  a.regNo),
@@ -795,6 +796,9 @@ async function buildMyProfilePdf(profile, empHistory, documents, employeeSelfNam
     i === arr.length-1 ? "Current / Most Recent Employer" : `Previous Employer ${i+1}`,
     [
       row("Company Name",          e.companyName),
+      e.gap?.hasGap === "Yes" ? row("Employment Gap", e.gap?.reason) : "",
+      e.gap?.hasGap === "Yes" ? row("Employment Gap From", isoToDisplay(e.gap?.from)) : "",
+      e.gap?.hasGap === "Yes" ? row("Employment Gap To",   isoToDisplay(e.gap?.to))   : "",
       row("Designation",           e.designation),
       row("Department",            e.department),
       row("Employment Type",       e.employmentType),
@@ -813,9 +817,6 @@ async function buildMyProfilePdf(profile, empHistory, documents, employeeSelfNam
       row("Reference Role",        e.reference?.role),
       row("Reference Email",       e.reference?.email),
       row("Reference Mobile",      e.reference?.mobile),
-      e.gap?.hasGap === "Yes" ? row("Employment Gap", e.gap?.reason) : "",
-      e.gap?.hasGap === "Yes" ? row("Employment Gap From", isoToDisplay(e.gap?.from)) : "",
-      e.gap?.hasGap === "Yes" ? row("Employment Gap To",   isoToDisplay(e.gap?.to))   : "",
     ].join(""), i === arr.length-1 ? "#18151f" : "#334155"
   )).join("")}
 
@@ -1916,13 +1917,18 @@ export default function ReviewPage() {
             {Array.isArray(edu.articleships) && edu.articleships.length > 0 && (
               <div style={{marginTop:"0.9rem",paddingTop:"0.9rem",borderTop:"1px solid #f0eef8"}}>
                 <div style={{fontSize:"0.72rem",fontWeight:700,color:"#ea580c",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.5rem"}}>Articleship / Practical Training</div>
-                {edu.articleships.map((a,i)=>(
+                {edu.articleships.map((a,i)=>{
+                  const typeLabel = a.type==="Other Practical Training" ? (a.otherType||a.type) : (a.type||`Training ${i+1}`);
+                  return (
                   <div key={i} style={{background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:8,padding:"0.65rem 0.85rem",marginBottom:"0.5rem"}}>
-                    <div style={{fontSize:"0.78rem",fontWeight:700,color:"#ea580c",marginBottom:"0.3rem"}}>{a.type||`Training ${i+1}`} — {a.firm}</div>
+                    <div style={{fontSize:"0.78rem",fontWeight:700,color:"#ea580c",marginBottom:"0.3rem"}}>{typeLabel}{a.firm?` — ${a.firm}`:""}</div>
                     <div className="grid" style={{gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))"}}>
+                      <KV label="Status" value={a.isOngoing==="Ongoing"?"Ongoing / Pursuing":a.isOngoing==="Completed"?"Completed":(a.isOngoing||"—")}/>
                       {a.city&&<KV label="City" value={a.city}/>}
+                      {a.principalName&&<KV label="Principal / Supervisor" value={a.principalName}/>}
+                      {a.regNo&&<KV label="Registration / Membership No." value={a.regNo}/>}
                       {a.from&&<KV label="From" value={a.from}/>}
-                      {a.to&&<KV label="To" value={a.isOngoing==="Ongoing"?"Ongoing":a.to}/>}
+                      <KV label="To" value={a.isOngoing==="Ongoing"?"Ongoing":(a.to||"—")}/>
                     </div>
                     {a.certKey && (
                       <div className="att-grid" style={{marginTop:"0.5rem"}}>
@@ -1930,7 +1936,8 @@ export default function ReviewPage() {
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
             {edu.hasEduGap && (
@@ -1959,6 +1966,11 @@ export default function ReviewPage() {
                 <div style={{fontSize:"0.72rem",fontWeight:700,color:"#7c3aed",textTransform:"uppercase",letterSpacing:0.5,marginBottom:"0.5rem"}}>
                   {isCurrent?"Current / Most Recent Employer":`Previous Employer ${idx+1}`}
                 </div>
+                {e.gap?.hasGap==="Yes"&&e.gap?.reason&&(
+                  <div style={{marginBottom:"0.6rem",padding:"0.5rem 0.75rem",background:"#fffbeb",borderRadius:8,border:"1px solid #fde68a",fontSize:"0.78rem",color:"#92400e",fontWeight:500}}>
+                    ⏱ Gap{(e.gap.from||e.gap.to)?` (${e.gap.from} – ${e.gap.to})`:""}: {e.gap.reason}
+                  </div>
+                )}
                 <div className="grid">
                   <KV label="Company"         value={e.companyName}/>
                   <KV label="Designation"     value={e.designation}/>
@@ -1989,11 +2001,6 @@ export default function ReviewPage() {
                     {e.documents.resignationKey && <AttChip label="Resignation"       docKey={e.documents.resignationKey} urls={docUrls}/>}
                     {e.documents.experienceKey  && <AttChip label="Experience Letter" docKey={e.documents.experienceKey}  urls={docUrls}/>}
                     {e.documents.idCardKey      && <AttChip label="Company ID Card"   docKey={e.documents.idCardKey}      urls={docUrls}/>}
-                  </div>
-                )}
-                {e.gap?.hasGap==="Yes"&&e.gap?.reason&&(
-                  <div style={{marginTop:"0.5rem",padding:"0.5rem 0.75rem",background:"#fffbeb",borderRadius:8,border:"1px solid #fde68a",fontSize:"0.78rem",color:"#92400e",fontWeight:500}}>
-                    ⏱ Gap{(e.gap.from||e.gap.to)?` (${e.gap.from} – ${e.gap.to})`:""}: {e.gap.reason}
                   </div>
                 )}
               </div>
