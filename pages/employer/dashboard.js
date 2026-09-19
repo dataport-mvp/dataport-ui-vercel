@@ -124,17 +124,43 @@ function maskAadhaar(a) {
 // progress on ANY vendor is never hidden behind a freshly-added parallel one that
 // hasn't started yet. Falls back to the legacy single-vendor fields for older consents
 // that predate the multi-vendor model, same as the backend's own fallback.
-function bgvAggregateStatus(c) {
+function bgvActiveAssignments(c) {
   const assignments = Array.isArray(c.bgv_assignments) && c.bgv_assignments.length
     ? c.bgv_assignments
     : (c.bgv_vendor_email ? [{ vendor_email: c.bgv_vendor_email, status: c.bgv_status, replaced_at: null }] : []);
-  const active = assignments.filter(a => !a.replaced_at);
+  return assignments.filter(a => !a.replaced_at);
+}
+
+// Real per-vendor emails currently active on this case (never the legacy single
+// bgv_vendor_email mirror alone, which only ever reflects whichever vendor was
+// assigned MOST RECENTLY — so with 2+ parallel vendors it can point at the wrong
+// one, or the wrong one only, once a second vendor is added after the first
+// already finished). Used to show the correct Agency/Company name(s) under a
+// candidate's row wherever BGV is displayed.
+function bgvActiveVendorEmails(c) {
+  return bgvActiveAssignments(c).map(a => a.vendor_email).filter(Boolean);
+}
+
+// Priority used to decide which single bucket a candidate's overall BGV case
+// falls into, when several vendors can be running on the same candidate at once:
+//   on_hold             — any active vendor is stuck waiting on the candidate
+//   completed           — every active vendor is fully done
+//   in_progress         — at least one active vendor is actually working right now
+//   partially_completed — one or more vendors are DONE and none of the rest have
+//                         started yet — genuine, real completion that must never
+//                         be folded silently into "in_progress" (that previously
+//                         made "Completed" read as 0% even when a vendor had
+//                         actually finished — see BGV Status Metrics tile)
+//   assigned            — every active vendor is still groomed / not yet started
+//   not_assigned        — no active vendor at all
+function bgvAggregateStatus(c) {
+  const active = bgvActiveAssignments(c);
   if (active.length === 0) return "not_assigned";
   if (active.some(a => a.status === "on_hold")) return "on_hold";
-  if (active.some(a => a.status === "in_progress")) return "in_progress";
   if (active.every(a => a.status === "completed")) return "completed";
-  if (active.some(a => a.status === "completed")) return "in_progress"; // some vendors done, others still pending — overall case isn't finished yet
-  return "assigned"; // every active vendor is still groomed / not yet started
+  if (active.some(a => a.status === "in_progress")) return "in_progress";
+  if (active.some(a => a.status === "completed")) return "partially_completed";
+  return "assigned";
 }
 
 // ── PDF with embedded images ──────────────────────────────────────────
@@ -3471,7 +3497,8 @@ return (
                     ["Not Assigned", approvedGrouped.filter(c=>bgvAggregateStatus(c)==="not_assigned").length, "#94a3b8", "Approved, no BGV vendor yet"],
                     ["Assigned",     approvedGrouped.filter(c=>bgvAggregateStatus(c)==="assigned").length, "#3b82f6", "Vendor assigned, not yet started"],
                     ["In Progress",  approvedGrouped.filter(c=>bgvAggregateStatus(c)==="in_progress").length, "#f59e0b", "Verification underway"],
-                    ["Completed",    approvedGrouped.filter(c=>bgvAggregateStatus(c)==="completed").length, "#16a34a", "Final report submitted"],
+                    ["Partially Completed", approvedGrouped.filter(c=>bgvAggregateStatus(c)==="partially_completed").length, "#0d9488", "Some vendors done, rest not yet started"],
+                    ["Completed",    approvedGrouped.filter(c=>bgvAggregateStatus(c)==="completed").length, "#16a34a", "Final report submitted — all vendors"],
                     ["On Hold",      approvedGrouped.filter(c=>bgvAggregateStatus(c)==="on_hold").length, "#dc2626", "Awaiting info from candidate"],
                   ].map(([label,val,col,sub])=>(
                     <div key={label} style={{marginBottom:9}}>
@@ -3561,8 +3588,9 @@ return (
                   const dot=c.status==="approved"?"#16a34a":c.status==="pending"?"#f59e0b":"#ef4444";
                   const ts=c.status==="approved"?(c.responded_at||c.approved_at):(c.requested_at||c.created_at);
                   const bgvAgg = bgvAggregateStatus(c);
-                  const bgvStatusLabel = {assigned:"Assigned",in_progress:"In Progress",completed:"Completed",on_hold:"On Hold"}[bgvAgg] || "Not Assigned";
-                  const bgvStatusColor = {assigned:"#3b82f6",in_progress:"#3b82f6",completed:"#16a34a",on_hold:"#f59e0b"}[bgvAgg] || "#94a3b8";
+                  const bgvStatusLabel = {assigned:"Assigned",in_progress:"In Progress",partially_completed:"Partially Completed",completed:"Completed",on_hold:"On Hold"}[bgvAgg] || "Not Assigned";
+                  const bgvStatusColor = {assigned:"#3b82f6",in_progress:"#f59e0b",partially_completed:"#0d9488",completed:"#16a34a",on_hold:"#dc2626"}[bgvAgg] || "#94a3b8";
+                  const bgvActiveEmails = bgvActiveVendorEmails(c);
                   return(
                     <div key={gcid(c)} className={`c-item${gcid(selected)===gcid(c)?" sel":""}`} onClick={async()=>{await selectConsent(c);if(cTab==="bgv")setActiveTab("BGV Status");}}>
                       <div className="c-dot" style={{background:cTab==="bgv"?bgvStatusColor:dot}}/>
@@ -3579,7 +3607,7 @@ return (
                         </div>
                         {c.employee_name&&c.employee_name!==c.employee_email&&<div className="c-nm">{c.employee_name}</div>}
                         {cTab==="bgv" ? (
-                          <div className="c-dt">{c.bgv_vendor_email ? (bgvVendorNames[c.bgv_vendor_email] || c.bgv_vendor_email) : "No vendor assigned yet"}</div>
+                          <div className="c-dt">{bgvActiveEmails.length ? bgvActiveEmails.map(e=>bgvVendorNames[e]||e).join(" · ") : "No vendor assigned yet"}</div>
                         ) : (
                           <div className="c-dt">{toISTDate(ts)}</div>
                         )}
@@ -3686,14 +3714,16 @@ return (
                     if (list.length===0) return <div style={{padding:"2rem",textAlign:"center",color:"#a09890",fontSize:"0.85rem"}}>No approved candidates yet</div>;
                     return list.map((c,i) => {
                       const bgvAgg = bgvAggregateStatus(c);
-                      const stColor = {assigned:"#3b82f6",in_progress:"#3b82f6",completed:"#16a34a",on_hold:"#f59e0b"}[bgvAgg] || "#94a3b8";
-                      const stLabel = {assigned:"Assigned",in_progress:"In Progress",completed:"Completed",on_hold:"On Hold"}[bgvAgg] || "Not Assigned";
+                      const stColor = {assigned:"#3b82f6",in_progress:"#f59e0b",partially_completed:"#0d9488",completed:"#16a34a",on_hold:"#dc2626"}[bgvAgg] || "#94a3b8";
+                      const stLabel = {assigned:"Assigned",in_progress:"In Progress",partially_completed:"Partially Completed",completed:"Completed",on_hold:"On Hold"}[bgvAgg] || "Not Assigned";
+                      const activeEmails = bgvActiveVendorEmails(c);
+                      const vendorLine = activeEmails.length ? activeEmails.map(e=>bgvVendorNames[e]||e).join(" · ") : "No vendor assigned yet";
                       return (
                         <div key={c.consent_id||i} onClick={()=>setBgvHomeSelected({consent_id:c.consent_id,employee_id:c.employee_id,employee_name:c.employee_name,employee_email:c.employee_email})}
                           style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0.85rem 1.1rem",borderTop:i>0?"1px solid #f0eee9":"none",cursor:"pointer"}}>
                           <div>
-                            <div style={{fontWeight:700,fontSize:"0.88rem",color:"#111"}}>{c.employee_name || c.employee_email}</div>
-                            {c.employee_name && <div style={{fontSize:"0.75rem",color:"#a09890",marginTop:2}}>{c.employee_email}</div>}
+                            <div style={{fontWeight:700,fontSize:"0.88rem",color:"#111"}}>{c.employee_email}</div>
+                            <div style={{fontSize:"0.75rem",color:"#a09890",marginTop:2}}>{vendorLine}</div>
                           </div>
                           <span style={{fontSize:10,fontWeight:700,color:stColor,background:`${stColor}18`,padding:"3px 9px",borderRadius:999,whiteSpace:"nowrap"}}>{stLabel}</span>
                         </div>
