@@ -1755,6 +1755,11 @@ export default function ReviewPage() {
               <KV label="State"          value={cur.state}/>
               <KV label="Pincode"        value={cur.pin}/>
             </div>
+            {d.currentAddressProofKey && (
+              <div className="att-grid" style={{marginTop:"0.5rem"}}>
+                <AttChip label="Current Address Proof" docKey={d.currentAddressProofKey} urls={docUrls}/>
+              </div>
+            )}
             {(perm.door||perm.state)&&(<>
               <div className="sec-divider">Permanent / Native Address</div>
               <div className="grid">
@@ -1764,6 +1769,11 @@ export default function ReviewPage() {
                 <KV label="State"          value={perm.state}/>
                 <KV label="Pincode"        value={perm.pin}/>
               </div>
+              {d.permanentAddressProofKey && (
+                <div className="att-grid" style={{marginTop:"0.5rem"}}>
+                  <AttChip label="Permanent Address Proof" docKey={d.permanentAddressProofKey} urls={docUrls}/>
+                </div>
+              )}
             </>)}
             <div className="sec-divider">Documents</div>
             <div className="att-grid">
@@ -1785,6 +1795,9 @@ export default function ReviewPage() {
               <KV label="Branch"               value={d.branch}/>
               <KV label="Account Type"         value={d.accountType}/>
               <KV label="Account Number"       value={maskAccount(d.accountLast4, d.accountFull)}/>
+            </div>
+            <div className="att-grid" style={{marginTop:"0.5rem"}}>
+              {d.bankProofKey ? <AttChip label="Proof for Salary Processing" docKey={d.bankProofKey} urls={docUrls}/> : <span className="att-chip missing">⚠ Salary processing proof missing</span>}
             </div>
           </div>
 
@@ -1883,6 +1896,11 @@ export default function ReviewPage() {
                       <KV label="Level" value={q.level}/>
                       <KV label="Year"  value={q.year || (q.level==="Pursuing"?"Pursuing":"")}/>
                     </div>
+                    {q.certKey && (
+                      <div className="att-grid" style={{marginTop:"0.5rem"}}>
+                        <AttChip label="Certificate" docKey={q.certKey} urls={docUrls}/>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1904,8 +1922,13 @@ export default function ReviewPage() {
                     <div className="grid" style={{gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))"}}>
                       {a.city&&<KV label="City" value={a.city}/>}
                       {a.from&&<KV label="From" value={a.from}/>}
-                      {a.to&&<KV label="To" value={a.to}/>}
+                      {a.to&&<KV label="To" value={a.isOngoing==="Ongoing"?"Ongoing":a.to}/>}
                     </div>
+                    {a.certKey && (
+                      <div className="att-grid" style={{marginTop:"0.5rem"}}>
+                        <AttChip label="Upload Letter" docKey={a.certKey} urls={docUrls}/>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

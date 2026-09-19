@@ -1369,7 +1369,7 @@ export default function EducationDetails() {
   </>);
 
   const updateArticleship=(i,field,val)=>{
-    const a=[...articleships];a[i]={...a[i],[field]:val};setArticleships(a);isDirtyRef.current=true;
+    const a=[...articleships];a[i]={...a[i],[field]:val};setArticleships(a);isDirtyRef.current=true;wasEditedRef.current=true;
   };
 
   return(
@@ -1453,13 +1453,13 @@ export default function EducationDetails() {
             <div className="fr"><F l="School Address" v={xAddress} s={d(setXAddress)} errKey="xAddress" errors={errors} onFix={fixErr}/></div>
             <div className="fr"><FS l="Result Type" v={xResultType} s={(v)=>{d(setXResultType)(v);if(v!=="Other")setXResultTypeOther("");}} o={["Percentage","CGPA (out of 10)","GPA (out of 4.0)","Class / Division","Grade","Pass / Fail","Other"]} errKey="xResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={xResultValue} s={d(setXResultValue)} errKey="xResultValue" errors={errors} onFix={fixErr}/><F l="Medium of Study" v={xMedium} s={d(setXMedium)} errKey="xMedium" errors={errors} onFix={fixErr}/></div>
             {xResultType==="Other"&&<div className="fr"><F l="Please specify your grading system" v={xResultTypeOther} s={d(setXResultTypeOther)} errKey="xResultTypeOther" errors={errors} onFix={fixErr}/></div>}
-            <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Class X Certificate" errKey="xCertKey"/><FileUpload onUploadStateChange={handleUploadState} label="Upload Class X Certificate" category="education" subKey="classX" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={xCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setXCertKey(key);isDirtyRef.current=true;fixErr("xCertKey");}}/></div>
+            <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Class X Certificate" errKey="xCertKey"/><FileUpload onUploadStateChange={handleUploadState} label="Upload Class X Certificate" category="education" subKey="classX" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={xCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setXCertKey(key);isDirtyRef.current=true;wasEditedRef.current=true;fixErr("xCertKey");}}/></div>
             {xCountry==="Outside India"&&(
               <div className="att-split">
                 <div className="att-box" style={{flex:"0 0 100%"}}>
                   <span className="att-box-lbl">Equivalency Certificate (AIU / WES)</span>
                   <p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>If obtained, upload for smoother onboarding and BGV verification.</p>
-                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="classx_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={xEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setXEquivalencyKey(key);isDirtyRef.current=true;fixErr("xEquivalencyKey");}}/>
+                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="classx_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={xEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setXEquivalencyKey(key);isDirtyRef.current=true;wasEditedRef.current=true;fixErr("xEquivalencyKey");}}/>
                 </div>
               </div>
             )}
@@ -1476,7 +1476,7 @@ export default function EducationDetails() {
                 {v:"Both",         label:"Both",                 desc:"Did Intermediate AND a Diploma"},
               ].map(({v,label,desc})=>(
                 <button key={v} type="button"
-                  onClick={()=>{setAfterTenth(v);isDirtyRef.current=true;fixErr("afterTenth");}}
+                  onClick={()=>{setAfterTenth(v);isDirtyRef.current=true;wasEditedRef.current=true;fixErr("afterTenth");}}
                   style={{padding:"0.6rem 1rem",borderRadius:10,cursor:"pointer",textAlign:"left",transition:"all 0.18s",border:afterTenth===v?"2px solid #0891b2":"1.5px solid #dddaf0",background:afterTenth===v?"#ecfeff":"#f2f1f9",minWidth:180}}>
                   <div style={{fontSize:"0.84rem",fontWeight:700,color:afterTenth===v?"#0891b2":"#1a1730"}}>{label}</div>
                   <div style={{fontSize:"0.68rem",color:"#8b88b0",marginTop:"0.15rem",fontWeight:500}}>{desc}</div>
@@ -1512,13 +1512,13 @@ export default function EducationDetails() {
             {iResultType==="Other"&&<div className="fr"><F l="Please specify your grading system" v={iResultTypeOther} s={d(setIResultTypeOther)} errKey="iResultTypeOther" errors={errors} onFix={fixErr}/></div>}
             <div className="fr"><FS l="Stream" v={iStream} s={(v)=>{d(setIStream)(v);if(v!=="Other")setIStreamOther("");}} o={["Science","Commerce","Arts","Vocational","Other"]} errKey="iStream" errors={errors} onFix={fixErr}/><F l="Medium of Study" v={iMedium} s={d(setIMedium)} errKey="iMedium" errors={errors} onFix={fixErr}/></div>
             {iStream==="Other"&&<div className="fr"><F l="Please specify your stream" v={iStreamOther} s={d(setIStreamOther)} errKey="iStreamOther" errors={errors} onFix={fixErr}/></div>}
-            <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Intermediate Certificate" errKey="iCertKey"/><FileUpload onUploadStateChange={handleUploadState} label="Upload Intermediate Certificate" category="education" subKey="intermediate" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={iCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setICertKey(key);isDirtyRef.current=true;fixErr("iCertKey");}}/></div>
+            <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Intermediate Certificate" errKey="iCertKey"/><FileUpload onUploadStateChange={handleUploadState} label="Upload Intermediate Certificate" category="education" subKey="intermediate" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={iCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setICertKey(key);isDirtyRef.current=true;wasEditedRef.current=true;fixErr("iCertKey");}}/></div>
             {iCountry==="Outside India"&&(
               <div className="att-split">
                 <div className="att-box" style={{flex:"0 0 100%"}}>
                   <span className="att-box-lbl">Equivalency Certificate (AIU / WES)</span>
                   <p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>If obtained, upload for smoother onboarding and BGV verification.</p>
-                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="intermediate_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={iEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setIEquivalencyKey(key);isDirtyRef.current=true;fixErr("iEquivalencyKey");}}/>
+                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="intermediate_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={iEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setIEquivalencyKey(key);isDirtyRef.current=true;wasEditedRef.current=true;fixErr("iEquivalencyKey");}}/>
                 </div>
               </div>
             )}
@@ -1550,13 +1550,13 @@ export default function EducationDetails() {
             <div className="fr"><FS l="Mode" v={dipMode} s={d(setDipMode)} o={["Full-time","Part-time","Distance"]} errKey="dipMode" errors={errors} onFix={fixErr}/><FS l="Result Type" v={dipResultType} s={(v)=>{d(setDipResultType)(v);if(v!=="Other")setDipResultTypeOther("");}} o={["Percentage","CGPA (out of 10)","GPA (out of 4.0)","Class / Division","Grade","Pass / Fail","Other"]} errKey="dipResultType" errors={errors} onFix={fixErr}/><F l="Result Value" v={dipResultValue} s={d(setDipResultValue)} errKey="dipResultValue" errors={errors} onFix={fixErr}/></div>
             {dipResultType==="Other"&&<div className="fr"><F l="Please specify your grading system" v={dipResultTypeOther} s={d(setDipResultTypeOther)} errKey="dipResultTypeOther" errors={errors} onFix={fixErr}/></div>}
             <div className="fr"><FS l="Any Active Backlogs?" v={dipBacklogs} s={d(setDipBacklogs)} o={["No","Yes"]} errKey="dipBacklogs" errors={errors} onFix={fixErr}/></div>
-            <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Diploma Certificate" required={dipBacklogs!=="Yes"} errKey="dipCertKey"/>{dipBacklogs==="Yes"&&<p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>Upload when available after clearing backlogs.</p>}<FileUpload onUploadStateChange={handleUploadState} label="Upload Diploma Certificate" category="education" subKey="diploma" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={dipCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipCertKey(key);isDirtyRef.current=true;fixErr("dipCertKey");}}/></div>
+            <div style={{marginTop:"0.7rem"}}><UL lbl="Upload Diploma Certificate" required={dipBacklogs!=="Yes"} errKey="dipCertKey"/>{dipBacklogs==="Yes"&&<p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>Upload when available after clearing backlogs.</p>}<FileUpload onUploadStateChange={handleUploadState} label="Upload Diploma Certificate" category="education" subKey="diploma" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={dipCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipCertKey(key);isDirtyRef.current=true;wasEditedRef.current=true;fixErr("dipCertKey");}}/></div>
             {dipCountry==="Outside India"&&(
               <div className="att-split">
                 <div className="att-box" style={{flex:"0 0 100%"}}>
                   <span className="att-box-lbl">Equivalency Certificate (AIU / WES)</span>
                   <p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>If obtained, upload for smoother onboarding and BGV verification.</p>
-                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="diploma_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={dipEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipEquivalencyKey(key);isDirtyRef.current=true;fixErr("dipEquivalencyKey");}}/>
+                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="diploma_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={dipEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipEquivalencyKey(key);isDirtyRef.current=true;wasEditedRef.current=true;fixErr("dipEquivalencyKey");}}/>
                 </div>
               </div>
             )}
@@ -1566,7 +1566,7 @@ export default function EducationDetails() {
           {/* ── Undergraduate ── */}
           <div className="sc amb">
             <div className="sh"><div className="si amb">🎓</div><span className="st">Undergraduate — UG / Degree</span></div>
-            <YesNo label={<>Do you have an Undergraduate degree? <span style={{color:"#ef4444"}}>*</span></>} value={hasUG} onChange={(v)=>{setHasUG(v);isDirtyRef.current=true;}}/>
+            <YesNo label={<>Do you have an Undergraduate degree? <span style={{color:"#ef4444"}}>*</span></>} value={hasUG} onChange={(v)=>{setHasUG(v);isDirtyRef.current=true;wasEditedRef.current=true;}}/>
             {hasUG==="Yes"&&(<>
               <div className="fr">
                 <div className="fi">
@@ -1598,12 +1598,12 @@ export default function EducationDetails() {
                 <div className="att-box">
                   <UL lbl="Provisional Marksheet" required={ugBacklogs!=="Yes"} errKey="ugProvKey"/>
                   {ugBacklogs==="Yes"&&<p style={{fontSize:"0.7rem",color:"#d97706",fontWeight:600,marginBottom:"0.4rem"}}>⚠️ Upload when available after clearing backlogs</p>}
-                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Provisional Marksheet" category="education" subKey="ug_provisional" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={ugProvKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setUgProvKey(key);isDirtyRef.current=true;fixErr("ugProvKey");}}/>
+                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Provisional Marksheet" category="education" subKey="ug_provisional" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={ugProvKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setUgProvKey(key);isDirtyRef.current=true;wasEditedRef.current=true;fixErr("ugProvKey");}}/>
                 </div>
                 <div className="att-box">
                   <span className="att-box-lbl">Convocation Certificate</span>
                   <p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>If received, upload for smoother onboarding and verification.</p>
-                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Convocation Certificate" category="education" subKey="ug_convocation" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={ugConvoKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setUgConvoKey(key);isDirtyRef.current=true;}}/>
+                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Convocation Certificate" category="education" subKey="ug_convocation" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={ugConvoKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setUgConvoKey(key);isDirtyRef.current=true;wasEditedRef.current=true;}}/>
                 </div>
               </div>
               {ugCountry==="Outside India"&&(
@@ -1611,7 +1611,7 @@ export default function EducationDetails() {
                   <div className="att-box" style={{flex:"0 0 100%"}}>
                     <span className="att-box-lbl">Equivalency Certificate (AIU / WES)</span>
                     <p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>If obtained, upload for smoother onboarding and BGV verification.</p>
-                    <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="ug_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={ugEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setUgEquivalencyKey(key);isDirtyRef.current=true;fixErr("ugEquivalencyKey");}}/>
+                    <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="ug_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={ugEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setUgEquivalencyKey(key);isDirtyRef.current=true;wasEditedRef.current=true;fixErr("ugEquivalencyKey");}}/>
                   </div>
                 </div>
               )}
@@ -1621,7 +1621,7 @@ export default function EducationDetails() {
           {/* ── Postgraduate ── */}
           <div className="sc vio">
             <div className="sh"><div className="si vio">🧑‍🎓</div><span className="st">Postgraduate — PG / Masters</span></div>
-            <YesNo label={<>Do you have a Postgraduate degree? <span style={{color:"#ef4444"}}>*</span></>} value={hasPG} onChange={(v)=>{setHasPG(v);isDirtyRef.current=true;}}/>
+            <YesNo label={<>Do you have a Postgraduate degree? <span style={{color:"#ef4444"}}>*</span></>} value={hasPG} onChange={(v)=>{setHasPG(v);isDirtyRef.current=true;wasEditedRef.current=true;}}/>
             {hasPG==="Yes"&&(<>
               <div className="fr">
                 <div className="fi">
@@ -1653,12 +1653,12 @@ export default function EducationDetails() {
                 <div className="att-box">
                   <UL lbl="Provisional Marksheet" required={pgBacklogs!=="Yes"} errKey="pgProvKey"/>
                   {pgBacklogs==="Yes"&&<p style={{fontSize:"0.7rem",color:"#d97706",fontWeight:600,marginBottom:"0.4rem"}}>⚠️ Upload when available after clearing backlogs</p>}
-                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Provisional Marksheet" category="education" subKey="pg_provisional" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={pgProvKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setPgProvKey(key);isDirtyRef.current=true;fixErr("pgProvKey");}}/>
+                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Provisional Marksheet" category="education" subKey="pg_provisional" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={pgProvKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setPgProvKey(key);isDirtyRef.current=true;wasEditedRef.current=true;fixErr("pgProvKey");}}/>
                 </div>
                 <div className="att-box">
                   <span className="att-box-lbl">Convocation Certificate</span>
                   <p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>If received, upload for smoother onboarding and verification.</p>
-                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Convocation Certificate" category="education" subKey="pg_convocation" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={pgConvoKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setPgConvoKey(key);isDirtyRef.current=true;}}/>
+                  <FileUpload onUploadStateChange={handleUploadState} label="Upload Convocation Certificate" category="education" subKey="pg_convocation" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={pgConvoKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setPgConvoKey(key);isDirtyRef.current=true;wasEditedRef.current=true;}}/>
                 </div>
               </div>
               {pgCountry==="Outside India"&&(
@@ -1666,7 +1666,7 @@ export default function EducationDetails() {
                   <div className="att-box" style={{flex:"0 0 100%"}}>
                     <span className="att-box-lbl">Equivalency Certificate (AIU / WES)</span>
                     <p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>If obtained, upload for smoother onboarding and BGV verification.</p>
-                    <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="pg_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={pgEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setPgEquivalencyKey(key);isDirtyRef.current=true;fixErr("pgEquivalencyKey");}}/>
+                    <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="pg_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={pgEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setPgEquivalencyKey(key);isDirtyRef.current=true;wasEditedRef.current=true;fixErr("pgEquivalencyKey");}}/>
                   </div>
                 </div>
               )}
@@ -1683,7 +1683,7 @@ export default function EducationDetails() {
                 {" "}<span style={{color:"#ef4444"}}>*</span>
               </span>
               {["Yes","No"].map(v=>(
-                <button key={v} onClick={()=>{setHasDip(v);isDirtyRef.current=true;fixErr("hasDip");}} style={{padding:"0.32rem 1.1rem",borderRadius:999,border:hasDip===v?"2px solid #0d6e6e":"1.5px solid #dddaf0",background:hasDip===v?"#0d6e6e":"#f2f1f9",color:hasDip===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
+                <button key={v} onClick={()=>{setHasDip(v);isDirtyRef.current=true;wasEditedRef.current=true;fixErr("hasDip");}} style={{padding:"0.32rem 1.1rem",borderRadius:999,border:hasDip===v?"2px solid #0d6e6e":"1.5px solid #dddaf0",background:hasDip===v?"#0d6e6e":"#f2f1f9",color:hasDip===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
               ))}
             </div>
             {hasDip==="Yes"&&(<>
@@ -1711,14 +1711,14 @@ export default function EducationDetails() {
               <div style={{marginTop:"0.7rem"}}>
                 <UL lbl="Upload Diploma / Technical Certificate" required={dipBacklogs!=="Yes"} errKey="dipCertKey"/>
                 {dipBacklogs==="Yes"&&<p style={{fontSize:"0.7rem",color:"#d97706",fontWeight:600,marginBottom:"0.4rem"}}>⚠️ Upload when available after clearing backlogs</p>}
-                <FileUpload onUploadStateChange={handleUploadState} label="Upload Diploma Certificate" category="education" subKey="diploma" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={dipCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipCertKey(key);isDirtyRef.current=true;fixErr("dipCertKey");}}/>
+                <FileUpload onUploadStateChange={handleUploadState} label="Upload Diploma Certificate" category="education" subKey="diploma" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={dipCertKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipCertKey(key);isDirtyRef.current=true;wasEditedRef.current=true;fixErr("dipCertKey");}}/>
               </div>
               {dipCountry==="Outside India"&&(
                 <div className="att-split">
                   <div className="att-box" style={{flex:"0 0 100%"}}>
                     <span className="att-box-lbl">Equivalency Certificate (AIU / WES)</span>
                     <p style={{fontSize:"0.7rem",color:"#64748b",fontWeight:500,marginBottom:"0.4rem"}}>If obtained, upload for smoother onboarding and BGV verification.</p>
-                    <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="diploma_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={dipEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipEquivalencyKey(key);isDirtyRef.current=true;fixErr("dipEquivalencyKey");}}/>
+                    <FileUpload onUploadStateChange={handleUploadState} label="Upload Equivalency Certificate" category="education" subKey="diploma_equivalency" employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={dipEquivalencyKey} onChange={(k)=>{const key=typeof k==="string"?k:(k?.key||k?.s3_key||"");setDipEquivalencyKey(key);isDirtyRef.current=true;wasEditedRef.current=true;fixErr("dipEquivalencyKey");}}/>
                   </div>
                 </div>
               )}
@@ -1732,7 +1732,7 @@ export default function EducationDetails() {
             <div style={{display:"flex",alignItems:"center",gap:"0.5rem",flexWrap:"wrap",marginBottom:"1rem"}}>
               <span style={{fontSize:"0.875rem",color:"#1a1730",fontWeight:600}}>Do you have a professional qualification? <span style={{color:"#ef4444"}}>*</span></span>
               {["Yes","No"].map(v=>(
-                <button key={v} onClick={()=>{setHasProfQual(v);isDirtyRef.current=true;fixErr("hasProfQual");}} style={{padding:"0.32rem 1.1rem",borderRadius:999,border:hasProfQual===v?"2px solid #0d6e6e":"1.5px solid #dddaf0",background:hasProfQual===v?"#0d6e6e":"#f2f1f9",color:hasProfQual===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
+                <button key={v} onClick={()=>{setHasProfQual(v);isDirtyRef.current=true;wasEditedRef.current=true;fixErr("hasProfQual");}} style={{padding:"0.32rem 1.1rem",borderRadius:999,border:hasProfQual===v?"2px solid #0d6e6e":"1.5px solid #dddaf0",background:hasProfQual===v?"#0d6e6e":"#f2f1f9",color:hasProfQual===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
               ))}
             </div>
             {errors.hasProfQual&&<span className="err-msg" style={{marginTop:"-0.5rem",marginBottom:"0.5rem",display:"block"}}>Please answer this question</span>}
@@ -1741,12 +1741,12 @@ export default function EducationDetails() {
                 <div key={q._k||idx} className="cert-box">
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.6rem"}}>
                     <span style={{fontSize:"0.78rem",color:"#8b88b0",fontWeight:700}}>Qualification {idx+1}</span>
-                    {idx>0&&<button className="rm-btn" onClick={()=>{const p=[...profQuals];p.splice(idx,1);setProfQuals(p);isDirtyRef.current=true;}}>- Remove</button>}
+                    {idx>0&&<button className="rm-btn" onClick={()=>{const p=[...profQuals];p.splice(idx,1);setProfQuals(p);isDirtyRef.current=true;wasEditedRef.current=true;}}>- Remove</button>}
                   </div>
                   <div className="fr">
                     <div className="fi">
                       <span className="fl">Qualification Type <span style={{color:"#ef4444"}}>*</span></span>
-                      <select className={`in${errors[`pq_type_${idx}`]?" err":""}`} value={q.type} onChange={e=>{const p=[...profQuals];p[idx]={...p[idx],type:e.target.value,...(e.target.value!=="Other"?{otherType:""}:{})};setProfQuals(p);isDirtyRef.current=true;fixErr(`pq_type_${idx}`);}}>
+                      <select className={`in${errors[`pq_type_${idx}`]?" err":""}`} value={q.type} onChange={e=>{const p=[...profQuals];p[idx]={...p[idx],type:e.target.value,...(e.target.value!=="Other"?{otherType:""}:{})};setProfQuals(p);isDirtyRef.current=true;wasEditedRef.current=true;fixErr(`pq_type_${idx}`);}}>
                         <option value="">Select</option>
                         {["CA (Chartered Accountant)","CMA / ICWA","CS (Company Secretary)","CFA","ACCA","CIMA","FRM","PMP","ICSI","Other"].map(x=><option key={x} value={x}>{x}</option>)}
                       </select>
@@ -1754,7 +1754,7 @@ export default function EducationDetails() {
                     </div>
                     <div className="fi">
                       <span className="fl">Level / Stage <span style={{color:"#ef4444"}}>*</span></span>
-                      <select className={`in${errors[`pq_level_${idx}`]?" err":""}`} value={q.level} onChange={e=>{const p=[...profQuals];p[idx]={...p[idx],level:e.target.value};setProfQuals(p);isDirtyRef.current=true;fixErr(`pq_level_${idx}`);}}>
+                      <select className={`in${errors[`pq_level_${idx}`]?" err":""}`} value={q.level} onChange={e=>{const p=[...profQuals];p[idx]={...p[idx],level:e.target.value};setProfQuals(p);isDirtyRef.current=true;wasEditedRef.current=true;fixErr(`pq_level_${idx}`);}}>
                         <option value="">Select</option>
                         {["Foundation","Intermediate / Inter","Final","Qualified / Completed","Pursuing"].map(x=><option key={x} value={x}>{x}</option>)}
                       </select>
@@ -1770,30 +1770,30 @@ export default function EducationDetails() {
                     ):(
                       <div className="fi">
                         <span className="fl">Year of Passing <span style={{color:"#ef4444"}}>*</span></span>
-                        <input className={`in${errors[`pq_year_${idx}`]?" err":""}`} value={q.year||""} placeholder="YYYY" inputMode="numeric" maxLength={4} onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,4);const p=[...profQuals];p[idx]={...p[idx],year:val};setProfQuals(p);isDirtyRef.current=true;if(val)fixErr(`pq_year_${idx}`);}}/>
+                        <input className={`in${errors[`pq_year_${idx}`]?" err":""}`} value={q.year||""} placeholder="YYYY" inputMode="numeric" maxLength={4} onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,4);const p=[...profQuals];p[idx]={...p[idx],year:val};setProfQuals(p);isDirtyRef.current=true;wasEditedRef.current=true;if(val)fixErr(`pq_year_${idx}`);}}/>
                         {errors[`pq_year_${idx}`]&&<span className="err-msg">Required</span>}
                       </div>
                     )}
                   </div>
                   <div className="fr" style={{marginTop:"0.6rem"}}>
-                    <F l="Registration / Membership No. (if applicable)" v={q.regNo||""} s={(v)=>{const p=[...profQuals];p[idx]={...p[idx],regNo:v};setProfQuals(p);isDirtyRef.current=true;}} r={false}/>
+                    <F l="Registration / Membership No. (if applicable)" v={q.regNo||""} s={(v)=>{const p=[...profQuals];p[idx]={...p[idx],regNo:v};setProfQuals(p);isDirtyRef.current=true;wasEditedRef.current=true;}} r={false}/>
                   </div>
                   {q.type==="Other"&&(
                     <div className="fr">
                       <div className="fi">
                         <span className="fl">Specify Qualification Name <span style={{color:"#ef4444"}}>*</span></span>
-                        <input className={`in${errors[`pq_other_${idx}`]?" err":""}`} value={q.otherType||""} placeholder="Enter the qualification name" onChange={e=>{const p=[...profQuals];p[idx]={...p[idx],otherType:e.target.value};setProfQuals(p);isDirtyRef.current=true;fixErr(`pq_other_${idx}`);}}/>
+                        <input className={`in${errors[`pq_other_${idx}`]?" err":""}`} value={q.otherType||""} placeholder="Enter the qualification name" onChange={e=>{const p=[...profQuals];p[idx]={...p[idx],otherType:e.target.value};setProfQuals(p);isDirtyRef.current=true;wasEditedRef.current=true;fixErr(`pq_other_${idx}`);}}/>
                         {errors[`pq_other_${idx}`]&&<span className="err-msg">Required</span>}
                       </div>
                     </div>
                   )}
                   <div style={{marginTop:"0.5rem"}}>
                     <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Upload Certificate / Marksheet</span>
-                    <FileUpload onUploadStateChange={handleUploadState} label="Upload Certificate" category="education" subKey={`profqual_${idx}`} employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={typeof q.certKey==="string"?q.certKey:""} onChange={(k)=>{const p=[...profQuals];p[idx]={...p[idx],certKey:typeof k==="string"?k:""};setProfQuals(p);isDirtyRef.current=true;}}/>
+                    <FileUpload onUploadStateChange={handleUploadState} label="Upload Certificate" category="education" subKey={`profqual_${idx}`} employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={typeof q.certKey==="string"?q.certKey:""} onChange={(k)=>{const p=[...profQuals];p[idx]={...p[idx],certKey:typeof k==="string"?k:""};setProfQuals(p);isDirtyRef.current=true;wasEditedRef.current=true;}}/>
                   </div>
                 </div>
               ))}
-              <button className="add-btn" onClick={()=>{setProfQuals([...profQuals,{type:"",otherType:"",level:"",year:"",regNo:"",certKey:"",_k:`pq-${Date.now()}-${Math.random().toString(36).slice(2,7)}`}]);isDirtyRef.current=true;}}>+ Add Another Qualification</button>
+              <button className="add-btn" onClick={()=>{setProfQuals([...profQuals,{type:"",otherType:"",level:"",year:"",regNo:"",certKey:"",_k:`pq-${Date.now()}-${Math.random().toString(36).slice(2,7)}`}]);isDirtyRef.current=true;wasEditedRef.current=true;}}>+ Add Another Qualification</button>
             </>)}
           </div>
 
@@ -1803,7 +1803,7 @@ export default function EducationDetails() {
             <div style={{display:"flex",alignItems:"center",gap:"0.5rem",flexWrap:"wrap",marginBottom:"1rem"}}>
               <span style={{fontSize:"0.875rem",color:"#1a1730",fontWeight:600}}>Do you have any articleship or practical training? <span style={{color:"#ef4444"}}>*</span></span>
               {["Yes","No"].map(v=>(
-                <button key={v} onClick={()=>{setHasArticleship(v);isDirtyRef.current=true;fixErr("hasArticleship");}} style={{padding:"0.32rem 1.1rem",borderRadius:999,border:hasArticleship===v?"2px solid #ea580c":"1.5px solid #dddaf0",background:hasArticleship===v?"#ea580c":"#f2f1f9",color:hasArticleship===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
+                <button key={v} onClick={()=>{setHasArticleship(v);isDirtyRef.current=true;wasEditedRef.current=true;fixErr("hasArticleship");}} style={{padding:"0.32rem 1.1rem",borderRadius:999,border:hasArticleship===v?"2px solid #ea580c":"1.5px solid #dddaf0",background:hasArticleship===v?"#ea580c":"#f2f1f9",color:hasArticleship===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
               ))}
             </div>
             {errors.hasArticleship&&<span className="err-msg" style={{marginTop:"-0.5rem",marginBottom:"0.5rem",display:"block"}}>Please answer this question</span>}
@@ -1812,12 +1812,12 @@ export default function EducationDetails() {
                 <div key={a._k||idx} className="cert-box" style={{background:"#fff7ed",border:"1.5px solid #fed7aa"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.75rem"}}>
                     <span style={{fontSize:"0.78rem",color:"#ea580c",fontWeight:700}}>Training / Articleship {idx+1}</span>
-                    {idx>0&&<button className="rm-btn" onClick={()=>{const arr=[...articleships];arr.splice(idx,1);setArticleships(arr);isDirtyRef.current=true;}}>- Remove</button>}
+                    {idx>0&&<button className="rm-btn" onClick={()=>{const arr=[...articleships];arr.splice(idx,1);setArticleships(arr);isDirtyRef.current=true;wasEditedRef.current=true;}}>- Remove</button>}
                   </div>
                   <div className="fr">
                     <div className="fi">
                       <span className="fl">Training Type <span style={{color:"#ef4444"}}>*</span></span>
-                      <select className={`in${errors[`art_type_${idx}`]?" err":""}`} value={a.type} onChange={e=>{const val=e.target.value;const arr=[...articleships];arr[idx]={...arr[idx],type:val,...(val!=="Other Practical Training"?{otherType:""}:{})};setArticleships(arr);isDirtyRef.current=true;fixErr(`art_type_${idx}`);}}>
+                      <select className={`in${errors[`art_type_${idx}`]?" err":""}`} value={a.type} onChange={e=>{const val=e.target.value;const arr=[...articleships];arr[idx]={...arr[idx],type:val,...(val!=="Other Practical Training"?{otherType:""}:{})};setArticleships(arr);isDirtyRef.current=true;wasEditedRef.current=true;fixErr(`art_type_${idx}`);}}>
                         <option value="">Select</option>
                         {["CA Articleship (ICAI)","CS Training (ICSI)","CMA Training (ICMAI)","Medical Internship","Pharmacy Internship","Law Internship","Architecture Internship","Other Practical Training"].map(x=><option key={x} value={x}>{x}</option>)}
                       </select>
@@ -1868,7 +1868,7 @@ export default function EducationDetails() {
                   </div>
                 </div>
               ))}
-              <button className="add-btn" onClick={()=>{setArticleships([...articleships,{firm:"",city:"",principalName:"",regNo:"",from:"",to:"",isOngoing:"",type:"",otherType:"",certKey:"",_k:`art-${Date.now()}-${Math.random().toString(36).slice(2,7)}`}]);isDirtyRef.current=true;}}>+ Add Another Training</button>
+              <button className="add-btn" onClick={()=>{setArticleships([...articleships,{firm:"",city:"",principalName:"",regNo:"",from:"",to:"",isOngoing:"",type:"",otherType:"",certKey:"",_k:`art-${Date.now()}-${Math.random().toString(36).slice(2,7)}`}]);isDirtyRef.current=true;wasEditedRef.current=true;}}>+ Add Another Training</button>
             </>)}
           </div>
 
@@ -1878,7 +1878,7 @@ export default function EducationDetails() {
             <div style={{display:"flex",alignItems:"center",gap:"0.5rem",flexWrap:"wrap",marginBottom:"1rem"}}>
               <span style={{fontSize:"0.875rem",color:"#1a1730",fontWeight:600}}>Do you have certifications? <span style={{color:"#ef4444"}}>*</span></span>
               {["Yes","No"].map(v=>(
-                <button key={v} onClick={()=>{setHasCerts(v);isDirtyRef.current=true;fixErr("hasCerts");}} style={{padding:"0.32rem 1.1rem",borderRadius:999,border:hasCerts===v?"2px solid #e11d48":"1.5px solid #dddaf0",background:hasCerts===v?"#e11d48":"#f2f1f9",color:hasCerts===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
+                <button key={v} onClick={()=>{setHasCerts(v);isDirtyRef.current=true;wasEditedRef.current=true;fixErr("hasCerts");}} style={{padding:"0.32rem 1.1rem",borderRadius:999,border:hasCerts===v?"2px solid #e11d48":"1.5px solid #dddaf0",background:hasCerts===v?"#e11d48":"#f2f1f9",color:hasCerts===v?"#fff":"#6b6894",cursor:"pointer",fontSize:"0.82rem",fontWeight:700,transition:"all 0.18s"}}>{v}</button>
               ))}
             </div>
             {errors.hasCerts&&<span className="err-msg" style={{marginTop:"-0.5rem",marginBottom:"0.5rem",display:"block"}}>Please answer this question</span>}
@@ -1887,23 +1887,23 @@ export default function EducationDetails() {
                 <div key={cert._k||idx} className="cert-box">
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.6rem"}}>
                     <span style={{fontSize:"0.78rem",color:"#8b88b0",fontWeight:700}}>Certification {idx+1}</span>
-                    {idx>0&&<button className="rm-btn" onClick={()=>{const c=[...certs];c.splice(idx,1);setCerts(c);isDirtyRef.current=true;}}>- Remove</button>}
+                    {idx>0&&<button className="rm-btn" onClick={()=>{const c=[...certs];c.splice(idx,1);setCerts(c);isDirtyRef.current=true;wasEditedRef.current=true;}}>- Remove</button>}
                   </div>
                   <div className="fr">
                     <div className="fi">
                       <span className="fl">Certification Name <span style={{color:"#ef4444"}}>*</span></span>
-                      <input className={`in${errors[`cert_name_${idx}`]?" err":""}`} value={cert.name} onChange={e=>{const c=[...certs];c[idx]={...c[idx],name:e.target.value};setCerts(c);isDirtyRef.current=true;fixErr(`cert_name_${idx}`);}}/>
+                      <input className={`in${errors[`cert_name_${idx}`]?" err":""}`} value={cert.name} onChange={e=>{const c=[...certs];c[idx]={...c[idx],name:e.target.value};setCerts(c);isDirtyRef.current=true;wasEditedRef.current=true;fixErr(`cert_name_${idx}`);}}/>
                       {errors[`cert_name_${idx}`]&&<span className="err-msg">Required</span>}
                     </div>
                   </div>
                   <div style={{marginTop:"0.5rem"}}>
                     <span className="fl" style={{display:"block",marginBottom:"0.28rem"}}>Upload Certificate <span style={{color:"#ef4444"}}>*</span></span>
                     {errors[`cert_key_${idx}`]&&<span className="err-msg" style={{marginBottom:"0.3rem"}}>Upload is required</span>}
-                    <FileUpload onUploadStateChange={handleUploadState} label="Upload Certificate" category="education" subKey={`cert_${idx}`} employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={typeof cert.certKey==="string"?cert.certKey:""} onChange={(k)=>{const c=[...certs];c[idx]={...c[idx],certKey:typeof k==="string"?k:""};setCerts(c);isDirtyRef.current=true;fixErr(`cert_key_${idx}`);}}/>
+                    <FileUpload onUploadStateChange={handleUploadState} label="Upload Certificate" category="education" subKey={`cert_${idx}`} employeeId={serverDraft?.employee_id || ""} apiFetch={apiFetch} value={typeof cert.certKey==="string"?cert.certKey:""} onChange={(k)=>{const c=[...certs];c[idx]={...c[idx],certKey:typeof k==="string"?k:""};setCerts(c);isDirtyRef.current=true;wasEditedRef.current=true;fixErr(`cert_key_${idx}`);}}/>
                   </div>
                 </div>
               ))}
-              <button className="add-btn" onClick={()=>{setCerts([...certs,{name:"",certKey:"",_k:`cert-${Date.now()}-${Math.random().toString(36).slice(2,7)}`}]);isDirtyRef.current=true;}}>+ Add Another Certification</button>
+              <button className="add-btn" onClick={()=>{setCerts([...certs,{name:"",certKey:"",_k:`cert-${Date.now()}-${Math.random().toString(36).slice(2,7)}`}]);isDirtyRef.current=true;wasEditedRef.current=true;}}>+ Add Another Certification</button>
             </>)}
           </div>
 

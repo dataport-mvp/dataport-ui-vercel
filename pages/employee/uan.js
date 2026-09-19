@@ -2390,7 +2390,7 @@ export default function UanDetails() {
               {/* Declaration 1 */}
               <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"0.75rem",borderLeft:pfNomAck?"3px solid #16a34a":"3px solid #e4e2f0"}}>
                 <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
-                  <input type="checkbox" checked={pfNomAck} onChange={e=>{setPfNomAck(e.target.checked);isDirtyRef.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
+                  <input type="checkbox" checked={pfNomAck} onChange={e=>{setPfNomAck(e.target.checked);isDirtyRef.current=true;wasEditedAfterLoad.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
                   <div>
                     <div style={{fontSize:"0.68rem",fontWeight:800,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>PF Nomination Declaration (Form 2 — Part A) <span style={{color:"#ef4444"}}>*</span></div>
                     <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I hereby nominate the person(s) listed above to receive the amount standing to my credit in the Provident Fund in the event of my death. I confirm the nominee details are accurate and shares add up to 100%.</span>
@@ -2401,7 +2401,7 @@ export default function UanDetails() {
               {/* Declaration 2 */}
               <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"0.75rem",borderLeft:pensionNomAck?"3px solid #16a34a":"3px solid #e4e2f0"}}>
                 <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
-                  <input type="checkbox" checked={pensionNomAck} onChange={e=>{setPensionNomAck(e.target.checked);isDirtyRef.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
+                  <input type="checkbox" checked={pensionNomAck} onChange={e=>{setPensionNomAck(e.target.checked);isDirtyRef.current=true;wasEditedAfterLoad.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
                   <div>
                     <div style={{fontSize:"0.68rem",fontWeight:800,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>Pension Nomination Declaration (Form 2 — Part B) <span style={{color:"#ef4444"}}>*</span></div>
                     <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I nominate the above person(s) to receive pension under the Employees' Pension Scheme, 1995. This nomination supersedes any previous nomination made by me.</span>
@@ -2412,7 +2412,7 @@ export default function UanDetails() {
               {/* Declaration 3 */}
               <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"0.75rem",borderLeft:epfoDecl?"3px solid #16a34a":"3px solid #e4e2f0"}}>
                 <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
-                  <input type="checkbox" checked={epfoDecl} onChange={e=>{setEpfoDecl(e.target.checked);isDirtyRef.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
+                  <input type="checkbox" checked={epfoDecl} onChange={e=>{setEpfoDecl(e.target.checked);isDirtyRef.current=true;wasEditedAfterLoad.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
                   <div>
                     <div style={{fontSize:"0.68rem",fontWeight:800,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>General EPFO Declaration <span style={{color:"#ef4444"}}>*</span></div>
                     <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I declare that all UAN, PF member ID(s), service history, and nominee details provided are true and correct. I understand false declarations may result in legal action under the EPF Act, 1952.</span>
@@ -2423,7 +2423,7 @@ export default function UanDetails() {
               {/* Declaration 4 — Aadhaar/eKYC authorization (Form 2 Undertaking, item 2) */}
               <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"0.75rem",borderLeft:aadhaarAuthAck?"3px solid #16a34a":"3px solid #e4e2f0"}}>
                 <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
-                  <input type="checkbox" checked={aadhaarAuthAck} onChange={e=>{setAadhaarAuthAck(e.target.checked);isDirtyRef.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
+                  <input type="checkbox" checked={aadhaarAuthAck} onChange={e=>{setAadhaarAuthAck(e.target.checked);isDirtyRef.current=true;wasEditedAfterLoad.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
                   <div>
                     <div style={{fontSize:"0.68rem",fontWeight:800,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>Aadhaar / eKYC Authorization <span style={{color:"#ef4444"}}>*</span></div>
                     <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I authorize EPFO to use my Aadhaar for verification, authentication, and eKYC purposes for service delivery.</span>
@@ -2434,7 +2434,7 @@ export default function UanDetails() {
               {/* Declaration 5 — PF transfer authorization (Form 2 Undertaking, item 3) */}
               <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"0.75rem",borderLeft:pfTransferAck?"3px solid #16a34a":"3px solid #e4e2f0"}}>
                 <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
-                  <input type="checkbox" checked={pfTransferAck} onChange={e=>{setPfTransferAck(e.target.checked);isDirtyRef.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
+                  <input type="checkbox" checked={pfTransferAck} onChange={e=>{setPfTransferAck(e.target.checked);isDirtyRef.current=true;wasEditedAfterLoad.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
                   <div>
                     <div style={{fontSize:"0.68rem",fontWeight:800,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>PF Transfer Authorization <span style={{color:"#ef4444"}}>*</span></div>
                     <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>If applicable, please transfer my funds and service details from my previous PF account, as declared above, to my present PF account.</span>
@@ -2451,7 +2451,7 @@ export default function UanDetails() {
               {!hasImmediateFamilyNominee && !hasParentNominee && (
                 <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"0.75rem",borderLeft:noFamilyAck?"3px solid #16a34a":"3px solid #e4e2f0"}}>
                   <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
-                    <input type="checkbox" checked={noFamilyAck} onChange={e=>{setNoFamilyAck(e.target.checked);isDirtyRef.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
+                    <input type="checkbox" checked={noFamilyAck} onChange={e=>{setNoFamilyAck(e.target.checked);isDirtyRef.current=true;wasEditedAfterLoad.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
                     <div>
                       <div style={{fontSize:"0.68rem",fontWeight:800,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>No-Family Certification <span style={{color:"#ef4444"}}>*</span></div>
                       <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I certify that I have no family as defined under the Employees' Provident Fund Scheme, 1952. Should I acquire a family hereafter, the nomination above will be deemed cancelled.</span>
@@ -2465,7 +2465,7 @@ export default function UanDetails() {
               {hasParentNominee && (
                 <div style={{background:"#f0effe",border:"1px solid #dddaf0",borderRadius:10,padding:"0.9rem 1rem",marginBottom:"1rem",borderLeft:parentsDependentAck?"3px solid #16a34a":"3px solid #e4e2f0"}}>
                   <label style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",cursor:"pointer"}}>
-                    <input type="checkbox" checked={parentsDependentAck} onChange={e=>{setParentsDependentAck(e.target.checked);isDirtyRef.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
+                    <input type="checkbox" checked={parentsDependentAck} onChange={e=>{setParentsDependentAck(e.target.checked);isDirtyRef.current=true;wasEditedAfterLoad.current=true;if(wasSignedRef.current){setEditedAfterSign(true);}}} style={{marginTop:"0.2rem",width:17,height:17,accentColor:"#0d6e6e",flexShrink:0,cursor:"pointer"}}/>
                     <div>
                       <div style={{fontSize:"0.68rem",fontWeight:800,color:"#0d6e6e",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"0.3rem"}}>Parents Dependency Certification <span style={{color:"#ef4444"}}>*</span></div>
                       <span style={{fontSize:"0.82rem",color:"#1a1730",fontWeight:500,lineHeight:1.65}}>I certify that my father/mother, as nominated above, is/are dependent upon me.</span>

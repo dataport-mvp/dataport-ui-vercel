@@ -1701,7 +1701,7 @@ export default function PreviousCompany() {
                 {errors[`ack_${key}`]&&<span className="err-msg" style={{marginTop:"0.4rem",display:"block"}}>⚠️ This field is required — please select Yes or No</span>}
                 {ack[key].val==="Yes"&&(
                   <div style={{marginTop:"0.6rem"}}>
-                    <TA l="Please provide details" v={ack[key].note} s={v=>setAck({...ack,[key]:{...ack[key],note:v}})} r={false}/>
+                    <TA l="Please provide details" v={ack[key].note} s={v=>{setAck({...ack,[key]:{...ack[key],note:v}});markEdited();}} r={false}/>
                   </div>
                 )}
               </div>

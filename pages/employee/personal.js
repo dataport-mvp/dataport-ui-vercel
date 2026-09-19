@@ -591,6 +591,7 @@ const G = `
     min-width: 180px; z-index: 200; box-shadow: 0 8px 32px rgba(15,12,40,0.5);
     animation: fadeDown 0.12s ease; }
   @keyframes fadeDown { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
   .gear-item { display: flex; align-items: center; gap: 0.6rem; width: 100%; padding: 0.55rem 0.75rem;
     border: none; background: none; cursor: pointer; border-radius: 7px; font-family: inherit;
     font-size: 0.78rem; font-weight: 600; color: #8b92a8; text-align: left; transition: all 0.12s; }
@@ -1465,8 +1466,13 @@ export default function PersonalDetails() {
   const [threadMsgs,    setThreadMsgs]     = useState([]);
   const [threadSegments, setThreadSegments] = useState({});
   const msgListRef      = useRef(null);
+  // Only auto-scroll to the newest message when the reader was already near the
+  // bottom — otherwise a background refresh while they've scrolled up to re-read
+  // something yanks them back down, which is exactly the "disappearing and
+  // reappearing" feeling live-poll was giving employer/BGV before this same fix.
+  const wasNearBottomRef = useRef(true);
   useEffect(() => {
-    if (msgListRef.current) msgListRef.current.scrollTop = msgListRef.current.scrollHeight;
+    if (msgListRef.current && wasNearBottomRef.current) msgListRef.current.scrollTop = msgListRef.current.scrollHeight;
   }, [threadMsgs]);
   const [threadLoading, setThreadLoading]  = useState(false);
   const [msgBody,       setMsgBody]        = useState("");
@@ -1515,6 +1521,7 @@ export default function PersonalDetails() {
 
   const loadThread = async (consentId, assignmentId, threadId) => {
     setActiveThread(consentId); setActiveAssignmentId(assignmentId || null); setActiveThreadId(threadId || null);
+    wasNearBottomRef.current = true;
     setThreadMsgs([]); setThreadLoading(true); setMsgErr("");
     try {
       const qs = assignmentId ? `?assignment_id=${encodeURIComponent(assignmentId)}` : "";
@@ -1538,10 +1545,11 @@ export default function PersonalDetails() {
     apiFetch(`${API}/messages/unread-count`).then(r=>r.ok?r.json():null).then(d=>{ if(d) setInboxUnread(d.unread||0); }).catch(()=>{});
   };
 
-  // Auto-refresh the open thread — without this, a message from the other party
-  // never appears until something else happens to re-trigger loadThread (closing
-  // and reopening the tab, or a full browser refresh). Silent background refresh
-  // only, no loading-spinner flash on every poll.
+  // No background auto-poll — it used to silently re-fetch every 15s, which made
+  // the thread visibly flicker (messages disappearing and reappearing) even when
+  // nothing had changed, and gave no way to tell whether a hiccup had been missed.
+  // The Refresh button below is now the one, reliable way to pull the latest
+  // messages, matching the same fix already made to the employer/BGV inboxes.
   const [refreshingThread, setRefreshingThread] = useState(false);
   const silentRefreshThread = async (consentId) => {
     try {
@@ -1549,7 +1557,14 @@ export default function PersonalDetails() {
       const r = await apiFetch(`${API}/messages/thread/${consentId}${qs}`);
       if (r.ok) {
         const d = await r.json();
-        setThreadMsgs(d.messages || []);
+        const freshMsgs = d.messages || [];
+        // Skip the re-render entirely when nothing actually changed — replacing an
+        // identical array still re-renders every message bubble, which is what
+        // produced the flicker even on a manual refresh with no new messages.
+        setThreadMsgs(prev => {
+          const same = prev.length === freshMsgs.length && prev.every((m,i) => (m.message_id||i) === (freshMsgs[i].message_id||i) && m.read_by_recipient === freshMsgs[i].read_by_recipient);
+          return same ? prev : freshMsgs;
+        });
         setThreadSegments(d.consent_segments || {});
       }
     } catch(_) {}
@@ -1559,11 +1574,6 @@ export default function PersonalDetails() {
     await silentRefreshThread(consentId);
     setRefreshingThread(false);
   };
-  useEffect(() => {
-    if (!activeThread || activeTab !== "inbox") return;
-    const id = setInterval(() => silentRefreshThread(activeThread), 15000);
-    return () => clearInterval(id);
-  }, [activeThread, activeTab]);
 
   const uploadMsgAttachment = async (file) => {
     if (!file || !activeThread) return;
@@ -2271,7 +2281,7 @@ export default function PersonalDetails() {
                         <span style={{fontSize:"0.62rem",color:"#94a3b8",fontWeight:400,marginLeft:8}}>{threadMsgs.length} message{threadMsgs.length!==1?"s":""}</span>
                       </div>
                       {/* Messages */}
-                      <div ref={msgListRef} style={{flex:1,overflow:"auto",padding:"0.9rem",display:"flex",flexDirection:"column",gap:"0.6rem",minHeight:200,maxHeight:320}}>
+                      <div ref={msgListRef} onScroll={()=>{const el=msgListRef.current;if(el)wasNearBottomRef.current=(el.scrollHeight-el.scrollTop-el.clientHeight)<60;}} style={{flex:1,overflow:"auto",padding:"0.9rem",display:"flex",flexDirection:"column",gap:"0.6rem",minHeight:200,maxHeight:320}}>
                         {threadLoading&&<div style={{textAlign:"center",fontSize:"0.72rem",color:"#94a3b8"}}>Loading…</div>}
                         {!threadLoading&&threadMsgs.length===0&&<div style={{textAlign:"center",fontSize:"0.72rem",color:"#94a3b8",padding:"2rem"}}>No messages yet. Send a reply below.</div>}
                         {threadMsgs.map((m,i)=>{
@@ -2332,7 +2342,11 @@ export default function PersonalDetails() {
                             return (<>
                               <button type="button" onClick={()=>setMention(employerName,["bgv"])} style={btnStyle}>@{employerName}</button>
                               {hasBgv && <button type="button" onClick={()=>setMention("bgv",[employerName])} style={btnStyle}>@{bgvName}</button>}
-                              <button onClick={()=>manualRefreshThread(activeThread)} disabled={refreshingThread} title="Refresh" style={{background:"none",border:"none",cursor:refreshingThread?"not-allowed":"pointer",fontSize:refreshingThread?"0.66rem":"0.85rem",color:"#8b88b0",opacity:refreshingThread?0.6:1,padding:"0.2rem 0.4rem",fontWeight:600}}>{refreshingThread?"Refreshing…":"↻"}</button>
+                              <button onClick={()=>manualRefreshThread(activeThread)} disabled={refreshingThread} title="Refresh"
+                                style={{display:"inline-flex",alignItems:"center",gap:"0.3rem",padding:"0.25rem 0.6rem",borderRadius:999,border:"1.5px solid #ddd8f5",background:refreshingThread?"#f0eefc":"#f8f7ff",color:"#6366f1",fontSize:"0.66rem",fontWeight:700,cursor:refreshingThread?"not-allowed":"pointer",fontFamily:"inherit",opacity:refreshingThread?0.75:1}}>
+                                <span style={{display:"inline-block",animation:refreshingThread?"spin 0.7s linear infinite":"none"}}>↻</span>
+                                {refreshingThread?"Refreshing…":"Refresh"}
+                              </button>
                             </>);
                           })()}
                           <span style={{marginLeft:"auto",fontSize:"0.66rem",fontWeight:700,color:"#8b88b0",alignSelf:"center"}}>{recipientLabel(detectRecipient(msgBody))}</span>

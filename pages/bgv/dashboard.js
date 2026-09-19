@@ -908,7 +908,13 @@ export default function BgvDashboard() {
   const stats = {
     total:      cases.length,
     in_prog:    cases.filter(c => c.bgv_status === "in_progress").length,
-    completed:  cases.filter(c => c.bgv_status === "completed").length,
+    // Keyed on bgv_report_key (only ever set by an actual submitted report), not on
+    // bgv_status alone — the checks tracker can independently flip status to
+    // "completed" the moment every check is verified/N-A, or any one fails, well
+    // before a report has actually been filed. That case is still fully open for
+    // editing, so it must not be counted (or badged, below) as "Completed" — a label
+    // that's supposed to mean final and locked.
+    completed:  cases.filter(c => !!c.bgv_report_key).length,
     // BUG FIX (2026-09-09): checked for "assigned", a status value the backend never
     // actually sets — every freshly-assigned case (bgv_status === "groomed", set
     // explicitly in /bgv/assign) was invisible in this count, always showing 0 even
@@ -1071,9 +1077,12 @@ export default function BgvDashboard() {
                 </div>
                 {loadingCases && <div className="empty-state">Loading cases…</div>}
                 {!loadingCases && cases.length === 0 && <div className="empty-state">No cases assigned yet.</div>}
-                {!loadingCases && cases.length > 0 && cases.filter(c=>!caseFilter || c.bgv_status===caseFilter).length === 0 && <div className="empty-state">No cases match this filter.</div>}
-                {cases.filter(c=>!caseFilter || c.bgv_status===caseFilter).map(c => {
-                  const bs = BGV_STATUS_BADGE[c.bgv_status] || BGV_STATUS_BADGE.groomed;
+                {!loadingCases && cases.length > 0 && cases.filter(c=>!caseFilter || (caseFilter==="completed" ? !!c.bgv_report_key : c.bgv_status===caseFilter)).length === 0 && <div className="empty-state">No cases match this filter.</div>}
+                {cases.filter(c=>!caseFilter || (caseFilter==="completed" ? !!c.bgv_report_key : c.bgv_status===caseFilter)).map(c => {
+                  // Same report_key precedence as the stat above — a case with all checks
+                  // done but no report filed yet shows its real, still-editable status
+                  // (e.g. "In Progress"), never a premature "Completed".
+                  const bs = c.bgv_report_key ? BGV_STATUS_BADGE.completed : (BGV_STATUS_BADGE[c.bgv_status] || BGV_STATUS_BADGE.groomed);
                   const pct = c.checks_total > 0 ? Math.round((c.checks_done / c.checks_total) * 100) : 0;
                   return (
                     <div key={c.consent_id} className={`tbl-row${selectedId===c.consent_id?" selected":""}`} onClick={()=>selectCase(c.consent_id)}>
@@ -1144,7 +1153,20 @@ export default function BgvDashboard() {
                               🔓 Release from hold
                             </button>
                           )}
-                          {caseDetail.bgv_status !== "on_hold" && (BGV_STATUS_BADGE[caseDetail.bgv_status]||BGV_STATUS_BADGE.groomed) && caseDetail.consent_status === "APPROVED" && (
+                          {/* FIX: "Completed" used to be just another option in this dropdown,
+                              letting a vendor flip a case straight to Completed with no report,
+                              notes or verdict actually filed — and once completed, this same
+                              dropdown could still be used to flip it back out again. Completion
+                              now only ever happens by submitting the Final Report below (which
+                              carries the report PDF, verdict and summary together), and once
+                              that's done the case is permanently final: no dropdown, no
+                              re-opening — just a static locked badge. */}
+                          {caseDetail.bgv_status === "completed" && (
+                            <span className="badge" style={{background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.25)",color:"#fff",fontWeight:700}}>
+                              🔒 Completed — final, locked
+                            </span>
+                          )}
+                          {caseDetail.bgv_status !== "on_hold" && caseDetail.bgv_status !== "completed" && (BGV_STATUS_BADGE[caseDetail.bgv_status]||BGV_STATUS_BADGE.groomed) && caseDetail.consent_status === "APPROVED" && (
                             <select
                               value={caseDetail.bgv_status || "groomed"}
                               onChange={e=>updateCaseStatus(e.target.value)}
@@ -1152,7 +1174,6 @@ export default function BgvDashboard() {
                               style={{color:(BGV_STATUS_BADGE[caseDetail.bgv_status]||BGV_STATUS_BADGE.groomed).color,background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.25)",color:"#fff",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}>
                               <option value="groomed" style={{color:"#0f172a"}}>Not Started</option>
                               <option value="in_progress" style={{color:"#0f172a"}}>In Progress</option>
-                              <option value="completed" style={{color:"#0f172a"}}>Completed</option>
                             </select>
                           )}
                         </div>
@@ -1435,8 +1456,22 @@ export default function BgvDashboard() {
 
                         {/* Shared by the Checks Panel, the hold-request box, and the Final
                             Report section below — every editable control on this page must
-                            be locked while the case is on_hold, not just the checks list. */}
-                        {(() => { const isLocked = caseDetail.bgv_status === "on_hold"; return (<>
+                            be locked while the case is on_hold, AND permanently once the
+                            case is completed (a submitted report is final — see
+                            _bgv_assert_editable on the backend, which enforces this same
+                            rule server-side regardless of what this UI does or doesn't
+                            disable). isCompleted gets its own flag so the two lock reasons
+                            can show their own, different messaging below. */}
+                        {/* isCompleted is keyed on bgv_report_key (only ever set by an actual
+                            Final Report submission), NOT on bgv_status alone — the checks
+                            tracker can independently flip status to "completed" the moment
+                            every check is verified/N-A, or any one fails, well before a
+                            report has actually been filed (see _bgv_overall_status on the
+                            backend). Locking on status would freeze the vendor out of ever
+                            submitting that report in the first place; report_key is the one
+                            true "this case is final" signal, matching the backend's own
+                            _bgv_assert_editable gate exactly. */}
+                        {(() => { const isCompleted = !!caseDetail.bgv_report_key; const isLocked = caseDetail.bgv_status === "on_hold" || isCompleted; return (<>
                         {/* Checks Panel */}
                         <div className="checks-panel">
                           <div className="panel-title">
@@ -1446,12 +1481,18 @@ export default function BgvDashboard() {
                                 🔒 Locked — on hold pending employee info. Release the case above to resume editing.
                               </span>
                             )}
+                            {isCompleted && (
+                              <span style={{marginLeft:"0.6rem",fontSize:"0.72rem",fontWeight:700,color:"#16a34a"}}>
+                                🔒 Completed — final. No further edits are possible. Ask the employer to assign a new case for a re-check.
+                              </span>
+                            )}
                           </div>
                           {/* FIX: nothing here was disabled while a case was on_hold, so a
                               vendor could keep editing checks on a case they'd just told the
                               employee (and employer) was frozen pending more information.
-                              isLocked gates every input/button in this panel. */}
-                          {(() => { const isLocked = caseDetail.bgv_status === "on_hold"; return localChecks.map((ch, idx) => {
+                              isLocked gates every input/button in this panel — and now also
+                              includes "completed", since a submitted report must be final. */}
+                          {(() => { const isLocked = caseDetail.bgv_status === "on_hold" || !!caseDetail.bgv_report_key; return localChecks.map((ch, idx) => {
                             const st = CHECK_STATUS[ch.status] || CHECK_STATUS.pending;
                             return (
                               <div key={ch.type} className="check-row" style={isLocked?{opacity:0.6}:undefined}>
@@ -1512,7 +1553,11 @@ export default function BgvDashboard() {
                           {/* Request info from employee / put case on hold — while already
                               on hold, requesting info again makes no sense, so this box
                               itself becomes the release control (right next to where the
-                              hold was requested from, not just the badge up top). */}
+                              hold was requested from, not just the badge up top). Once the
+                              case is completed there's nothing left to hold or request — the
+                              box doesn't apply anymore, so it's hidden entirely rather than
+                              showing a "release" control that would have nowhere to go. */}
+                          {!isCompleted && (
                           <div style={{marginTop:"1rem",marginLeft:"auto",maxWidth:420,background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:10,padding:"0.85rem"}}>
                             {isLocked ? (<>
                               <div style={{fontWeight:700,fontSize:"0.8rem",color:"#dc2626",marginBottom:"0.5rem"}}>Case is on hold, awaiting employee info</div>
@@ -1533,6 +1578,7 @@ export default function BgvDashboard() {
                               </div>
                             </>)}
                           </div>
+                          )}
 
                           {/* Final Report Section — FIX: this whole panel (verdict, PDF
                               upload, remarks, submit) was still fully usable while a case
@@ -1542,11 +1588,20 @@ export default function BgvDashboard() {
                           <div className="report-section" style={isLocked?{opacity:0.55,pointerEvents:"none"}:undefined} aria-disabled={isLocked}>
                             <div className="report-title">
                               Submit Final BGV Report
-                              {isLocked && <span style={{marginLeft:"0.6rem",fontSize:"0.72rem",fontWeight:700,color:"#dc2626"}}>🔒 Locked — release the case above to resume</span>}
+                              {caseDetail.bgv_status === "on_hold" && <span style={{marginLeft:"0.6rem",fontSize:"0.72rem",fontWeight:700,color:"#dc2626"}}>🔒 Locked — release the case above to resume</span>}
+                              {isCompleted && <span style={{marginLeft:"0.6rem",fontSize:"0.72rem",fontWeight:700,color:"#16a34a"}}>🔒 Locked — this report is final</span>}
                             </div>
                             {reportDone && (
                               <div style={{padding:"0.65rem 0.9rem",background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:8,marginBottom:"0.75rem",fontSize:"0.78rem",color:"#15803d",fontWeight:600}}>
-                                ✓ Report submitted. Employer has been notified. You can re-submit if needed.
+                                {/* FIX: this used to invite a re-submit unconditionally — but once
+                                    the case is completed, the report is final and can no longer be
+                                    changed (see _bgv_assert_editable on the backend, which now
+                                    rejects a re-submission outright regardless of what this UI
+                                    shows). Only say "re-submit if needed" while that's actually
+                                    still true. */}
+                                {isCompleted
+                                  ? "✓ Report submitted and finalized. Employer has been notified. This case is now locked."
+                                  : "✓ Report submitted. Employer has been notified. You can re-submit if needed."}
                               </div>
                             )}
                             <div className="report-grid">
@@ -1587,9 +1642,9 @@ export default function BgvDashboard() {
                                 the old PDF instead of being blocked — the star mark wasn't
                                 actually enforced. A file must now be chosen every time. */}
                             <button className="submit-btn" onClick={submitReport} disabled={submittingReport||isLocked||!reportFile}>
-                              {submittingReport ? "Submitting…" : reportDone ? "Re-submit Report" : "Submit Report to Employer →"}
+                              {submittingReport ? "Submitting…" : isCompleted ? "Completed — Locked" : reportDone ? "Re-submit Report" : "Submit Report to Employer →"}
                             </button>
-                            {!reportFile && <div style={{marginTop:"0.4rem",fontSize:"0.72rem",color:"#94a3b8"}}>Choose a Report PDF to enable submit.</div>}
+                            {!reportFile && !isCompleted && <div style={{marginTop:"0.4rem",fontSize:"0.72rem",color:"#94a3b8"}}>Choose a Report PDF to enable submit.</div>}
                             {saveStatus && <div style={{marginTop:"0.5rem",fontSize:"0.78rem",fontWeight:600,color:saveStatus.startsWith("✓")?"#16a34a":"#dc2626"}}>{saveStatus}</div>}
                           </div>
                         </div>
@@ -1766,7 +1821,8 @@ export default function BgvDashboard() {
             const groomed = cases.filter(c=>!c.bgv_status||c.bgv_status==="groomed").length;
             const inProg  = cases.filter(c=>c.bgv_status==="in_progress").length;
             const onHold  = cases.filter(c=>c.bgv_status==="on_hold").length;
-            const done    = cases.filter(c=>c.bgv_status==="completed");
+            // report_key, not status — see the "Cases Table" badge fix above for why.
+            const done    = cases.filter(c=>!!c.bgv_report_key);
             const avgDays = done.length>0 ? Math.round(done.reduce((s,c)=>s+((c.bgv_updated_at||0)-(c.bgv_assigned_at||0))/86400000,0)/done.length) : null;
             const SC=(label,val,color,sub)=>(
               <div style={{background:"#fff",borderRadius:10,padding:"0.9rem",border:`2px solid ${color}25`,textAlign:"center"}}>
@@ -1824,8 +1880,9 @@ export default function BgvDashboard() {
             const employerStats = Object.values(byEmployer).map(e => ({
               ...e,
               total: e.cases.length,
-              completed: e.cases.filter(c => c.bgv_status === "completed").length,
-              pending: e.cases.filter(c => c.bgv_status !== "completed").length,
+              // report_key, not status — see the "Cases Table" badge fix above for why.
+              completed: e.cases.filter(c => !!c.bgv_report_key).length,
+              pending: e.cases.filter(c => !c.bgv_report_key).length,
               failed: e.cases.filter(c => c.bgv_result_flag === "red").length,
             })).sort((a,b) => b.total - a.total);
             const activeEmployer = selectedEmployer ? employerStats.find(e => e.email === selectedEmployer) : null;

@@ -127,8 +127,30 @@ function maskAadhaar(a) {
 function bgvActiveAssignments(c) {
   const assignments = Array.isArray(c.bgv_assignments) && c.bgv_assignments.length
     ? c.bgv_assignments
-    : (c.bgv_vendor_email ? [{ vendor_email: c.bgv_vendor_email, status: c.bgv_status, replaced_at: null }] : []);
+    // report_key carried through too, for the legacy single-vendor fallback, so
+    // bgvAssignmentFinal/bgvAggregateStatus below see the same signal for an old,
+    // pre-multi-vendor consent as they do for a real bgv_assignments entry.
+    : (c.bgv_vendor_email ? [{ vendor_email: c.bgv_vendor_email, status: c.bgv_status, report_key: c.bgv_report_key, replaced_at: null }] : []);
   return assignments.filter(a => !a.replaced_at);
+}
+
+// A vendor's own assignment is genuinely, permanently done only once they've actually
+// submitted their report — report_key is set nowhere else (see the backend's
+// submit_bgv_report / _bgv_assert_editable, which locks an assignment on this same
+// signal). Status alone isn't enough: the checks tracker can independently flip status
+// to "completed" the moment every check is verified/N-A, or any one fails, well before
+// a report has actually been filed — that assignment is still open and editable, so it
+// must not read as finished here either.
+function bgvAssignmentFinal(a) {
+  return !!(a && a.report_key);
+}
+
+// "Actively being worked" — either genuinely in_progress, or checks-complete but the
+// report hasn't been filed yet (still real, ongoing work from the outside, not a
+// finished case) — used so that gap between "checks done" and "report submitted"
+// never gets miscounted as either fully finished or not-yet-started.
+function bgvAssignmentWorking(a) {
+  return !!a && (a.status === "in_progress" || (a.status === "completed" && !bgvAssignmentFinal(a)));
 }
 
 // Real per-vendor emails currently active on this case (never the legacy single
@@ -157,9 +179,9 @@ function bgvAggregateStatus(c) {
   const active = bgvActiveAssignments(c);
   if (active.length === 0) return "not_assigned";
   if (active.some(a => a.status === "on_hold")) return "on_hold";
-  if (active.every(a => a.status === "completed")) return "completed";
-  if (active.some(a => a.status === "in_progress")) return "in_progress";
-  if (active.some(a => a.status === "completed")) return "partially_completed";
+  if (active.every(a => bgvAssignmentFinal(a))) return "completed";
+  if (active.some(a => bgvAssignmentWorking(a))) return "in_progress";
+  if (active.some(a => bgvAssignmentFinal(a))) return "partially_completed";
   return "assigned";
 }
 
@@ -2001,7 +2023,18 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
       });
       const d = await res.json();
       if (res.ok) {
-        setAssignMsg(`✓ ${selectedVendor} added as an additional, fully isolated vendor — ${d.checks_created} checks created`);
+        // recheck: this vendor already had a completed, locked case on this consent —
+        // assigning them again never reopens that finished report, it starts a genuinely
+        // new, independent case (own checks, own report, own status). already_assigned:
+        // they already hold a still-open (not yet completed) case here, so nothing new
+        // was created — this just points back at it.
+        setAssignMsg(
+          d.recheck
+            ? `✓ ${selectedVendor}'s earlier completed case is untouched — a brand-new, independent case has been started (${d.checks_created} fresh checks).`
+            : d.already_assigned
+              ? `${selectedVendor} already has an open, active case on this consent — nothing new was created.`
+              : `✓ ${selectedVendor} added as an additional, fully isolated vendor — ${d.checks_created} checks created`
+        );
         setShowAssignPanel(false);
         setSelectedVendor(""); setVendorSearch("");
         const cRes = await apiFetch(`${apiUrl}/bgv/case/${consentData.consent_id}`);
@@ -2062,10 +2095,23 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
         </button>
       </div>
 
-      {/* Assign panel — parallel vendor only; "replace existing vendor" has been removed. */}
-      {showAssignPanel && (
+      {/* Assign panel — parallel vendor only; "replace existing vendor" has been removed.
+          A selected vendor who already has a COMPLETED, locked case here is a recheck,
+          not a parallel addition — completedVendorEmails/isReassign swap the panel's
+          copy and the submit button's label to say so plainly, so the employer sees up
+          front that this starts a brand-new case rather than editing the old one. */}
+      {(() => {
+        const completedVendorEmails = new Set(
+          activeAssignments.filter(a => assignmentDetails[a.assignment_id]?.bgv_report_key).map(a => a.vendor_email)
+        );
+        const isReassign = completedVendorEmails.has(selectedVendor);
+        return showAssignPanel && (
         <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:"1rem",marginBottom:"1rem"}}>
-          {activeAssignments.length > 0 && (
+          {isReassign ? (
+            <div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.75rem",fontSize:"0.76rem",color:"#92400e"}}>
+              🔁 This vendor's earlier case here is completed and locked. Assigning them again starts a completely new, independent case — its own checks, report, and status, built from the candidate's current profile — the earlier completed case stays exactly as delivered, untouched.
+            </div>
+          ) : activeAssignments.length > 0 && (
             <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:8,padding:"0.6rem 0.75rem",marginBottom:"0.75rem",fontSize:"0.76rem",color:"#1e40af"}}>
               The new vendor gets a completely separate inbox, checks, and report — fully isolated from the vendor(s) already on this case. Nothing existing is touched, replaced, or deleted.
             </div>
@@ -2084,19 +2130,27 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
                     fontWeight:selectedVendor===v.email?700:400,fontSize:"0.84rem",color:"#0f172a"}}>
                   <span style={{fontWeight:700}}>{v.company_name||v.name}</span>
                   <span style={{fontSize:"0.72rem",color:"#64748b",marginLeft:"0.5rem"}}>{v.email}</span>
+                  {completedVendorEmails.has(v.email) && <span style={{marginLeft:"0.5rem",fontSize:"0.66rem",fontWeight:700,color:"#92400e",background:"#fef3c7",padding:"1px 7px",borderRadius:999}}>Completed here — reassign = new case</span>}
                   {selectedVendor===v.email&&<span style={{float:"right",color:"#4f46e5",fontSize:"0.72rem",fontWeight:800}}>✓ Selected</span>}
                 </div>
               ))}
             </div>
             <button onClick={assignVendor} disabled={!selectedVendor||assigning}
               style={{width:"100%",padding:"0.55rem",background:"#4f46e5",color:"#fff",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:"0.84rem",fontWeight:700,cursor:"pointer",opacity:(!selectedVendor||assigning)?0.6:1}}>
-              {assigning?"Assigning…":selectedVendor?`Add ${vendors.find(v=>v.email===selectedVendor)?.company_name||selectedVendor} in Parallel →`:"Select a vendor first"}
+              {assigning
+                ? "Assigning…"
+                : !selectedVendor
+                  ? "Select a vendor first"
+                  : isReassign
+                    ? `Start New Case With ${vendors.find(v=>v.email===selectedVendor)?.company_name||selectedVendor} →`
+                    : `Add ${vendors.find(v=>v.email===selectedVendor)?.company_name||selectedVendor} in Parallel →`}
             </button>
             {vendors.length===0&&<p style={{fontSize:"0.72rem",color:"#94a3b8",marginTop:"0.5rem"}}>No approved BGV vendors. Contact admin to onboard a vendor.</p>}
           </div>
           {assignMsg && <p style={{fontSize:"0.78rem",marginTop:"0.5rem",color:assignMsg.startsWith("✓")?"#16a34a":"#ef4444",fontWeight:600}}>{assignMsg}</p>}
         </div>
-      )}
+        );
+      })()}
 
       {/* Per-vendor isolated sections — one independent block per active assignment.
           Each block reads only its own assignmentDetails[assignment_id] payload, so a
@@ -2143,9 +2197,21 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
                     )}
                     {d.bgv_summary && <div style={{fontSize:"0.76rem",color:"#475569",marginTop:"0.4rem",lineHeight:1.5}}>{d.bgv_summary}</div>}
                   </div>
-                  <button onClick={()=>viewReport(d.bgv_report_key)} style={{padding:"0.4rem 0.9rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:7,fontSize:"0.76rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                    View Report ↗
-                  </button>
+                  <div style={{display:"flex",flexDirection:"column",gap:"0.4rem",alignItems:"flex-end"}}>
+                    <button onClick={()=>viewReport(d.bgv_report_key)} style={{padding:"0.4rem 0.9rem",background:"#0d6e6e",color:"#fff",border:"none",borderRadius:7,fontSize:"0.76rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                      View Report ↗
+                    </button>
+                    {/* This case is locked — see printProfile/backend _bgv_assert_editable —
+                        so re-checking this candidate with the SAME vendor is an explicit,
+                        separate action here rather than something the employer has to
+                        rediscover by re-picking the same name in the general vendor list
+                        below. It never touches the completed case above; it always starts
+                        a brand-new, independent one (see assignVendor's recheck branch). */}
+                    <button onClick={()=>{setSelectedVendor(a.vendor_email);setShowAssignPanel(true);setAssignMsg("");}}
+                      style={{padding:"0.4rem 0.9rem",background:"#fff",color:"#4f46e5",border:"1.5px solid #4f46e5",borderRadius:7,fontSize:"0.76rem",fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                      🔁 Reassign — Start New Case
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
