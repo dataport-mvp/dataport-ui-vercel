@@ -40,10 +40,10 @@ const BGV_STATUS_BADGE = {
 };
 
 const OVERALL_STATUS = {
-  clear:        { label:"CLEAR",       color:"#16a34a" },
-  discrepancy:  { label:"DISCREPANCY", color:"#f59e0b" },
-  failed:       { label:"FAILED",      color:"#ef4444" },
-  refer:        { label:"REFER",       color:"#3b82f6" },
+  clear:        { label:"CLEAR",       color:"#16a34a", desc:"No adverse findings — every check came back verified and matching what the candidate declared." },
+  discrepancy:  { label:"DISCREPANCY", color:"#f59e0b", desc:"One or more details didn't match what the candidate declared (e.g. dates, designation) — verified overall, but with a noted mismatch." },
+  failed:       { label:"FAILED",      color:"#ef4444", desc:"A check came back negative or couldn't be substantiated — e.g. employer denies the claim, or a document doesn't verify." },
+  refer:        { label:"REFER",       color:"#3b82f6", desc:"Inconclusive — the source (employer/institution) is unresponsive or unable to confirm, so this needs the employer's own judgment call rather than a clear pass/fail from us." },
 };
 
 const G = `
@@ -1179,6 +1179,14 @@ export default function BgvDashboard() {
                             </div>
                           );
                           const Grid = ({children}) => <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:"0.9rem 1.3rem"}}>{children}</div>;
+                          // FIX: education "From — To" dates (class X/intermediate/diploma/
+                          // UG/PG, articleships, education gap) were being rendered as the raw
+                          // stored "YYYY-MM-DD" strings — inconsistent with every other date on
+                          // this page (which use isoDate's "DD Mon YYYY"). eduDate() normalizes
+                          // all of them the same way. Deliberately NOT applied to Professional
+                          // Qualifications, which only ever stores a plain Year of Passing, not
+                          // a YYYY-MM-DD date — nothing there to reformat.
+                          const eduDate = (d) => d ? isoDate(d) : "";
                           const F = ({label,value,docGroup,docKey}) => value ? (
                             <div>
                               <div style={{fontSize:"0.68rem",fontWeight:700,color:"#94a3b8",textTransform:"uppercase",letterSpacing:"0.4px",marginBottom:"0.2rem"}}>{label}</div>
@@ -1223,7 +1231,7 @@ export default function BgvDashboard() {
                                   <F label="Board / University" value={e.board || e.university} />
                                   <F label="Hall Ticket / Roll No." value={e.hallTicket || e.rollNo} />
                                   <F label="Course / Branch" value={e.course || e.branch} />
-                                  <F label="From — To" value={(e.from||e.yearOfPassing) ? `${e.from||""} ${e.to?"— "+e.to:""}`.trim() : null} />
+                                  <F label="From — To" value={(e.from||e.to) ? `${eduDate(e.from)}${e.to?" — "+eduDate(e.to):""}`.trim() : null} />
                                   <F label="Year of Passing" value={e.yearOfPassing} />
                                   <F label="Result" value={e.resultValue ? `${e.resultType||""} ${e.resultValue}`.trim() : null} />
                                   <F label="Medium of Study" value={e.medium} />
@@ -1278,13 +1286,23 @@ export default function BgvDashboard() {
                             {eduLevel("undergraduate","Undergraduate","🎓")}
                             {eduLevel("postgraduate","Postgraduate","🎓")}
 
-                            {Array.isArray(edu.professionalQualifications) && edu.professionalQualifications.filter(q=>q?.name||q?.course).map((q,i)=>(
+                            {/* FIX: same class of bug as Employment History above — this was
+                                filtering on q.name/q.course and reading q.institution/q.college/
+                                q.yearOfPassing/q.resultValue, none of which the employee-side
+                                form (pages/employee/education.js) ever sets. The real saved
+                                shape is {type, otherType, level, year, regNo, certKey}, so this
+                                whole section silently never rendered a single real entry —
+                                the actual root cause of "professional qualifications not
+                                displaying at all". "Pursuing" is shown as "Ongoing" here too,
+                                the same wording as Articleship and Employment History above,
+                                instead of a third, different word for the same idea. */}
+                            {Array.isArray(edu.professionalQualifications) && edu.professionalQualifications.filter(q=>q?.type).map((q,i)=>(
                               <Sec key={`pq-${i}`} icon="📜" title={`Professional Qualification ${i+1}`}>
                                 <Grid>
-                                  <F label="Qualification" value={q.name || q.course} />
-                                  <F label="Institution / Body" value={q.institution || q.college} />
-                                  <F label="Year of Passing" value={q.yearOfPassing} />
-                                  <F label="Result" value={q.resultValue} />
+                                  <F label="Qualification" value={q.type==="Other" ? (q.otherType||"Other") : q.type} />
+                                  <F label="Level" value={q.level} />
+                                  <F label="Year" value={q.level==="Pursuing" ? "Ongoing" : q.year} />
+                                  <F label="Registration / Membership No." value={q.regNo} />
                                 </Grid>
                                 {docLink("education",`profqual_${i}`) && <div style={{marginTop:"0.7rem"}}>{docLink("education",`profqual_${i}`)}</div>}
                               </Sec>
@@ -1294,7 +1312,11 @@ export default function BgvDashboard() {
                               <Sec key={`art-${i}`} icon="📝" title={`Articleship / Practical Training ${i+1}`}>
                                 <Grid>
                                   <F label="Firm / Organisation" value={a.firm || a.organization} />
-                                  <F label="From — To" value={(a.from||a.to) ? `${a.from||""} — ${a.to||""}` : null} />
+                                  {/* FIX: "still pursuing" articleships (isOngoing==="Ongoing", no
+                                      "to" date yet by design) rendered as a bare trailing "—" with
+                                      nothing after it — the ongoing status itself was never shown.
+                                      Now shows "Ongoing" in its place, same as the employee-side form. */}
+                                  <F label="From — To" value={(a.from||a.to||a.isOngoing) ? `${eduDate(a.from)} — ${a.isOngoing==="Ongoing" ? "Ongoing" : (a.to?eduDate(a.to):"")}`.trim() : null} />
                                   <F label="Role / Nature" value={a.role || a.nature} />
                                 </Grid>
                                 {docLink("education",`articleship_${i}`) && <div style={{marginTop:"0.7rem"}}>{docLink("education",`articleship_${i}`)}</div>}
@@ -1304,18 +1326,34 @@ export default function BgvDashboard() {
                             {edu.hasEduGap === "Yes" && (
                               <Sec icon="⏱" title="Education Gap / Break Before First Job">
                                 <Grid>
-                                  <F label="From — To" value={(edu.eduGapFrom||edu.eduGapTo) ? `${edu.eduGapFrom||""} — ${edu.eduGapTo||""}` : null} />
+                                  <F label="From — To" value={(edu.eduGapFrom||edu.eduGapTo) ? `${eduDate(edu.eduGapFrom)} — ${eduDate(edu.eduGapTo)}` : null} />
                                   <F label="Reason" value={edu.eduGapReason} />
                                 </Grid>
                               </Sec>
                             )}
 
                             {(caseDetail.employment_history||[]).map((emp,i) => {
+                              // FIX: this whole block was reading field names that don't exist
+                              // on the actual saved record (pages/employee/previous.js stores
+                              // workEmail/duties/reasonForRelieving/startDate/endDate/
+                              // currentlyWorking) — it was reading officialWorkEmail/
+                              // dutiesResponsibilities/reasonForLeaving/dateOfJoining/
+                              // dateOfLeaving instead, none of which are ever set, so Work
+                              // Email, Duties, Reason for Leaving and BOTH dates silently never
+                              // displayed for any employer, current or past. This is also
+                              // specifically why a current employer (currentlyWorking==="Yes",
+                              // no endDate by design) showed nothing at all for that row.
+                              const isCurrentJob = emp.currentlyWorking === "Yes";
                               return (
                                 <Sec key={`emp-${i}`} icon="💼" title={emp.companyName ? `${emp.companyName}${emp.designation?" — "+emp.designation:""}` : `Employment ${i+1}`}>
+                                  {isCurrentJob && (
+                                    <div style={{marginBottom:"0.9rem",padding:"0.5rem 0.8rem",background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:8,fontSize:"0.75rem",fontWeight:700,color:"#15803d"}}>
+                                      ✓ Currently working here
+                                    </div>
+                                  )}
                                   {emp.gap?.hasGap === "Yes" && (
                                     <div style={{marginBottom:"0.9rem",padding:"0.6rem 0.8rem",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8}}>
-                                      <div style={{fontSize:"0.7rem",fontWeight:700,color:"#92400e",marginBottom:"0.15rem"}}>⚠ Gap before {i===0?"first job":"this job"}{(emp.gap.from||emp.gap.to)?` (${emp.gap.from||""} — ${emp.gap.to||""})`:""}</div>
+                                      <div style={{fontSize:"0.7rem",fontWeight:700,color:"#92400e",marginBottom:"0.15rem"}}>⚠ Gap before {i===0?"first job":"this job"}{(emp.gap.from||emp.gap.to)?` (${eduDate(emp.gap.from)} — ${eduDate(emp.gap.to)})`:""}</div>
                                       <div style={{fontSize:"0.8rem",color:"#78350f"}}>{emp.gap.reason}</div>
                                     </div>
                                   )}
@@ -1323,14 +1361,18 @@ export default function BgvDashboard() {
                                     <F label="Company" value={emp.companyName} />
                                     <F label="Office Address" value={emp.officeAddress} />
                                     <F label="Employee ID" value={emp.employeeId} />
-                                    <F label="Official Work Email" value={emp.officialWorkEmail} />
+                                    <F label="Official Work Email" value={emp.workEmail} />
                                     <F label="Designation" value={emp.designation} />
                                     <F label="Department" value={emp.department} />
                                     <F label="Employment Type" value={emp.employmentType} />
-                                    <F label="Duties & Responsibilities" value={emp.dutiesResponsibilities} />
-                                    <F label="Date of Joining" value={emp.dateOfJoining} />
-                                    <F label="Date of Leaving" value={emp.dateOfLeaving} />
-                                    <F label="Reason for Leaving" value={emp.reasonForLeaving} />
+                                    <F label="Duties & Responsibilities" value={emp.duties} />
+                                    <F label="Date of Joining" value={eduDate(emp.startDate)} />
+                                    {/* Same "Ongoing" wording as Articleship/Professional
+                                        Qualification below — one consistent term for "this is
+                                        still in progress", not a blank field or a different word
+                                        per section. */}
+                                    <F label="Date of Leaving" value={isCurrentJob ? "Ongoing" : (emp.endDate?eduDate(emp.endDate):null)} />
+                                    <F label="Reason for Leaving" value={emp.reasonForRelieving} />
                                   </Grid>
 
                                   {emp.employmentType === "Contract" && (emp.contractVendor?.company || emp.contractVendor?.email) && (<>
@@ -1515,10 +1557,24 @@ export default function BgvDashboard() {
                                     <option key={v} value={v}>{label}</option>
                                   ))}
                                 </select>
+                                {/* What each verdict actually means — added so "REFER" (and the
+                                    others) aren't left to guesswork. */}
+                                <span style={{fontSize:"0.71rem",color:"#64748b",marginTop:"0.3rem",lineHeight:1.4}}>{OVERALL_STATUS[reportVerdict]?.desc}</span>
                               </div>
                               <div className="fi">
                                 <span className="fl">Report PDF <span style={{color:"#dc2626"}}>*</span></span>
-                                <input key={reportFileInputKey} type="file" accept=".pdf" style={{fontSize:"0.78rem",color:"#64748b"}} onChange={e=>setReportFile(e.target.files[0]||null)} disabled={isLocked}/>
+                                <div style={{display:"flex",alignItems:"center",gap:"0.5rem",flexWrap:"wrap"}}>
+                                  <input key={reportFileInputKey} type="file" accept=".pdf" style={{fontSize:"0.78rem",color:"#64748b"}} onChange={e=>setReportFile(e.target.files[0]||null)} disabled={isLocked}/>
+                                  {/* Lets a wrong file be cleared and re-picked without disabling/
+                                      re-enabling the field — remounts the input via the same key
+                                      bump already used to reset it after a successful submit. */}
+                                  {reportFile && !isLocked && (
+                                    <button type="button" onClick={()=>{setReportFile(null);setReportFileInputKey(k=>k+1);}} title="Remove attachment"
+                                      style={{background:"#fef2f2",border:"1px solid #fecaca",color:"#dc2626",borderRadius:999,width:20,height:20,minWidth:20,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:"0.68rem",fontWeight:700,padding:0,lineHeight:1}}>
+                                      ✕
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             </div>
                             <div className="fi" style={{marginBottom:"0.75rem"}}>
