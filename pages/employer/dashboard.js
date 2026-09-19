@@ -2280,6 +2280,16 @@ function BgvTab({ consentData, apiFetch, API: apiUrl }) {
                       <div onClick={()=>setExpandedVendorHistory(prev=>({...prev,[h.assignment_id]:!prev[h.assignment_id]}))}
                         style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"0.5rem",cursor:"pointer"}}>
                         <div style={{fontSize:"0.74rem",color:"#475569"}}>
+                          {/* h.consent_id !== the currently-open case's consent_id means this
+                              run happened under an earlier consent cycle (a prior data pull for
+                              this same candidate) rather than a reassignment within this same
+                              consent — flagged so it's never mistaken for "the same data,
+                              rechecked" when it may have been a different profile snapshot. */}
+                          {h.consent_id && h.consent_id !== consentData?.consent_id && (
+                            <span style={{display:"inline-block",marginRight:"0.4rem",padding:"0.1rem 0.5rem",borderRadius:999,background:"#ede9fe",color:"#6d28d9",fontSize:"0.62rem",fontWeight:800,textTransform:"uppercase"}}>
+                              Earlier Consent{h.consent_snapshot_at?` · Data as of ${toISTDateTime(h.consent_snapshot_at)}`:""}
+                            </span>
+                          )}
                           Assigned: {h.assigned_at?toISTDateTime(h.assigned_at):"—"}
                           {h.completed_at && <> · Completed: {toISTDateTime(h.completed_at)}</>}
                         </div>
