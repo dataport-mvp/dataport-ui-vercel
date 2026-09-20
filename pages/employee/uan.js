@@ -1588,6 +1588,33 @@ export default function UanDetails() {
 
           // Load employment history for PF pre-fill — this was already kicked off
           // above, in parallel with the signature fetch; just await it here now.
+          //
+          // BUG FIX (data loss): this whole block used to leave pfRecords completely
+          // unset — silently — whenever the employment-history fetch failed, threw, or
+          // simply returned a non-ok status (a network hiccup, a slow cold start, an
+          // auth blip). pfRecords would then sit at its blank useState([makePfRecord()])
+          // default, indistinguishable on screen from "no PF records yet". If the
+          // employee then saved ANY page for any reason, that blank state was sent as
+          // the new pfRecords — permanently wiping out every real PF record already on
+          // the server. Fixed by falling back to the raw, unlinked restore of
+          // d.pfRecords (same shape as the no-employee_id branch below) whenever the
+          // history-linked restore didn't actually run, instead of leaving state unset.
+          //
+          // Separately, the raw-restore fallback itself had a live ReferenceError:
+          // `arr` was referenced inside a .map((r, idx) => ...) callback that never
+          // declared a third parameter, and no `arr` variable exists anywhere in this
+          // function's scope — the only `arr` in this file belongs to an unrelated
+          // function far above. Every time this exact line ran, it threw, was
+          // swallowed by the surrounding try/catch, and pfRecords was never restored
+          // at all. Fixed by adding `arr` as the map callback's own third parameter
+          // (which Array.prototype.map always provides), so it refers to the array
+          // actually being mapped, not an undefined outer variable.
+          const restorePfRecordsRaw = () => {
+            if (Array.isArray(d.pfRecords) && d.pfRecords.length > 0) {
+              setPfRecords(d.pfRecords.map((r, idx, arr) => ({ companyName:r.companyName||"", hasPf:r.hasPf||"", pfType:r.pfType||"", pfMemberId:r.pfMemberId||"", dojEpfo:r.dojEpfo||"", doeEpfo:r.doeEpfo||"", pfTransferred:r.pfTransferred||"", isCurrent: idx === arr.length - 1 })));
+            }
+          };
+          let pfRestoredFromHistory = false;
           if (d.employee_id) {
             try {
               const histRes = await histPromise;
@@ -1638,12 +1665,12 @@ export default function UanDetails() {
                   // Fresher / no employment history — no employer-linked PF section applies.
                   setPfRecords([]);
                 }
+                pfRestoredFromHistory = true;
               }
             } catch(_) {}
+            if (!pfRestoredFromHistory) restorePfRecordsRaw();
           } else {
-            if (Array.isArray(d.pfRecords) && d.pfRecords.length > 0) {
-              setPfRecords(d.pfRecords.map((r, idx) => ({ companyName:r.companyName||"", hasPf:r.hasPf||"", pfType:r.pfType||"", pfMemberId:r.pfMemberId||"", dojEpfo:r.dojEpfo||"", doeEpfo:r.doeEpfo||"", pfTransferred:r.pfTransferred||"", isCurrent: idx === arr.length - 1 })));
-            }
+            restorePfRecordsRaw();
           }
         }
       } catch (_) {}

@@ -1232,6 +1232,15 @@ export default function EducationDetails() {
           if(edu.hasProfQual)setHasProfQual(edu.hasProfQual);
           if(edu.hasArticleship)setHasArticleship(edu.hasArticleship);
           if(dip.institute)setDipInstitute(dip.institute);if(dip.board)setDipBoard(dip.board);if(dip.course)setDipCourse(dip.course);if(dip.backlogs)setDipBacklogs(dip.backlogs);
+          /* BUG FIX: every other section (Class X, Intermediate, UG, PG) restores its
+             "address" field on load — Diploma's was the one omission. Without this line,
+             dipAddress always reset to "" on every fresh page load (including after
+             logout/login), even when the server had a real value saved. If the page was
+             then saved again for ANY reason, that blank value silently overwrote the real
+             address on the server — genuine, permanent data loss on next save, not just a
+             display glitch. This is exactly the "pileru" report: added, saved correctly,
+             then wiped by the next save because the reload before it never restored it. */
+          if(dip.address)setDipAddress(dip.address);
           if(dip.from)setDipFrom(dip.from);if(dip.to)setDipTo(dip.to);if(dip.yearOfPassing)setDipYear(dip.yearOfPassing);
           if(dip.resultType)setDipResultType(dip.resultType);if(dip.resultTypeOther)setDipResultTypeOther(dip.resultTypeOther);if(dip.resultValue)setDipResultValue(dip.resultValue);if(dip.mode)setDipMode(dip.mode);if(dip.certKey)setDipCertKey(dip.certKey);
           setDipCountry(dip.country||"India");if(dip.countryName)setDipCountryName(dip.countryName);if(dip.equivalencyKey)setDipEquivalencyKey(dip.equivalencyKey);
