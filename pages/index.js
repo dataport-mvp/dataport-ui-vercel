@@ -84,6 +84,38 @@ export default function Home() {
         <meta property="og:description" content="Datagate.co.in is an India-based employment data portability platform that gives professionals one reusable digital career profile. Keep it updated, share it with employers through explicit consent, complete onboarding in minutes, run pre-BGV checks, and initiate BGV at the same time." />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary" />
+        {/* STRUCTURED DATA: the page's visible copy (meta description, hero, footer)
+            already describes Datagate as an employment data portability platform —
+            BGV is one of three portals, not the company's identity — but there was
+            no JSON-LD anywhere on the site at all. Search engines and AI answer
+            engines (Google AI Overviews / AI Mode included) lean heavily on
+            schema.org Organization data, when present, as the canonical "what is
+            this company" description — more so than inferring it from body text.
+            Without it, a crawler is free to weight whichever words repeat most,
+            and "BGV" appears often since it's a real, named feature. This gives
+            it an explicit, unambiguous description to draw from instead. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{__html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            "name": "Datagate.co.in",
+            "legalName": "Datagate Technologies",
+            "url": "https://www.datagate.co.in",
+            "description": "Datagate.co.in is an India-based employment data portability platform. It gives professionals one reusable digital career profile that they own and control, and share with employers only through explicit, employer-specific consent. Employers can run preliminary pre-BGV checks and complete onboarding within minutes once consent is given; formal background verification (BGV) can be initiated at the same time through an assigned BGV vendor, but BGV is one workflow the platform supports — not what the company is.",
+            "slogan": "One profile. Every opportunity. Your consent.",
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": "Hyderabad",
+              "addressRegion": "Telangana",
+              "addressCountry": "IN"
+            },
+            "areaServed": "IN",
+            "sameAs": [
+              "https://www.linkedin.com/company/datagate-technologies"
+            ]
+          })}}
+        />
       </Head>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
@@ -217,8 +249,14 @@ export default function Home() {
         .fd{font-size:13px;color:#7a6e64;line-height:1.75}
 
         /* FOR WHO */
-        .for-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
-        .for-card{border:1.5px solid #c8c2b8;border-radius:16px;padding:40px;background:#fff;position:relative;overflow:hidden;transition:all .22s}
+        .for-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;align-items:stretch}
+        /* UI FIX: cards were plain blocks, so a card with fewer checklist points
+           (BGV had 3 vs 4 on the other two) left its "Access ... portal" button
+           sitting higher than the other cards' buttons — visibly out of line
+           across the row even though the cards themselves were equal height.
+           Flex column + margin-top:auto on the CTA link pins every card's
+           button to the same bottom edge regardless of how much text is above it. */
+        .for-card{display:flex;flex-direction:column;border:1.5px solid #c8c2b8;border-radius:16px;padding:40px;background:#fff;position:relative;overflow:hidden;transition:all .22s}
         .for-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:#0d6e6e;transform:scaleX(0);transform-origin:left;transition:transform .25s}
         .for-card:hover{border-color:#0d6e6e;box-shadow:0 12px 48px rgba(13,110,110,.12)}
         .for-card:hover::before{transform:scaleX(1)}
@@ -229,6 +267,7 @@ export default function Home() {
         .for-pts{display:flex;flex-direction:column;gap:10px;margin-bottom:28px}
         .for-pt{display:flex;align-items:flex-start;gap:9px;font-size:13px;color:#5a5248;line-height:1.55}
         .for-ptck{width:18px;height:18px;border-radius:5px;background:#e0f0ee;border:1px solid #a8d5ce;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+        .for-cta{margin-top:auto;align-self:flex-start}
         .btn-for{display:inline-flex;align-items:center;gap:7px;padding:11px 22px;background:#111;color:#fff;font-size:13.5px;font-weight:700;border:none;border-radius:8px;cursor:pointer;transition:all .18s}
         .btn-for:hover{background:#0d6e6e;gap:10px}
 
@@ -252,6 +291,8 @@ export default function Home() {
         .f-top{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:40px;margin-bottom:40px;padding-bottom:40px;border-bottom:1px solid rgba(255,255,255,.08)}
         .f-brand{max-width:280px}
         .f-tagline{font-size:13px;color:rgba(255,255,255,.4);line-height:1.7;margin-top:14px}
+        .f-founder{font-size:12.5px;color:rgba(255,255,255,.55);margin-top:10px;font-weight:600}
+        .f-founder span{color:rgba(255,255,255,.4);font-weight:400}
         .f-social{display:flex;gap:10px;margin-top:18px}
         .f-social-lk{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid rgba(255,255,255,.12);border-radius:7px;font-size:12px;font-weight:600;color:rgba(255,255,255,.5);text-decoration:none;transition:all .15s}
         .f-social-lk:hover{border-color:#0d6e6e;color:#0d6e6e;background:rgba(13,110,110,.08)}
@@ -319,7 +360,7 @@ export default function Home() {
             <Link href="/employer/login"><button className="btn-s">Employer portal</button></Link>
           </div>
           <div className="trust-pills f4">
-            {["DPDP Act 2023 aligned","End-to-end encrypted","No data shared without consent","Consent-first","Structured employment records"].map(t=>(
+            {["DPDP Act 2023 aligned","Encrypted in transit and at rest","No data shared without consent","Consent-first","Structured employment records"].map(t=>(
               <div className="t-pill" key={t}><span className="t-dot"/>{t}</div>
             ))}
           </div>
@@ -457,7 +498,7 @@ export default function Home() {
                 <div className="for-t">{card.t}</div>
                 <div className="for-d">{card.d}</div>
                 <div className="for-pts">{card.pts.map(p=><div className="for-pt" key={p}><div className="for-ptck"><Chk/></div>{p}</div>)}</div>
-                <Link href={card.href}><button className="btn-for">{card.cta} <Arr/></button></Link>
+                <Link href={card.href} className="for-cta"><button className="btn-for">{card.cta} <Arr/></button></Link>
               </div>
             ))}
           </div>
@@ -487,6 +528,7 @@ export default function Home() {
           <div className="f-brand">
             <Logo variant="light"/>
             <p className="f-tagline">Datagate Technologies is an India-based technology company building consent-driven employment data infrastructure for candidates, employers and background verification providers.</p>
+            <p className="f-founder"><span>Founder — </span>Manoj Kumar Kakarla</p>
             <div className="f-social">
               <a href="https://www.linkedin.com/company/datagate-technologies" target="_blank" rel="noopener noreferrer" className="f-social-lk">
                 <LinkedInIcon /> LinkedIn

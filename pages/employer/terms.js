@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 // DATAGATE — EMPLOYER TERMS & DATA SHARING AGREEMENT
-// Version 2.0 | DPDP Act 2023 Compliant
+// Version 2.1 | DPDP Act 2023 Compliant
 // Jurisdiction: Hyderabad, Telangana, India
 
 export default function EmployerTerms() {
@@ -67,7 +67,7 @@ export default function EmployerTerms() {
       <div className="wrap">
         <div className="lbl">Legal</div>
         <h1 className="h1">Employer Terms &amp; Data Sharing Agreement</h1>
-        <p className="meta">Effective date: 22 March 2026 &nbsp;·&nbsp; Version 2.0 &nbsp;·&nbsp; Last updated: June 2026</p>
+        <p className="meta">Effective date: 22 March 2026 &nbsp;·&nbsp; Version 2.1 &nbsp;·&nbsp; Last updated: 20 September 2026</p>
 
         <div className="summary">
           <div className="summary-t">What this means for you</div>
@@ -153,7 +153,7 @@ export default function EmployerTerms() {
             <li>You must complete a full purge from all systems — including backups, email, HR platforms, local storage, and any system you shared the data with — within <strong>7 days</strong></li>
             <li>Where you have assigned a BGV vendor, you must instruct them to delete all copies within the same timeframes</li>
           </ul>
-          <div className="callout"><strong>Legal notice:</strong> The timestamp on the withdrawal notification email constitutes formal, legally valid notice to you under this Agreement. Any use or retention of the employee's data after that timestamp is your sole liability as a Data Fiduciary.</div>
+          <div className="callout"><strong>Legal notice:</strong> The timestamp on datagate.co.in's platform record of the withdrawal event constitutes formal notice to you under this Agreement. We also send an email notification to your registered address at that same time as a practical courtesy — you are responsible for maintaining a working, monitored notification email address on your account. Any use or retention of the employee's data after the event timestamp is your sole liability as a Data Fiduciary.</div>
         </div>
 
         {/* 6 */}
@@ -164,7 +164,7 @@ export default function EmployerTerms() {
             <li>Delete all digital copies from all your systems within <strong>72 hours</strong></li>
             <li>Complete a full purge — including email, HR systems, shared drives, local storage, backups, and any downstream systems — within <strong>7 days</strong></li>
             <li>Instruct any BGV vendor you assigned to delete all copies within the same timeframes</li>
-            <li>datagate.co.in retains a cryptographically timestamped record of this notification as evidence that the obligation was formally communicated</li>
+            <li>datagate.co.in retains a server-timestamped, cryptographically hashed record of the deletion event that triggered this notice — so if the record is later altered, that's independently detectable — as evidence that the obligation was communicated to you at that time</li>
           </ul>
           <p className="p">You may not penalise, disadvantage, or discriminate against any employee or candidate for exercising their right to delete their account or withdraw consent.</p>
         </div>
@@ -215,8 +215,8 @@ export default function EmployerTerms() {
         {/* 10 */}
         <div className="sec" id="t10">
           <div className="sec-h">10. Audit trail</div>
-          <p className="p">datagate.co.in maintains a cryptographic, tamper-evident log of all consent events on the platform — including every consent request, approval, access event, and withdrawal. These logs are the authoritative record of what was consented to, by whom, for what purpose, and when.</p>
-          <div className="callout"><strong>These logs are admissible evidence.</strong> In any dispute, regulatory inquiry, or legal proceeding involving employee data accessed through datagate.co.in, the platform's consent logs are the primary source of truth. Your obligations under this Agreement are timestamped and recorded.</div>
+          <p className="p">datagate.co.in logs every consent lifecycle event on the platform — requests, approvals, declines, withdrawals, and account deletions — with a server-recorded timestamp and a cryptographic integrity hash (HMAC-SHA256) computed from each event's contents. Any after-the-fact alteration of a stored event is detectable: the record either still matches its original hash, or it doesn't. These logs are the platform's record of what was consented to, by whom, for what purpose, and when.</p>
+          <div className="callout"><strong>These logs are designed to be reliable evidence.</strong> In any dispute, regulatory inquiry, or legal proceeding involving employee data accessed through datagate.co.in, we can produce the platform's consent logs, including verification that a given record has not been altered since it was written. Whether a specific record is accepted as evidence in a given proceeding is ultimately for the relevant court, tribunal, or authority to determine — we don't purport to decide that ourselves. Your obligations under this Agreement are timestamped and recorded.</div>
           <p className="p">You may request a copy of consent logs relating to your account by contacting <a href="mailto:support@datagate.co.in">support@datagate.co.in</a>.</p>
         </div>
 
@@ -268,7 +268,7 @@ export default function EmployerTerms() {
           <p className="p"><strong>Entire agreement:</strong> This Agreement, together with datagate.co.in's Privacy Policy, constitutes the entire agreement between you and datagate.co.in regarding the subject matter herein and supersedes all prior agreements or representations.</p>
           <p className="p"><strong>Severability:</strong> If any provision of this Agreement is found to be invalid or unenforceable by a court of competent jurisdiction, that provision shall be modified to the minimum extent necessary to make it enforceable, and the remaining provisions shall continue in full force and effect.</p>
           <p className="p"><strong>Force majeure:</strong> Neither party shall be liable for failure to perform obligations due to circumstances beyond their reasonable control, including acts of God, natural disasters, government orders, or infrastructure outages, provided the affected party gives prompt notice and takes reasonable steps to mitigate the impact.</p>
-          <p className="p"><strong>Changes to this Agreement:</strong> We may update these terms. For material changes, we will give at least <strong>14 days' notice</strong> by email before they take effect. Continued use after the effective date constitutes acceptance.</p>
+          <p className="p"><strong>Changes to this Agreement:</strong> We may update these terms. For material changes, we will make reasonable efforts to notify you before they take effect. You can always refer to this page for the current version of these terms. Continued use after the effective date constitutes acceptance.</p>
           <p className="p"><strong>No waiver:</strong> Failure by either party to enforce any provision of this Agreement shall not constitute a waiver of the right to enforce it in future.</p>
           <p className="p"><strong>Assignment:</strong> You may not assign your rights or obligations under this Agreement without datagate.co.in's prior written consent. datagate.co.in may assign this Agreement in connection with a merger, acquisition, or sale of assets.</p>
         </div>

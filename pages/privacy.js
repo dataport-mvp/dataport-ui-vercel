@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 // DATAGATE — PRIVACY POLICY
-// Version 2.0 | DPDP Act 2023 Compliant
+// Version 2.1 | DPDP Act 2023 Compliant
 // Jurisdiction: Hyderabad, Telangana, India
 // Data storage: AWS Mumbai (ap-south-1)
 
@@ -70,7 +70,7 @@ export default function PrivacyPolicy() {
       <div className="wrap">
         <div className="lbl">Legal</div>
         <h1 className="h1">Privacy Policy</h1>
-        <p className="meta">Effective date: 22 March 2026 &nbsp;·&nbsp; Version 2.0 &nbsp;·&nbsp; Last updated: June 2026</p>
+        <p className="meta">Effective date: 22 March 2026 &nbsp;·&nbsp; Version 2.1 &nbsp;·&nbsp; Last updated: 20 September 2026</p>
 
         <div className="summary">
           <div className="summary-t">The short version</div>
@@ -119,7 +119,8 @@ export default function PrivacyPolicy() {
           <p className="p"><strong>From employees:</strong></p>
           <ul className="ul">
             <li>Full name, email address, mobile number, date of birth, gender, nationality, blood group, marital status</li>
-            <li>Identity: Aadhaar number (masked — last 4 digits only stored and displayed), PAN number, passport (where provided)</li>
+            <li>Identity: Aadhaar number (the standalone field is masked — only the last 4 digits are ever submitted or stored), PAN number, passport (where provided)</li>
+            <li>Identity documents you upload as proof: this includes a scanned or photographed copy of your Aadhaar card, which — unlike the masked number field above — necessarily contains your full 12-digit Aadhaar number and photograph, since that's what a valid ID document looks like. This image is stored only to satisfy the identity-verification purpose you're uploading it for, is never displayed as plain text back to an employer, and access to it is restricted the same way as your other uploaded documents — only visible to you, and to an employer or assigned BGV vendor after your consent, never exposed publicly</li>
             <li>Family details: parents' names, and — where applicable — spouse and children's names and dates of birth, collected for company health insurance enrollment purposes</li>
             <li>Emergency contact: name, relationship, and phone number of a person you nominate — used only to reach someone on your behalf in an emergency</li>
             <li>Current and permanent address</li>
@@ -129,6 +130,8 @@ export default function PrivacyPolicy() {
             <li>Documents uploaded by you: certificates, payslips, relieving letters, offer letters</li>
             <li>Digital signature (where applicable, for consent records)</li>
             <li>Consent event logs: timestamps of every approval and withdrawal</li>
+            <li><strong>Religion and reservation category</strong> — optional fields you may fill in where an employer's statutory reporting or equal-opportunity compliance requires it. Leaving these blank is always allowed, they are never used in any verification or hiring decision on this platform, and they are shared with an employer only under the same consent rules as the rest of your profile</li>
+            <li><strong>Disability status</strong> — an optional field, with "Prefer not to disclose" always available as an answer, used only so an employer can make reasonable workplace accommodations if you choose to share it</li>
           </ul>
 
           <p className="p"><strong>From employers:</strong></p>
@@ -148,10 +151,10 @@ export default function PrivacyPolicy() {
 
           <p className="p"><strong>Automatically collected:</strong></p>
           <ul className="ul">
-            <li>IP address, browser type, device type, and session identifiers — for security and fraud prevention only</li>
-            <li>Platform usage logs — for platform integrity and debugging only</li>
+            <li>Your IP address is read momentarily by a small number of security-sensitive actions (such as first-time admin account setup) purely to rate-limit repeated attempts — it is held only for the length of that short rate-limiting window (a couple of minutes) and is not stored against your account, logged for tracking, or retained afterward</li>
+            <li>We do not currently capture browser type, device type, or any persistent session/device identifier, and we do not run any device-fingerprinting or analytics tooling on the platform</li>
           </ul>
-          <div className="callout"><strong>We do not collect:</strong> Biometric data, caste, religion, political opinion, or any data not listed above. Bank details are collected solely for salary-processing purposes, disclosed only to your approved employer, and never used for any other purpose.</div>
+          <div className="callout"><strong>We do not collect:</strong> Biometric data or political opinion, under any circumstances. Religion, reservation category, and disability status are the only sensitive-adjacent fields we ask for — each is optional, used only for the specific purpose stated above, and never used in any verification or hiring decision. Bank details are collected solely for salary-processing purposes, disclosed only to your approved employer, and never used for any other purpose.</div>
         </div>
 
         {/* 4 */}
@@ -169,7 +172,7 @@ export default function PrivacyPolicy() {
                 <tr><td>Route BGV checks to assigned vendor</td><td>Profile data (employer-approved only)</td><td>Your consent + employer consent</td></tr>
                 <tr><td>Maintain audit trail of all data access events</td><td>Consent logs, timestamps</td><td>Legal obligation (DPDP Act)</td></tr>
                 <tr><td>Comply with lawful orders from competent authorities</td><td>As required by the order</td><td>Legal obligation</td></tr>
-                <tr><td>Prevent fraud and platform abuse</td><td>Session data, IP logs</td><td>Legitimate interest</td></tr>
+                <tr><td>Rate-limit repeated attempts on security-sensitive actions</td><td>IP address (held only for the rate-limit window, then discarded)</td><td>Legitimate interest</td></tr>
               </tbody>
             </table>
           </div>
@@ -234,12 +237,12 @@ export default function PrivacyPolicy() {
                 <tr><th>Data type</th><th>Retention period</th></tr>
               </thead>
               <tbody>
-                <tr><td>Employee profile and documents</td><td>While your account is active. Deleted within 7 days of account deletion request.</td></tr>
+                <tr><td>Employee profile and documents</td><td>While your account is active. Deleted immediately on account deletion — not queued or delayed.</td></tr>
                 <tr><td>Messages and support tickets</td><td>The message or ticket text itself is removed on account deletion. A minimal record — sender, recipient, timestamp, and related consent or category — is retained permanently for dispute resolution and fraud prevention.</td></tr>
-                <tr><td>Consent event logs</td><td>7 years from the date of the consent event (legal compliance requirement)</td></tr>
-                <tr><td>Employer notification records (deletion / withdrawal)</td><td>7 years (evidence of obligation communicated)</td></tr>
-                <tr><td>Session and security logs</td><td>90 days</td></tr>
-                <tr><td>BGV case records</td><td>As required by applicable law; minimum 2 years from case closure</td></tr>
+                <tr><td>Consent event logs</td><td>Retained for a minimum of 7 years from the date of the event (legal compliance requirement). We do not currently auto-purge these after the 7-year mark — a scheduled retention-expiry process is on our roadmap.</td></tr>
+                <tr><td>Employer notification records (deletion / withdrawal)</td><td>Retained for a minimum of 7 years, as evidence the obligation was communicated</td></tr>
+                <tr><td>Rate-limit counters (security)</td><td>A couple of minutes — these are short-lived counters, not stored logs</td></tr>
+                <tr><td>BGV case records</td><td>As required by applicable law; retained for a minimum of 2 years from case closure</td></tr>
               </tbody>
             </table>
           </div>
@@ -256,9 +259,9 @@ export default function PrivacyPolicy() {
             <li><strong>Right to erasure</strong> — delete your account and all associated personal data at any time</li>
             <li><strong>Right to withdraw consent</strong> — revoke any employer's access at any time, instantly, from your dashboard</li>
             <li><strong>Right to grievance redressal</strong> — raise a complaint with our Grievance Officer (see Section 13)</li>
-            <li><strong>Right to nominate</strong> — nominate another individual to exercise these rights on your behalf in the event of your death or incapacity</li>
+            <li><strong>Right to nominate</strong> — nominate another individual to exercise these rights on your behalf in the event of your death or incapacity. <em>This is a right guaranteed to you under the DPDP Act; the ability to record a nomination is being built and will be available on the platform soon.</em></li>
           </ul>
-          <p className="p">To exercise any right, use your account settings or contact <a href="mailto:grievance@datagate.co.in">grievance@datagate.co.in</a>. We respond within <strong>7 business days</strong>. If you are not satisfied with our response, you may escalate to the <strong>Data Protection Board of India</strong>.</p>
+          <p className="p">To exercise any of the above rights (other than nomination, noted above), use your account settings or contact <a href="mailto:grievance@datagate.co.in">grievance@datagate.co.in</a>. We respond within <strong>7 business days</strong>. If you are not satisfied with our response, you may escalate to the <strong>Data Protection Board of India</strong>.</p>
         </div>
 
         {/* 10 */}
@@ -266,12 +269,13 @@ export default function PrivacyPolicy() {
           <div className="sec-h">10. Sensitive personal data</div>
           <p className="p">The following data elements collected on datagate.co.in are classified as sensitive and handled with additional controls:</p>
           <ul className="ul">
-            <li><strong>Aadhaar number:</strong> Collected with your explicit consent for employment verification purposes only. The full number is never stored or displayed — only the last 4 digits are retained and visible to any party, including employers. We do not authenticate Aadhaar against UIDAI databases.</li>
-            <li><strong>PAN number:</strong> Stored in encrypted form. Shared with employers only on your explicit approval and only for the verification purpose stated.</li>
+            <li><strong>Aadhaar number:</strong> Collected with your explicit consent for employment verification purposes only. The standalone Aadhaar number field is masked to its last 4 digits before it ever reaches us — that field never holds the full number. Separately, the ID document you upload as proof (your Aadhaar card image) does contain the full number and your photograph, because that's what the document itself looks like; that image is used only for identity verification, is not re-displayed as extracted plain text, and is access-restricted the same way as your other uploaded documents. We do not authenticate Aadhaar against UIDAI databases.</li>
+            <li><strong>PAN number:</strong> Encrypted in transit (TLS 1.2+) and at rest by AWS's default database-level encryption. Access is restricted to authenticated requests from your own account, the employer you've approved, or platform admins acting on a support request — never exposed publicly or to any party you haven't consented to share it with. Field-level application encryption specific to PAN is on our security roadmap as a further hardening step, on top of the access controls already in place.</li>
             <li><strong>UAN / PF details:</strong> Used to source EPFO-linked employment records. Shared only after your approval.</li>
             <li><strong>Bank account details:</strong> Collected for salary-processing purposes only. Shared only with the employer you have explicitly approved, and never used for any other purpose.</li>
+            <li><strong>Religion, reservation category, and disability status:</strong> Optional. Collected only where an employer's statutory reporting or equal-opportunity compliance requires it, or where you choose to share disability status so an employer can make reasonable accommodations. Never used to make or influence a verification or hiring decision.</li>
           </ul>
-          <p className="p">Beyond blood group (collected for emergency purposes), we do not collect health records, medical history, biometric data, caste, religion, or political affiliations.</p>
+          <p className="p">Beyond the fields listed above, we do not collect biometric data or political affiliations. Blood group is collected for emergency purposes only.</p>
         </div>
 
         {/* 11 */}
@@ -279,11 +283,11 @@ export default function PrivacyPolicy() {
           <div className="sec-h">11. Security</div>
           <p className="p">We implement the following technical and organisational measures:</p>
           <ul className="ul">
-            <li>All data encrypted in transit (TLS 1.2+) and at rest (AES-256)</li>
+            <li>All data encrypted in transit (TLS 1.2+) and at rest, via AWS's default database and storage encryption</li>
             <li>Access to production systems restricted to authorised personnel only</li>
-            <li>All consent events cryptographically logged and tamper-evident</li>
+            <li>Every consent event (request, approval, decline, withdrawal, deletion) is stored with a server-recorded timestamp and a cryptographic integrity hash (HMAC-SHA256), so any after-the-fact alteration of a stored event is detectable — the record either matches its original hash or it doesn't</li>
             <li>Infrastructure on AWS Mumbai region with VPC isolation</li>
-            <li>Automated smoke tests on every deployment to detect regressions</li>
+            <li>An automated smoke-test suite runs against every deployment through our standard release pipeline; a manual override exists for exceptional emergency fixes</li>
             <li>Periodic security reviews of the platform architecture</li>
           </ul>
           <p className="p">If you suspect a security issue involving your account or data, contact us immediately at <a href="mailto:security@datagate.co.in">security@datagate.co.in</a>. We treat all security reports as urgent.</p>
@@ -293,7 +297,7 @@ export default function PrivacyPolicy() {
         {/* 12 */}
         <div className="sec" id="p12">
           <div className="sec-h">12. Changes to this policy</div>
-          <p className="p">We may update this policy as the platform evolves or as legal requirements change. For material changes — those that affect your rights or how your data is used — we will notify you by email at least <strong>14 days before</strong> the change takes effect and display a prominent notice on the platform. The version date at the top of this page records when it was last updated.</p>
+          <p className="p">We may update this policy as the platform evolves or as legal requirements change. For material changes — those that affect your rights or how your data is used — we will make reasonable efforts to notify you, such as an in-app notice or email, before the change takes effect. You can always refer to this page for the current version of our policy — the version date at the top records when it was last updated.</p>
           <p className="p">Continued use of datagate.co.in after the effective date of a material change constitutes your acceptance of the updated policy.</p>
         </div>
 

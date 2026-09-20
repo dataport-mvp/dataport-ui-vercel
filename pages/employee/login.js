@@ -317,7 +317,7 @@ export default function EmployeeLogin() {
             </>}
 
             <div className="trust-grid">
-              {["DPDP Act 2023 compliant","End-to-end encrypted","No data sold ever","Delete anytime"].map(t=>(
+              {["DPDP Act 2023 compliant","Encrypted in transit and at rest","No data sold ever","Delete anytime"].map(t=>(
                 <div className="trust-item" key={t}><div className="trust-ck">✓</div>{t}</div>
               ))}
             </div>

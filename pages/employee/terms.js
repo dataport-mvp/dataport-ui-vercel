@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 // DATAGATE — EMPLOYEE TERMS OF SERVICE
-// Version 1.0 | DPDP Act 2023 Compliant
+// Version 1.1 | DPDP Act 2023 Compliant
 
 export default function EmployeeTerms() {
   return (
@@ -64,7 +64,7 @@ export default function EmployeeTerms() {
       <div className="wrap">
         <div className="lbl">Legal</div>
         <h1 className="h1">Employee Terms of Service</h1>
-        <p className="meta">Effective date: June 2026 &nbsp;·&nbsp; Version 1.0</p>
+        <p className="meta">Effective date: June 2026 &nbsp;·&nbsp; Version 1.1 &nbsp;·&nbsp; Last updated: 20 September 2026</p>
 
         <div className="summary">
           <div className="summary-t">Your rights in plain language</div>
@@ -110,7 +110,7 @@ export default function EmployeeTerms() {
             <li>Receive and review consent requests from employers who wish to access your profile</li>
             <li>Approve or decline each consent request individually</li>
             <li>Withdraw consent from any employer at any time, instantly</li>
-            <li>View a full audit log of every employer who has accessed your profile and when</li>
+            <li>View a full log of every consent decision on your profile — who requested access, what purpose was stated, when you approved or declined, and when access was withdrawn</li>
             <li>Update or correct your profile information at any time</li>
             <li>Delete your account and all associated data at any time</li>
           </ul>
@@ -137,12 +137,12 @@ export default function EmployeeTerms() {
           <div className="sec-h">5. Your rights</div>
           <p className="p">Under the Digital Personal Data Protection Act, 2023, you have the following rights, all exercisable from your account dashboard or by contacting us:</p>
           <ul className="ul">
-            <li><strong>Access:</strong> See all personal data we hold about you and a list of every employer who has accessed it</li>
+            <li><strong>Access:</strong> See a summary of personal data we hold about you and the consent log showing which employers currently or previously had approved access</li>
             <li><strong>Correction:</strong> Update any inaccurate or incomplete information in your profile</li>
             <li><strong>Erasure:</strong> Delete your account and all personal data at any time — no questions, no waiting period beyond the technical process</li>
             <li><strong>Withdraw consent:</strong> Revoke any employer's access at any time, instantly</li>
             <li><strong>Grievance redressal:</strong> Raise a complaint with datagate.co.in's Grievance Officer and, if unsatisfied, with the Data Protection Board of India</li>
-            <li><strong>Nomination:</strong> Nominate another person to exercise these rights on your behalf in the event of death or incapacity</li>
+            <li><strong>Nomination:</strong> A right guaranteed to you under the DPDP Act to nominate another person to exercise these rights on your behalf in the event of death or incapacity. The ability to record a nomination is being built and will be available on the platform soon.</li>
           </ul>
           <p className="p">We respond to rights requests within <strong>7 business days</strong>.</p>
         </div>
@@ -191,7 +191,7 @@ export default function EmployeeTerms() {
             <li>Never share your data with any employer without your explicit consent</li>
             <li>Never sell your data to any third party, ever</li>
             <li>Store your data exclusively in India (AWS Mumbai region)</li>
-            <li>Maintain a tamper-evident audit trail of every access to your profile</li>
+            <li>Maintain a cryptographically hashed, tamper-evident log of every consent decision on your profile — requests, approvals, declines, withdrawals, and deletions</li>
             <li>Notify you promptly of any data breach that may affect your personal data</li>
             <li>Process all rights requests within 7 business days</li>
             <li>Revoke employer access instantly on consent withdrawal — no delay, no manual process</li>
@@ -215,7 +215,7 @@ export default function EmployeeTerms() {
         {/* 11 */}
         <div className="sec" id="e11">
           <div className="sec-h">11. Changes to these terms</div>
-          <p className="p">We may update these terms as the platform evolves or as law requires. For material changes — those that affect your rights or obligations — we will notify you by email and in-app notification at least <strong>14 days before</strong> the change takes effect.</p>
+          <p className="p">We may update these terms as the platform evolves or as law requires. For material changes — those that affect your rights or obligations — we will make reasonable efforts to notify you before the change takes effect. You can always refer to this page for the current version of these terms.</p>
           <p className="p">If you do not agree to updated terms, you may delete your account before the effective date. Continued use after the effective date constitutes acceptance.</p>
         </div>
 

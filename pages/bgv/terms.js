@@ -263,7 +263,7 @@ export default function BGVVendorTerms() {
           <div className="sec-h">14. General provisions</div>
           <p className="p"><strong>Entire agreement:</strong> These terms, together with datagate.co.in's Privacy Policy, constitute the entire agreement between you and datagate.co.in regarding BGV vendor access to the platform.</p>
           <p className="p"><strong>Severability:</strong> If any provision is found invalid or unenforceable, the remaining provisions continue in full force.</p>
-          <p className="p"><strong>Changes:</strong> datagate.co.in may update these terms with 14 days' notice for material changes. Continued use constitutes acceptance.</p>
+          <p className="p"><strong>Changes:</strong> datagate.co.in may update these terms for material changes, and will make reasonable efforts to notify vendors in advance. You can always refer to this page for the current version of these terms. Continued use constitutes acceptance.</p>
           <p className="p"><strong>No assignment:</strong> You may not assign these terms or your platform access to any other entity without datagate.co.in's prior written consent.</p>
         </div>
 
