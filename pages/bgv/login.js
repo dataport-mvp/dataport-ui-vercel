@@ -127,6 +127,9 @@ export default function BgvLogin() {
         .ey{position:absolute;right:.85rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#a09890;padding:0;transition:color .15s}
         .ey:hover{color:#3d3530}
         .hint{font-size:.67rem;color:#7a6e64;margin-top:2px}
+        .fgt{font-size:.78rem;text-align:right;margin:-.4rem 0 .9rem}
+        .fgt a{color:#0d6e6e;font-weight:600;text-decoration:none}
+        .fgt a:hover{text-decoration:underline}
         .alert-err{font-size:.78rem;color:#b91c1c;padding:.6rem .9rem;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;margin-bottom:.75rem}
         .alert-warn{font-size:.78rem;color:#92400e;padding:.75rem .9rem;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;margin-bottom:.75rem;line-height:1.6}
         .alert-success{font-size:.78rem;color:#065f46;padding:.75rem .9rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;margin-bottom:.75rem;line-height:1.6}
@@ -218,11 +221,19 @@ export default function BgvLogin() {
                 <div className="fld"><label className="flb">Work Email <span>*</span></label><input className="fin" type="email" placeholder="ops@youragency.com" value={email} onChange={e=>{setEmail(e.target.value);setError("")}} autoComplete="email"/></div>
                 <div className="fld"><label className="flb">Password <span>*</span></label>
                   <div className="pw-wrap">
-                    <input className="fin" type={showPwd?"text":"password"} maxLength={mode==="register"?128:undefined} placeholder={mode==="register"?"10+ characters, incl. a letter, number & symbol":"Password"} value={password} onChange={e=>{setPassword(e.target.value);setError("")}} onKeyDown={e=>e.key==="Enter"&&handle()} autoComplete={mode==="login"?"current-password":"new-password"}/>
+                    <input className="fin" type={showPwd?"text":"password"} maxLength={mode==="register"?128:undefined} placeholder="Password" value={password} onChange={e=>{setPassword(e.target.value);setError("")}} onKeyDown={e=>e.key==="Enter"&&handle()} autoComplete={mode==="login"?"current-password":"new-password"}/>
                     <button className="ey" type="button" onClick={()=>setShowPwd(v=>!v)} tabIndex={-1}><Eye open={showPwd}/></button>
                   </div>
+                  {/* UI FIX: placeholder no longer carries the full policy text (it ran
+                      under the eye icon at this width) — moved to its own line below. */}
+                  {mode==="register" && <div className="hint">10+ characters, incl. a letter, number &amp; symbol</div>}
                   {mode==="register" && <span style={{display:"block",textAlign:"right",fontSize:"0.72rem",fontWeight:600,marginTop:4,color:password.length>=10?"#16a34a":"#94a3b8"}}>{password.length>=10?`✓ ${password.length} characters`:`${password.length}/10 minimum`}</span>}
                 </div>
+                {/* PORTAL-SCOPING FIX: bgv/login.js previously had no forgot-password
+                    entry point at all. Adding one here, scoped with ?portal=bgv so the
+                    shared /forgot-password page knows this request came from the BGV
+                    vendor portal (same fix already applied to employee/employer/admin). */}
+                {mode==="login" && <div className="fgt"><a href="/forgot-password?portal=bgv">Forgot password?</a></div>}
                 {mode === "register" && (
                   <div className="terms-row" onClick={()=>setTermsAgreed(v=>!v)}>
                     <div className={`terms-cb${termsAgreed?" checked":""}`}/>

@@ -66,7 +66,12 @@ export default function EmployeeLogin() {
     setError(""); setInfo(""); setLoading(true);
     try {
       if (mode === "forgot") {
-        const res = await fetch(`${API}/auth/forgot-password`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})});
+        // PORTAL-SCOPING FIX: previously sent no portal at all, so an admin's or
+        // employer's email typed here would still get a real reset link — this
+        // page is the employee portal, so it should only ever act on an employee
+        // account, same as this page's own login/signup already only accept role
+        // "employee".
+        const res = await fetch(`${API}/auth/forgot-password`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email, portal:"employee"})});
         const d = await res.json();
         if (!res.ok) { setError(parseError(d)); return; }
         setInfo("Reset link sent — check your email."); return;
@@ -266,12 +271,19 @@ export default function EmployeeLogin() {
             {mode!=="forgot" && (
               <div className="fld"><label className="flb">Password <span>*</span></label>
                 <div className="pw-wrap">
-                  <input className="fin" type={showPwd?"text":"password"} maxLength={mode==="signup"?128:undefined} placeholder={mode==="signup"?"10+ characters, incl. a letter, number & symbol":"Password"} value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handle()}/>
+                  <input className="fin" type={showPwd?"text":"password"} maxLength={mode==="signup"?128:undefined} placeholder="Password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handle()}/>
                   <button className="ey" type="button" onClick={()=>setShowPwd(v=>!v)} tabIndex={-1}><Eye open={showPwd}/></button>
                 </div>
-                {/* PASSWORD POLICY UPDATE: min 8→10, max raised from a UI-only 12 to a
+                {/* UI FIX: this used to cram "10+ characters, incl. a letter, number &
+                    symbol" into the placeholder itself — 40+ characters that ran directly
+                    under the eye-toggle icon at this field's width, looking cut off/
+                    garbled. Placeholder is back to a short, static label; the actual
+                    requirement text is its own line below, like every dashboard's
+                    change-password modal already does it.
+                    PASSWORD POLICY UPDATE: min 8→10, max raised from a UI-only 12 to a
                     real backend ceiling of 128 — no longer shown as "x/12" since there's
                     no meaningful upper target to display, just a minimum to confirm. */}
+                {mode==="signup" && <div className="hint">10+ characters, incl. a letter, number &amp; symbol</div>}
                 {mode==="signup" && <span style={{display:"block",textAlign:"right",fontSize:"0.72rem",fontWeight:600,marginTop:4,color:password.length>=10?"#16a34a":"#94a3b8"}}>{password.length>=10?`✓ ${password.length} characters`:`${password.length}/10 minimum`}</span>}
               </div>
             )}

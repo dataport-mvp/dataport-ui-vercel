@@ -106,23 +106,35 @@ export default function ResetPassword() {
               <h1 style={styles.title}>Set a new password</h1>
               <p style={styles.sub}>Choose a strong password to keep your Datagate account secure.</p>
 
-              <PasswordInput
-                inputStyle={styles.input}
-                placeholder="New password (10+ characters, incl. a letter, number & symbol)"
-                value={password}
-                maxLength={128}
-                showCounter
-                onChange={e => setPassword(e.target.value)}
-              />
-              <PasswordInput
-                inputStyle={styles.input}
-                placeholder="Confirm new password"
-                value={confirm}
-                maxLength={128}
-                showCounter
-                onChange={e => setConfirm(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handle()}
-              />
+              {/* UI FIX: this used to be two bare, placeholder-only inputs with no
+                  label, crammed against each other and against a 62-character
+                  placeholder that ran under the eye icon — felt congested next to
+                  the signup pages, which give each field its own uppercase label,
+                  breathing room, and a separate hint line. Rebuilt to match that
+                  same layout here. */}
+              <div style={styles.field}>
+                <div style={styles.fieldLabel}>New Password</div>
+                <PasswordInput
+                  inputStyle={styles.input}
+                  placeholder="Enter new password"
+                  value={password}
+                  maxLength={128}
+                  showCounter
+                  onChange={e => setPassword(e.target.value)}
+                />
+                <div style={styles.pwHint}>10+ characters, with a letter, number &amp; symbol</div>
+              </div>
+              <div style={styles.field}>
+                <div style={styles.fieldLabel}>Confirm New Password</div>
+                <PasswordInput
+                  inputStyle={styles.input}
+                  placeholder="Re-enter new password"
+                  value={confirm}
+                  maxLength={128}
+                  onChange={e => setConfirm(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handle()}
+                />
+              </div>
 
               {error && <p style={styles.error}>{error}</p>}
 
@@ -149,7 +161,10 @@ const styles = {
   title: { fontSize: 21, fontWeight: 800, color: "#0f172a", margin: 0 },
   sub: { fontSize: 14, color: "#64748b", margin: 0, lineHeight: 1.6 },
   input: { padding: "0.8rem 1rem", borderRadius: 9, border: "1.5px solid #e2e8f0", fontSize: 15, outline: "none", width: "100%", boxSizing: "border-box" },
+  field: { display: "flex", flexDirection: "column", gap: "0.4rem", width: "100%" },
+  fieldLabel: { fontSize: 11, fontWeight: 700, color: "#475569", letterSpacing: "0.4px", textTransform: "uppercase" },
   error: { color: "#ef4444", fontSize: 13, margin: 0 },
+  pwHint: { fontSize: 11.5, color: "#94a3b8", marginTop: "0.35rem" },
   btn: { padding: "0.9rem", background: "#0d6e6e", color: "#fff", border: "none", borderRadius: 9, fontSize: 15, fontWeight: 700, cursor: "pointer", width: "100%" },
   footnote: { fontSize: 11.5, color: "#94a3b8", margin: 0 },
 };

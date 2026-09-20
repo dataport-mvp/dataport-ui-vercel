@@ -404,11 +404,21 @@ export default function AdminDashboard() {
     if (!forgotEmail) { setLoginErr("Enter your admin email"); return; }
     setForgotBusy(true);
     try {
+      // PORTAL-SCOPING FIX: previously sent no portal, so any registered email
+      // (employee/employer/BGV) typed into the admin "forgot password" box would
+      // still get a real reset link — and the old code never even checked the
+      // response, so a genuine account-not-found-here error was silently
+      // swallowed and shown as fake success. Now scoped to portal:"admin" and the
+      // response is actually read: a real cross-portal rejection is shown to the
+      // caller, while a true "email not registered anywhere" still gets the
+      // same generic message as before (the backend keeps that ambiguous on
+      // purpose).
       const res = await fetch(`${API}/auth/forgot-password`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: forgotEmail.trim().toLowerCase() }),
+        body: JSON.stringify({ email: forgotEmail.trim().toLowerCase(), portal: "admin" }),
       });
-      // Always show success — never reveal if email exists
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) { setLoginErr(d.detail || "Something went wrong. Please try again."); return; }
       setForgotMsg("If that email exists, a reset link has been sent.");
     } catch(_) { setLoginErr("Network error — please try again"); }
     finally { setForgotBusy(false); }

@@ -10,6 +10,13 @@ export default function ForgotPassword() {
   const [status, setStatus] = useState("idle"); // idle | loading | sent | error
   const [error, setError] = useState("");
 
+  // PORTAL-SCOPING FIX: this page is shared by employer/employee/bgv/admin logins,
+  // each of which now links here with ?portal=<role>. Forward that portal to the
+  // backend so a reset request only succeeds for an account that actually belongs
+  // to the portal it was requested from — e.g. typing an admin email in on the
+  // employer login's "forgot password" no longer sends a live reset link for it.
+  const { portal } = router.query;
+
   const handle = async () => {
     setError("");
     setStatus("loading");
@@ -17,13 +24,18 @@ export default function ForgotPassword() {
       const res = await fetch(`${API}/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, ...(portal ? { portal } : {}) }),
       });
       if (!res.ok) {
-        // Deliberately generic — never distinguish "email not found" from any other
-        // failure. The backend never reveals whether an email is registered (always
-        // 200 either way), and the frontend must not undermine that by special-casing
-        // a 404 that would leak account existence if the backend ever changed.
+        // Still generic for the true "email not registered anywhere" case — the
+        // backend returns 200 with a non-committal message then, so nothing here
+        // leaks that. But when a portal was passed and the email belongs to a
+        // *different* role, the backend now deliberately returns a distinguishing
+        // 400 (e.g. "This email is not registered as an employer account") so the
+        // person isn't sent to check an inbox that will never get a link. That's
+        // an intentional, scoped exception to the anti-enumeration rule below —
+        // not a leak, since it only fires once portal-scoping was requested and
+        // only tells the person "wrong portal," never "no such account at all."
         let detail = "Something went wrong. Please try again.";
         try {
           const data = await res.json();

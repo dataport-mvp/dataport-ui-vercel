@@ -197,9 +197,12 @@ export default function EmployerLogin() {
             <div className="fld"><label className="flb">Work Email <span>*</span></label><input className="fin" type="email" placeholder="hr@yourcompany.com" value={email} onChange={e=>setEmail(e.target.value)}/></div>
             <div className="fld"><label className="flb">Password <span>*</span></label>
               <div className="pw-wrap">
-                <input className="fin" type={showPwd?"text":"password"} maxLength={mode==="signup"?128:undefined} placeholder={mode==="signup"?"10+ characters, incl. a letter, number & symbol":"Password"} value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handle()}/>
+                <input className="fin" type={showPwd?"text":"password"} maxLength={mode==="signup"?128:undefined} placeholder="Password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handle()}/>
                 <button className="ey" type="button" onClick={()=>setShowPwd(v=>!v)} tabIndex={-1}><Eye open={showPwd}/></button>
               </div>
+              {/* UI FIX: placeholder no longer carries the full policy text (it ran
+                  under the eye icon at this width) — moved to its own line below. */}
+              {mode==="signup" && <div style={{fontSize:"0.67rem",color:"#7a6e64",marginTop:2}}>10+ characters, incl. a letter, number &amp; symbol</div>}
               {mode==="signup" && <span style={{display:"block",textAlign:"right",fontSize:"0.72rem",fontWeight:600,marginTop:4,color:password.length>=10?"#16a34a":"#94a3b8"}}>{password.length>=10?`✓ ${password.length} characters`:`${password.length}/10 minimum`}</span>}
             </div>
             {mode==="signup" && (
@@ -218,7 +221,12 @@ export default function EmployerLogin() {
             <button className="sub" onClick={handle} disabled={loading || (mode==="signup" && !termsAgreed)}>
               {loading?"Please wait…":mode==="signup"?"Create employer account →":"Sign in →"}
             </button>
-            {mode==="login" && <div className="fgt"><a href="/forgot-password">Forgot password?</a></div>}
+            {/* PORTAL-SCOPING FIX: this used to link to the shared /forgot-password
+                page with no context at all, so it had no way to know this request
+                came from the employer portal — an admin/employee/BGV email typed
+                there would still get a real reset link. Passing ?portal=employer
+                lets that shared page scope the request to this role. */}
+            {mode==="login" && <div className="fgt"><a href="/forgot-password?portal=employer">Forgot password?</a></div>}
             <div className="dvr"><div className="dvl"/><span className="dvt">or</span><div className="dvl"/></div>
             <div className="tgl">{mode==="login"?"Don't have an account? ":"Already have an account? "}<button className="tgb" onClick={()=>{setMode(mode==="login"?"signup":"login");setError("");setTermsAgreed(false)}}>{mode==="login"?"Sign up free":"Sign in"}</button></div>
             <div className="trust-grid">
