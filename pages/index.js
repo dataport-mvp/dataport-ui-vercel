@@ -341,7 +341,7 @@ export default function Home() {
         <div className="ticker-track">
           {[...Array(2)].map((_,i)=>(
             <span key={i} style={{display:"flex"}}>
-              {["Built around the DPDP Act 2023","Explicit employee consent","Less document chasing","Onboarding in minutes","Employee-controlled access","Structured employment records","Full access history","No data shared without consent","BGV initiated at the same time","Built in India. Designed for India\'s employment ecosystem."].map((t,j)=>(
+              {["Employment Data Portability","One Digital Career Profile","Explicit Employee Consent","No Data Shared Without Consent","Pre-BGV Checks","Onboarding in Minutes","BGV Initiated at the Same Time","Employee-Controlled Access","Structured Employment Records","Built in India, for India\'s Employment Ecosystem"].map((t,j)=>(
                 <span className="ti" key={j}><span className="ti-dot">●</span>{t}</span>
               ))}
             </span>
@@ -354,13 +354,13 @@ export default function Home() {
         <div>
           <div className="tag f1"><span className="tag-dot"/>Digital, portable career profile</div>
           <h1 className="h1 f2">One profile.<br/>Every opportunity.<br/><em>Your consent.</em></h1>
-          <p className="hero-p f3">Build one digital career profile and keep it updated as your career evolves. When an employer requests access, you can approve or decline. Once approved, your profile is shared instantly — enabling onboarding within minutes and allowing BGV to be initiated at the same time.</p>
+          <p className="hero-p f3">Build one digital career profile and keep it current as your career evolves. When an employer requests access, the decision is yours — approve or decline. Once approved, your information is shared instantly: onboarding can move forward within minutes, with formal BGV initiated at the same time where required.</p>
           <div className="btns f4">
             <Link href="/employee/login"><button className="btn-p">Create employee profile <Arr/></button></Link>
             <Link href="/employer/login"><button className="btn-s">Employer portal</button></Link>
           </div>
           <div className="trust-pills f4">
-            {["DPDP Act 2023 aligned","Encrypted in transit and at rest","No data shared without consent","Consent-first","Structured employment records"].map(t=>(
+            {["India-based","DPDP Act 2023 aligned","Encrypted in transit and at rest","No data shared without consent","Employee-controlled"].map(t=>(
               <div className="t-pill" key={t}><span className="t-dot"/>{t}</div>
             ))}
           </div>
@@ -397,7 +397,7 @@ export default function Home() {
       {/* STATS BAND */}
       <div className="stats-band">
         <div className="stats-inner">
-          {[["Consent-first","Employee-controlled access"],["1-click","One profile"],["Instant","Data shared after approval"],["Same-time BGV","Initiate verification alongside onboarding"]].map(([n,l])=>(
+          {[["One Profile","Build once, keep it current"],["Explicit Consent","Employee-controlled, every time"],["Minutes","Onboarding, start to finish"],["Same-Time BGV","Verification initiated alongside onboarding"]].map(([n,l])=>(
             <div className="sc" key={l}><div className="sc-ey">Platform principle</div><div className="sc-num" style={{fontSize:"clamp(1.6rem,3vw,2.8rem)",letterSpacing:"-1px"}}>{n}</div><div className="sc-desc">{l}</div></div>
           ))}
         </div>
@@ -411,7 +411,7 @@ export default function Home() {
               <div className="prob-lbl">The problem we solve</div>
               <div className="prob-h">Onboarding without<br/><em>the repetition.</em></div>
             </div>
-            <p className="prob-p">Every new opportunity can mean entering the same personal, education and employment information again, collecting documents again, and waiting for verification to begin. Datagate.co.in gives professionals one digital career profile they can maintain and reuse. Once an employer receives consent, onboarding can move forward within minutes and BGV can be initiated at the same time.</p>
+            <p className="prob-p">Every new opportunity can mean entering the same personal, education and employment information again, collecting documents again, and waiting for verification to begin. Datagate.co.in gives professionals one digital career profile they can build once and reuse — reducing repeated data entry, document chasing and onboarding friction. Once an employer receives consent, onboarding can move forward within minutes, with BGV initiated at the same time.</p>
           </div>
           <table className="ct">
             <thead>
@@ -449,7 +449,7 @@ export default function Home() {
           <div className="steps-grid">
             {[["01","Build your profile","Add your identity, education, employment history and supporting documents once on Datagate.co.in. Keep your information accurate and updated as your career changes.","Step 1"],
               ["02","Employer requests access","When an employer needs your information, you receive a request. Review the request and decide whether to approve or decline.","Step 2"],
-              ["03","Approve and move forward","Once you approve, the requested profile information is shared instantly. Onboarding can continue within minutes, and BGV can be initiated at the same time.","Step 3"]
+              ["03","Approve and move forward","Once you approve, the requested profile information is shared instantly. Onboarding can continue within minutes, with formal BGV initiated alongside it.","Step 3"]
             ].map(([n,t,d,tag])=>(
               <div className="step-card" key={n}>
                 <div className="step-badge">{tag}</div>
@@ -489,9 +489,9 @@ export default function Home() {
           <p style={{fontSize:"0.95rem",color:"#5a5248",maxWidth:"640px",marginTop:"-0.5rem",marginBottom:"1.5rem",lineHeight:1.7}}>Employee, employer and BGV vendor workflows connected through one consent-driven platform. Employees maintain one digital career profile, employers request access, and BGV vendors can begin verification once a case is assigned. After employee approval, onboarding can move forward within minutes and BGV can be initiated at the same time.</p>
           <div className="for-grid">
             {[
-              {ey:"Employee Portal",t:"Build once. Keep it current. Take it with you.",d:"Create one digital career profile containing your identity, education, employment history and supporting documents. Keep your information updated as your career changes and reuse your profile for future employment opportunities. You decide which employer requests to approve or decline.",pts:["Build once, update as your career changes","Keep personal, education and employment information in one place","Approve or decline every employer request","See your profile access and consent history"],href:"/employee/login",cta:"Create your profile"},
-              {ey:"Employer Portal",t:"Faster onboarding. Earlier visibility.",d:"Request a candidate's digital career profile through explicit consent, access the approved information instantly, run preliminary pre-BGV checks, and initiate formal BGV at the same time as onboarding.",pts:["Send a consent request in one click","Run pre-BGV checks earlier in the hiring process","Complete onboarding within minutes and initiate BGV at the same time","Maintain a clear consent and access audit trail"],href:"/employer/login",cta:"Access employer portal"},
-              {ey:"BGV Vendor Portal",t:"Start with structured, consented candidate information.",d:"Receive assigned verification cases with the candidate's consented profile information and supporting documents available through one centralised workflow, reducing document chasing and back-and-forth.",pts:["Access consented candidate information for assigned cases","Supporting documents available through the case workflow","Track verification progress from start to finish"],href:"/bgv/login",cta:"Access BGV vendor portal"},
+              {ey:"Employee Portal",t:"Build once. Keep it current. Take it with you.",d:"Create one digital career profile containing your identity, education, employment history and supporting documents. Keep it current as your career evolves, and reuse it for every future opportunity. You decide which employer requests to approve or decline.",pts:["Build once, update as your career changes","Keep personal, education and employment information in one place","Approve or decline every employer request","See your profile access and consent history"],href:"/employee/login",cta:"Create your profile"},
+              {ey:"Employer Portal",t:"Faster onboarding. Earlier visibility.",d:"Request a candidate's digital career profile through explicit consent, access approved information instantly, run preliminary pre-BGV checks, and initiate formal BGV alongside onboarding.",pts:["Send a consent request in one click","Run pre-BGV checks earlier in the hiring process","Complete onboarding within minutes and initiate BGV at the same time","Maintain a clear consent and access audit trail"],href:"/employer/login",cta:"Access employer portal"},
+              {ey:"BGV Vendor Portal",t:"Start with structured, consented candidate information.",d:"Receive assigned verification cases with the candidate's consented profile information and supporting documents in one centralised workflow — less document chasing, less back-and-forth.",pts:["Access consented candidate information for assigned cases","Supporting documents available through the case workflow","Track verification progress from start to finish"],href:"/bgv/login",cta:"Access BGV vendor portal"},
             ].map(card=>(
               <div className="for-card" key={card.ey}>
                 <div className="for-ey">{card.ey}</div>
