@@ -2848,7 +2848,7 @@ export default function EmployerDashboard() {
     setPwErr(""); setPwOk("");
     if (!pwCurrent || !pwNew || !pwConfirm) { setPwErr("All fields are required"); return; }
     if (pwNew !== pwConfirm) { setPwErr("New passwords do not match"); return; }
-    if (pwNew.length < 8) { setPwErr("New password must be at least 8 characters"); return; }
+    if (pwNew.length < 10) { setPwErr("New password must be at least 10 characters"); return; }
     setPwBusy(true);
     try {
       const r = await apiFetch(`${API}/auth/change-password`, {
@@ -3124,8 +3124,8 @@ return (
               {[["Current password","password",pwCurrent,setPwCurrent],["New password","password",pwNew,setPwNew],["Confirm new password","password",pwConfirm,setPwConfirm]].map(([label,type,val,setter])=>(
                 <div key={label} style={{marginBottom:"1.1rem"}}>
                   <div style={{fontSize:"0.72rem",fontWeight:700,color:"#7a6e64",marginBottom:"0.4rem",textTransform:"uppercase",letterSpacing:"0.5px"}}>{label}</div>
-                  <PasswordInput value={val} onChange={e=>setter(e.target.value)} maxLength={label==="Current password"?undefined:12} showCounter={label!=="Current password"} placeholder={label==="Current password"?"":"Enter new password"} inputStyle={{width:"100%",padding:"0.75rem 0.9rem",border:"1.5px solid #c8c2b8",borderRadius:9,fontFamily:"inherit",fontSize:"0.92rem",background:"#f5f2ee"}}/>
-                  {label!=="Current password" && <div style={{fontSize:"0.72rem",color:"#9a8f83",marginTop:"0.35rem"}}>8–12 characters, with a letter, number &amp; symbol</div>}
+                  <PasswordInput value={val} onChange={e=>setter(e.target.value)} maxLength={label==="Current password"?undefined:128} showCounter={label!=="Current password"} placeholder={label==="Current password"?"":"Enter new password"} inputStyle={{width:"100%",padding:"0.75rem 0.9rem",border:"1.5px solid #c8c2b8",borderRadius:9,fontFamily:"inherit",fontSize:"0.92rem",background:"#f5f2ee"}}/>
+                  {label!=="Current password" && <div style={{fontSize:"0.72rem",color:"#9a8f83",marginTop:"0.35rem"}}>10+ characters, with a letter, number &amp; symbol</div>}
                 </div>
               ))}
               {pwErr && <div style={{fontSize:"0.8rem",color:"#ef4444",marginBottom:"0.7rem",fontWeight:600,background:"#fef2f2",padding:"0.6rem 0.8rem",borderRadius:8}}>{pwErr}</div>}
@@ -3747,13 +3747,18 @@ return (
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"0.3rem"}}>
                           <div className="c-mail" style={{flex:1}}>{c.employee_email}</div>
-                          {cTab==="bgv" ? (
+                          {cTab==="bgv" && (
                             <span style={{fontSize:9,fontWeight:700,color:bgvStatusColor,background:`${bgvStatusColor}18`,padding:"2px 7px",borderRadius:999,whiteSpace:"nowrap"}}>{bgvStatusLabel}</span>
-                          ) : candStatus[c.employee_email]&&(
-                            <span className={`cand-status ${candStatus[c.employee_email].status==="submitted"?"submitted":candStatus[c.employee_email].status==="draft"?"draft":"no-profile"}`}>
-                              {candStatus[c.employee_email].status==="submitted"?"✓ Done":candStatus[c.employee_email].status==="draft"?"In progress":"Not started"}
-                            </span>
                           )}
+                          {/* ACCESS-CONTROL FIX: this used to show the candidate's real profile
+                              status ("In progress" / "✓ Done" / "Not started") for PENDING
+                              consents too — before the employee ever approved anything. The
+                              backend now only ever returns {email, exists} to an employer for
+                              /employee/profile-status (see main.py), so this badge is removed
+                              rather than left rendering a wrong, always-"Not started" state off
+                              the now-empty response. Real status is only ever known once a
+                              consent is APPROVED, and at that point it's shown from the
+                              consent's own snapshot data in the profile panel, not from here. */}
                         </div>
                         {c.employee_name&&c.employee_name!==c.employee_email&&<div className="c-nm">{c.employee_name}</div>}
                         {cTab==="bgv" ? (
@@ -3795,10 +3800,15 @@ return (
                           {(selected.responded_at||selected.approved_at)&&<span className="hb hb-info">Responded: {toIST(selected.responded_at||selected.approved_at)}</span>}
                           {profileData?._snapshot_at&&<span className="hb hb-info">📅 Data as of: {toIST(profileData._snapshot_at)}</span>}
                         </div>
-                        {candStatus[selected.employee_email]&&(()=>{
-                          const cs=candStatus[selected.employee_email];const pct=cs.completeness||0;const col=pct>=80?"#16a34a":pct>=50?"#f59e0b":"#ef4444";
-                          return(<div className="comp-bar-wrap" style={{minWidth:200}}><div className="comp-bar-label"><span>Profile completeness</span><span style={{color:col,fontWeight:700}}>{pct}%</span></div><div className="comp-bar-bg"><div className="comp-bar-fill" style={{width:`${pct}%`,background:col}}/></div></div>);
-                        })()}
+                        {/* ACCESS-CONTROL FIX: this used to show a "Profile completeness" %
+                            bar sourced from /employee/profile-status's `completeness` field.
+                            The backend now only ever returns {email, exists} to an employer
+                            for that endpoint (see main.py), so `cs.completeness` would always
+                            be undefined here and this would silently render a misleading, stuck
+                            "0% — red" bar for every candidate, approved or not. Removed rather
+                            than left showing a wrong number. Once a consent is APPROVED, the
+                            real profile detail (and how complete/filled-in it is) is visible by
+                            actually looking at the sections below, from profileData itself. */}
                       </div>
                       {selected.request_message&&(<div className="msg-bubble"><div className="msg-lbl">Your message</div><div className="msg-txt">{selected.request_message}</div></div>)}
                     </div>

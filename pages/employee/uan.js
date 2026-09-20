@@ -1253,7 +1253,7 @@ export default function UanDetails() {
     setPwErr(""); setPwOk("");
     if (!pwCurrent || !pwNew || !pwConfirm) { setPwErr("All fields required"); return; }
     if (pwNew !== pwConfirm) { setPwErr("Passwords do not match"); return; }
-    if (pwNew.length < 8) { setPwErr("Must be at least 8 characters"); return; }
+    if (pwNew.length < 10) { setPwErr("Must be at least 10 characters"); return; }
     setPwBusy(true);
     try {
       const r = await apiFetch(`${API}/auth/change-password`, {

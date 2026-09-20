@@ -421,6 +421,69 @@ export default function AdminDashboard() {
     setAdminToken(null); setAdminUser(null);
   };
 
+  // SECURITY FIX: admin sessions had no inactivity expiry at all. Every other role
+  // (employee/employer/BGV) already force-logs-out after 30 minutes of no real user
+  // activity via AuthContext.js — admin was built as its own separate auth flow (see
+  // the comments above doAdminRefresh) and that inactivity timer never came with it.
+  // Left as-is, an unattended admin tab stayed signed in indefinitely: the dashboard's
+  // own 30-second polling (loadOverview) keeps hitting the API regardless of whether a
+  // human is present, and any 401 from an expired access token just triggers a silent
+  // doAdminRefresh() using the still-valid 7-day refresh token — so the session renews
+  // itself forever with nobody there. Admin is the single highest-privilege role in the
+  // system, so this closes the same gap the same way, with the same UX (warning +
+  // countdown before logout) as the rest of the app.
+  const ADMIN_INACTIVITY_LIMIT = 30 * 60 * 1000; // 30 minutes — matches AuthContext.js
+  const ADMIN_WARNING_LEAD     = 5 * 60 * 1000;  // warn 5 minutes before logout
+  const adminInactivityTimer = useRef(null);
+  const adminWarningTimer    = useRef(null);
+  const adminCountdownTimer  = useRef(null);
+  const [showAdminIdleWarning, setShowAdminIdleWarning] = useState(false);
+  const [adminSecondsUntilLogout, setAdminSecondsUntilLogout] = useState(0);
+
+  const resetAdminInactivityTimer = useCallback(() => {
+    if (adminInactivityTimer.current) clearTimeout(adminInactivityTimer.current);
+    if (adminWarningTimer.current) clearTimeout(adminWarningTimer.current);
+    if (adminCountdownTimer.current) clearInterval(adminCountdownTimer.current);
+    setShowAdminIdleWarning(false);
+
+    adminWarningTimer.current = setTimeout(() => {
+      setAdminSecondsUntilLogout(Math.floor(ADMIN_WARNING_LEAD / 1000));
+      setShowAdminIdleWarning(true);
+      adminCountdownTimer.current = setInterval(() => {
+        setAdminSecondsUntilLogout(prev => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }, ADMIN_INACTIVITY_LIMIT - ADMIN_WARNING_LEAD);
+
+    adminInactivityTimer.current = setTimeout(() => {
+      handleLogout();
+    }, ADMIN_INACTIVITY_LIMIT);
+  }, []);
+
+  useEffect(() => {
+    // Only run the timer while actually signed in — otherwise the login screen
+    // itself would be pointlessly ticking down toward a "logout" of nobody.
+    if (!adminUser) {
+      if (adminInactivityTimer.current) clearTimeout(adminInactivityTimer.current);
+      if (adminWarningTimer.current) clearTimeout(adminWarningTimer.current);
+      if (adminCountdownTimer.current) clearInterval(adminCountdownTimer.current);
+      setShowAdminIdleWarning(false);
+      return;
+    }
+    resetAdminInactivityTimer();
+    const events  = ["mousemove", "keydown", "click", "scroll", "touchstart"];
+    const handler = () => resetAdminInactivityTimer();
+    events.forEach(e => window.addEventListener(e, handler, { passive: true }));
+    return () => {
+      events.forEach(e => window.removeEventListener(e, handler));
+      if (adminInactivityTimer.current) clearTimeout(adminInactivityTimer.current);
+      if (adminWarningTimer.current) clearTimeout(adminWarningTimer.current);
+      if (adminCountdownTimer.current) clearInterval(adminCountdownTimer.current);
+    };
+  }, [adminUser, resetAdminInactivityTimer]);
+
+  const adminMm = String(Math.floor(adminSecondsUntilLogout / 60)).padStart(2, "0");
+  const adminSs = String(adminSecondsUntilLogout % 60).padStart(2, "0");
+
   const handleLogoutAll = async () => {
     try { await apiFetch(`${API}/auth/logout-all`, { method: "POST" }); } catch (_) {}
     handleLogout();
@@ -431,7 +494,7 @@ export default function AdminDashboard() {
     setPwErr(""); setPwOk("");
     if (!pwCurrent || !pwNew || !pwConfirm) { setPwErr("All fields required"); return; }
     if (pwNew !== pwConfirm) { setPwErr("New passwords do not match"); return; }
-    if (pwNew.length < 8) { setPwErr("Must be at least 8 characters"); return; }
+    if (pwNew.length < 10) { setPwErr("Must be at least 10 characters"); return; }
     if (pwNew === pwCurrent) { setPwErr("New password must be different"); return; }
     setPwBusy(true);
     try {
@@ -893,6 +956,38 @@ export default function AdminDashboard() {
     <>
       <style>{G}</style>
 
+      {/* SECURITY FIX: admin inactivity warning — same UX as every other role's
+          AuthContext.js modal, scoped locally here since admin doesn't use that
+          shared context. */}
+      {showAdminIdleWarning && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(15,23,42,0.55)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 99999,
+        }}>
+          <div style={{
+            background: "#fff", borderRadius: 14, padding: "28px 32px", maxWidth: 380,
+            width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", textAlign: "center",
+          }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: "#1c2b2b", marginBottom: 8 }}>
+              Still there?
+            </div>
+            <p style={{ fontSize: 13.5, color: "#4a6060", lineHeight: 1.6, margin: "0 0 18px" }}>
+              You've been inactive for a while. For security, admin sessions sign out automatically —
+              you'll be logged out in <strong style={{ color: "#dc2626" }}>{adminMm}:{adminSs}</strong> unless you continue.
+            </p>
+            <button
+              onClick={resetAdminInactivityTimer}
+              style={{
+                width: "100%", padding: "11px", background: "#0d6e6e", color: "#fff",
+                border: "none", borderRadius: 9, fontSize: 14, fontWeight: 700, cursor: "pointer",
+              }}
+            >
+              I'm still here — keep me signed in
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* FIX BUG-1: Change Password Modal */}
       {showChPw && (
         <div className="modal-overlay" onClick={() => setShowChPw(false)}>
@@ -903,11 +998,11 @@ export default function AdminDashboard() {
               <div key={label} style={{marginBottom:"1.05rem"}}>
                 <div style={{fontSize:"0.72rem",fontWeight:700,color:"#7a9494",textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:"0.4rem"}}>{label}</div>
                 <PasswordInput value={val} onChange={e => setter(e.target.value)}
-                  maxLength={label==="Current password"?undefined:12}
+                  maxLength={label==="Current password"?undefined:128}
                   showCounter={label!=="Current password"}
                   placeholder={label==="Current password"?"":"Enter new password"}
                   inputStyle={{width:"100%",padding:"0.75rem 0.9rem",background:"#f2efe9",border:"1px solid #1e1b2e",borderRadius:"9px",fontFamily:"inherit",fontSize:"0.92rem",color:"#1c2b2b"}}/>
-                {label!=="Current password" && <div style={{fontSize:"0.72rem",color:"#7a9494",marginTop:"0.35rem"}}>8–12 characters, with a letter, number &amp; symbol</div>}
+                {label!=="Current password" && <div style={{fontSize:"0.72rem",color:"#7a9494",marginTop:"0.35rem"}}>10+ characters, with a letter, number &amp; symbol</div>}
               </div>
             ))}
             {pwErr && <div style={{fontSize:"0.8rem",color:"#fca5a5",marginBottom:"0.6rem",fontWeight:600,background:"rgba(252,165,165,0.1)",padding:"0.6rem 0.8rem",borderRadius:8}}>{pwErr}</div>}

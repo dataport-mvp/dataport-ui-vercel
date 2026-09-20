@@ -54,11 +54,16 @@ export default function PasswordInput({
         </button>
       </div>
       {showCounter && (
+        // PASSWORD POLICY UPDATE: min raised from 8→10, max raised from a UI-only
+        // 12→128 (128 is a real backend ceiling now, not just a display number).
+        // Previously this showed "x/12" — a running fraction against an artificial
+        // cap that discouraged longer, stronger passwords. Now it just confirms
+        // once the minimum is met, with no upper number to imply a target to hit.
         <span style={{
           display: "block", textAlign: "right", fontSize: "0.72rem", fontWeight: 600, marginTop: 4,
-          color: (value||"").length >= 8 && (value||"").length <= (maxLength||12) ? "#16a34a" : "#94a3b8",
+          color: (value||"").length >= 10 ? "#16a34a" : "#94a3b8",
         }}>
-          {(value||"").length}/{maxLength||12}
+          {(value||"").length >= 10 ? `✓ ${(value||"").length} characters` : `${(value||"").length}/10 minimum`}
         </span>
       )}
     </div>

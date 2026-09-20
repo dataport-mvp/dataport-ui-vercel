@@ -1321,7 +1321,7 @@ export default function ReviewPage() {
     setPwErr(""); setPwOk("");
     if (!pwCurrent || !pwNew || !pwConfirm) { setPwErr("All fields required"); return; }
     if (pwNew !== pwConfirm) { setPwErr("Passwords do not match"); return; }
-    if (pwNew.length < 8) { setPwErr("Must be at least 8 characters"); return; }
+    if (pwNew.length < 10) { setPwErr("Must be at least 10 characters"); return; }
     setPwBusy(true);
     try {
       const r = await apiFetch(`${API}/auth/change-password`, {
@@ -1617,11 +1617,11 @@ export default function ReviewPage() {
                   <div key={label} style={{marginBottom:"1.1rem"}}>
                     <div style={{fontSize:"0.72rem",fontWeight:700,color:"#4b5563",marginBottom:"0.4rem",textTransform:"uppercase",letterSpacing:"0.5px"}}>{label}</div>
                     <PasswordInput value={val} onChange={e=>setter(e.target.value)}
-                      maxLength={label==="Current password"?undefined:12}
+                      maxLength={label==="Current password"?undefined:128}
                       showCounter={label!=="Current password"}
                       placeholder={label==="Current password"?"":"Enter new password"}
                       inputStyle={{width:"100%",padding:"0.75rem 0.9rem",border:"1.5px solid #dddaf0",borderRadius:9,fontFamily:"inherit",fontSize:"0.92rem",outline:"none",background:"#f8f7ff"}} />
-                    {label!=="Current password" && <div style={{fontSize:"0.72rem",color:"#8b88b0",marginTop:"0.35rem"}}>8–12 characters, with a letter, number &amp; symbol</div>}
+                    {label!=="Current password" && <div style={{fontSize:"0.72rem",color:"#8b88b0",marginTop:"0.35rem"}}>10+ characters, with a letter, number &amp; symbol</div>}
                   </div>
                 ))}
                 {pwErr && <div style={{fontSize:"0.8rem",color:"#ef4444",marginBottom:"0.7rem",fontWeight:600,background:"#fef2f2",padding:"0.6rem 0.8rem",borderRadius:8}}>{pwErr}</div>}
