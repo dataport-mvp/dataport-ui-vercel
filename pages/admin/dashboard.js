@@ -1114,6 +1114,16 @@ export default function AdminDashboard() {
                     <div className="stat-value">{stats.tickets.open}</div>
                     <div className="stat-sub">{stats.tickets.total} total tickets</div>
                   </div>
+                  <div className="stat-card">
+                    <div className="stat-label">BGV Cases</div>
+                    <div className="stat-value">{stats.bgv_cases.total}</div>
+                    <div className="stat-sub">{stats.bgv_cases.groomed} groomed · {stats.bgv_cases.in_progress} in progress · {stats.bgv_cases.completed} completed</div>
+                  </div>
+                  <div className={`stat-card ${stats.bgv_cases.on_hold > 0 ? "warn" : ""}`}>
+                    <div className="stat-label">On Hold / Reassigned</div>
+                    <div className="stat-value">{stats.bgv_cases.on_hold}</div>
+                    <div className="stat-sub">{stats.bgv_cases.reassigned} reassigned{stats.bgv_cases.unassigned ? ` · ${stats.bgv_cases.unassigned} unassigned` : ""}</div>
+                  </div>
                 </div>
               )}
               <div className="two-col">
